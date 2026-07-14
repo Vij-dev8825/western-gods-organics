@@ -558,6 +558,24 @@ p { margin: 0 0 1em; }
 .alert-error { background: #fbe7e4; color: #a52f1e; }
 .alert-info { background: #fdf2df; color: #8a5a1e; }
 
+/* ---------- Product detail ---------- */
+.product-detail-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 48px;
+  align-items: start;
+}
+.product-actions-row { flex-wrap: wrap; }
+
+/* ---------- Two-column pages (Bulk Enquiry, Contact) ---------- */
+.two-col-split {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 48px;
+  align-items: start;
+}
+.contact-split { grid-template-columns: 0.9fr 1.1fr; }
+
 /* ---------- Cart / Wishlist ---------- */
 .cart-layout { display: grid; grid-template-columns: 1.7fr 1fr; gap: 40px; align-items: start; }
 .cart-line {
@@ -670,11 +688,10 @@ p { margin: 0 0 1em; }
 }
 
 @media (max-width: 640px) {
-  .nav-links { position: fixed; top: 64px; left: 0; right: 0; background: var(--paper); flex-direction: column; padding: 20px 24px; gap: 16px; box-shadow: var(--shadow-card); transform: translateY(-150%); transition: transform 0.25s ease; }
+  .nav-links { position: absolute; top: 100%; left: 0; right: 0; background: var(--paper); flex-direction: column; padding: 20px 24px; gap: 16px; box-shadow: var(--shadow-card); transform: translateY(-150%); transition: transform 0.25s ease; }
   .nav-links.open { transform: translateY(0); }
-  .mobile-toggle { display: block; }
+  .mobile-toggle { display: flex; }
   .footer-grid { grid-template-columns: 1fr; }
-  .cart-line { grid-template-columns: 60px 1fr; }
 }
 
 /* ============================================================
@@ -1067,11 +1084,12 @@ p { margin: 0 0 1em; }
   box-shadow: var(--shadow-card);
   margin-bottom: 22px;
   border: 1px solid rgba(31,61,43,0.05);
+  overflow-x: auto;
 }
 .admin-card h3 { margin-bottom: 14px; }
 .admin-two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
 
-.admin-table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+.admin-table { width: 100%; min-width: 560px; border-collapse: collapse; font-size: 0.88rem; }
 .admin-table th {
   text-align: left;
   font-size: 0.72rem;
@@ -1182,4 +1200,48 @@ p { margin: 0 0 1em; }
   .chat-console { grid-template-columns: 1fr; }
   .chat-list { max-height: 200px; border-right: none; border-bottom: 1px solid rgba(31,61,43,0.1); }
   .hero-video { min-height: 76vh; }
+  .product-detail-grid, .two-col-split { grid-template-columns: 1fr; gap: 28px; }
+}
+
+/* ---------- Mobile polish (phones) ---------- */
+@media (max-width: 640px) {
+  .navbar-inner { padding: 10px 16px; gap: 10px; }
+  .navbar-inner > a img { height: 38px; }
+  .nav-icons { gap: 2px; }
+  .icon-btn, .mobile-toggle { width: 36px; height: 36px; }
+  .lang-select { font-size: 0.72rem; padding: 5px 7px; max-width: 88px; }
+
+  .announce-bar { font-size: 0.7rem; padding: 7px 12px; }
+
+  .hero-video { min-height: 92vh; }
+  .hero-video-content { padding-top: 56px; padding-bottom: 56px; }
+  .hero-stats { gap: 20px 28px; margin-top: 32px; }
+  .hero-cta { gap: 10px; }
+  .hero-cta .btn { flex: 1 1 auto; }
+
+  .usp-grid { gap: 18px; }
+
+  .testimonial-grid { grid-template-columns: 1fr; }
+
+  .admin-content { padding: 20px 14px 48px; }
+  .stat-tiles { grid-template-columns: repeat(2, 1fr); }
+  .form-grid { grid-template-columns: 1fr; }
+
+  .chat-panel { bottom: 82px; right: 16px; left: 16px; width: auto; height: min(64vh, 460px); }
+  .chat-fab { right: 16px; bottom: 16px; width: 50px; height: 50px; font-size: 1.2rem; }
+
+  .cart-line {
+    grid-template-columns: 64px 1fr auto;
+    grid-template-areas: "img details details" "qty qty price";
+    row-gap: 10px;
+    align-items: center;
+  }
+  .cart-line img { grid-area: img; width: 64px; height: 64px; }
+  .cart-line-details { grid-area: details; }
+  .cart-line .qty-stepper { grid-area: qty; justify-self: start; }
+  .cart-line .price { grid-area: price; justify-self: end; }
+
+  .product-actions-row { gap: 10px !important; }
+  .product-actions-row .btn { flex: 1 1 auto; justify-content: center; }
+  .product-actions-row .qty-stepper { flex: 0 0 auto; }
 }

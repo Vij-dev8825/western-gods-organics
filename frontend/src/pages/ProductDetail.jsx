@@ -54,7 +54,7 @@ export default function ProductDetail() {
         <Link to="/shop">Shop</Link> / {product.name}
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 48, alignItems: 'start' }}>
+      <div className="product-detail-grid">
         <div className="product-media" style={{ borderRadius: 'var(--radius-lg)' }}>
           {discount > 0 && <span className="product-badge">{discount}% OFF</span>}
           <img src={getProductImage(product.image)} alt={product.name} />
@@ -89,7 +89,7 @@ export default function ProductDetail() {
             {discount > 0 && <span className="off">{discount}% off</span>}
           </div>
 
-          <div className="flex gap-1" style={{ marginBottom: 22 }}>
+          <div className="flex gap-1 product-actions-row" style={{ marginBottom: 22 }}>
             <div className="qty-stepper">
               <button onClick={() => setQty((q) => Math.max(1, q - 1))} aria-label="Decrease quantity">−</button>
               <span>{qty}</span>

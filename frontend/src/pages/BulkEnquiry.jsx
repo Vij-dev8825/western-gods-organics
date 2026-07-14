@@ -36,7 +36,7 @@ export default function BulkEnquiry() {
   return (
     <div className="container section">
       <div className="breadcrumb">Home / Bulk Sales Enquiry</div>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 48, alignItems: 'flex-start' }}>
+      <div className="two-col-split">
         <div>
           <span className="eyebrow">Wholesale &amp; Bulk Orders</span>
           <h2>Stock our oils in your store or kitchen</h2>

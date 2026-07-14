@@ -29,7 +29,7 @@ export default function ContactUs() {
   return (
     <div className="container section">
       <div className="breadcrumb">Home / Contact Us</div>
-      <div style={{ display: 'grid', gridTemplateColumns: '0.9fr 1.1fr', gap: 48, alignItems: 'flex-start' }}>
+      <div className="two-col-split contact-split">
         <div>
           <span className="eyebrow">Get in touch</span>
           <h2>We'd love to hear from you</h2>

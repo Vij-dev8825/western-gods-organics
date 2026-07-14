@@ -84,7 +84,7 @@ export default function Cart() {
           {lines.map((l) => (
             <div className="cart-line" key={`${l.productId}-${l.size}`}>
               <img src={getProductImage(l.product.image)} alt={l.product.name} />
-              <div>
+              <div className="cart-line-details">
                 <h3 style={{ marginBottom: 4 }}>{l.product.name}</h3>
                 <span className="muted" style={{ fontSize: '0.85rem' }}>Size: {l.size}</span>
                 <div>
