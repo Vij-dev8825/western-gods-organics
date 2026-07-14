@@ -14,7 +14,10 @@ services:
     name: yamuna-organics
     runtime: node
     plan: free
-    buildCommand: cd frontend && npm ci && npm run build && cd ../backend && npm ci
+    # NODE_ENV=production (set below) makes npm skip devDependencies by default,
+    # which would drop vite (needed to build the frontend) — force it back on
+    # for that one install with --include=dev.
+    buildCommand: cd frontend && npm ci --include=dev && npm run build && cd ../backend && npm ci
     startCommand: cd backend && npm start
     healthCheckPath: /api/health
     envVars:
