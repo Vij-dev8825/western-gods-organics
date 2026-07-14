@@ -37,7 +37,7 @@ export default function Dashboard() {
       <div className="stat-tiles">
         {tiles.map(([label, value, to]) => (
           <Link to={to} className="stat-tile" key={label}>
-            <b>{value}</b>
+            <b className="gold-text">{value}</b>
             <span>{label}</span>
           </Link>
         ))}

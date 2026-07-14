@@ -32,9 +32,11 @@ export default function AdminLayout() {
     <div className="admin-shell">
       <aside className="admin-sidebar">
         <div className="admin-brand">
-          <img src="/favicon.svg" alt="" width={30} height={30} />
+          <span className="admin-brand-mark">
+            <img src="/favicon.svg" alt="" width={26} height={26} />
+          </span>
           <div>
-            <b>Yamuna Organic</b>
+            <b className="gold-text">Yamuna Organic</b>
             <span>Admin Panel</span>
           </div>
         </div>
