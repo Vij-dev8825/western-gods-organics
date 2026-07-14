@@ -25,7 +25,7 @@ export default function AdminLayout() {
     );
   }
   if (!isLoggedIn || user?.role !== 'admin') {
-    return <Navigate to="/login" replace state={{ from: '/admin' }} />;
+    return <Navigate to="/admin/login" replace />;
   }
 
   return (

@@ -1188,6 +1188,52 @@ p { margin: 0 0 1em; }
 
 .admin-link { color: var(--gold-1) !important; font-weight: 600; }
 
+/* ---------- Standalone admin login (no store chrome) ---------- */
+.admin-login-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: radial-gradient(ellipse at top right, rgba(232,184,75,0.1), transparent 55%), var(--forest-deep);
+}
+.admin-login-card {
+  width: 100%;
+  max-width: 420px;
+  background: var(--forest);
+  border: 1px solid rgba(232,184,75,0.18);
+  border-radius: var(--radius-lg);
+  padding: 40px;
+  box-shadow: 0 24px 60px rgba(0,0,0,0.35);
+}
+.admin-login-card .field input {
+  background: var(--paper);
+}
+.admin-login-card .alert-error { background: rgba(203,63,44,0.18); color: #ffd7d0; }
+.admin-login-card .alert-info { background: rgba(232,184,75,0.14); color: var(--gold-3); }
+.admin-login-back {
+  display: block;
+  text-align: center;
+  margin-top: 22px;
+  font-size: 0.82rem;
+  color: rgba(250,246,236,0.6);
+}
+.admin-login-back:hover { color: var(--gold-3); }
+
+/* ---------- Resend OTP ---------- */
+.resend-btn {
+  display: block;
+  width: 100%;
+  text-align: center;
+  margin-top: 14px;
+  font-size: 0.85rem;
+  text-decoration: none;
+}
+.resend-btn:disabled { color: #a09a89; cursor: not-allowed; }
+.resend-btn-dark { color: rgba(250,246,236,0.75); }
+.resend-btn-dark:hover:not(:disabled) { color: var(--gold-3); }
+.resend-btn-dark:disabled { color: rgba(250,246,236,0.35); }
+
 /* ---------- Admin responsive ---------- */
 @media (max-width: 900px) {
   .admin-shell { grid-template-columns: 1fr; }

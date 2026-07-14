@@ -1,4 +1,4 @@
-import { Routes, Route, useLocation } from 'react-router-dom';
+import { Routes, Route, Outlet } from 'react-router-dom';
 import { useLang } from './i18n';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
@@ -19,6 +19,7 @@ import ContactUs from './pages/ContactUs';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import RefundPolicy from './pages/RefundPolicy';
 
+import AdminLogin from './pages/admin/AdminLogin';
 import AdminLayout from './pages/admin/AdminLayout';
 import Dashboard from './pages/admin/Dashboard';
 import AdminProducts from './pages/admin/AdminProducts';
@@ -41,61 +42,70 @@ function NotFound() {
   );
 }
 
-export default function App() {
+// Customer-facing chrome (announcement bar, navbar, footer, chat widget).
+// Kept entirely separate from the admin area, which has its own shell.
+function StoreLayout() {
   const { t } = useLang();
-  const location = useLocation();
-  const isAdminArea = location.pathname.startsWith('/admin');
-
   return (
     <div className="app-shell">
-      {!isAdminArea && <div className="announce-bar">{t('announcement')}</div>}
+      <div className="announce-bar">{t('announcement')}</div>
       <Navbar />
       <main className="app-main">
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/shop" element={<Shop />} />
-          <Route path="/categories" element={<Categories />} />
-          <Route path="/product/:id" element={<ProductDetail />} />
-          <Route path="/cart" element={<Cart />} />
-          <Route path="/wishlist" element={<Wishlist />} />
-          <Route path="/login" element={<Login />} />
-          <Route
-            path="/profile"
-            element={
-              <ProtectedRoute>
-                <Profile />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/notifications"
-            element={
-              <ProtectedRoute>
-                <Notifications />
-              </ProtectedRoute>
-            }
-          />
-          <Route path="/bulk-enquiry" element={<BulkEnquiry />} />
-          <Route path="/contact" element={<ContactUs />} />
-          <Route path="/policy" element={<PrivacyPolicy />} />
-          <Route path="/refund-policy" element={<RefundPolicy />} />
-
-          <Route path="/admin" element={<AdminLayout />}>
-            <Route index element={<Dashboard />} />
-            <Route path="products" element={<AdminProducts />} />
-            <Route path="categories" element={<AdminCategories />} />
-            <Route path="banners" element={<AdminBanners />} />
-            <Route path="orders" element={<AdminOrders />} />
-            <Route path="leads" element={<AdminLeads />} />
-            <Route path="notify" element={<AdminNotify />} />
-            <Route path="chat" element={<AdminChat />} />
-          </Route>
-
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+        <Outlet />
       </main>
       <Footer />
       <ChatWidget />
     </div>
+  );
+}
+
+export default function App() {
+  return (
+    <Routes>
+      {/* Admin area: its own login page and dashboard shell, no store chrome */}
+      <Route path="/admin/login" element={<AdminLogin />} />
+      <Route path="/admin" element={<AdminLayout />}>
+        <Route index element={<Dashboard />} />
+        <Route path="products" element={<AdminProducts />} />
+        <Route path="categories" element={<AdminCategories />} />
+        <Route path="banners" element={<AdminBanners />} />
+        <Route path="orders" element={<AdminOrders />} />
+        <Route path="leads" element={<AdminLeads />} />
+        <Route path="notify" element={<AdminNotify />} />
+        <Route path="chat" element={<AdminChat />} />
+      </Route>
+
+      {/* Customer storefront */}
+      <Route element={<StoreLayout />}>
+        <Route path="/" element={<Home />} />
+        <Route path="/shop" element={<Shop />} />
+        <Route path="/categories" element={<Categories />} />
+        <Route path="/product/:id" element={<ProductDetail />} />
+        <Route path="/cart" element={<Cart />} />
+        <Route path="/wishlist" element={<Wishlist />} />
+        <Route path="/login" element={<Login />} />
+        <Route
+          path="/profile"
+          element={
+            <ProtectedRoute>
+              <Profile />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/notifications"
+          element={
+            <ProtectedRoute>
+              <Notifications />
+            </ProtectedRoute>
+          }
+        />
+        <Route path="/bulk-enquiry" element={<BulkEnquiry />} />
+        <Route path="/contact" element={<ContactUs />} />
+        <Route path="/policy" element={<PrivacyPolicy />} />
+        <Route path="/refund-policy" element={<RefundPolicy />} />
+        <Route path="*" element={<NotFound />} />
+      </Route>
+    </Routes>
   );
 }

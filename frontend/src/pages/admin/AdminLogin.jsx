@@ -1,33 +1,28 @@
 import { useRef, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
-import { api } from '../api';
-import { useAuth } from '../context/AuthContext';
-import { useToast } from '../context/ToastContext';
-import { useResendCooldown } from '../hooks/useResendCooldown';
-import ChakkiWheel from '../components/ChakkiWheel';
+import { Link, Navigate, useNavigate } from 'react-router-dom';
+import { api } from '../../api';
+import { useAuth } from '../../context/AuthContext';
+import { useResendCooldown } from '../../hooks/useResendCooldown';
+import ChakkiWheel from '../../components/ChakkiWheel';
 
-export default function Login() {
+export default function AdminLogin() {
   const [step, setStep] = useState('phone'); // 'phone' | 'otp'
   const [phone, setPhone] = useState('');
   const [otp, setOtp] = useState(['', '', '', '']);
-  const [name, setName] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [devOtp, setDevOtp] = useState('');
   const otpRefs = useRef([]);
   const { secondsLeft, start: startCooldown } = useResendCooldown(30);
 
-  const { login } = useAuth();
-  const { showToast } = useToast();
+  const { login, isLoggedIn, user } = useAuth();
   const navigate = useNavigate();
-  const location = useLocation();
-  const redirectTo = location.state?.from || '/';
 
-  // Deliberately NOT wired to a <form onSubmit> — mobile Chrome ignores
-  // autocomplete="off" on phone fields and can both autofill AND
-  // auto-dispatch a native form "submit" event after doing so, silently
-  // resubmitting a stale number. Requiring an explicit button click (or the
-  // Enter-key handler below) sidesteps that vector entirely.
+  // Already an authenticated admin — skip straight to the dashboard.
+  if (isLoggedIn && user?.role === 'admin') {
+    return <Navigate to="/admin" replace />;
+  }
+
   async function handleSendOtp() {
     if (loading) return;
     setError('');
@@ -41,7 +36,6 @@ export default function Login() {
       setStep('otp');
       setOtp(['', '', '', '']);
       if (data.devOtp) setDevOtp(data.devOtp);
-      showToast('OTP sent to your mobile number.');
       startCooldown();
     } catch (err) {
       setError(err.message);
@@ -60,10 +54,13 @@ export default function Login() {
     }
     setLoading(true);
     try {
-      const data = await api.verifyOtp(phone, code, name);
+      const data = await api.verifyOtp(phone, code);
+      if (data.user.role !== 'admin') {
+        setError('This mobile number is not registered for admin access.');
+        return;
+      }
       login(data.token, data.user);
-      showToast(`Welcome${data.user.name ? `, ${data.user.name}` : ''}!`);
-      navigate(redirectTo, { replace: true });
+      navigate('/admin', { replace: true });
     } catch (err) {
       setError(err.message);
     } finally {
@@ -97,15 +94,18 @@ export default function Login() {
   }
 
   return (
-    <div className="container section">
-      <div className="form-card">
-        <div className="center" style={{ marginBottom: 20 }}>
-          <ChakkiWheel size={50} />
+    <div className="admin-login-page">
+      <div className="admin-login-card">
+        <div className="center" style={{ marginBottom: 18 }}>
+          <ChakkiWheel size={46} />
         </div>
-        <h2 className="center">{step === 'phone' ? 'Log in / Sign up' : 'Verify OTP'}</h2>
-        <p className="muted center" style={{ marginBottom: 26 }}>
+        <span className="eyebrow" style={{ display: 'block', textAlign: 'center' }}>Yamuna Organic</span>
+        <h2 className="center" style={{ color: '#fffdf8' }}>
+          {step === 'phone' ? 'Admin Login' : 'Verify OTP'}
+        </h2>
+        <p className="muted center" style={{ marginBottom: 26, color: 'rgba(250,246,236,0.65)' }}>
           {step === 'phone'
-            ? 'We will send a one-time password to your mobile number.'
+            ? 'Restricted access — sign in with your registered admin number.'
             : `Enter the 4-digit code sent to +91 ${phone}`}
         </p>
 
@@ -117,7 +117,7 @@ export default function Login() {
         {step === 'phone' ? (
           <div>
             <div className="field">
-              <label>Mobile number</label>
+              <label style={{ color: 'rgba(250,246,236,0.85)' }}>Admin mobile number</label>
               <input
                 type="tel"
                 inputMode="numeric"
@@ -127,15 +127,7 @@ export default function Login() {
                 maxLength={10}
                 onChange={(e) => setPhone(e.target.value.replace(/\D/g, ''))}
                 onKeyDown={onEnterKey(handleSendOtp)}
-              />
-            </div>
-            <div className="field">
-              <label>Your name (optional)</label>
-              <input
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                onKeyDown={onEnterKey(handleSendOtp)}
-                placeholder="e.g. Priya Sharma"
+                autoFocus
               />
             </div>
             <button type="button" className="btn btn-gold btn-block" disabled={loading} onClick={handleSendOtp}>
@@ -167,7 +159,7 @@ export default function Login() {
 
             <button
               type="button"
-              className="link-btn resend-btn"
+              className="link-btn resend-btn resend-btn-dark"
               disabled={secondsLeft > 0 || loading}
               onClick={handleSendOtp}
             >
@@ -184,6 +176,8 @@ export default function Login() {
             </button>
           </div>
         )}
+
+        <Link to="/" className="admin-login-back">← Back to store</Link>
       </div>
     </div>
   );
