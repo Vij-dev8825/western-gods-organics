@@ -3,7 +3,6 @@ import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { api } from '../../api';
 import { useAuth } from '../../context/AuthContext';
 import { useResendCooldown } from '../../hooks/useResendCooldown';
-import ChakkiWheel from '../../components/ChakkiWheel';
 
 export default function AdminLogin() {
   const [step, setStep] = useState('phone'); // 'phone' | 'otp'
@@ -97,7 +96,7 @@ export default function AdminLogin() {
     <div className="admin-login-page">
       <div className="admin-login-card">
         <div className="center" style={{ marginBottom: 18 }}>
-          <ChakkiWheel size={46} />
+          <img src="/favicon.svg" alt="Yamuna Organic" width={52} height={52} />
         </div>
         <span className="eyebrow" style={{ display: 'block', textAlign: 'center' }}>Yamuna Organic</span>
         <h2 className="center" style={{ color: '#fffdf8' }}>

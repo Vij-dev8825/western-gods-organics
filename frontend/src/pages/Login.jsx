@@ -4,7 +4,7 @@ import { api } from '../api';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { useResendCooldown } from '../hooks/useResendCooldown';
-import ChakkiWheel from '../components/ChakkiWheel';
+import logo from '../assets/logo.svg';
 
 export default function Login() {
   const [step, setStep] = useState('phone'); // 'phone' | 'otp'
@@ -100,7 +100,7 @@ export default function Login() {
     <div className="container section">
       <div className="form-card">
         <div className="center" style={{ marginBottom: 20 }}>
-          <ChakkiWheel size={50} />
+          <img src={logo} alt="Yamuna Organic" height={48} />
         </div>
         <h2 className="center">{step === 'phone' ? 'Log in / Sign up' : 'Verify OTP'}</h2>
         <p className="muted center" style={{ marginBottom: 26 }}>
