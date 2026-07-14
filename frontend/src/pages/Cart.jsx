@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { api } from '../api';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
@@ -13,6 +13,13 @@ export default function Cart() {
   const { isLoggedIn, token, user } = useAuth();
   const { showToast } = useToast();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // "Buy Now" bypasses the persisted cart entirely — a single item passed via
+  // router state (from Product Detail / product cards), checked out on its
+  // own without touching whatever is already in the customer's real cart.
+  const buyNowItem = location.state?.buyNow || null;
+  const isBuyNow = !!buyNowItem;
 
   const [products, setProducts] = useState([]);
   const [placing, setPlacing] = useState(false);
@@ -27,6 +34,13 @@ export default function Cart() {
   }, []);
 
   const lines = useMemo(() => {
+    if (isBuyNow) {
+      const product = products.find((p) => p.id === buyNowItem.productId);
+      if (!product) return [];
+      const sizeInfo = product.sizes.find((s) => s.label === buyNowItem.size);
+      if (!sizeInfo) return [];
+      return [{ productId: buyNowItem.productId, size: buyNowItem.size, quantity: buyNowItem.quantity, product, sizeInfo }];
+    }
     return items
       .map((item) => {
         const product = products.find((p) => p.id === item.productId);
@@ -35,7 +49,7 @@ export default function Cart() {
         return { ...item, product, sizeInfo };
       })
       .filter(Boolean);
-  }, [items, products]);
+  }, [items, products, isBuyNow, buyNowItem]);
 
   const subtotal = lines.reduce((sum, l) => sum + l.sizeInfo.price * l.quantity, 0);
   const shipping = subtotal > 999 || subtotal === 0 ? 0 : 60;
@@ -58,7 +72,7 @@ export default function Cart() {
         await payWithRazorpay(orderItems);
       } else {
         await api.placeOrder(token, { items: orderItems, address, paymentMethod: 'cod' });
-        clearCart();
+        if (!isBuyNow) clearCart();
         showToast('Order placed! We will call to confirm delivery.');
         navigate('/profile');
       }
@@ -95,7 +109,7 @@ export default function Cart() {
         handler: async (response) => {
           try {
             await api.verifyRazorpayPayment(token, { items: orderItems, address, ...response });
-            clearCart();
+            if (!isBuyNow) clearCart();
             showToast('Payment successful — order placed!');
             navigate('/profile');
             resolve();
@@ -113,7 +127,7 @@ export default function Cart() {
     });
   }
 
-  if (!products.length && items.length) {
+  if (!products.length && (items.length || isBuyNow)) {
     return (
       <div className="center" style={{ padding: '120px 0' }}>
         <ChakkiWheel size={56} />
@@ -121,7 +135,7 @@ export default function Cart() {
     );
   }
 
-  if (!items.length) {
+  if (!isBuyNow && !items.length) {
     return (
       <div className="container">
         <div className="empty-state">
@@ -136,8 +150,8 @@ export default function Cart() {
 
   return (
     <div className="container section">
-      <div className="breadcrumb">Home / Cart</div>
-      <h2>Your Cart</h2>
+      <div className="breadcrumb">Home / {isBuyNow ? 'Buy Now' : 'Cart'}</div>
+      <h2>{isBuyNow ? 'Buy Now' : 'Your Cart'}</h2>
 
       <div className="cart-layout">
         <div>
@@ -147,26 +161,37 @@ export default function Cart() {
               <div className="cart-line-details">
                 <h3 style={{ marginBottom: 4 }}>{l.product.name}</h3>
                 <span className="muted" style={{ fontSize: '0.85rem' }}>Size: {l.size}</span>
-                <div>
-                  <button
-                    className="btn-sm btn-ghost btn"
-                    style={{ marginTop: 8 }}
-                    onClick={() => removeItem(l.productId, l.size)}
-                  >
-                    Remove
-                  </button>
+                {!isBuyNow && (
+                  <div>
+                    <button
+                      className="btn-sm btn-ghost btn"
+                      style={{ marginTop: 8 }}
+                      onClick={() => removeItem(l.productId, l.size)}
+                    >
+                      Remove
+                    </button>
+                  </div>
+                )}
+              </div>
+              {isBuyNow ? (
+                <span className="muted" style={{ fontFamily: 'var(--font-mono)' }}>Qty: {l.quantity}</span>
+              ) : (
+                <div className="qty-stepper">
+                  <button onClick={() => updateQuantity(l.productId, l.size, l.quantity - 1)}>−</button>
+                  <span>{l.quantity}</span>
+                  <button onClick={() => updateQuantity(l.productId, l.size, l.quantity + 1)}>+</button>
                 </div>
-              </div>
-              <div className="qty-stepper">
-                <button onClick={() => updateQuantity(l.productId, l.size, l.quantity - 1)}>−</button>
-                <span>{l.quantity}</span>
-                <button onClick={() => updateQuantity(l.productId, l.size, l.quantity + 1)}>+</button>
-              </div>
+              )}
               <div className="price" style={{ fontFamily: 'var(--font-mono)' }}>
                 ₹{l.sizeInfo.price * l.quantity}
               </div>
             </div>
           ))}
+          {isBuyNow && (
+            <Link to="/cart" className="link-btn" style={{ marginTop: 12, display: 'inline-block' }}>
+              ← Go to your full cart instead
+            </Link>
+          )}
         </div>
 
         <div className="summary-card">
@@ -183,7 +208,7 @@ export default function Cart() {
               style={{ marginTop: 18 }}
               onClick={() => {
                 if (!isLoggedIn) {
-                  navigate('/login', { state: { from: '/cart' } });
+                  navigate('/login', { state: { from: '/cart', buyNow: buyNowItem || undefined } });
                   return;
                 }
                 setShowAddressForm(true);

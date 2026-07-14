@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { getProductImage } from '../utils/productImages';
 import { useWishlist } from '../context/WishlistContext';
 import { useCart } from '../context/CartContext';
@@ -10,6 +10,7 @@ export default function ProductCard({ product }) {
   const { productIds, toggleWishlist } = useWishlist();
   const { addItem } = useCart();
   const { showToast } = useToast();
+  const navigate = useNavigate();
   const [size, setSize] = useState(product.sizes[1]?.label || product.sizes[0].label);
 
   const isWished = productIds.includes(product.id);
@@ -20,6 +21,11 @@ export default function ProductCard({ product }) {
     e.preventDefault();
     addItem(product.id, size, 1);
     showToast(`${product.name} (${size}) added to cart`);
+  }
+
+  function handleBuyNow(e) {
+    e.preventDefault();
+    navigate('/cart', { state: { buyNow: { productId: product.id, size, quantity: 1 } } });
   }
 
   function handleWishlist(e) {
@@ -69,7 +75,10 @@ export default function ProductCard({ product }) {
         </div>
 
         <div className="product-actions">
-          <button className="btn btn-gold btn-sm btn-block" onClick={handleAdd}>
+          <button className="btn btn-forest btn-sm" onClick={handleBuyNow}>
+            Buy Now
+          </button>
+          <button className="btn btn-gold btn-sm" onClick={handleAdd}>
             Add to cart
           </button>
         </div>

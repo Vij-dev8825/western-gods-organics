@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { api } from '../api';
 import { getProductImage } from '../utils/productImages';
 import { useCart } from '../context/CartContext';
@@ -10,6 +10,7 @@ import { IconHeart } from '../components/Icons';
 
 export default function ProductDetail() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const [product, setProduct] = useState(null);
   const [size, setSize] = useState(null);
   const [qty, setQty] = useState(1);
@@ -41,6 +42,10 @@ export default function ProductDetail() {
   function handleAdd() {
     addItem(product.id, size, qty);
     showToast(`${product.name} (${size}) ×${qty} added to cart`);
+  }
+
+  function handleBuyNow() {
+    navigate('/cart', { state: { buyNow: { productId: product.id, size, quantity: qty } } });
   }
 
   function handleWishlist() {
@@ -95,6 +100,7 @@ export default function ProductDetail() {
               <span>{qty}</span>
               <button onClick={() => setQty((q) => q + 1)} aria-label="Increase quantity">+</button>
             </div>
+            <button className="btn btn-forest" onClick={handleBuyNow}>Buy Now</button>
             <button className="btn btn-gold" onClick={handleAdd}>Add to cart</button>
             <button
               className={`btn btn-outline wishlist-btn-detail ${isWished ? 'active' : ''}`}

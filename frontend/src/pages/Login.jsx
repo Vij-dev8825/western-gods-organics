@@ -22,6 +22,7 @@ export default function Login() {
   const navigate = useNavigate();
   const location = useLocation();
   const redirectTo = location.state?.from || '/';
+  const redirectState = location.state?.buyNow ? { buyNow: location.state.buyNow } : undefined;
 
   // Deliberately NOT wired to a <form onSubmit> — mobile Chrome ignores
   // autocomplete="off" on phone fields and can both autofill AND
@@ -63,7 +64,7 @@ export default function Login() {
       const data = await api.verifyOtp(phone, code, name);
       login(data.token, data.user);
       showToast(`Welcome${data.user.name ? `, ${data.user.name}` : ''}!`);
-      navigate(redirectTo, { replace: true });
+      navigate(redirectTo, { replace: true, state: redirectState });
     } catch (err) {
       setError(err.message);
     } finally {
