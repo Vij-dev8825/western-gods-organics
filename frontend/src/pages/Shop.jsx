@@ -11,10 +11,12 @@ export default function Shop() {
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
   const category = searchParams.get('category') || 'all';
   const sort = searchParams.get('sort') || '';
   const search = searchParams.get('search') || '';
+  const activeFilterCount = (category !== 'all' ? 1 : 0) + (sort ? 1 : 0);
 
   useEffect(() => {
     api.getCategories().then((d) => setCategories(d.categories));
@@ -50,8 +52,7 @@ export default function Shop() {
           <h2>{heading}</h2>
         </div>
         <input
-          className="select"
-          style={{ minWidth: 220 }}
+          className="select shop-search"
           placeholder={t('searchPlaceholder')}
           defaultValue={search}
           onKeyDown={(e) => {
@@ -60,8 +61,19 @@ export default function Shop() {
         />
       </div>
 
+      <button
+        type="button"
+        className={`filter-toggle ${filtersOpen ? 'open' : ''}`}
+        onClick={() => setFiltersOpen((o) => !o)}
+      >
+        <span>
+          Filters{activeFilterCount > 0 && <span className="filter-toggle-count">{activeFilterCount}</span>}
+        </span>
+        <span className="filter-toggle-chevron">▾</span>
+      </button>
+
       <div className="shop-layout">
-        <aside className="filter-panel">
+        <aside className={`filter-panel ${filtersOpen ? 'open' : ''}`}>
           <h4>{t('categoryFilter')}</h4>
           <div className="filter-group">
             <label className="filter-option">
@@ -71,6 +83,7 @@ export default function Shop() {
                 checked={category === 'all'}
                 onChange={() => updateParam('category', '')}
               />
+              <span className="filter-radio" aria-hidden="true" />
               {t('allProducts')}
             </label>
             {categories.map((c) => (
@@ -81,6 +94,7 @@ export default function Shop() {
                   checked={category === c.slug}
                   onChange={() => updateParam('category', c.slug)}
                 />
+                <span className="filter-radio" aria-hidden="true" />
                 {c.label}
               </label>
             ))}
@@ -101,10 +115,15 @@ export default function Shop() {
                   checked={sort === value}
                   onChange={() => updateParam('sort', value)}
                 />
+                <span className="filter-radio" aria-hidden="true" />
                 {label}
               </label>
             ))}
           </div>
+
+          <button type="button" className="btn btn-gold btn-sm btn-block filter-apply" onClick={() => setFiltersOpen(false)}>
+            Show {products.length} {t('productsCount')}
+          </button>
         </aside>
 
         <div>
