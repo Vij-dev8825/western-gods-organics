@@ -1244,4 +1244,26 @@ p { margin: 0 0 1em; }
   .product-actions-row { gap: 10px !important; }
   .product-actions-row .btn { flex: 1 1 auto; justify-content: center; }
   .product-actions-row .qty-stepper { flex: 0 0 auto; }
+
+  /* Two-up product grid, compacted to fit ~155px cards */
+  .grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  .product-card h3 { font-size: 0.88rem; line-height: 1.25; }
+  .product-body { padding: 10px 10px 12px; gap: 5px; }
+  .product-desc {
+    font-size: 0.72rem;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .rating-row { font-size: 0.7rem; gap: 4px; }
+  .product-card .select { padding: 6px 8px; font-size: 0.74rem; }
+  .price-row { gap: 5px; flex-wrap: wrap; }
+  .price-row .price { font-size: 0.92rem; }
+  .price-row .mrp { font-size: 0.7rem; }
+  .price-row .off { font-size: 0.65rem; }
+  .product-actions { margin-top: 2px; }
+  .product-actions .btn { font-size: 0.72rem; padding: 8px 6px; }
+  .product-badge { font-size: 0.56rem; padding: 3px 7px; top: 8px; left: 8px; }
+  .wishlist-toggle { width: 28px; height: 28px; top: 8px; right: 8px; }
 }
