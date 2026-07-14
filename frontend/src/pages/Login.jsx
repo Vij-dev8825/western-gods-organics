@@ -103,6 +103,7 @@ export default function Login() {
               <input
                 type="tel"
                 inputMode="numeric"
+                autoComplete="off"
                 placeholder="98765 43210"
                 value={phone}
                 maxLength={10}
@@ -129,6 +130,7 @@ export default function Login() {
                     value={digit}
                     maxLength={1}
                     inputMode="numeric"
+                    autoComplete="off"
                     onChange={(e) => handleOtpChange(i, e.target.value)}
                     autoFocus={i === 0}
                   />
