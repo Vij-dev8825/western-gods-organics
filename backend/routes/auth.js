@@ -45,8 +45,11 @@ router.post('/send-otp', async (req, res, next) => {
 
     const response = { success: true, message: 'OTP sent to your mobile number.' };
 
-    // Dev convenience only: echo the OTP back so the flow can be tested without an SMS gateway.
-    if (process.env.NODE_ENV !== 'production') {
+    // Echo the OTP back so the flow can be tested without a working SMS gateway.
+    // Always on outside production; in production it requires an explicit opt-in
+    // (SHOW_OTP_ONSCREEN=true) since it would otherwise expose real login codes
+    // in the API response — turn it off again once real SMS delivery works.
+    if (process.env.NODE_ENV !== 'production' || process.env.SHOW_OTP_ONSCREEN === 'true') {
       response.devOtp = otp;
     }
 
