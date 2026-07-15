@@ -1,6 +1,8 @@
+import { useState } from 'react';
 import { NavLink, Outlet, Navigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import ChakkiWheel from '../../components/ChakkiWheel';
+import { IconMenu } from '../../components/Icons';
 
 const links = [
   { to: '/admin', label: 'Dashboard', end: true },
@@ -15,6 +17,7 @@ const links = [
 
 export default function AdminLayout() {
   const { user, loading, isLoggedIn } = useAuth();
+  const [menuOpen, setMenuOpen] = useState(false);
 
   if (loading) {
     return (
@@ -39,15 +42,31 @@ export default function AdminLayout() {
             <b className="gold-text">Yamuna Organic</b>
             <span>Admin Panel</span>
           </div>
+          <button
+            type="button"
+            className="admin-menu-toggle"
+            aria-label="Toggle admin menu"
+            onClick={() => setMenuOpen((o) => !o)}
+          >
+            <IconMenu size={22} />
+          </button>
         </div>
-        <nav>
+        <nav className={menuOpen ? 'open' : ''}>
           {links.map((l) => (
-            <NavLink key={l.to} to={l.to} end={l.end} className={({ isActive }) => (isActive ? 'active' : '')}>
+            <NavLink
+              key={l.to}
+              to={l.to}
+              end={l.end}
+              className={({ isActive }) => (isActive ? 'active' : '')}
+              onClick={() => setMenuOpen(false)}
+            >
               {l.label}
             </NavLink>
           ))}
+          <NavLink to="/" className="admin-back" onClick={() => setMenuOpen(false)}>
+            ← Back to store
+          </NavLink>
         </nav>
-        <NavLink to="/" className="admin-back">← Back to store</NavLink>
       </aside>
       <main className="admin-content">
         <Outlet />
