@@ -27,6 +27,7 @@ export default function Cart() {
   const [address, setAddress] = useState({ line1: '', city: '', state: '', pincode: '', phone: '' });
   const [paymentMethod, setPaymentMethod] = useState('cod'); // 'cod' | 'razorpay'
   const [razorpayEnabled, setRazorpayEnabled] = useState(false);
+  const [buyNowQty, setBuyNowQty] = useState(buyNowItem?.quantity || 1);
 
   useEffect(() => {
     api.getProducts().then((d) => setProducts(d.products));
@@ -39,7 +40,7 @@ export default function Cart() {
       if (!product) return [];
       const sizeInfo = product.sizes.find((s) => s.label === buyNowItem.size);
       if (!sizeInfo) return [];
-      return [{ productId: buyNowItem.productId, size: buyNowItem.size, quantity: buyNowItem.quantity, product, sizeInfo }];
+      return [{ productId: buyNowItem.productId, size: buyNowItem.size, quantity: buyNowQty, product, sizeInfo }];
     }
     return items
       .map((item) => {
@@ -49,7 +50,7 @@ export default function Cart() {
         return { ...item, product, sizeInfo };
       })
       .filter(Boolean);
-  }, [items, products, isBuyNow, buyNowItem]);
+  }, [items, products, isBuyNow, buyNowItem, buyNowQty]);
 
   const subtotal = lines.reduce((sum, l) => sum + l.sizeInfo.price * l.quantity, 0);
   const shipping = subtotal > 999 || subtotal === 0 ? 0 : 60;
@@ -172,12 +173,16 @@ export default function Cart() {
                 )}
               </div>
               {isBuyNow ? (
-                <span className="muted" style={{ fontFamily: 'var(--font-mono)' }}>Qty: {l.quantity}</span>
+                <div className="qty-stepper">
+                  <button onClick={() => setBuyNowQty((q) => Math.max(1, q - 1))} aria-label="Decrease quantity">−</button>
+                  <span>{l.quantity}</span>
+                  <button onClick={() => setBuyNowQty((q) => q + 1)} aria-label="Increase quantity">+</button>
+                </div>
               ) : (
                 <div className="qty-stepper">
-                  <button onClick={() => updateQuantity(l.productId, l.size, l.quantity - 1)}>−</button>
+                  <button onClick={() => updateQuantity(l.productId, l.size, l.quantity - 1)} aria-label="Decrease quantity">−</button>
                   <span>{l.quantity}</span>
-                  <button onClick={() => updateQuantity(l.productId, l.size, l.quantity + 1)}>+</button>
+                  <button onClick={() => updateQuantity(l.productId, l.size, l.quantity + 1)} aria-label="Increase quantity">+</button>
                 </div>
               )}
               <div className="price" style={{ fontFamily: 'var(--font-mono)' }}>
@@ -286,11 +291,7 @@ export default function Cart() {
                   <b>₹{total}</b>
                 </div>
                 <button className="btn btn-gold btn-block" style={{ marginTop: 18 }} disabled={placing}>
-                  {placing
-                    ? 'Processing…'
-                    : paymentMethod === 'razorpay'
-                      ? `Pay ₹${total} securely`
-                      : `Place order · Cash on Delivery · ₹${total}`}
+                  {placing ? 'Processing…' : paymentMethod === 'razorpay' ? 'Pay securely' : 'Place order'}
                 </button>
               </div>
             </form>

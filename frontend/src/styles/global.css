@@ -1010,8 +1010,10 @@ input:focus-visible + .filter-radio { outline: 2px solid var(--gold-2); outline-
   .section-head { align-items: stretch; }
   .section-head input.shop-search { min-width: 0; }
 
-  /* Cart/checkout: pin price + primary action to the bottom of the screen */
-  .cart-layout { padding-bottom: 78px; }
+  /* Cart/checkout: pin price + primary action to the bottom of the screen.
+     Bottom padding is generously larger than the bar's own height so the
+     last field/row always clears it, even with safe-area insets on iOS. */
+  .cart-layout { padding-bottom: 112px; }
   .cart-cta-bar {
     position: fixed;
     left: 0; right: 0; bottom: 0;
@@ -1020,13 +1022,21 @@ input:focus-visible + .filter-radio { outline: 2px solid var(--gold-2); outline-
     align-items: center;
     gap: 14px;
     background: var(--paper);
-    padding: 12px 16px;
+    border-top: 1px solid rgba(31,61,43,0.1);
+    padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0px));
     box-shadow: 0 -6px 24px rgba(31,61,43,0.15);
     border-radius: 16px 16px 0 0;
   }
   .cart-cta-total { display: flex; flex-direction: column; line-height: 1.15; flex-shrink: 0; }
   .cart-cta-total b { font-family: var(--font-mono); font-size: 1.05rem; color: var(--forest-deep); }
-  .cart-cta-bar .btn { margin-top: 0 !important; width: auto; flex: 1 1 auto; white-space: normal; text-align: center; }
+  .cart-cta-bar .btn {
+    margin-top: 0 !important;
+    width: auto;
+    flex: 1 1 auto;
+    white-space: normal;
+    text-align: center;
+    min-height: 46px;
+  }
 }
 
 @media (max-width: 640px) {
@@ -1709,4 +1719,16 @@ input:focus-visible + .filter-radio { outline: 2px solid var(--gold-2); outline-
   .product-actions .btn { font-size: 0.72rem; padding: 8px 6px; }
   .product-badge { font-size: 0.56rem; padding: 3px 7px; top: 8px; left: 8px; }
   .wishlist-toggle { width: 28px; height: 28px; top: 8px; right: 8px; }
+
+  /* Checkout + orders: tighter padding, roomier tap targets */
+  .summary-card { padding: 18px; }
+  .payment-option { padding: 12px; }
+  .checkout-step { margin-bottom: 10px; }
+  .field { margin-bottom: 14px; }
+
+  .order-card { padding: 16px; }
+  .order-card-head { gap: 10px; }
+  .order-item-thumb, .order-item-more { width: 44px; height: 44px; }
+  .order-card-actions .btn { flex: 1 1 auto; }
+  .profile-orders-link { padding: 14px 16px; }
 }
