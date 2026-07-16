@@ -4,6 +4,7 @@ import { useToast } from '../context/ToastContext';
 import { api } from '../api';
 import { useNavigate, Link } from 'react-router-dom';
 import { IconBox } from '../components/Icons';
+import { isValidEmail } from '../utils/validators';
 import ChakkiWheel from '../components/ChakkiWheel';
 
 export default function Profile() {
@@ -13,6 +14,7 @@ export default function Profile() {
 
   const [name, setName] = useState(user?.name || '');
   const [email, setEmail] = useState(user?.email || '');
+  const [errors, setErrors] = useState({});
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -24,6 +26,12 @@ export default function Profile() {
 
   async function handleSave(e) {
     e.preventDefault();
+    const fieldErrors = {};
+    if (!name || name.trim().length < 2) fieldErrors.name = 'Enter your name.';
+    if (email && !isValidEmail(email)) fieldErrors.email = 'Enter a valid email address, or leave it blank.';
+    setErrors(fieldErrors);
+    if (Object.keys(fieldErrors).length) return;
+
     setSaving(true);
     try {
       const data = await api.updateProfile(token, { name, email });
@@ -71,7 +79,7 @@ export default function Profile() {
         <span className="profile-orders-link-arrow">→</span>
       </Link>
 
-      <form className="form-card" style={{ margin: 0 }} onSubmit={handleSave}>
+      <form className="form-card" style={{ margin: 0 }} onSubmit={handleSave} noValidate>
         <div className="field">
           <label>Mobile number</label>
           <input value={user.phone} disabled />
@@ -79,10 +87,12 @@ export default function Profile() {
         <div className="field">
           <label>Full name</label>
           <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Your name" />
+          {errors.name && <div className="field-error">{errors.name}</div>}
         </div>
         <div className="field">
           <label>Email (optional)</label>
           <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" />
+          {errors.email && <div className="field-error">{errors.email}</div>}
         </div>
         <button className="btn btn-gold btn-block" disabled={saving}>
           {saving ? 'Saving…' : 'Save changes'}

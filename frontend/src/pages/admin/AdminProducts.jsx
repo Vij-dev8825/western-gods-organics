@@ -73,8 +73,24 @@ export default function AdminProducts() {
     });
   }
 
+  function validate(f) {
+    if (!f.sizes.length) return 'Add at least one size.';
+    for (const s of f.sizes) {
+      if (!s.label.trim()) return 'Every size needs a label.';
+      if (!s.price || Number(s.price) <= 0) return `"${s.label}" needs a price greater than ₹0.`;
+      if (s.mrp && Number(s.mrp) < Number(s.price)) return `"${s.label}"'s MRP can't be less than its price.`;
+      if (s.stock && Number(s.stock) < 0) return `"${s.label}"'s stock can't be negative.`;
+    }
+    return null;
+  }
+
   async function save(e) {
     e.preventDefault();
+    const error = validate(form);
+    if (error) {
+      setMessage({ type: 'error', text: error });
+      return;
+    }
     setBusy(true);
     setMessage(null);
     try {

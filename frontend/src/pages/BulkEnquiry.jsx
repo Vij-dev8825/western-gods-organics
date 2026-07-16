@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { api } from '../api';
 import { useAuth } from '../context/AuthContext';
+import { isValidEmail, isValidPhone } from '../utils/validators';
 import ChakkiWheel from '../components/ChakkiWheel';
 
 const initial = {
@@ -8,8 +9,18 @@ const initial = {
   productCategory: 'castor-oil', quantity: '', unit: 'Litres', message: '',
 };
 
+function validate(form) {
+  const errors = {};
+  if (!form.name || form.name.trim().length < 2) errors.name = 'Enter your name.';
+  if (!isValidPhone(form.phone)) errors.phone = 'Enter a valid 10-digit mobile number.';
+  if (form.email && !isValidEmail(form.email)) errors.email = 'Enter a valid email address, or leave it blank.';
+  if (!form.quantity || Number(form.quantity) < 1) errors.quantity = 'Enter a quantity of at least 1.';
+  return errors;
+}
+
 export default function BulkEnquiry() {
   const [form, setForm] = useState(initial);
+  const [errors, setErrors] = useState({});
   const [status, setStatus] = useState(null); // null | 'sent' | 'error'
   const [loading, setLoading] = useState(false);
   const { token } = useAuth();
@@ -20,12 +31,16 @@ export default function BulkEnquiry() {
 
   async function handleSubmit(e) {
     e.preventDefault();
+    const fieldErrors = validate(form);
+    setErrors(fieldErrors);
+    if (Object.keys(fieldErrors).length) return;
     setLoading(true);
     setStatus(null);
     try {
       await api.submitBulkEnquiry(form, token);
       setStatus('sent');
       setForm(initial);
+      setErrors({});
     } catch (err) {
       setStatus(err.message || 'error');
     } finally {
@@ -56,7 +71,7 @@ export default function BulkEnquiry() {
           </div>
         </div>
 
-        <form className="form-card" style={{ margin: 0 }} onSubmit={handleSubmit}>
+        <form className="form-card" style={{ margin: 0 }} onSubmit={handleSubmit} noValidate>
           {status === 'sent' && (
             <div className="alert alert-success">Thanks! Our bulk sales team will contact you within 24 hours.</div>
           )}
@@ -65,6 +80,7 @@ export default function BulkEnquiry() {
           <div className="field">
             <label>Full name *</label>
             <input required value={form.name} onChange={(e) => update('name', e.target.value)} />
+            {errors.name && <div className="field-error">{errors.name}</div>}
           </div>
           <div className="field">
             <label>Company / Store name</label>
@@ -72,11 +88,20 @@ export default function BulkEnquiry() {
           </div>
           <div className="field">
             <label>Mobile number *</label>
-            <input required value={form.phone} onChange={(e) => update('phone', e.target.value)} />
+            <input
+              required
+              type="tel"
+              inputMode="numeric"
+              maxLength={10}
+              value={form.phone}
+              onChange={(e) => update('phone', e.target.value.replace(/\D/g, ''))}
+            />
+            {errors.phone && <div className="field-error">{errors.phone}</div>}
           </div>
           <div className="field">
             <label>Email</label>
             <input type="email" value={form.email} onChange={(e) => update('email', e.target.value)} />
+            {errors.email && <div className="field-error">{errors.email}</div>}
           </div>
           <div className="field">
             <label>City</label>
@@ -96,6 +121,7 @@ export default function BulkEnquiry() {
             <div className="field" style={{ flex: 2 }}>
               <label>Quantity *</label>
               <input required type="number" min="1" value={form.quantity} onChange={(e) => update('quantity', e.target.value)} />
+              {errors.quantity && <div className="field-error">{errors.quantity}</div>}
             </div>
             <div className="field" style={{ flex: 1 }}>
               <label>Unit</label>

@@ -6,6 +6,7 @@ import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { getProductImage } from '../utils/productImages';
 import { loadRazorpay } from '../utils/loadRazorpay';
+import { validateAddress } from '../utils/validators';
 import ChakkiWheel from '../components/ChakkiWheel';
 
 export default function Cart() {
@@ -25,6 +26,7 @@ export default function Cart() {
   const [placing, setPlacing] = useState(false);
   const [showAddressForm, setShowAddressForm] = useState(false);
   const [address, setAddress] = useState({ line1: '', city: '', state: '', pincode: '', phone: '' });
+  const [addressErrors, setAddressErrors] = useState({});
   const [paymentMethod, setPaymentMethod] = useState('cod'); // 'cod' | 'razorpay'
   const [razorpayEnabled, setRazorpayEnabled] = useState(false);
   const [buyNowQty, setBuyNowQty] = useState(buyNowItem?.quantity || 1);
@@ -62,14 +64,17 @@ export default function Cart() {
   const shipping = subtotal > 999 || subtotal === 0 ? 0 : 60;
   const total = subtotal + shipping;
 
-  function validAddress() {
-    return address.line1 && address.city && address.state && address.pincode && address.phone;
+  function updateAddress(field, value) {
+    setAddress((a) => ({ ...a, [field]: value }));
+    setAddressErrors((errs) => (errs[field] ? { ...errs, [field]: undefined } : errs));
   }
 
   async function handlePlaceOrder(e) {
     e.preventDefault();
-    if (!validAddress()) {
-      showToast('Please fill in your complete delivery address.', 'error');
+    const errors = validateAddress(address);
+    setAddressErrors(errors);
+    if (Object.keys(errors).length) {
+      showToast('Please fix the highlighted fields in your delivery address.', 'error');
       return;
     }
     setPlacing(true);
@@ -234,7 +239,7 @@ export default function Cart() {
               </button>
             </div>
           ) : (
-            <form onSubmit={handlePlaceOrder} style={{ marginTop: 18 }}>
+            <form onSubmit={handlePlaceOrder} style={{ marginTop: 18 }} noValidate>
               <div className="checkout-step">
                 <span className="checkout-step-num">1</span>
                 <h4>Delivery Address</h4>
@@ -246,23 +251,53 @@ export default function Cart() {
               )}
               <div className="field">
                 <label>Address line</label>
-                <input required value={address.line1} onChange={(e) => setAddress({ ...address, line1: e.target.value })} />
+                <input
+                  required
+                  value={address.line1}
+                  onChange={(e) => updateAddress('line1', e.target.value)}
+                />
+                {addressErrors.line1 && <div className="field-error">{addressErrors.line1}</div>}
               </div>
               <div className="field">
                 <label>City</label>
-                <input required value={address.city} onChange={(e) => setAddress({ ...address, city: e.target.value })} />
+                <input
+                  required
+                  value={address.city}
+                  onChange={(e) => updateAddress('city', e.target.value)}
+                />
+                {addressErrors.city && <div className="field-error">{addressErrors.city}</div>}
               </div>
               <div className="field">
                 <label>State</label>
-                <input required value={address.state} onChange={(e) => setAddress({ ...address, state: e.target.value })} />
+                <input
+                  required
+                  value={address.state}
+                  onChange={(e) => updateAddress('state', e.target.value)}
+                />
+                {addressErrors.state && <div className="field-error">{addressErrors.state}</div>}
               </div>
               <div className="field">
                 <label>Pincode</label>
-                <input required value={address.pincode} onChange={(e) => setAddress({ ...address, pincode: e.target.value })} />
+                <input
+                  required
+                  inputMode="numeric"
+                  maxLength={6}
+                  value={address.pincode}
+                  onChange={(e) => updateAddress('pincode', e.target.value.replace(/\D/g, ''))}
+                />
+                {addressErrors.pincode && <div className="field-error">{addressErrors.pincode}</div>}
               </div>
               <div className="field">
                 <label>Phone</label>
-                <input required value={address.phone} onChange={(e) => setAddress({ ...address, phone: e.target.value })} />
+                <input
+                  required
+                  type="tel"
+                  inputMode="numeric"
+                  maxLength={10}
+                  value={address.phone}
+                  onChange={(e) => updateAddress('phone', e.target.value.replace(/\D/g, ''))}
+                />
+                {addressErrors.phone && <div className="field-error">{addressErrors.phone}</div>}
               </div>
 
               <div className="checkout-step" style={{ marginTop: 22 }}>
