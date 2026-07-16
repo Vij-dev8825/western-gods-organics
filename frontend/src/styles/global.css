@@ -1895,6 +1895,7 @@ input:focus-visible + .filter-radio { outline: 2px solid var(--gold-2); outline-
   .wishlist-toggle { width: 28px; height: 28px; top: 8px; right: 8px; }
 
   /* Checkout + orders: tighter padding, roomier tap targets */
+  .form-card { padding: 24px; }
   .summary-card { padding: 18px; }
   .payment-option { padding: 12px; }
   .checkout-step { margin-bottom: 10px; }
