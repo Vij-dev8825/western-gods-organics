@@ -1116,9 +1116,33 @@ input:focus-visible + .filter-radio { outline: 2px solid var(--gold-2); outline-
   .summary-card { position: static; }
   .footer-grid { grid-template-columns: 1fr 1fr; }
 
-  /* Header search drops to its own full-width row below logo/icons */
-  .navbar-inner { flex-wrap: wrap; }
-  .navbar-search { order: 5; flex-basis: 100%; max-width: none; margin-top: 2px; }
+  /* Header: logo + icons on row 1, search spans its own row 2 below.
+     Grid (not flex-wrap) so logo+icons never fight search for space or
+     wrap unpredictably regardless of icon count (logged in vs guest). */
+  .navbar-inner {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    grid-template-areas: "logo . icons" "search search search";
+    row-gap: 10px;
+  }
+  .navbar-inner > a { grid-area: logo; order: initial; }
+  .navbar-search { grid-area: search; order: initial; flex-basis: auto; max-width: none; }
+  .nav-icons { grid-area: icons; order: initial; }
+  .nav-links {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: var(--paper);
+    flex-direction: column;
+    padding: 20px 24px;
+    gap: 16px;
+    box-shadow: var(--shadow-card);
+    transform: translateY(-150%);
+    transition: transform 0.25s ease;
+  }
+  .nav-links.open { transform: translateY(0); }
+  .mobile-toggle { display: flex; }
 
   /* Shop filters collapse into a toggleable drawer */
   .filter-toggle { display: flex; }
@@ -1160,9 +1184,6 @@ input:focus-visible + .filter-radio { outline: 2px solid var(--gold-2); outline-
 }
 
 @media (max-width: 640px) {
-  .nav-links { position: absolute; top: 100%; left: 0; right: 0; background: var(--paper); flex-direction: column; padding: 20px 24px; gap: 16px; box-shadow: var(--shadow-card); transform: translateY(-150%); transition: transform 0.25s ease; }
-  .nav-links.open { transform: translateY(0); }
-  .mobile-toggle { display: flex; }
   .footer-grid { grid-template-columns: 1fr; }
 }
 
@@ -1811,10 +1832,11 @@ input:focus-visible + .filter-radio { outline: 2px solid var(--gold-2); outline-
 /* ---------- Mobile polish (phones) ---------- */
 @media (max-width: 640px) {
   .navbar-inner { padding: 10px 16px; gap: 10px; }
-  .navbar-inner > a img { height: 38px; }
-  .nav-icons { gap: 2px; }
-  .icon-btn, .mobile-toggle { width: 36px; height: 36px; }
-  .lang-select { font-size: 0.72rem; padding: 5px 7px; max-width: 88px; }
+  .navbar-inner > a { width: 100px; }
+  .navbar-inner > a img { height: 27px; width: auto; }
+  .nav-icons { gap: 1px; }
+  .icon-btn, .mobile-toggle { width: 32px; height: 32px; }
+  .lang-select { font-size: 0.68rem; padding: 5px 4px; max-width: 40px; }
 
   .announce-bar { font-size: 0.7rem; padding: 7px 12px; }
 
