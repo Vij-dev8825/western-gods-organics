@@ -36,8 +36,8 @@ Full-stack e-commerce site: React (Vite) frontend + Node/Express backend, ready 
 **Backend**
 - Dual data layer (`backend/data/db.js`): **Neon Postgres** when `DATABASE_URL` is set,
   JSON files otherwise (zero-setup local dev). Tables are auto-created and seeded on boot.
-- Email via SMTP (nodemailer) and SMS via MSG91/Twilio — both **log to the console until
-  credentials are added**, so every flow is testable locally.
+- Email via SMTP (nodemailer, e.g. free Gmail SMTP) and SMS via Fast2SMS/MSG91/Twilio —
+  all **log to the console until credentials are added**, so every flow is testable locally.
 - Uploaded banner videos served from `/uploads` (configurable via `UPLOADS_DIR`).
 
 ## Run it locally
@@ -82,7 +82,9 @@ Notes:
   so admin-uploaded banners survive deploys. On the **free** plan remove the `disk:` block
   (and the `UPLOADS_DIR` var) — the two seeded videos still work (they ship with the repo),
   but new uploads are lost on redeploy.
-- For production email/SMS set the `SMTP_*` and `MSG91_*`/`TWILIO_*` vars (see `.env.example`).
+- For production email/SMS set the `SMTP_*` and `FAST2SMS_API_KEY`/`MSG91_*`/`TWILIO_*` vars
+  (see `.env.example`). Fast2SMS (https://www.fast2sms.com) and Gmail SMTP are both free to
+  start with — no paid plan or DLT registration needed to get OTP login and email working.
 - OTPs are returned in the API response only when `NODE_ENV !== 'production'`, or
   always if `SHOW_OTP_ONSCREEN=true` (useful before SMS delivery is set up).
 - For online payments, set `RAZORPAY_KEY_ID` / `RAZORPAY_KEY_SECRET` (from

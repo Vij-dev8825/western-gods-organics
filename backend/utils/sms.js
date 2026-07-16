@@ -1,22 +1,51 @@
 /**
- * Two SMS paths, since MSG91 treats OTPs and general text as different APIs:
+ * SMS provider chain, checked in order for each call:
  *
  *  - sendOtpSms(phone, otp) — for login OTPs specifically.
- *    Uses MSG91's dedicated OTP API when MSG91_AUTH_KEY is set (matches an
- *    OTP-category template using the "##OTP##" placeholder, created via
- *    MSG91 dashboard → OTP → SendOTP → Templates). Falls back to Twilio,
- *    then to a console log in dev mode.
+ *    1. Fast2SMS OTP route (FAST2SMS_API_KEY) — free-credit Indian provider,
+ *       no DLT template needed for their built-in numeric-OTP route.
+ *    2. MSG91's dedicated OTP API (MSG91_AUTH_KEY) — matches an OTP-category
+ *       template using the "##OTP##" placeholder, created via MSG91
+ *       dashboard → OTP → SendOTP → Templates.
+ *    3. Twilio.
+ *    4. Console log (dev).
  *
  *  - sendSms(phone, message) — for free-form text (admin broadcast
- *    notifications). MSG91's OTP API can't send arbitrary text, so this
- *    only actually delivers via Twilio; with MSG91-only config it logs to
- *    the console. A separate MSG91 Flow API + promotional DLT template
- *    would be needed to support this over MSG91, which is out of scope
- *    for now (see routes/auth.js for the OTP path, which is the one in use).
+ *    notifications).
+ *    1. Fast2SMS Quick SMS route (best-effort — Indian carriers increasingly
+ *       require DLT-registered templates for non-OTP text, so this may be
+ *       rejected without one).
+ *    2. Twilio (sends free-form text with no template).
+ *    3. Console log (dev). MSG91's OTP API can't send arbitrary text, so
+ *       MSG91-only config logs to the console here.
  */
+
+async function fast2SmsRequest(params) {
+  const query = new URLSearchParams({
+    authorization: process.env.FAST2SMS_API_KEY,
+    flash: '0',
+    ...params,
+  });
+  const res = await fetch(`https://www.fast2sms.com/dev/bulkV2?${query.toString()}`);
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok || data.return !== true) {
+    throw new Error((Array.isArray(data.message) ? data.message[0] : data.message) || `Fast2SMS ${res.status}`);
+  }
+  return data;
+}
 
 async function sendOtpSms(phone, otp) {
   if (!phone) return { sent: false, reason: 'no-phone' };
+
+  if (process.env.FAST2SMS_API_KEY) {
+    try {
+      await fast2SmsRequest({ route: 'otp', variables_values: otp, numbers: phone });
+      return { sent: true, provider: 'fast2sms' };
+    } catch (err) {
+      console.error('[SMS:fast2sms:error]', err.message);
+      return { sent: false, error: err.message };
+    }
+  }
 
   if (process.env.MSG91_AUTH_KEY) {
     try {
@@ -41,6 +70,18 @@ async function sendOtpSms(phone, otp) {
 
 async function sendSms(phone, message) {
   if (!phone) return { sent: false, reason: 'no-phone' };
+
+  if (process.env.FAST2SMS_API_KEY) {
+    try {
+      await fast2SmsRequest({ route: 'q', message, numbers: phone });
+      return { sent: true, provider: 'fast2sms' };
+    } catch (err) {
+      console.error('[SMS:fast2sms:error]', err.message);
+      // Falls through to Twilio/log — Fast2SMS's DLT-free quick route can
+      // reject free-form text depending on carrier/content.
+    }
+  }
+
   return sendViaTwilioOrLog(phone, message);
 }
 
