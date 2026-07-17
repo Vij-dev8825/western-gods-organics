@@ -2292,16 +2292,15 @@ input:focus-visible + .filter-radio { outline: 2px solid var(--gold-2); outline-
   left: 0;
   top: 45%;
   z-index: 150;
-  writing-mode: vertical-rl;
-  transform: rotate(180deg);
   background: var(--forest);
   color: var(--paper);
   border: 0;
-  border-radius: 0 var(--radius-md) var(--radius-md) 0;
-  padding: 14px 8px;
+  border-radius: 0 999px 999px 0;
+  padding: 10px 16px 10px 12px;
   font-size: 0.8rem;
   font-weight: 700;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
   cursor: pointer;
   box-shadow: var(--shadow-lift);
 }
