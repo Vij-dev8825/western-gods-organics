@@ -112,6 +112,7 @@ const en = {
   footerAll: 'All products',
   footerCategories: 'Categories',
   footerBulk: 'Bulk / Wholesale',
+  footerSubscriptions: 'Subscribe & Save',
   footerWishlist: 'Wishlist',
   footerContact: 'Contact us',
   footerAccount: 'My account',

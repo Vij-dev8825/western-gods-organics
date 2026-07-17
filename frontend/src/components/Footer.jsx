@@ -85,6 +85,7 @@ export default function Footer() {
             <ul>
               <li><Link to="/shop">{t('footerAll')}</Link></li>
               <li><Link to="/categories">{t('footerCategories')}</Link></li>
+              <li><Link to="/subscriptions">{t('footerSubscriptions')}</Link></li>
               <li><Link to="/wishlist">{t('footerWishlist')}</Link></li>
             </ul>
           </FooterAccordion>
