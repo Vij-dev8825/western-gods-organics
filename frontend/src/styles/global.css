@@ -1899,7 +1899,7 @@ input:focus-visible + .filter-radio { outline: 2px solid var(--gold-2); outline-
   .navbar-inner > a img { height: 27px; width: auto; }
   .nav-icons { gap: 1px; }
   .icon-btn, .mobile-toggle { width: 32px; height: 32px; }
-  .lang-select { font-size: 0.68rem; padding: 5px 4px; max-width: 40px; }
+  .lang-select { font-size: 0.68rem; padding: 5px 6px; max-width: 68px; }
 
   .announce-bar { font-size: 0.7rem; padding: 7px 12px; }
 
