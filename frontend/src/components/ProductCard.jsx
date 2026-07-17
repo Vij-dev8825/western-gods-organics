@@ -12,10 +12,20 @@ export default function ProductCard({ product }) {
   const { showToast } = useToast();
   const navigate = useNavigate();
   const [size, setSize] = useState(product.sizes[1]?.label || product.sizes[0].label);
+  const [hoverIndex, setHoverIndex] = useState(0);
 
+  const gallery = product.images?.length ? product.images : [product.image];
   const isWished = productIds.includes(product.id);
   const activeSize = product.sizes.find((s) => s.label === size) || product.sizes[0];
   const discount = Math.round(((activeSize.mrp - activeSize.price) / activeSize.mrp) * 100);
+
+  function handleMediaMouseMove(e) {
+    if (gallery.length < 2) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const ratio = (e.clientX - rect.left) / rect.width;
+    const idx = Math.min(gallery.length - 1, Math.max(0, Math.floor(ratio * gallery.length)));
+    setHoverIndex(idx);
+  }
 
   function handleAdd(e) {
     e.preventDefault();
@@ -36,7 +46,11 @@ export default function ProductCard({ product }) {
 
   return (
     <Link to={`/product/${product.id}`} className="product-card">
-      <div className="product-media">
+      <div
+        className="product-media"
+        onMouseMove={handleMediaMouseMove}
+        onMouseLeave={() => setHoverIndex(0)}
+      >
         {discount > 0 && <span className="product-badge">{discount}% OFF</span>}
         <button
           className={`wishlist-toggle ${isWished ? 'active' : ''}`}
@@ -45,7 +59,14 @@ export default function ProductCard({ product }) {
         >
           <IconHeart filled={isWished} size={17} />
         </button>
-        <img src={getProductImage(product.image)} alt={product.name} loading="lazy" />
+        {gallery.length > 1 && (
+          <div className="product-media-segments">
+            {gallery.map((_, i) => (
+              <span key={i} className={i === hoverIndex ? 'active' : ''} />
+            ))}
+          </div>
+        )}
+        <img src={getProductImage(gallery[hoverIndex])} alt={product.name} loading="lazy" />
       </div>
       <div className="product-body">
         <h3>{product.name}</h3>
