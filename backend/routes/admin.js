@@ -130,6 +130,7 @@ router.post('/products', async (req, res, next) => {
       rating: Number(req.body.rating || 0),
       reviewsCount: Number(req.body.reviewsCount || 0),
       tags: req.body.tags || [],
+      comboItems: Array.isArray(req.body.comboItems) ? req.body.comboItems.filter(Boolean) : [],
     };
     await db.put('products', product);
     res.status(201).json({ success: true, product });

@@ -68,6 +68,11 @@ export default function ProductCard({ product }) {
         onTouchMove={handleMediaTouchMove}
       >
         {discount > 0 && <span className="product-badge">{discount}% OFF</span>}
+        {product.comboItems?.length > 0 && (
+          <span className="product-badge combo-badge" style={discount > 0 ? { top: 44 } : undefined}>
+            Combo
+          </span>
+        )}
         <button
           className={`wishlist-toggle ${isWished ? 'active' : ''}`}
           aria-label={isWished ? 'Remove from wishlist' : 'Add to wishlist'}

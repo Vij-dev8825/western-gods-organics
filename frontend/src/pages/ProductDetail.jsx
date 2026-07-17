@@ -169,6 +169,17 @@ export default function ProductDetail() {
           </div>
           <p className="muted">{product.description}</p>
 
+          {product.comboItems?.length > 0 && (
+            <div className="combo-includes">
+              <span className="eyebrow">This combo includes</span>
+              <ul>
+                {product.comboItems.map((item, i) => (
+                  <li key={i}>{item}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+
           <div className="field">
             <label>Size</label>
             <div className="flex gap-1" style={{ flexWrap: 'wrap' }}>

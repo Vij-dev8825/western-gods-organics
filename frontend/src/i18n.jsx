@@ -20,6 +20,7 @@ const en = {
   navHome: 'Home',
   navShop: 'Shop',
   navCategories: 'Categories',
+  navCombos: 'Combos',
   navBulk: 'Bulk Sales',
   navContact: 'Contact',
   navAdmin: 'Admin',

@@ -55,6 +55,7 @@ export default function Home() {
   const recentProducts = recentIds
     .map((id) => products.find((p) => p.id === id))
     .filter(Boolean);
+  const comboProducts = products.filter((p) => p.comboItems?.length > 0);
 
   const activeBanner = banners[current];
   // Admin-entered banner text is shown as-is in English; translated brand copy otherwise.
@@ -175,6 +176,24 @@ export default function Home() {
           ))}
         </div>
       </section>
+
+      {/* ---------- Combo offers ---------- */}
+      {comboProducts.length > 0 && (
+        <section className="section container">
+          <div className="section-head">
+            <div>
+              <span className="eyebrow">Bundle & save</span>
+              <h2>Combo Offers</h2>
+            </div>
+            <Link to="/combos" className="btn btn-outline btn-sm">{t('viewAll')}</Link>
+          </div>
+          <div className="grid">
+            {comboProducts.slice(0, 4).map((p) => (
+              <ProductCard key={p.id} product={p} />
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* ---------- Recently viewed ---------- */}
       {recentProducts.length > 0 && (

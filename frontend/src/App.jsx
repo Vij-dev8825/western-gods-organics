@@ -10,6 +10,7 @@ import PromoPopup from './components/PromoPopup';
 import Home from './pages/Home';
 import Shop from './pages/Shop';
 import Categories from './pages/Categories';
+import Combos from './pages/Combos';
 import ProductDetail from './pages/ProductDetail';
 import Cart from './pages/Cart';
 import Wishlist from './pages/Wishlist';
@@ -100,6 +101,7 @@ export default function App() {
         <Route path="/" element={<Home />} />
         <Route path="/shop" element={<Shop />} />
         <Route path="/categories" element={<Categories />} />
+        <Route path="/combos" element={<Combos />} />
         <Route path="/product/:id" element={<ProductDetail />} />
         <Route path="/cart" element={<Cart />} />
         <Route path="/wishlist" element={<Wishlist />} />

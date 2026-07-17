@@ -33,6 +33,7 @@ export default function Navbar() {
     { to: '/', label: t('navHome') },
     { to: '/shop', label: t('navShop') },
     { to: '/categories', label: t('navCategories') },
+    { to: '/combos', label: t('navCombos') },
     { to: '/bulk-enquiry', label: t('navBulk') },
     { to: '/contact', label: t('navContact') },
   ];

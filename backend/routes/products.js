@@ -16,14 +16,18 @@ async function recomputeRating(productId) {
   await db.put('products', product);
 }
 
-// GET /api/products?category=&search=&sort=
+// GET /api/products?category=&search=&sort=&combo=true
 router.get('/', async (req, res, next) => {
   try {
     let products = await db.list('products');
-    const { category, search, sort } = req.query;
+    const { category, search, sort, combo } = req.query;
 
     if (category && category !== 'all') {
       products = products.filter((p) => p.category === category);
+    }
+
+    if (combo === 'true') {
+      products = products.filter((p) => Array.isArray(p.comboItems) && p.comboItems.length > 0);
     }
 
     if (search) {

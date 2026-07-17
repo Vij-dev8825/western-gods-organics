@@ -13,6 +13,7 @@ const EMPTY = {
   extraImages: [],
   sizes: [{ label: '500 ml', price: '', mrp: '', stock: '' }],
   tags: '',
+  comboItems: '',
 };
 
 function toForm(p) {
@@ -20,6 +21,7 @@ function toForm(p) {
     ...p,
     extraImages: (p.images || []).filter((img) => img && img !== p.image),
     tags: (p.tags || []).join(', '),
+    comboItems: (p.comboItems || []).join(', '),
   };
 }
 
@@ -35,6 +37,7 @@ function fromForm(f) {
       stock: Number(s.stock || 0),
     })),
     tags: f.tags.split(',').map((t) => t.trim()).filter(Boolean),
+    comboItems: f.comboItems.split(',').map((t) => t.trim()).filter(Boolean),
   };
 }
 
@@ -195,6 +198,19 @@ export default function AdminProducts() {
           </button>
 
           <div className="field" style={{ marginTop: 16 }}>
+            <label>Combo includes (comma-separated, optional)</label>
+            <input
+              value={form.comboItems}
+              onChange={(e) => setForm({ ...form, comboItems: e.target.value })}
+              placeholder="e.g. Coconut Oil 500ml, Castor Oil 500ml, Neem Soap"
+            />
+            <p className="muted" style={{ fontSize: '0.78rem', marginTop: 4 }}>
+              Fill this in to sell this product as a combo/bundle — it'll show a "Combo" badge,
+              list what's included, and appear on the dedicated Combos page.
+            </p>
+          </div>
+
+          <div className="field">
             <label>Short description</label>
             <input value={form.shortDescription} onChange={(e) => setForm({ ...form, shortDescription: e.target.value })} />
           </div>
