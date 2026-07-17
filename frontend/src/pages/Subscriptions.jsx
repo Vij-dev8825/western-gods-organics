@@ -5,7 +5,10 @@ import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import ChakkiWheel from '../components/ChakkiWheel';
 
-const FREQUENCY_LABELS = { 2: 'Every 2 weeks', 4: 'Every 4 weeks', 6: 'Every 6 weeks' };
+const FREQUENCY_LABELS = { 14: 'Every 2 weeks', 28: 'Every 4 weeks', 42: 'Every 6 weeks' };
+function formatFrequency(days) {
+  return FREQUENCY_LABELS[days] || `Every ${days} days`;
+}
 
 export default function Subscriptions() {
   const { token } = useAuth();
@@ -62,7 +65,7 @@ export default function Subscriptions() {
                 <div>
                   <b>{s.productName}</b>
                   <span className="muted" style={{ display: 'block', fontSize: '0.85rem' }}>
-                    Size: {s.size} · Qty: {s.quantity} · {FREQUENCY_LABELS[s.frequencyWeeks]}
+                    Size: {s.size} · Qty: {s.quantity} · {formatFrequency(s.frequencyDays)}
                   </span>
                 </div>
                 <span className={`pill status-${s.status === 'active' ? 'placed' : s.status === 'paused' ? 'processing' : 'cancelled'}`}>

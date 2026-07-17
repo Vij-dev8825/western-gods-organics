@@ -610,6 +610,35 @@ p { margin: 0 0 1em; }
   padding: 8px 10px;
   background: var(--paper);
 }
+
+.frequency-chips { display: flex; gap: 8px; flex-wrap: wrap; }
+.frequency-chip {
+  border: 1.5px solid rgba(31, 61, 43, 0.18);
+  border-radius: 999px;
+  background: var(--paper);
+  color: var(--forest);
+  font-size: 0.82rem;
+  font-weight: 600;
+  padding: 8px 16px;
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+.frequency-chip:hover { transform: translateY(-1px); }
+.frequency-chip.active {
+  position: relative;
+  overflow: hidden;
+  border-color: transparent;
+  color: var(--forest-deep);
+  background-image: var(--gold-shine);
+  background-size: 240% 100%;
+  animation: shineSweep 5s ease-in-out infinite;
+}
+.subscribe-box input[type="number"] {
+  border: 1.5px solid rgba(31, 61, 43, 0.18);
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+  background: var(--paper);
+}
 .product-body { padding: 18px 18px 20px; display: flex; flex-direction: column; gap: 8px; flex: 1; }
 .product-body h3 { margin-bottom: 0; }
 .product-desc { font-size: 0.88rem; color: var(--forest-light); margin: 0; flex: 1; }

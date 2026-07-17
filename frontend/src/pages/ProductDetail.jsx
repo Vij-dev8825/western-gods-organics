@@ -14,10 +14,12 @@ import ImageLightbox from '../components/ImageLightbox';
 import { IconHeart } from '../components/Icons';
 
 const SUBSCRIPTION_DISCOUNT_PERCENT = 10;
+const MIN_FREQUENCY_DAYS = 7;
+const MAX_FREQUENCY_DAYS = 180;
 const FREQUENCIES = [
-  { weeks: 2, label: 'Every 2 weeks' },
-  { weeks: 4, label: 'Every 4 weeks' },
-  { weeks: 6, label: 'Every 6 weeks' },
+  { days: 14, label: 'Every 2 weeks' },
+  { days: 28, label: 'Every 4 weeks' },
+  { days: 42, label: 'Every 6 weeks' },
 ];
 
 function StarPicker({ value, onChange }) {
@@ -51,7 +53,9 @@ export default function ProductDetail() {
   const [myRating, setMyRating] = useState(0);
   const [myText, setMyText] = useState('');
   const [submittingReview, setSubmittingReview] = useState(false);
-  const [subFrequency, setSubFrequency] = useState(4);
+  const [subFrequency, setSubFrequency] = useState(28);
+  const [subCustom, setSubCustom] = useState(false);
+  const [subCustomDays, setSubCustomDays] = useState('');
   const [subShowForm, setSubShowForm] = useState(false);
   const [subAddress, setSubAddress] = useState({ line1: '', city: '', state: '', pincode: '', phone: '' });
   const [subAddressErrors, setSubAddressErrors] = useState({});
@@ -121,6 +125,10 @@ export default function ProductDetail() {
     showToast(isWished ? 'Removed from wishlist' : `${product.name} added to wishlist`);
   }
 
+  const effectiveFrequencyDays = subCustom ? Number(subCustomDays) || 0 : subFrequency;
+  const customDaysValid =
+    !subCustom || (Number.isInteger(Number(subCustomDays)) && effectiveFrequencyDays >= MIN_FREQUENCY_DAYS && effectiveFrequencyDays <= MAX_FREQUENCY_DAYS);
+
   function handleSubscribeClick() {
     if (!isLoggedIn) {
       navigate('/login', { state: { from: `/product/${id}` } });
@@ -136,6 +144,10 @@ export default function ProductDetail() {
 
   async function handleSubscribeSubmit(e) {
     e.preventDefault();
+    if (!customDaysValid) {
+      showToast(`Enter a custom frequency between ${MIN_FREQUENCY_DAYS} and ${MAX_FREQUENCY_DAYS} days.`, 'error');
+      return;
+    }
     const errors = validateAddress(subAddress);
     setSubAddressErrors(errors);
     if (Object.keys(errors).length) {
@@ -148,7 +160,7 @@ export default function ProductDetail() {
         productId: product.id,
         size,
         quantity: qty,
-        frequencyWeeks: subFrequency,
+        frequencyDays: effectiveFrequencyDays,
         address: subAddress,
       });
       showToast('Subscription started! Manage it anytime from My Subscriptions.');
@@ -284,16 +296,50 @@ export default function ProductDetail() {
             </p>
 
             {!subShowForm ? (
-              <div className="flex gap-1" style={{ flexWrap: 'wrap' }}>
-                <select value={subFrequency} onChange={(e) => setSubFrequency(Number(e.target.value))}>
+              <>
+                <div className="frequency-chips">
                   {FREQUENCIES.map((f) => (
-                    <option key={f.weeks} value={f.weeks}>{f.label}</option>
+                    <button
+                      key={f.days}
+                      type="button"
+                      className={`frequency-chip ${!subCustom && subFrequency === f.days ? 'active' : ''}`}
+                      onClick={() => {
+                        setSubCustom(false);
+                        setSubFrequency(f.days);
+                      }}
+                    >
+                      {f.label}
+                    </button>
                   ))}
-                </select>
-                <button className="btn btn-forest" onClick={handleSubscribeClick}>
+                  <button
+                    type="button"
+                    className={`frequency-chip ${subCustom ? 'active' : ''}`}
+                    onClick={() => setSubCustom(true)}
+                  >
+                    Custom
+                  </button>
+                </div>
+
+                {subCustom && (
+                  <div className="flex gap-1" style={{ alignItems: 'center', margin: '10px 0' }}>
+                    <span className="muted" style={{ fontSize: '0.85rem' }}>Every</span>
+                    <input
+                      type="number"
+                      min={MIN_FREQUENCY_DAYS}
+                      max={MAX_FREQUENCY_DAYS}
+                      value={subCustomDays}
+                      onChange={(e) => setSubCustomDays(e.target.value)}
+                      style={{ width: 70 }}
+                      placeholder="e.g. 10"
+                    />
+                    <span className="muted" style={{ fontSize: '0.85rem' }}>days</span>
+                  </div>
+                )}
+
+                <button className="btn btn-gold" style={{ marginTop: 12 }} onClick={handleSubscribeClick}>
                   Subscribe — ₹{Math.round(activeSize.price * (1 - SUBSCRIPTION_DISCOUNT_PERCENT / 100))}/delivery
                 </button>
-              </div>
+              </>
             ) : (
               <form onSubmit={handleSubscribeSubmit} noValidate>
                 {user?.addresses?.[0] && (

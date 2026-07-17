@@ -2,7 +2,10 @@ import { useEffect, useState } from 'react';
 import { api } from '../../api';
 import { useAuth } from '../../context/AuthContext';
 
-const FREQUENCY_LABELS = { 2: 'Every 2 weeks', 4: 'Every 4 weeks', 6: 'Every 6 weeks' };
+const FREQUENCY_LABELS = { 14: 'Every 2 weeks', 28: 'Every 4 weeks', 42: 'Every 6 weeks' };
+function formatFrequency(days) {
+  return FREQUENCY_LABELS[days] || `Every ${days} days`;
+}
 
 export default function AdminSubscriptions() {
   const { token } = useAuth();
@@ -65,7 +68,7 @@ export default function AdminSubscriptions() {
               <tr key={s.id}>
                 <td><b>{s.customerName || '—'}</b><div className="muted" style={{ fontSize: '0.75rem' }}>{s.customerPhone}</div></td>
                 <td>{s.productName}<div className="muted" style={{ fontSize: '0.75rem' }}>{s.size} × {s.quantity}</div></td>
-                <td>{FREQUENCY_LABELS[s.frequencyWeeks] || `${s.frequencyWeeks} weeks`}</td>
+                <td>{formatFrequency(s.frequencyDays)}</td>
                 <td>{s.status === 'active' ? new Date(s.nextOrderDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'}</td>
                 <td>
                   <span className={`pill status-${s.status === 'active' ? 'placed' : s.status === 'paused' ? 'processing' : 'cancelled'}`}>

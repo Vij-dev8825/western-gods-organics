@@ -2,11 +2,16 @@ const db = require('../data/db');
 const { buildOrderItems, createOrderRecord } = require('./orderBuilder');
 
 const DISCOUNT_PERCENT = 10;
-const ALLOWED_FREQUENCIES = [2, 4, 6];
+const MIN_FREQUENCY_DAYS = 7;
+const MAX_FREQUENCY_DAYS = 180;
 
-function computeNextDate(fromIso, weeks) {
+function isValidFrequencyDays(days) {
+  return Number.isInteger(days) && days >= MIN_FREQUENCY_DAYS && days <= MAX_FREQUENCY_DAYS;
+}
+
+function computeNextDate(fromIso, days) {
   const d = new Date(fromIso);
-  d.setDate(d.getDate() + weeks * 7);
+  d.setDate(d.getDate() + days);
   return d.toISOString();
 }
 
@@ -47,7 +52,7 @@ async function processDueSubscriptions() {
       });
 
       sub.lastOrderId = order.id;
-      sub.nextOrderDate = computeNextDate(sub.nextOrderDate, sub.frequencyWeeks);
+      sub.nextOrderDate = computeNextDate(sub.nextOrderDate, sub.frequencyDays);
       await db.put('subscriptions', sub);
       results.push({ subscriptionId: sub.id, orderId: order.id });
     } catch (err) {
@@ -58,4 +63,11 @@ async function processDueSubscriptions() {
   return results;
 }
 
-module.exports = { DISCOUNT_PERCENT, ALLOWED_FREQUENCIES, computeNextDate, processDueSubscriptions };
+module.exports = {
+  DISCOUNT_PERCENT,
+  MIN_FREQUENCY_DAYS,
+  MAX_FREQUENCY_DAYS,
+  isValidFrequencyDays,
+  computeNextDate,
+  processDueSubscriptions,
+};

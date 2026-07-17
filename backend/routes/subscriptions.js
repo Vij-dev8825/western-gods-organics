@@ -2,7 +2,7 @@ const express = require('express');
 const { v4: uuid } = require('uuid');
 const db = require('../data/db');
 const { requireAuth } = require('../middleware/auth');
-const { DISCOUNT_PERCENT, ALLOWED_FREQUENCIES, computeNextDate } = require('../utils/subscriptions');
+const { DISCOUNT_PERCENT, isValidFrequencyDays, MIN_FREQUENCY_DAYS, MAX_FREQUENCY_DAYS, computeNextDate } = require('../utils/subscriptions');
 
 const router = express.Router();
 
@@ -16,15 +16,18 @@ router.get('/', requireAuth, async (req, res, next) => {
   }
 });
 
-// POST /api/subscriptions  { productId, size, quantity, frequencyWeeks, address }
+// POST /api/subscriptions  { productId, size, quantity, frequencyDays, address }
 router.post('/', requireAuth, async (req, res, next) => {
   try {
-    const { productId, size, quantity, frequencyWeeks, address } = req.body;
+    const { productId, size, quantity, frequencyDays, address } = req.body;
     if (!productId || !size) {
       return res.status(400).json({ success: false, message: 'Product and size are required.' });
     }
-    if (!ALLOWED_FREQUENCIES.includes(Number(frequencyWeeks))) {
-      return res.status(400).json({ success: false, message: 'Choose a valid delivery frequency.' });
+    if (!isValidFrequencyDays(Number(frequencyDays))) {
+      return res.status(400).json({
+        success: false,
+        message: `Choose a delivery frequency between ${MIN_FREQUENCY_DAYS} and ${MAX_FREQUENCY_DAYS} days.`,
+      });
     }
     if (!address || !address.line1 || !address.pincode || !address.phone) {
       return res.status(400).json({ success: false, message: 'A complete delivery address is required.' });
@@ -42,11 +45,11 @@ router.post('/', requireAuth, async (req, res, next) => {
       productName: product.name,
       size,
       quantity: Number(quantity) > 0 ? Number(quantity) : 1,
-      frequencyWeeks: Number(frequencyWeeks),
+      frequencyDays: Number(frequencyDays),
       discountPercent: DISCOUNT_PERCENT,
       address,
       status: 'active',
-      nextOrderDate: computeNextDate(new Date().toISOString(), Number(frequencyWeeks)),
+      nextOrderDate: computeNextDate(new Date().toISOString(), Number(frequencyDays)),
       lastOrderId: null,
       createdAt: new Date().toISOString(),
     };
@@ -57,7 +60,7 @@ router.post('/', requireAuth, async (req, res, next) => {
   }
 });
 
-// PATCH /api/subscriptions/:id  { status?, quantity?, frequencyWeeks? }
+// PATCH /api/subscriptions/:id  { status?, quantity?, frequencyDays? }
 router.patch('/:id', requireAuth, async (req, res, next) => {
   try {
     const subscription = await db.get('subscriptions', req.params.id);
@@ -70,8 +73,8 @@ router.patch('/:id', requireAuth, async (req, res, next) => {
     if (req.body.quantity && Number(req.body.quantity) > 0) {
       subscription.quantity = Number(req.body.quantity);
     }
-    if (req.body.frequencyWeeks && ALLOWED_FREQUENCIES.includes(Number(req.body.frequencyWeeks))) {
-      subscription.frequencyWeeks = Number(req.body.frequencyWeeks);
+    if (req.body.frequencyDays && isValidFrequencyDays(Number(req.body.frequencyDays))) {
+      subscription.frequencyDays = Number(req.body.frequencyDays);
     }
     await db.put('subscriptions', subscription);
     res.json({ success: true, subscription });
