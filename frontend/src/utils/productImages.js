@@ -23,6 +23,6 @@ export const knownProductImages = Object.keys(productImages);
 export function getProductImage(filename) {
   if (!filename) return castorOil;
   // Admin-uploaded images are served by the backend; bundled assets by name.
-  if (filename.startsWith('/uploads/') || filename.startsWith('http')) return filename;
+  if (filename.startsWith('/uploads/') || filename.startsWith('/api/media/') || filename.startsWith('http')) return filename;
   return productImages[filename] || castorOil;
 }

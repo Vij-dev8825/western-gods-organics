@@ -8,6 +8,7 @@ const { requireAdmin } = require('../middleware/auth');
 const { notifyUser, broadcast } = require('../utils/notify');
 const { UPLOADS_DIR } = require('../data/seed');
 const cloudinary = require('../utils/cloudinary');
+const { compressAndStore } = require('../utils/mediaStore');
 const { processDueSubscriptions } = require('../utils/subscriptions');
 
 const router = express.Router();
@@ -96,7 +97,12 @@ router.post('/upload-image', imageUpload.single('file'), async (req, res, next) 
       fs.unlink(req.file.path, () => {});
       return res.status(201).json({ success: true, url });
     }
-    res.status(201).json({ success: true, url: `/uploads/${req.file.filename}` });
+    // No Cloudinary configured — compress and store in the database instead
+    // of local disk, which Render's free plan wipes on every redeploy.
+    const buffer = fs.readFileSync(req.file.path);
+    const url = await compressAndStore(buffer);
+    fs.unlink(req.file.path, () => {});
+    res.status(201).json({ success: true, url });
   } catch (err) {
     next(err);
   }
@@ -367,6 +373,12 @@ router.post('/banners', upload.single('file'), async (req, res, next) => {
       const uploaded = await cloudinary.uploadFile(req.file.path, { resourceType: isVideo ? 'video' : 'image' });
       url = uploaded.url;
       cloudinaryPublicId = uploaded.publicId;
+      fs.unlink(req.file.path, () => {});
+    } else if (!isVideo) {
+      // No Cloudinary and this is an image (not a large video) — compress
+      // and store in the database so it survives Render's disk wipes.
+      const buffer = fs.readFileSync(req.file.path);
+      url = await compressAndStore(buffer);
       fs.unlink(req.file.path, () => {});
     }
 

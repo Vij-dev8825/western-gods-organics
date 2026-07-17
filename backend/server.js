@@ -23,6 +23,7 @@ const configRoutes = require('./routes/config');
 const couponRoutes = require('./routes/coupons');
 const subscriptionRoutes = require('./routes/subscriptions');
 const { processDueSubscriptions } = require('./utils/subscriptions');
+const mediaRoutes = require('./routes/media');
 
 const app = express();
 
@@ -48,6 +49,7 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/config', configRoutes);
 app.use('/api/coupons', couponRoutes);
 app.use('/api/subscriptions', subscriptionRoutes);
+app.use('/api/media', mediaRoutes);
 
 // Uploaded banner videos/images
 app.use('/uploads', express.static(UPLOADS_DIR, { maxAge: '7d' }));

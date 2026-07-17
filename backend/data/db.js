@@ -28,6 +28,7 @@ const COLLECTIONS = [
   'reviews',
   'coupons',
   'subscriptions',
+  'media',
 ];
 
 let mode = 'json';
