@@ -813,6 +813,7 @@ input:focus-visible + .filter-radio { outline: 2px solid var(--gold-2); outline-
 .alert-success { background: #e5f3e8; color: #1e6b34; }
 .alert-error { background: #fbe7e4; color: #a52f1e; }
 .alert-info { background: #fdf2df; color: #8a5a1e; }
+.push-prompt { display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap; }
 
 /* ---------- Product detail ---------- */
 .product-detail-grid {

@@ -79,6 +79,9 @@ export const api = {
   getNotifications: (token) => request('/notifications', { token }),
   markNotificationRead: (token, id) => request(`/notifications/${id}/read`, { method: 'POST', token }),
   markAllNotificationsRead: (token) => request('/notifications/read-all', { method: 'POST', token }),
+  getPushKey: () => request('/notifications/push-key'),
+  subscribePush: (token, subscription) => request('/notifications/push-subscribe', { method: 'POST', body: { subscription }, token }),
+  unsubscribePush: (token, payload) => request('/notifications/push-unsubscribe', { method: 'POST', body: payload, token }),
 
   // chat (customer)
   getChat: (token) => request('/chat', { token }),

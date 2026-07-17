@@ -29,6 +29,7 @@ const COLLECTIONS = [
   'coupons',
   'subscriptions',
   'media',
+  'push-subscriptions',
 ];
 
 let mode = 'json';
