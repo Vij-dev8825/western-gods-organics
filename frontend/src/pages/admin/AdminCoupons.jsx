@@ -1,8 +1,19 @@
 import { useEffect, useState } from 'react';
 import { api } from '../../api';
 import { useAuth } from '../../context/AuthContext';
+import ImageUploadField from '../../components/admin/ImageUploadField';
 
-const EMPTY = { code: '', type: 'percent', value: '', minOrder: '', expiresAt: '', featured: false };
+const EMPTY = {
+  code: '',
+  type: 'percent',
+  value: '',
+  minOrder: '',
+  expiresAt: '',
+  featured: false,
+  promoImage: '',
+  promoHeadline: '',
+  promoSubtext: '',
+};
 
 export default function AdminCoupons() {
   const { token } = useAuth();
@@ -28,6 +39,9 @@ export default function AdminCoupons() {
         minOrder: Number(form.minOrder) || 0,
         expiresAt: form.expiresAt ? new Date(form.expiresAt).toISOString() : null,
         featured: form.featured,
+        promoImage: form.promoImage,
+        promoHeadline: form.promoHeadline,
+        promoSubtext: form.promoSubtext,
       });
       setForm(EMPTY);
       setMessage({ type: 'success', text: 'Coupon created.' });
@@ -129,6 +143,33 @@ export default function AdminCoupons() {
             </label>
           </div>
         </div>
+
+        {form.featured && (
+          <div className="form-grid" style={{ marginTop: 4 }}>
+            <ImageUploadField
+              value={form.promoImage}
+              onChange={(url) => setForm({ ...form, promoImage: url })}
+              label="Popup image (optional)"
+            />
+            <div className="field">
+              <label>Popup headline (optional)</label>
+              <input
+                value={form.promoHeadline}
+                onChange={(e) => setForm({ ...form, promoHeadline: e.target.value })}
+                placeholder="e.g. Today Only!"
+              />
+            </div>
+            <div className="field">
+              <label>Popup sub-text (optional)</label>
+              <input
+                value={form.promoSubtext}
+                onChange={(e) => setForm({ ...form, promoSubtext: e.target.value })}
+                placeholder="e.g. Don't miss out — this deal ends soon!"
+              />
+            </div>
+          </div>
+        )}
+
         <button className="btn btn-gold btn-sm" disabled={busy}>{busy ? 'Saving…' : '+ Add coupon'}</button>
       </form>
 

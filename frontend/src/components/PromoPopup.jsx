@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { api } from '../api';
+import { getProductImage } from '../utils/productImages';
 
 const SESSION_KEY = 'yo_promo_popup_seen';
 
@@ -39,23 +40,34 @@ export default function PromoPopup() {
 
   const offer =
     coupon.type === 'flat' ? `₹${coupon.value} off` : `${coupon.value}% off`;
+  const headline = coupon.promoHeadline || `Get ${offer} your order`;
+  const subtext =
+    coupon.promoSubtext ||
+    `Use the code below at checkout${coupon.minOrder ? ` on orders above ₹${coupon.minOrder}` : ''}.`;
 
   return (
     <div className="promo-popup-overlay" role="dialog" aria-modal="true" aria-label="Special offer">
-      <div className="promo-popup-card">
+      <div className={`promo-popup-card ${coupon.promoImage ? 'has-image' : ''}`}>
         <button className="promo-popup-close" aria-label="Close" onClick={dismiss}>×</button>
-        <span className="promo-popup-badge">🌿 Special offer</span>
-        <h3>Get {offer} your order</h3>
-        <p className="muted">
-          Use the code below at checkout{coupon.minOrder ? ` on orders above ₹${coupon.minOrder}` : ''}.
-        </p>
-        <button className="promo-popup-code" onClick={copyCode} type="button">
-          {coupon.code}
-          <span className="promo-popup-copy-hint">{copied ? 'Copied!' : 'Tap to copy'}</span>
-        </button>
-        <button className="btn btn-outline btn-sm" onClick={dismiss} style={{ marginTop: 16 }}>
-          No thanks
-        </button>
+
+        <div className="promo-popup-text">
+          <span className="promo-popup-badge">🌿 Special offer</span>
+          <h3>{headline}</h3>
+          <p className="muted">{subtext}</p>
+          <button className="promo-popup-code" onClick={copyCode} type="button">
+            {coupon.code}
+            <span className="promo-popup-copy-hint">{copied ? 'Copied!' : 'Tap to copy'}</span>
+          </button>
+          <button className="btn btn-outline btn-sm" onClick={dismiss} style={{ marginTop: 16 }}>
+            No thanks
+          </button>
+        </div>
+
+        {coupon.promoImage && (
+          <div className="promo-popup-image">
+            <img src={getProductImage(coupon.promoImage)} alt="" />
+          </div>
+        )}
       </div>
     </div>
   );

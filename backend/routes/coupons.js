@@ -18,7 +18,15 @@ router.get('/featured', async (req, res, next) => {
     if (!coupon) return res.json({ success: true, coupon: null });
     res.json({
       success: true,
-      coupon: { code: coupon.code, type: coupon.type, value: coupon.value, minOrder: coupon.minOrder },
+      coupon: {
+        code: coupon.code,
+        type: coupon.type,
+        value: coupon.value,
+        minOrder: coupon.minOrder,
+        promoImage: coupon.promoImage || '',
+        promoHeadline: coupon.promoHeadline || '',
+        promoSubtext: coupon.promoSubtext || '',
+      },
     });
   } catch (err) {
     next(err);

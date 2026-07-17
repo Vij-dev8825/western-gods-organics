@@ -295,6 +295,9 @@ router.post('/coupons', async (req, res, next) => {
       expiresAt: req.body.expiresAt || null,
       active: true,
       featured: !!req.body.featured,
+      promoImage: req.body.promoImage || '',
+      promoHeadline: req.body.promoHeadline || '',
+      promoSubtext: req.body.promoSubtext || '',
       createdAt: new Date().toISOString(),
     };
     await db.put('coupons', coupon);
