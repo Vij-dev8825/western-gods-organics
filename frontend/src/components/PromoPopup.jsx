@@ -4,21 +4,24 @@ import { getProductImage } from '../utils/productImages';
 
 const SESSION_KEY = 'yo_promo_popup_seen';
 
-/** Dismissible homepage promo popup advertising whichever coupon an admin
- * has marked "featured". Shows once per browser session. */
+/** Homepage promo popup advertising whichever coupon an admin has marked
+ * "featured". Auto-opens once per browser session; after it's closed, a
+ * small ribbon tab stays stuck to the screen edge so the offer isn't lost —
+ * clicking it reopens the popup. */
 export default function PromoPopup() {
   const [coupon, setCoupon] = useState(null);
   const [visible, setVisible] = useState(false);
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
-    if (sessionStorage.getItem(SESSION_KEY)) return;
     api
       .getFeaturedCoupon()
       .then((d) => {
-        if (d.coupon) {
-          setCoupon(d.coupon);
+        if (!d.coupon) return;
+        setCoupon(d.coupon);
+        if (!sessionStorage.getItem(SESSION_KEY)) {
           setVisible(true);
+          sessionStorage.setItem(SESSION_KEY, '1');
         }
       })
       .catch(() => {});
@@ -26,7 +29,6 @@ export default function PromoPopup() {
 
   function dismiss() {
     setVisible(false);
-    sessionStorage.setItem(SESSION_KEY, '1');
   }
 
   function copyCode() {
@@ -36,7 +38,16 @@ export default function PromoPopup() {
     });
   }
 
-  if (!visible || !coupon) return null;
+  if (!coupon) return null;
+
+  if (!visible) {
+    const offLabel = coupon.type === 'flat' ? `₹${coupon.value} OFF` : `${coupon.value}% OFF`;
+    return (
+      <button className="promo-ribbon" onClick={() => setVisible(true)} type="button">
+        Get {offLabel}
+      </button>
+    );
+  }
 
   const offer =
     coupon.type === 'flat' ? `₹${coupon.value} off` : `${coupon.value}% off`;

@@ -126,7 +126,9 @@ const en = {
   footerProducts: 'Our Products',
   footerB2B: 'B2B',
   footerB2BText: 'Supplying restaurants, stores and events in bulk — 15L, 35L drums and custom quantities, with GST invoicing.',
+  footerImport: 'Import to Your Country',
   footerPolicy: 'Store Policy',
+  footerTerms: 'Terms and Conditions',
   footerBackToTop: 'Back to top',
   footerMotto: 'Wood-pressed with care, always.',
 

@@ -23,6 +23,8 @@ import BulkEnquiry from './pages/BulkEnquiry';
 import ContactUs from './pages/ContactUs';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import RefundPolicy from './pages/RefundPolicy';
+import TermsAndConditions from './pages/TermsAndConditions';
+import ImportInfo from './pages/ImportInfo';
 
 import AdminLogin from './pages/admin/AdminLogin';
 import AdminLayout from './pages/admin/AdminLayout';
@@ -146,6 +148,8 @@ export default function App() {
         <Route path="/contact" element={<ContactUs />} />
         <Route path="/policy" element={<PrivacyPolicy />} />
         <Route path="/refund-policy" element={<RefundPolicy />} />
+        <Route path="/terms" element={<TermsAndConditions />} />
+        <Route path="/import" element={<ImportInfo />} />
         <Route path="*" element={<NotFound />} />
       </Route>
     </Routes>

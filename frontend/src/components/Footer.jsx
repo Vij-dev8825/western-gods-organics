@@ -93,6 +93,7 @@ export default function Footer() {
             <p style={{ fontSize: '0.85rem' }}>{t('footerB2BText')}</p>
             <ul>
               <li><Link to="/bulk-enquiry">{t('footerBulk')}</Link></li>
+              <li><Link to="/import">{t('footerImport')}</Link></li>
             </ul>
           </FooterAccordion>
 
@@ -102,6 +103,7 @@ export default function Footer() {
               <li><Link to="/profile">{t('footerAccount')}</Link></li>
               <li><Link to="/refund-policy">{t('footerRefunds')}</Link></li>
               <li><Link to="/policy">{t('footerPrivacy')}</Link></li>
+              <li><Link to="/terms">{t('footerTerms')}</Link></li>
             </ul>
           </FooterAccordion>
         </div>

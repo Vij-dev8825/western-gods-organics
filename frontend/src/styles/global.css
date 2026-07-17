@@ -2277,6 +2277,26 @@ input:focus-visible + .filter-radio { outline: 2px solid var(--gold-2); outline-
 }
 .promo-popup-copy-hint { font-size: 0.7rem; font-weight: 500; color: var(--forest-light); letter-spacing: normal; }
 
+.promo-ribbon {
+  position: fixed;
+  left: 0;
+  top: 45%;
+  z-index: 150;
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  background: var(--forest);
+  color: var(--paper);
+  border: 0;
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
+  padding: 14px 8px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  box-shadow: var(--shadow-lift);
+}
+.promo-ribbon:hover { background: var(--forest-deep); }
+
 @media (max-width: 640px) {
   .promo-popup-card { padding: 26px 20px; }
 }
