@@ -3,6 +3,7 @@ import { api } from '../api';
 import { getProductImage } from '../utils/productImages';
 
 const SESSION_KEY = 'yo_promo_popup_seen';
+const RIBBON_DISMISSED_KEY = 'yo_promo_ribbon_dismissed';
 
 /** Homepage promo popup advertising whichever coupon an admin has marked
  * "featured". Auto-opens once per browser session; after it's closed, a
@@ -11,6 +12,7 @@ const SESSION_KEY = 'yo_promo_popup_seen';
 export default function PromoPopup() {
   const [coupon, setCoupon] = useState(null);
   const [visible, setVisible] = useState(false);
+  const [ribbonDismissed, setRibbonDismissed] = useState(() => !!sessionStorage.getItem(RIBBON_DISMISSED_KEY));
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
@@ -31,6 +33,12 @@ export default function PromoPopup() {
     setVisible(false);
   }
 
+  function dismissRibbon(e) {
+    e.stopPropagation();
+    setRibbonDismissed(true);
+    sessionStorage.setItem(RIBBON_DISMISSED_KEY, '1');
+  }
+
   function copyCode() {
     navigator.clipboard?.writeText(coupon.code).then(() => {
       setCopied(true);
@@ -41,11 +49,17 @@ export default function PromoPopup() {
   if (!coupon) return null;
 
   if (!visible) {
+    if (ribbonDismissed) return null;
     const offLabel = coupon.type === 'flat' ? `₹${coupon.value} OFF` : `${coupon.value}% OFF`;
     return (
-      <button className="promo-ribbon" onClick={() => setVisible(true)} type="button">
-        Get {offLabel}
-      </button>
+      <div className="promo-ribbon">
+        <button className="promo-ribbon-open" onClick={() => setVisible(true)} type="button">
+          Get {offLabel}
+        </button>
+        <button className="promo-ribbon-close" onClick={dismissRibbon} type="button" aria-label="Dismiss offer">
+          ×
+        </button>
+      </div>
     );
   }
 

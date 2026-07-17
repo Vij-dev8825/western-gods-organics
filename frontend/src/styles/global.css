@@ -2292,18 +2292,34 @@ input:focus-visible + .filter-radio { outline: 2px solid var(--gold-2); outline-
   left: 0;
   top: 45%;
   z-index: 150;
+  display: flex;
+  align-items: stretch;
   background: var(--forest);
+  border-radius: 0 999px 999px 0;
+  box-shadow: var(--shadow-lift);
+  overflow: hidden;
+}
+.promo-ribbon-open {
+  background: none;
   color: var(--paper);
   border: 0;
-  border-radius: 0 999px 999px 0;
-  padding: 10px 16px 10px 12px;
+  padding: 10px 6px 10px 14px;
   font-size: 0.8rem;
   font-weight: 700;
   letter-spacing: 0.02em;
   white-space: nowrap;
   cursor: pointer;
-  box-shadow: var(--shadow-lift);
 }
+.promo-ribbon-close {
+  background: none;
+  color: rgba(255,255,255,0.7);
+  border: 0;
+  padding: 0 12px 0 4px;
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+}
+.promo-ribbon-close:hover { color: var(--paper); }
 .promo-ribbon:hover { background: var(--forest-deep); }
 
 @media (max-width: 640px) {
