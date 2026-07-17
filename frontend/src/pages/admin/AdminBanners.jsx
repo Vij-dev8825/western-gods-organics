@@ -2,6 +2,9 @@ import { useEffect, useState } from 'react';
 import { api } from '../../api';
 import { useAuth } from '../../context/AuthContext';
 
+const ALLOWED_TYPES = ['video/mp4', 'video/webm', 'video/ogg', 'image/jpeg', 'image/png', 'image/webp'];
+const MAX_SIZE_MB = 100;
+
 export default function AdminBanners() {
   const { token } = useAuth();
   const [banners, setBanners] = useState([]);
@@ -15,6 +18,25 @@ export default function AdminBanners() {
     api.admin.getBanners(token).then((d) => setBanners(d.banners)).catch(() => {});
   }
   useEffect(load, [token]);
+
+  function handleFileSelect(e) {
+    const f = e.target.files[0] || null;
+    setMessage(null);
+    if (!f) return setFile(null);
+    if (!ALLOWED_TYPES.includes(f.type)) {
+      setMessage({ type: 'error', text: 'Only mp4/webm/ogg video or jpg/png/webp image files are allowed.' });
+      e.target.value = '';
+      setFile(null);
+      return;
+    }
+    if (f.size > MAX_SIZE_MB * 1024 * 1024) {
+      setMessage({ type: 'error', text: `File must be under ${MAX_SIZE_MB} MB (this file is ${(f.size / (1024 * 1024)).toFixed(1)} MB).` });
+      e.target.value = '';
+      setFile(null);
+      return;
+    }
+    setFile(f);
+  }
 
   async function uploadBanner(e) {
     e.preventDefault();
@@ -83,7 +105,7 @@ export default function AdminBanners() {
             <input
               type="file"
               accept="video/mp4,video/webm,video/ogg,image/jpeg,image/png,image/webp"
-              onChange={(e) => setFile(e.target.files[0] || null)}
+              onChange={handleFileSelect}
               required
             />
           </div>
