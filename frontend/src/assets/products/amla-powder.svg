@@ -30,8 +30,8 @@
   <!-- label -->
   <rect x="160" y="164" width="120" height="126" rx="8" fill="#ffffff" stroke="#e3d6b4" stroke-width="1.5"/>
   <circle cx="220" cy="176" r="9" fill="#a8c25a"/>
-  <text x="220" y="212" text-anchor="middle" font-family="Georgia,serif" font-size="14" font-weight="700" fill="#1f3d2b">YAMUNA</text>
-  <text x="220" y="228" text-anchor="middle" font-family="Arial,sans-serif" font-size="8" letter-spacing="3" fill="#8a5a1e">ORGANIC</text>
+  <text x="220" y="212" text-anchor="middle" font-family="Georgia,serif" font-size="11" font-weight="700" fill="#1f3d2b">WESTERN GODS</text>
+  <text x="220" y="228" text-anchor="middle" font-family="Arial,sans-serif" font-size="8" letter-spacing="3" fill="#8a5a1e">ORGANICS</text>
   <rect x="180" y="238" width="80" height="1.5" fill="url(#apGold)"/>
   <text x="220" y="258" text-anchor="middle" font-family="Arial,sans-serif" font-size="11" font-weight="700" fill="#6d5a17">AMLA</text>
   <text x="220" y="274" text-anchor="middle" font-family="Arial,sans-serif" font-size="8.5" fill="#7d7460">FRUIT POWDER · 100 g</text>

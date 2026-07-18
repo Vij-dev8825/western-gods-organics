@@ -7,7 +7,7 @@ export default function PrivacyPolicy() {
       <p className="muted">Last updated: July 2026</p>
 
       <p>
-        Yamuna Organics ("we", "us", "our") respects your privacy. This policy explains what
+        Western Gods Organics ("we", "us", "our") respects your privacy. This policy explains what
         information we collect when you use our website, and how we use it.
       </p>
 

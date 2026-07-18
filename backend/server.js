@@ -32,7 +32,7 @@ app.use(express.json({ limit: '2mb' }));
 app.use(morgan('dev'));
 
 app.get('/api/health', (req, res) => {
-  res.json({ success: true, message: 'Yamuna Organics API is running.', db: db.getMode() });
+  res.json({ success: true, message: 'Western Gods Organics API is running.', db: db.getMode() });
 });
 
 app.use('/api/auth', authRoutes);
@@ -85,7 +85,7 @@ const PORT = process.env.PORT || 5000;
     const mode = await db.init();
     await seed();
     app.listen(PORT, () => {
-      console.log(`Yamuna Organics API listening on http://localhost:${PORT} (db: ${mode})`);
+      console.log(`Western Gods Organics API listening on http://localhost:${PORT} (db: ${mode})`);
     });
 
     // No worker/cron process on Render's free plan — piggyback on this

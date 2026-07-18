@@ -2,7 +2,7 @@
 // utils/pushNotifications.js after the customer opts in.
 
 self.addEventListener('push', (event) => {
-  let data = { title: 'Yamuna Organic', body: '', url: '/' };
+  let data = { title: 'Western Gods Organics', body: '', url: '/' };
   try {
     data = { ...data, ...event.data.json() };
   } catch {

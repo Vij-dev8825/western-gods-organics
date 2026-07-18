@@ -82,7 +82,7 @@ export default function ChatWidget() {
   return (
     <>
       {open && (
-        <div className="chat-panel" role="dialog" aria-label="Chat with Yamuna Organic">
+        <div className="chat-panel" role="dialog" aria-label="Chat with Western Gods Organics">
           <div className="chat-head">
             <div>
               <b>{t('chatTitle')}</b>

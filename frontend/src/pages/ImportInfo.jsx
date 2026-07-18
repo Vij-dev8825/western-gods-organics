@@ -55,7 +55,7 @@ export default function ImportInfo() {
       <div className="two-col-split">
         <div>
           <span className="eyebrow">International</span>
-          <h2>Import Yamuna Organic to your country</h2>
+          <h2>Import Western Gods Organics to your country</h2>
           <p className="muted">
             We currently ship across India, and we're keen to bring our wood-pressed oils,
             soaps and powders to customers abroad too. Whether it's for personal use, a

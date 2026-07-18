@@ -47,7 +47,7 @@ export default function Invoice() {
 
       <div className="invoice-sheet">
         <div className="invoice-header">
-          <img src={logo} alt="Yamuna Organic" height={44} />
+          <img src={logo} alt="Western Gods Organics" height={44} />
           <div className="invoice-header-address">
             <b>Shri Gopal Flour &amp; Oil Mills</b>
             <span>Udumalpet, Tiruppur District, Tamil Nadu – 642126</span>
@@ -109,7 +109,7 @@ export default function Invoice() {
         </div>
 
         <div className="invoice-footer">
-          <p>Thank you for shopping with Yamuna Organic — wood-pressed with care, always.</p>
+          <p>Thank you for shopping with Western Gods Organics — wood-pressed with care, always.</p>
           <p className="muted">This is a computer-generated invoice and does not require a signature.</p>
         </div>
       </div>

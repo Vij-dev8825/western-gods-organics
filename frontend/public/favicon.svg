@@ -1,22 +1,15 @@
 <svg width="80" height="80" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <linearGradient id="fGold" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#8a5a1e"/>
-      <stop offset="30%" stop-color="#c9962c"/>
-      <stop offset="52%" stop-color="#f4d98a"/>
-      <stop offset="70%" stop-color="#dba43a"/>
-      <stop offset="100%" stop-color="#8a5a1e"/>
-    </linearGradient>
     <linearGradient id="fLeaf" x1="0%" y1="100%" x2="100%" y2="0%">
       <stop offset="0%" stop-color="#2e6b1f"/>
       <stop offset="55%" stop-color="#5aab35"/>
       <stop offset="100%" stop-color="#8fd05f"/>
     </linearGradient>
   </defs>
-  <g transform="translate(40,44)">
-    <path d="M 0,-36 C 10,-21 23,-8 23,10 A 23,23 0 1,1 -23,10 C -23,-8 -10,-21 0,-36 Z"
-          fill="none" stroke="url(#fGold)" stroke-width="5.5" stroke-linejoin="round"/>
-    <path d="M 2,15 C -2,-2 7,-20 22,-26 C 26,-9 17,9 2,15 Z" fill="url(#fLeaf)"/>
-    <path d="M -3,17 C -13,13 -17,3 -15,-7 C -6,-4 -1,7 -3,17 Z" fill="url(#fGold)"/>
+  <g transform="translate(40,40)">
+    <circle r="36" fill="none" stroke="#3d6b47" stroke-width="4"/>
+    <text x="0" y="14" text-anchor="middle" font-family="'Fraunces','Georgia',serif" font-size="42" font-weight="600" fill="#3d6b47">W</text>
+    <path d="M 4,-3 C 8,-14 17,-23 28,-27 C 27,-15 20,-5 8,-2 Z" fill="url(#fLeaf)"/>
+    <path d="M 6,-4 C 12,-12 19,-19 26,-24" fill="none" stroke="#e9f5df" stroke-width="1.2" stroke-linecap="round" opacity="0.85"/>
   </g>
 </svg>

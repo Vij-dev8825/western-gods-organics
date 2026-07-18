@@ -135,7 +135,7 @@ export default function Cart() {
         amount: rzpOrder.amount,
         currency: rzpOrder.currency,
         order_id: rzpOrder.razorpayOrderId,
-        name: 'Yamuna Organic',
+        name: 'Western Gods Organics',
         description: `Order · ${orderItems.length} item(s)`,
         prefill: {
           name: user?.name || '',

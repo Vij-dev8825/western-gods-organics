@@ -62,7 +62,7 @@ export default function AdminLayout() {
             <img src="/favicon.svg" alt="" width={26} height={26} />
           </span>
           <div>
-            <b className="gold-text">Yamuna Organic</b>
+            <b className="gold-text">Western Gods Organics</b>
             <span>Admin Panel</span>
           </div>
           <button

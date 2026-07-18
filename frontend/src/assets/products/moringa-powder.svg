@@ -32,8 +32,8 @@
   <!-- label -->
   <rect x="120" y="164" width="120" height="126" rx="8" fill="#ffffff" stroke="#e3d6b4" stroke-width="1.5"/>
   <path d="M 180 186 C 174 179, 174 170, 180 164 C 186 170, 186 179, 180 186 Z" fill="#5aab35"/>
-  <text x="180" y="212" text-anchor="middle" font-family="Georgia,serif" font-size="14" font-weight="700" fill="#1f3d2b">YAMUNA</text>
-  <text x="180" y="228" text-anchor="middle" font-family="Arial,sans-serif" font-size="8" letter-spacing="3" fill="#8a5a1e">ORGANIC</text>
+  <text x="180" y="212" text-anchor="middle" font-family="Georgia,serif" font-size="11" font-weight="700" fill="#1f3d2b">WESTERN GODS</text>
+  <text x="180" y="228" text-anchor="middle" font-family="Arial,sans-serif" font-size="8" letter-spacing="3" fill="#8a5a1e">ORGANICS</text>
   <rect x="140" y="238" width="80" height="1.5" fill="url(#mpGold)"/>
   <text x="180" y="258" text-anchor="middle" font-family="Arial,sans-serif" font-size="11" font-weight="700" fill="#3c6b2c">MORINGA</text>
   <text x="180" y="274" text-anchor="middle" font-family="Arial,sans-serif" font-size="8.5" fill="#7d7460">LEAF POWDER · 100 g</text>

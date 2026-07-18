@@ -45,7 +45,7 @@ export default function Footer() {
         <div className="footer-brand-row">
           <div className="flex gap-1" style={{ alignItems: 'center', marginBottom: 14 }}>
             <img src="/favicon.svg" alt="" width={34} height={34} />
-            <h3 style={{ color: '#fffdf8', margin: 0 }}>Yamuna Organic</h3>
+            <h3 style={{ color: '#fffdf8', margin: 0 }}>Western Gods Organics</h3>
           </div>
           <p style={{ maxWidth: 420, fontSize: '0.9rem' }}>{t('footerTagline')}</p>
           <div className="social-row">
@@ -112,7 +112,7 @@ export default function Footer() {
         </div>
 
         <div className="footer-bottom">
-          <span>© {new Date().getFullYear()} Yamuna Organic. {t('footerRights')}</span>
+          <span>© {new Date().getFullYear()} Western Gods Organics. {t('footerRights')}</span>
           <span>{t('footerMotto')}</span>
         </div>
       </div>

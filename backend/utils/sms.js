@@ -65,7 +65,7 @@ async function sendOtpSms(phone, otp) {
     }
   }
 
-  return sendViaTwilioOrLog(phone, `${otp} is your Yamuna Organics OTP. Do not share this code.`);
+  return sendViaTwilioOrLog(phone, `${otp} is your Western Gods Organics OTP. Do not share this code.`);
 }
 
 async function sendSms(phone, message) {

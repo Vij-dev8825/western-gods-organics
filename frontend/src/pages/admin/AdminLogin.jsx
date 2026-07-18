@@ -96,9 +96,9 @@ export default function AdminLogin() {
     <div className="admin-login-page">
       <div className="admin-login-card">
         <div className="center" style={{ marginBottom: 18 }}>
-          <img src="/favicon.svg" alt="Yamuna Organic" width={52} height={52} />
+          <img src="/favicon.svg" alt="Western Gods Organics" width={52} height={52} />
         </div>
-        <span className="eyebrow" style={{ display: 'block', textAlign: 'center' }}>Yamuna Organic</span>
+        <span className="eyebrow" style={{ display: 'block', textAlign: 'center' }}>Western Gods Organics</span>
         <h2 className="center" style={{ color: '#fffdf8' }}>
           {step === 'phone' ? 'Admin Login' : 'Verify OTP'}
         </h2>

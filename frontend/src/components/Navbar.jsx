@@ -58,8 +58,8 @@ export default function Navbar() {
   return (
     <header className="navbar">
       <div className="navbar-inner">
-        <NavLink to="/" aria-label="Yamuna Organic home">
-          <img src={logo} alt="Yamuna Organic" height={52} />
+        <NavLink to="/" aria-label="Western Gods Organics home">
+          <img src={logo} alt="Western Gods Organics" height={52} />
         </NavLink>
 
         <form className="navbar-search" role="search" onSubmit={handleSearch}>

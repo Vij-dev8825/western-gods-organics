@@ -1,39 +1,22 @@
-<svg width="300" height="80" viewBox="0 0 300 80" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Yamuna Organic">
+<svg width="300" height="80" viewBox="0 0 300 80" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Western Gods Organics">
   <defs>
-    <linearGradient id="yoGold" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#8a5a1e"/>
-      <stop offset="30%" stop-color="#c9962c"/>
-      <stop offset="52%" stop-color="#f4d98a"/>
-      <stop offset="70%" stop-color="#dba43a"/>
-      <stop offset="100%" stop-color="#8a5a1e"/>
-    </linearGradient>
-    <linearGradient id="yoGoldText" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" stop-color="#b5811f"/>
-      <stop offset="45%" stop-color="#e8b84b"/>
-      <stop offset="60%" stop-color="#f7e3a5"/>
-      <stop offset="100%" stop-color="#8a5a1e"/>
-    </linearGradient>
-    <linearGradient id="yoLeaf" x1="0%" y1="100%" x2="100%" y2="0%">
+    <linearGradient id="wgLeaf" x1="0%" y1="100%" x2="100%" y2="0%">
       <stop offset="0%" stop-color="#2e6b1f"/>
       <stop offset="55%" stop-color="#5aab35"/>
       <stop offset="100%" stop-color="#8fd05f"/>
     </linearGradient>
   </defs>
 
-  <!-- mark: golden oil drop with leaf -->
-  <g transform="translate(38,41)">
-    <!-- drop outline -->
-    <path d="M 0,-33 C 9,-19 21,-7 21,9 A 21,21 0 1,1 -21,9 C -21,-7 -9,-19 0,-33 Z"
-          fill="none" stroke="url(#yoGold)" stroke-width="5" stroke-linejoin="round"/>
-    <!-- main green leaf -->
-    <path d="M 2,14 C -2,-2 6,-18 20,-24 C 24,-8 16,8 2,14 Z" fill="url(#yoLeaf)"/>
-    <path d="M 3.5,12 C 8,2 13,-9 18,-20" fill="none" stroke="#e9f5df" stroke-width="1.3" stroke-linecap="round" opacity="0.85"/>
-    <!-- small golden leaf -->
-    <path d="M -3,16 C -12,12 -16,3 -14,-6 C -6,-3 -1,6 -3,16 Z" fill="url(#yoGold)"/>
+  <!-- mark: circled serif W with a leaf sweeping through it -->
+  <g transform="translate(38,40)">
+    <circle r="31" fill="none" stroke="#3d6b47" stroke-width="3"/>
+    <text x="0" y="12" text-anchor="middle" font-family="'Fraunces','Georgia',serif" font-size="36" font-weight="600" fill="#3d6b47">W</text>
+    <path d="M 3,-2 C 6,-12 14,-20 24,-23 C 23,-13 17,-4 7,-1 Z" fill="url(#wgLeaf)"/>
+    <path d="M 5,-3 C 10,-10 16,-16 22,-20" fill="none" stroke="#e9f5df" stroke-width="1.1" stroke-linecap="round" opacity="0.85"/>
   </g>
 
   <!-- wordmark -->
-  <text x="76" y="38" font-family="'Fraunces','Georgia',serif" font-size="30" font-weight="600" letter-spacing="1.5" fill="url(#yoGoldText)">YAMUNA</text>
-  <text x="78" y="57" font-family="'Work Sans','Arial',sans-serif" font-size="13" font-weight="600" letter-spacing="6.5" fill="#1f3d2b">ORGANIC</text>
-  <text x="78" y="71" font-family="'Work Sans','Arial',sans-serif" font-size="8.5" letter-spacing="0.8" fill="#8a5a1e">Directly from Farmers · Traditional Ways</text>
+  <text x="78" y="34" font-family="'Fraunces','Georgia',serif" font-size="21" font-weight="600" letter-spacing="0.5" fill="#3d6b47">WESTERN GODS</text>
+  <text x="79" y="54" font-family="'Work Sans','Arial',sans-serif" font-size="13" font-weight="600" letter-spacing="6" fill="#1f3d2b">ORGANICS</text>
+  <text x="79" y="69" font-family="'Work Sans','Arial',sans-serif" font-size="8.5" letter-spacing="0.8" fill="#3d6b47">Directly from Farmers · Traditional Ways</text>
 </svg>

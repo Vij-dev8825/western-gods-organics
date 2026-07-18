@@ -22,7 +22,7 @@ const TESTIMONIALS = [
     place: 'Chennai',
   },
   {
-    quote: 'We switched our restaurant to Yamuna Organic in bulk. Consistent quality, GST invoicing, on-time delivery. Zero complaints.',
+    quote: 'We switched our restaurant to Western Gods Organics in bulk. Consistent quality, GST invoicing, on-time delivery. Zero complaints.',
     name: 'Chef Devansh',
     place: 'Delhi NCR',
   },

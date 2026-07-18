@@ -7,7 +7,7 @@ export default function TermsAndConditions() {
       <p className="muted">Last updated: July 2026</p>
 
       <p>
-        These terms govern your use of the Yamuna Organic website and any purchase you make
+        These terms govern your use of the Western Gods Organics website and any purchase you make
         through it. By placing an order, you agree to the terms below.
       </p>
 
@@ -39,7 +39,7 @@ export default function TermsAndConditions() {
       <h2>Limitation of liability</h2>
       <p>
         We aim for every order to arrive fresh and as described. Beyond replacement, refund or
-        the order value paid, Yamuna Organic is not liable for indirect or consequential losses
+        the order value paid, Western Gods Organics is not liable for indirect or consequential losses
         arising from use of our products or website.
       </p>
 
