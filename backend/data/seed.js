@@ -61,7 +61,7 @@ async function seed() {
       await db.put('users', {
         id: uuid(),
         phone: adminPhone,
-        name: 'Yamuna Admin',
+        name: 'Western Gods Admin',
         email: process.env.ADMIN_EMAIL || '',
         role: 'admin',
         addresses: [],
