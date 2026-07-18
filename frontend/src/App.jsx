@@ -6,6 +6,7 @@ import Footer from './components/Footer';
 import ProtectedRoute from './components/ProtectedRoute';
 import ChatWidget from './components/ChatWidget';
 import PromoPopup from './components/PromoPopup';
+import CookieConsent from './components/CookieConsent';
 
 import Home from './pages/Home';
 import Shop from './pages/Shop';
@@ -67,6 +68,7 @@ function StoreLayout() {
       <Footer />
       <ChatWidget />
       <PromoPopup />
+      <CookieConsent />
     </div>
   );
 }

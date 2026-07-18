@@ -134,6 +134,19 @@ const en = {
   footerBackToTop: 'Back to top',
   footerMotto: 'Wood-pressed with care, always.',
 
+  // cookie consent
+  cookieMessage:
+    'We use cookies to give you the best possible experience while you browse our website. By continuing to use this site, you agree to our use of cookies.',
+  cookieLearnMore: 'Learn more',
+  cookieAcceptAll: 'Accept All',
+  cookiePreferences: 'Preferences',
+  cookiePrefTitle: 'Cookie preferences',
+  cookiePrefNecessary: 'Necessary cookies',
+  cookiePrefNecessaryDesc:
+    'Required to keep you logged in and remember your cart and wishlist between visits. Always active.',
+  cookiePrefNote: "We don't use analytics or advertising cookies — there's nothing else to choose from.",
+  cookiePrefSave: 'Save preferences',
+
   // chat widget
   chatTitle: 'Chat with us',
   chatReply: 'We usually reply within a few hours',
@@ -239,6 +252,18 @@ const hi = {
   footerRights: 'सर्वाधिकार सुरक्षित।',
   footerMotto: 'हमेशा, प्यार से लकड़ी-पेराई।',
 
+  cookieMessage:
+    'हम आपको हमारी वेबसाइट पर सबसे अच्छा अनुभव देने के लिए कुकीज़ का उपयोग करते हैं। इस साइट का उपयोग जारी रखकर, आप हमारी कुकीज़ नीति से सहमत होते हैं।',
+  cookieLearnMore: 'और जानें',
+  cookieAcceptAll: 'सभी स्वीकार करें',
+  cookiePreferences: 'प्राथमिकताएँ',
+  cookiePrefTitle: 'कुकी प्राथमिकताएँ',
+  cookiePrefNecessary: 'आवश्यक कुकीज़',
+  cookiePrefNecessaryDesc:
+    'आपको लॉग इन रखने और विज़िट के बीच कार्ट व विशलिस्ट याद रखने के लिए ज़रूरी। हमेशा सक्रिय।',
+  cookiePrefNote: 'हम एनालिटिक्स या विज्ञापन कुकीज़ का उपयोग नहीं करते — चुनने के लिए कुछ और नहीं है।',
+  cookiePrefSave: 'प्राथमिकताएँ सहेजें',
+
   chatTitle: 'हमसे बात करें',
   chatReply: 'हम आमतौर पर कुछ घंटों में जवाब देते हैं',
   chatLoginText: 'हमारी टीम से चैट शुरू करने के लिए अपने मोबाइल नंबर से लॉग इन करें।',
@@ -342,6 +367,18 @@ const ta = {
   footerPrivacy: 'தனியுரிமைக் கொள்கை',
   footerRights: 'அனைத்து உரிமைகளும் பாதுகாக்கப்பட்டவை.',
   footerMotto: 'எப்போதும், அன்புடன் மரச்செக்கில்.',
+
+  cookieMessage:
+    'எங்கள் வலைத்தளத்தில் சிறந்த அனுபவத்தை வழங்க நாங்கள் குக்கீகளைப் பயன்படுத்துகிறோம். இந்த தளத்தைத் தொடர்ந்து பயன்படுத்துவதன் மூலம், எங்கள் குக்கீ கொள்கையை நீங்கள் ஒப்புக்கொள்கிறீர்கள்.',
+  cookieLearnMore: 'மேலும் அறிக',
+  cookieAcceptAll: 'அனைத்தையும் ஏற்கவும்',
+  cookiePreferences: 'விருப்பங்கள்',
+  cookiePrefTitle: 'குக்கீ விருப்பங்கள்',
+  cookiePrefNecessary: 'அத்தியாவசிய குக்கீகள்',
+  cookiePrefNecessaryDesc:
+    'நீங்கள் உள்நுழைந்திருக்க மற்றும் வருகைகளுக்கு இடையே கார்ட் மற்றும் விருப்பப்பட்டியலை நினைவில் வைக்க தேவை. எப்போதும் இயங்கும்.',
+  cookiePrefNote: 'நாங்கள் பகுப்பாய்வு அல்லது விளம்பர குக்கீகளைப் பயன்படுத்துவதில்லை — தேர்வு செய்ய வேறு எதுவும் இல்லை.',
+  cookiePrefSave: 'விருப்பங்களைச் சேமிக்கவும்',
 
   chatTitle: 'எங்களுடன் அரட்டை',
   chatReply: 'சில மணி நேரங்களில் பதிலளிப்போம்',
@@ -447,6 +484,18 @@ const te = {
   footerRights: 'సర్వహక్కులు సురక్షితం.',
   footerMotto: 'ఎల్లప్పుడూ, శ్రద్ధతో కలప-పిండినవి.',
 
+  cookieMessage:
+    'మా వెబ్‌సైట్‌లో మీకు ఉత్తమ అనుభవాన్ని అందించడానికి మేము కుక్కీలను ఉపయోగిస్తాము. ఈ సైట్‌ను ఉపయోగించడం కొనసాగించడం ద్వారా, మీరు మా కుక్కీ విధానానికి అంగీకరిస్తున్నారు.',
+  cookieLearnMore: 'మరింత తెలుసుకోండి',
+  cookieAcceptAll: 'అన్నింటినీ అంగీకరించండి',
+  cookiePreferences: 'ప్రాధాన్యతలు',
+  cookiePrefTitle: 'కుక్కీ ప్రాధాన్యతలు',
+  cookiePrefNecessary: 'అవసరమైన కుక్కీలు',
+  cookiePrefNecessaryDesc:
+    'మిమ్మల్ని లాగిన్‌లో ఉంచడానికి మరియు సందర్శనల మధ్య కార్ట్ మరియు విష్‌లిస్ట్‌ను గుర్తుంచుకోవడానికి అవసరం. ఎల్లప్పుడూ యాక్టివ్‌గా ఉంటుంది.',
+  cookiePrefNote: 'మేము అనలిటిక్స్ లేదా అడ్వర్టైజింగ్ కుక్కీలను ఉపయోగించము — ఎంచుకోవడానికి మరేమీ లేదు.',
+  cookiePrefSave: 'ప్రాధాన్యతలను సేవ్ చేయండి',
+
   chatTitle: 'మాతో చాట్ చేయండి',
   chatReply: 'మేము సాధారణంగా కొన్ని గంటల్లో స్పందిస్తాము',
   chatLoginText: 'మా బృందంతో చాట్ ప్రారంభించడానికి మీ మొబైల్ నంబర్‌తో లాగిన్ చేయండి.',
@@ -550,6 +599,18 @@ const kn = {
   footerPrivacy: 'ಗೌಪ್ಯತಾ ನೀತಿ',
   footerRights: 'ಎಲ್ಲಾ ಹಕ್ಕುಗಳನ್ನು ಕಾಯ್ದಿರಿಸಲಾಗಿದೆ.',
   footerMotto: 'ಯಾವಾಗಲೂ, ಕಾಳಜಿಯಿಂದ ಮರದ ಗಾಣದಲ್ಲಿ ಅರೆದದ್ದು.',
+
+  cookieMessage:
+    'ನಮ್ಮ ವೆಬ್‌ಸೈಟ್‌ನಲ್ಲಿ ನಿಮಗೆ ಉತ್ತಮ ಅನುಭವ ನೀಡಲು ನಾವು ಕುಕೀಗಳನ್ನು ಬಳಸುತ್ತೇವೆ. ಈ ಸೈಟ್ ಬಳಸುವುದನ್ನು ಮುಂದುವರಿಸುವ ಮೂಲಕ, ನೀವು ನಮ್ಮ ಕುಕೀ ನೀತಿಯನ್ನು ಒಪ್ಪುತ್ತೀರಿ.',
+  cookieLearnMore: 'ಇನ್ನಷ್ಟು ತಿಳಿಯಿರಿ',
+  cookieAcceptAll: 'ಎಲ್ಲವನ್ನೂ ಒಪ್ಪಿಕೊಳ್ಳಿ',
+  cookiePreferences: 'ಆದ್ಯತೆಗಳು',
+  cookiePrefTitle: 'ಕುಕೀ ಆದ್ಯತೆಗಳು',
+  cookiePrefNecessary: 'ಅಗತ್ಯ ಕುಕೀಗಳು',
+  cookiePrefNecessaryDesc:
+    'ನಿಮ್ಮನ್ನು ಲಾಗ್ ಇನ್ ಆಗಿ ಇರಿಸಲು ಮತ್ತು ಭೇಟಿಗಳ ನಡುವೆ ಕಾರ್ಟ್ ಮತ್ತು ವಿಶ್‌ಲಿಸ್ಟ್ ನೆನಪಿಡಲು ಅಗತ್ಯ. ಯಾವಾಗಲೂ ಸಕ್ರಿಯ.',
+  cookiePrefNote: 'ನಾವು ಅನಾಲಿಟಿಕ್ಸ್ ಅಥವಾ ಜಾಹೀರಾತು ಕುಕೀಗಳನ್ನು ಬಳಸುವುದಿಲ್ಲ — ಆಯ್ಕೆ ಮಾಡಲು ಬೇರೇನೂ ಇಲ್ಲ.',
+  cookiePrefSave: 'ಆದ್ಯತೆಗಳನ್ನು ಉಳಿಸಿ',
 
   chatTitle: 'ನಮ್ಮೊಂದಿಗೆ ಚಾಟ್ ಮಾಡಿ',
   chatReply: 'ನಾವು ಸಾಮಾನ್ಯವಾಗಿ ಕೆಲವು ಗಂಟೆಗಳಲ್ಲಿ ಪ್ರತಿಕ್ರಿಯಿಸುತ್ತೇವೆ',
