@@ -39,6 +39,8 @@ async function sendPush(userId, { title, message, image, url }) {
     } catch (err) {
       if (err.statusCode === 404 || err.statusCode === 410) {
         await db.remove('push-subscriptions', sub.id);
+      } else {
+        console.error('[PUSH:error]', err.statusCode || '', err.message);
       }
     }
   }
