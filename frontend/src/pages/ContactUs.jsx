@@ -53,7 +53,7 @@ export default function ContactUs() {
           </p>
           <div style={{ marginTop: 28 }}>
             <h3>Visit the mill</h3>
-            <p className="muted">Yamuna Organics Mill, Village Road, Mathura, Uttar Pradesh, India</p>
+            <p className="muted">Shri Gopal Flour &amp; Oil Mills, Udumalpet, Tiruppur District, Tamil Nadu – 642126</p>
             <h3>Call us</h3>
             <p className="muted"><a href="tel:+918825875607">+91 88258 75607</a> (Mon–Sat, 9am–7pm)</p>
             <h3>Email</h3>
