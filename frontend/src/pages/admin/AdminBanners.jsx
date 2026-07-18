@@ -13,6 +13,10 @@ export default function AdminBanners() {
   const [subtitle, setSubtitle] = useState('');
   const [message, setMessage] = useState(null);
   const [uploading, setUploading] = useState(false);
+  const [editingId, setEditingId] = useState(null);
+  const [editTitle, setEditTitle] = useState('');
+  const [editSubtitle, setEditSubtitle] = useState('');
+  const [saving, setSaving] = useState(false);
 
   function load() {
     api.admin.getBanners(token).then((d) => setBanners(d.banners)).catch(() => {});
@@ -85,6 +89,30 @@ export default function AdminBanners() {
     load();
   }
 
+  function startEdit(b) {
+    setEditingId(b.id);
+    setEditTitle(b.title || '');
+    setEditSubtitle(b.subtitle || '');
+    setMessage(null);
+  }
+
+  function cancelEdit() {
+    setEditingId(null);
+  }
+
+  async function saveEdit(b) {
+    setSaving(true);
+    try {
+      await api.admin.updateBanner(token, b.id, { title: editTitle, subtitle: editSubtitle });
+      setEditingId(null);
+      load();
+    } catch (err) {
+      setMessage({ type: 'error', text: err.message });
+    } finally {
+      setSaving(false);
+    }
+  }
+
   return (
     <>
       <div className="admin-head">
@@ -132,14 +160,40 @@ export default function AdminBanners() {
               <img src={b.url} alt="" />
             )}
             <div className="banner-meta">
-              <b>{b.title || <span className="muted">untitled</span>}</b>
-              <span className="muted">{b.subtitle}</span>
-              <div className="banner-actions">
-                <button className="link-btn" onClick={() => move(b, -1)}>↑</button>
-                <button className="link-btn" onClick={() => move(b, 1)}>↓</button>
-                <button className="link-btn" onClick={() => toggle(b)}>{b.active ? 'hide' : 'show'}</button>
-                <button className="link-btn danger" onClick={() => del(b)}>delete</button>
-              </div>
+              {editingId === b.id ? (
+                <>
+                  <input
+                    className="banner-edit-input"
+                    value={editTitle}
+                    onChange={(e) => setEditTitle(e.target.value)}
+                    placeholder="Headline"
+                  />
+                  <input
+                    className="banner-edit-input"
+                    value={editSubtitle}
+                    onChange={(e) => setEditSubtitle(e.target.value)}
+                    placeholder="Sub-text"
+                  />
+                  <div className="banner-actions">
+                    <button className="link-btn" disabled={saving} onClick={() => saveEdit(b)}>
+                      {saving ? 'Saving…' : 'save'}
+                    </button>
+                    <button className="link-btn" disabled={saving} onClick={cancelEdit}>cancel</button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <b>{b.title || <span className="muted">untitled</span>}</b>
+                  <span className="muted">{b.subtitle}</span>
+                  <div className="banner-actions">
+                    <button className="link-btn" onClick={() => move(b, -1)}>↑</button>
+                    <button className="link-btn" onClick={() => move(b, 1)}>↓</button>
+                    <button className="link-btn" onClick={() => startEdit(b)}>edit</button>
+                    <button className="link-btn" onClick={() => toggle(b)}>{b.active ? 'hide' : 'show'}</button>
+                    <button className="link-btn danger" onClick={() => del(b)}>delete</button>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         ))}
