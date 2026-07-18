@@ -234,6 +234,7 @@ p { margin: 0 0 1em; }
 .navbar-search {
   order: 2;
   flex: 1 1 auto;
+  min-width: 0;
   max-width: 420px;
   display: flex;
   align-items: center;
@@ -275,6 +276,7 @@ p { margin: 0 0 1em; }
 .nav-links {
   order: 3;
   display: flex;
+  flex-shrink: 0;
   gap: 28px;
   align-items: center;
 }
@@ -284,6 +286,7 @@ p { margin: 0 0 1em; }
   color: var(--forest-deep);
   position: relative;
   padding: 4px 0;
+  white-space: nowrap;
 }
 .nav-links a.active { color: var(--gold-1); }
 .nav-links a::after {
@@ -300,6 +303,7 @@ p { margin: 0 0 1em; }
 .nav-icons {
   order: 4;
   display: flex;
+  flex-shrink: 0;
   align-items: center;
   gap: 8px;
 }
@@ -372,6 +376,39 @@ p { margin: 0 0 1em; }
   color: var(--forest-deep);
 }
 .mobile-toggle:hover { background: var(--cream-deep); }
+
+/* The full desktop nav row (logo + search + 7 links + icons) needs ~1350px
+   of comfortable room; below that the search box gets squeezed down to
+   nothing before the row actually overflows. Switch to the compact
+   logo/icons-row + full-width-search + drawer-nav layout well before that
+   point, rather than at the much narrower 900px used for page content
+   layouts (hero/shop/cart) below. */
+@media (max-width: 1150px) {
+  .navbar-inner {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    grid-template-areas: "logo . icons" "search search search";
+    row-gap: 10px;
+  }
+  .navbar-inner > a { grid-area: logo; order: initial; }
+  .navbar-search { grid-area: search; order: initial; flex-basis: auto; max-width: none; }
+  .nav-icons { grid-area: icons; order: initial; }
+  .nav-links {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: var(--paper);
+    flex-direction: column;
+    padding: 20px 24px;
+    gap: 16px;
+    box-shadow: var(--shadow-card);
+    transform: translateY(-150%);
+    transition: transform 0.25s ease;
+  }
+  .nav-links.open { transform: translateY(0); }
+  .mobile-toggle { display: flex; }
+}
 
 /* ---------- Hero ---------- */
 .hero {
@@ -1418,34 +1455,6 @@ input:focus-visible + .filter-radio { outline: 2px solid var(--gold-2); outline-
   .filter-panel { position: static; }
   .cart-layout { grid-template-columns: 1fr; }
   .summary-card { position: static; }
-
-  /* Header: logo + icons on row 1, search spans its own row 2 below.
-     Grid (not flex-wrap) so logo+icons never fight search for space or
-     wrap unpredictably regardless of icon count (logged in vs guest). */
-  .navbar-inner {
-    display: grid;
-    grid-template-columns: auto 1fr auto;
-    grid-template-areas: "logo . icons" "search search search";
-    row-gap: 10px;
-  }
-  .navbar-inner > a { grid-area: logo; order: initial; }
-  .navbar-search { grid-area: search; order: initial; flex-basis: auto; max-width: none; }
-  .nav-icons { grid-area: icons; order: initial; }
-  .nav-links {
-    position: absolute;
-    top: 100%;
-    left: 0;
-    right: 0;
-    background: var(--paper);
-    flex-direction: column;
-    padding: 20px 24px;
-    gap: 16px;
-    box-shadow: var(--shadow-card);
-    transform: translateY(-150%);
-    transition: transform 0.25s ease;
-  }
-  .nav-links.open { transform: translateY(0); }
-  .mobile-toggle { display: flex; }
 
   /* Shop filters collapse into a toggleable drawer */
   .filter-toggle { display: flex; }
