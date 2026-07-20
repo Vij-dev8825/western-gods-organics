@@ -24,6 +24,7 @@ const couponRoutes = require('./routes/coupons');
 const subscriptionRoutes = require('./routes/subscriptions');
 const { processDueSubscriptions } = require('./utils/subscriptions');
 const mediaRoutes = require('./routes/media');
+const catalogRoutes = require('./routes/catalog');
 
 const app = express();
 
@@ -50,9 +51,14 @@ app.use('/api/config', configRoutes);
 app.use('/api/coupons', couponRoutes);
 app.use('/api/subscriptions', subscriptionRoutes);
 app.use('/api/media', mediaRoutes);
+app.use('/api/catalog', catalogRoutes);
 
 // Uploaded banner videos/images
 app.use('/uploads', express.static(UPLOADS_DIR, { maxAge: '7d' }));
+
+// Stable, versioned product photos for external feeds (WhatsApp/Meta catalog) —
+// unlike bundled frontend assets, these keep a fixed filename/URL across builds.
+app.use('/catalog-images', express.static(path.join(__dirname, 'public', 'catalog-images'), { maxAge: '7d' }));
 
 // In production (single Render service) the API also serves the built frontend.
 const distDir = path.join(__dirname, '..', 'frontend', 'dist');
