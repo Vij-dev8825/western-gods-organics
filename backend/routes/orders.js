@@ -3,6 +3,9 @@ const db = require('../data/db');
 const { requireAuth } = require('../middleware/auth');
 const razorpay = require('../utils/razorpay');
 const { buildOrderItems, createOrderRecord } = require('../utils/orderBuilder');
+const { notifyUser } = require('../utils/notify');
+
+const CANCELLABLE_STATUSES = ['placed', 'confirmed'];
 
 const router = express.Router();
 
@@ -116,6 +119,43 @@ router.get('/:id', requireAuth, async (req, res, next) => {
     if (!order || order.userId !== req.user.id) {
       return res.status(404).json({ success: false, message: 'Order not found.' });
     }
+    res.json({ success: true, order });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// PATCH /api/orders/:id/cancel — customer self-service cancellation, only
+// while the order hasn't been confirmed for shipping yet.
+router.patch('/:id/cancel', requireAuth, async (req, res, next) => {
+  try {
+    const order = await db.get('orders', req.params.id);
+    if (!order || order.userId !== req.user.id) {
+      return res.status(404).json({ success: false, message: 'Order not found.' });
+    }
+    if (!CANCELLABLE_STATUSES.includes(order.status)) {
+      return res.status(400).json({
+        success: false,
+        message: `This order can no longer be cancelled (current status: ${order.status}). Please contact support instead.`,
+      });
+    }
+
+    order.status = 'cancelled';
+    await db.put('orders', order);
+
+    const user = await db.get('users', order.userId);
+    if (user) {
+      await notifyUser(user, {
+        title: `Order ${order.orderNumber} cancelled`,
+        message:
+          order.paymentMethod === 'razorpay'
+            ? "Your order has been cancelled. Since it was prepaid, we'll process your refund within 5-7 business days."
+            : 'Your order has been cancelled.',
+        meta: { orderId: order.id },
+        channels: { inapp: true, email: true },
+      });
+    }
+
     res.json({ success: true, order });
   } catch (err) {
     next(err);

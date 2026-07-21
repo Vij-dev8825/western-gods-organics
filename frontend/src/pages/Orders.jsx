@@ -16,6 +16,8 @@ const STATUS_LABELS = {
   cancelled: 'Cancelled',
 };
 
+const CANCELLABLE_STATUSES = ['placed', 'confirmed'];
+
 export default function Orders() {
   const { token } = useAuth();
   const { addItem } = useCart();
@@ -24,6 +26,7 @@ export default function Orders() {
 
   const [orders, setOrders] = useState(null);
   const [products, setProducts] = useState([]);
+  const [cancellingId, setCancellingId] = useState(null);
 
   useEffect(() => {
     api.getOrders(token).then((d) => setOrders(d.orders)).catch(() => setOrders([]));
@@ -39,6 +42,24 @@ export default function Orders() {
     order.items.forEach((it) => addItem(it.productId, it.size, it.quantity));
     showToast(`${order.items.length} item(s) added to your cart.`);
     navigate('/cart');
+  }
+
+  async function handleCancel(order) {
+    if (!window.confirm(`Cancel order #${order.orderNumber}? This can't be undone.`)) return;
+    setCancellingId(order.id);
+    try {
+      const { order: updated } = await api.cancelOrder(token, order.id);
+      setOrders((os) => os.map((o) => (o.id === updated.id ? updated : o)));
+      showToast(
+        order.paymentMethod === 'razorpay'
+          ? 'Order cancelled. Your refund will be processed within 5-7 business days.'
+          : 'Order cancelled.'
+      );
+    } catch (err) {
+      showToast(err.message, 'error');
+    } finally {
+      setCancellingId(null);
+    }
   }
 
   if (orders === null) {
@@ -119,6 +140,15 @@ export default function Orders() {
                   <Link to={`/invoice/${o.id}`} className="btn btn-outline btn-sm">
                     Invoice
                   </Link>
+                  {CANCELLABLE_STATUSES.includes(o.status) && (
+                    <button
+                      className="btn btn-outline btn-danger btn-sm"
+                      disabled={cancellingId === o.id}
+                      onClick={() => handleCancel(o)}
+                    >
+                      {cancellingId === o.id ? 'Cancelling…' : 'Cancel Order'}
+                    </button>
+                  )}
                 </div>
               </div>
             ))}

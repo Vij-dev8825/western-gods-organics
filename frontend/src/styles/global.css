@@ -167,6 +167,8 @@ p { margin: 0 0 1em; }
   border: 1.5px solid var(--forest);
 }
 .btn-outline:hover { background: var(--forest); color: var(--cream); }
+.btn-outline.btn-danger { color: #a52f1e; border-color: #a52f1e; }
+.btn-outline.btn-danger:hover { background: #a52f1e; color: var(--cream); }
 
 .btn-ghost {
   background: rgba(31, 61, 43, 0.06);
