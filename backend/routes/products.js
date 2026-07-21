@@ -40,11 +40,15 @@ router.get('/', async (req, res, next) => {
       );
     }
 
-    const minPrice = (p) => Math.min(...p.sizes.map((s) => s.price));
+    // Matches ProductCard's own default-selected size (sizes[1] if present,
+    // else sizes[0]) so the sort order matches the price actually on screen —
+    // sorting by the cheapest size instead looked "unsorted" whenever that
+    // wasn't the size the card happened to display.
+    const displayPrice = (p) => (p.sizes[1] || p.sizes[0]).price;
     if (sort === 'price-asc') {
-      products = [...products].sort((a, b) => minPrice(a) - minPrice(b));
+      products = [...products].sort((a, b) => displayPrice(a) - displayPrice(b));
     } else if (sort === 'price-desc') {
-      products = [...products].sort((a, b) => minPrice(b) - minPrice(a));
+      products = [...products].sort((a, b) => displayPrice(b) - displayPrice(a));
     } else if (sort === 'rating') {
       products = [...products].sort((a, b) => b.rating - a.rating);
     }
