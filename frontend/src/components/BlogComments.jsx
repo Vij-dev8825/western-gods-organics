@@ -35,7 +35,7 @@ export default function BlogComments({ slug }) {
   }
 
   return (
-    <div className="blog-comments">
+    <div className="blog-comments" id="comments">
       <h3 className="blog-comments-heading">
         {t('commentsHeading')} {comments.length > 0 && `(${comments.length})`}
       </h3>

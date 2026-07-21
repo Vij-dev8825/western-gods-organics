@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useLocation, useParams } from 'react-router-dom';
 import { api } from '../api';
 import { getProductImage } from '../utils/productImages';
 import ChakkiWheel from '../components/ChakkiWheel';
@@ -11,6 +11,7 @@ import { useLang } from '../i18n';
 export default function BlogPost() {
   const { t } = useLang();
   const { slug } = useParams();
+  const location = useLocation();
   const [post, setPost] = useState(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
@@ -24,6 +25,14 @@ export default function BlogPost() {
       .catch(() => setNotFound(true))
       .finally(() => setLoading(false));
   }, [slug]);
+
+  // React Router doesn't auto-scroll to a #hash on client-side navigation
+  // (only real page loads do) — do it ourselves once the post has rendered.
+  useEffect(() => {
+    if (!loading && location.hash === '#comments') {
+      document.getElementById('comments')?.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [loading, location.hash]);
 
   if (loading) {
     return (
@@ -53,6 +62,9 @@ export default function BlogPost() {
       <h1 className="blog-post-title">{post.title}</h1>
       <div className="blog-post-actions">
         <BlogLike slug={post.id} likes={post.likes} />
+        <a href="#comments" className="blog-comment-count" aria-label={t('commentsHeading')}>
+          <span aria-hidden="true">💬</span> {post.commentsCount ?? 0}
+        </a>
         <BlogShare url={window.location.href} title={post.title} />
       </div>
 

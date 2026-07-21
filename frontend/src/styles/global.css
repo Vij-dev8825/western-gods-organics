@@ -1657,6 +1657,23 @@ input:focus-visible + .filter-radio { outline: 2px solid var(--gold-2); outline-
   padding: 12px 22px 18px;
   border-top: 1px solid rgba(31,61,43,0.08);
 }
+.blog-card-share-left { display: flex; align-items: center; gap: 8px; }
+
+.blog-comment-count {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 7px 13px;
+  border-radius: 999px;
+  border: 1px solid rgba(31,61,43,0.2);
+  color: var(--forest);
+  text-decoration: none;
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+.blog-comment-count:hover { border-color: var(--gold-2); color: var(--gold-1); }
 
 .blog-like-btn {
   display: inline-flex;
