@@ -28,6 +28,7 @@ const COLLECTIONS = [
   'reviews',
   'coupons',
   'subscriptions',
+  'blog-posts',
   'media',
   'push-subscriptions',
 ];

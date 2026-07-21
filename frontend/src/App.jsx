@@ -12,6 +12,8 @@ import Home from './pages/Home';
 import Shop from './pages/Shop';
 import Categories from './pages/Categories';
 import Combos from './pages/Combos';
+import Blog from './pages/Blog';
+import BlogPost from './pages/BlogPost';
 import ProductDetail from './pages/ProductDetail';
 import Cart from './pages/Cart';
 import Wishlist from './pages/Wishlist';
@@ -41,6 +43,7 @@ import AdminOrders from './pages/admin/AdminOrders';
 import AdminLeads from './pages/admin/AdminLeads';
 import AdminNotify from './pages/admin/AdminNotify';
 import AdminChat from './pages/admin/AdminChat';
+import AdminBlog from './pages/admin/AdminBlog';
 
 function NotFound() {
   return (
@@ -99,6 +102,7 @@ export default function App() {
         <Route path="leads" element={<AdminLeads />} />
         <Route path="notify" element={<AdminNotify />} />
         <Route path="chat" element={<AdminChat />} />
+        <Route path="blog" element={<AdminBlog />} />
       </Route>
 
       {/* Customer storefront */}
@@ -107,6 +111,8 @@ export default function App() {
         <Route path="/shop" element={<Shop />} />
         <Route path="/categories" element={<Categories />} />
         <Route path="/combos" element={<Combos />} />
+        <Route path="/blog" element={<Blog />} />
+        <Route path="/blog/:slug" element={<BlogPost />} />
         <Route path="/product/:id" element={<ProductDetail />} />
         <Route path="/cart" element={<Cart />} />
         <Route path="/wishlist" element={<Wishlist />} />

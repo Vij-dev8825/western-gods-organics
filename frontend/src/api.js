@@ -40,6 +40,10 @@ export const api = {
   // banners (home page hero)
   getBanners: () => request('/banners'),
 
+  // blog
+  getBlogPosts: () => request('/blog'),
+  getBlogPost: (slug) => request(`/blog/${slug}`),
+
   // cart
   getCart: (token) => request('/cart', { token }),
   syncCart: (token, items) => request('/cart', { method: 'PUT', body: { items }, token }),
@@ -111,6 +115,11 @@ export const api = {
     getOrders: (token) => request('/admin/orders', { token }),
     updateOrderStatus: (token, id, status) =>
       request(`/admin/orders/${id}`, { method: 'PATCH', body: { status }, token }),
+
+    getBlogPosts: (token) => request('/admin/blog', { token }),
+    createBlogPost: (token, post) => request('/admin/blog', { method: 'POST', body: post, token }),
+    updateBlogPost: (token, id, post) => request(`/admin/blog/${id}`, { method: 'PUT', body: post, token }),
+    deleteBlogPost: (token, id) => request(`/admin/blog/${id}`, { method: 'DELETE', token }),
 
     getCoupons: (token) => request('/admin/coupons', { token }),
     createCoupon: (token, coupon) => request('/admin/coupons', { method: 'POST', body: coupon, token }),

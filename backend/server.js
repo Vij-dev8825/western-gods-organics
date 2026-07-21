@@ -25,6 +25,7 @@ const subscriptionRoutes = require('./routes/subscriptions');
 const { processDueSubscriptions } = require('./utils/subscriptions');
 const mediaRoutes = require('./routes/media');
 const catalogRoutes = require('./routes/catalog');
+const blogRoutes = require('./routes/blog');
 
 const app = express();
 
@@ -57,6 +58,7 @@ app.use('/api/coupons', couponRoutes);
 app.use('/api/subscriptions', subscriptionRoutes);
 app.use('/api/media', mediaRoutes);
 app.use('/api/catalog', catalogRoutes);
+app.use('/api/blog', blogRoutes);
 
 // Uploaded banner videos/images
 app.use('/uploads', express.static(UPLOADS_DIR, { maxAge: '7d' }));

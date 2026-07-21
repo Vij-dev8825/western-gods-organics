@@ -278,6 +278,72 @@ router.delete('/categories/:id', async (req, res, next) => {
   }
 });
 
+/* ---------------------------------- Blog ----------------------------------- */
+
+// GET /api/admin/blog (includes unpublished drafts)
+router.get('/blog', async (req, res, next) => {
+  try {
+    const posts = (await db.list('blog-posts')).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+    res.json({ success: true, posts });
+  } catch (err) {
+    next(err);
+  }
+});
+
+function slugify(title) {
+  return String(title).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+}
+
+// POST /api/admin/blog  { title, category, image, excerpt, content, published? }
+router.post('/blog', async (req, res, next) => {
+  try {
+    if (!req.body.title || !req.body.content) {
+      return res.status(400).json({ success: false, message: 'Title and content are required.' });
+    }
+    const id = req.body.id || slugify(req.body.title);
+    if (await db.get('blog-posts', id)) {
+      return res.status(409).json({ success: false, message: `A post with slug "${id}" already exists.` });
+    }
+    const post = {
+      id,
+      title: req.body.title,
+      category: req.body.category || '',
+      image: req.body.image || '',
+      excerpt: req.body.excerpt || '',
+      content: req.body.content,
+      published: req.body.published !== false,
+      createdAt: new Date().toISOString(),
+    };
+    await db.put('blog-posts', post);
+    res.status(201).json({ success: true, post });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// PUT /api/admin/blog/:id
+router.put('/blog/:id', async (req, res, next) => {
+  try {
+    const existing = await db.get('blog-posts', req.params.id);
+    if (!existing) return res.status(404).json({ success: false, message: 'Post not found.' });
+    const post = { ...existing, ...req.body, id: existing.id };
+    await db.put('blog-posts', post);
+    res.json({ success: true, post });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// DELETE /api/admin/blog/:id
+router.delete('/blog/:id', async (req, res, next) => {
+  try {
+    await db.remove('blog-posts', req.params.id);
+    res.json({ success: true });
+  } catch (err) {
+    next(err);
+  }
+});
+
 /* --------------------------------- Coupons -------------------------------- */
 
 // GET /api/admin/coupons

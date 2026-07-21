@@ -12,6 +12,7 @@ const links = [
   { to: '/admin/coupons', label: 'Coupons' },
   { to: '/admin/subscriptions', label: 'Subscriptions' },
   { to: '/admin/banners', label: 'Home Banners' },
+  { to: '/admin/blog', label: 'Blog' },
   { to: '/admin/orders', label: 'Orders' },
   { to: '/admin/leads', label: 'Enquiries & Leads' },
   { to: '/admin/notify', label: 'Notifications' },
