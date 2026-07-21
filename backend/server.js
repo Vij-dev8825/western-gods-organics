@@ -27,6 +27,7 @@ const mediaRoutes = require('./routes/media');
 const catalogRoutes = require('./routes/catalog');
 const blogRoutes = require('./routes/blog');
 const pageBannerRoutes = require('./routes/pageBanners');
+const sitemapRoutes = require('./routes/sitemap');
 
 const app = express();
 
@@ -61,6 +62,7 @@ app.use('/api/media', mediaRoutes);
 app.use('/api/catalog', catalogRoutes);
 app.use('/api/blog', blogRoutes);
 app.use('/api/page-banners', pageBannerRoutes);
+app.use('/sitemap.xml', sitemapRoutes);
 
 // Uploaded banner videos/images
 app.use('/uploads', express.static(UPLOADS_DIR, { maxAge: '7d' }));

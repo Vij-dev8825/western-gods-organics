@@ -1,0 +1,13 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /cart
+Disallow: /wishlist
+Disallow: /profile
+Disallow: /orders
+Disallow: /subscriptions
+Disallow: /notifications
+Disallow: /invoice
+Disallow: /order-success
+
+Sitemap: https://yamuna-organics.onrender.com/sitemap.xml
