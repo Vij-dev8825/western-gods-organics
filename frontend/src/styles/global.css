@@ -774,6 +774,35 @@ p { margin: 0 0 1em; }
   top: 90px;
 }
 .filter-panel h4 { margin-bottom: 14px; font-family: var(--font-body); font-size: 0.95rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--forest); }
+
+.filter-accordion { border-bottom: 1px solid rgba(31,61,43,0.12); padding-bottom: 16px; margin-bottom: 16px; }
+.filter-accordion summary {
+  list-style: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--forest);
+  padding-bottom: 10px;
+  border-bottom: 2px solid var(--gold-2);
+}
+.filter-accordion summary::-webkit-details-marker { display: none; }
+.filter-accordion summary::after {
+  content: '›';
+  display: inline-block;
+  font-size: 1.2rem;
+  line-height: 1;
+  color: var(--forest-light);
+  transform: rotate(90deg);
+  transition: transform 0.15s ease;
+}
+.filter-accordion[open] summary::after { transform: rotate(-90deg); }
+.filter-accordion .filter-group { margin-top: 14px; margin-bottom: 0; }
+
 .filter-group { margin-bottom: 22px; }
 .filter-option { display: flex; align-items: center; gap: 10px; padding: 7px 0; font-size: 0.9rem; cursor: pointer; }
 .filter-option-count { color: var(--forest-light); font-size: 0.82rem; margin-left: -2px; }
@@ -847,6 +876,12 @@ input:focus-visible + .filter-radio { outline: 2px solid var(--gold-2); outline-
 .filter-apply { display: none; margin-top: 4px; }
 
 .sort-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
+.sort-bar-controls { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.sort-select-wrap { display: flex; align-items: center; gap: 8px; }
+.sort-select-label { font-size: 0.85rem; font-weight: 600; color: var(--forest); white-space: nowrap; }
+@media (max-width: 640px) {
+  .sort-select-label { display: none; }
+}
 .grid-toggle { display: flex; gap: 4px; border: 1px solid rgba(31,61,43,0.16); border-radius: 8px; padding: 3px; }
 .grid-toggle button {
   display: grid;

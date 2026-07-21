@@ -71,54 +71,35 @@ export default function Shop() {
 
       <div className="shop-layout">
         <aside className={`filter-panel ${filtersOpen ? 'open' : ''}`}>
-          <h4>{t('categoryFilter')}</h4>
-          <div className="filter-group">
-            <label className="filter-option">
-              <input
-                type="radio"
-                name="category"
-                checked={category === 'all'}
-                onChange={() => updateParam('category', '')}
-              />
-              <span className="filter-radio" aria-hidden="true" />
-              {t('allProducts')}
-              <span className="filter-option-count">({totalCount})</span>
-            </label>
-            {categories.map((c) => (
-              <label className="filter-option" key={c.slug}>
+          <details className="filter-accordion" open>
+            <summary>{t('categoryFilter')}</summary>
+            <div className="filter-group">
+              <label className="filter-option">
                 <input
                   type="radio"
                   name="category"
-                  checked={category === c.slug}
-                  onChange={() => updateParam('category', c.slug)}
+                  checked={category === 'all'}
+                  onChange={() => updateParam('category', '')}
                 />
                 <span className="filter-radio" aria-hidden="true" />
-                {c.label}
-                <span className="filter-option-count">({c.count})</span>
+                {t('allProducts')}
+                <span className="filter-option-count">({totalCount})</span>
               </label>
-            ))}
-          </div>
-
-          <h4>{t('sortBy')}</h4>
-          <div className="filter-group">
-            {[
-              ['', t('sortRecommended')],
-              ['price-asc', t('sortPriceAsc')],
-              ['price-desc', t('sortPriceDesc')],
-              ['rating', t('sortRating')],
-            ].map(([value, label]) => (
-              <label className="filter-option" key={value || 'default'}>
-                <input
-                  type="radio"
-                  name="sort"
-                  checked={sort === value}
-                  onChange={() => updateParam('sort', value)}
-                />
-                <span className="filter-radio" aria-hidden="true" />
-                {label}
-              </label>
-            ))}
-          </div>
+              {categories.map((c) => (
+                <label className="filter-option" key={c.slug}>
+                  <input
+                    type="radio"
+                    name="category"
+                    checked={category === c.slug}
+                    onChange={() => updateParam('category', c.slug)}
+                  />
+                  <span className="filter-radio" aria-hidden="true" />
+                  {c.label}
+                  <span className="filter-option-count">({c.count})</span>
+                </label>
+              ))}
+            </div>
+          </details>
 
           <button type="button" className="btn btn-gold btn-sm btn-block filter-apply" onClick={() => setFiltersOpen(false)}>
             Show {products.length} {t('productsCount')}
@@ -128,29 +109,45 @@ export default function Shop() {
         <div>
           <div className="sort-bar">
             <span className="muted">{products.length} {t('productsCount')}</span>
-            <div className="grid-toggle" role="group" aria-label="Grid density">
-              <button
-                type="button"
-                className={!dense ? 'active' : ''}
-                aria-label="Comfortable grid"
-                aria-pressed={!dense}
-                onClick={() => setDense(false)}
-              >
-                <span />
-                <span />
-              </button>
-              <button
-                type="button"
-                className={dense ? 'active' : ''}
-                aria-label="Compact grid"
-                aria-pressed={dense}
-                onClick={() => setDense(true)}
-              >
-                <span />
-                <span />
-                <span />
-                <span />
-              </button>
+            <div className="sort-bar-controls">
+              <div className="grid-toggle" role="group" aria-label="Grid density">
+                <button
+                  type="button"
+                  className={!dense ? 'active' : ''}
+                  aria-label="Comfortable grid"
+                  aria-pressed={!dense}
+                  onClick={() => setDense(false)}
+                >
+                  <span />
+                  <span />
+                </button>
+                <button
+                  type="button"
+                  className={dense ? 'active' : ''}
+                  aria-label="Compact grid"
+                  aria-pressed={dense}
+                  onClick={() => setDense(true)}
+                >
+                  <span />
+                  <span />
+                  <span />
+                  <span />
+                </button>
+              </div>
+              <label className="sort-select-wrap">
+                <span className="sort-select-label">{t('sortBy')}</span>
+                <select
+                  className="select sort-select"
+                  value={sort}
+                  onChange={(e) => updateParam('sort', e.target.value)}
+                  aria-label={t('sortBy')}
+                >
+                  <option value="">{t('sortRecommended')}</option>
+                  <option value="price-asc">{t('sortPriceAsc')}</option>
+                  <option value="price-desc">{t('sortPriceDesc')}</option>
+                  <option value="rating">{t('sortRating')}</option>
+                </select>
+              </label>
             </div>
           </div>
 
