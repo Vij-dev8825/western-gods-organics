@@ -1720,8 +1720,7 @@ input:focus-visible + .filter-radio { outline: 2px solid var(--gold-2); outline-
 
 .blog-post-title { font-family: var(--font-display); font-size: clamp(1.7rem, 4vw, 2.4rem); margin: 14px 0 18px; }
 
-.blog-share { position: relative; display: inline-block; margin-bottom: 28px; }
-.blog-card-share .blog-share { margin-bottom: 0; }
+.blog-share { position: relative; display: inline-block; }
 .blog-share-trigger {
   display: flex;
   align-items: center;
