@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { api } from '../api';
 import { getProductImage } from '../utils/productImages';
 import ChakkiWheel from '../components/ChakkiWheel';
+import BlogShare from '../components/BlogShare';
 import { useLang } from '../i18n';
 
 export default function Blog() {
@@ -41,16 +42,21 @@ export default function Blog() {
         ) : posts.length ? (
           <div className="blog-grid">
             {posts.map((p) => (
-              <Link key={p.id} to={`/blog/${p.id}`} className="blog-card">
-                <div className="blog-card-media">
-                  <img src={getProductImage(p.image)} alt={p.title} loading="lazy" />
+              <div key={p.id} className="blog-card">
+                <Link to={`/blog/${p.id}`} className="blog-card-link">
+                  <div className="blog-card-media">
+                    <img src={getProductImage(p.image)} alt={p.title} loading="lazy" />
+                  </div>
+                  <div className="blog-card-body">
+                    {p.category && <span className="blog-card-tag">{p.category}</span>}
+                    <h3>{p.title}</h3>
+                    <p className="muted">{p.excerpt}</p>
+                  </div>
+                </Link>
+                <div className="blog-card-share">
+                  <BlogShare url={`${window.location.origin}/blog/${p.id}`} title={p.title} />
                 </div>
-                <div className="blog-card-body">
-                  {p.category && <span className="blog-card-tag">{p.category}</span>}
-                  <h3>{p.title}</h3>
-                  <p className="muted">{p.excerpt}</p>
-                </div>
-              </Link>
+              </div>
             ))}
           </div>
         ) : (

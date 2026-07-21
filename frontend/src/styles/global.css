@@ -1641,9 +1641,16 @@ input:focus-visible + .filter-radio { outline: 2px solid var(--gold-2); outline-
   transition: box-shadow 0.15s ease, transform 0.15s ease;
 }
 .blog-card:hover { box-shadow: var(--shadow-lift); transform: translateY(-2px); }
+.blog-card-link { display: block; color: inherit; text-decoration: none; }
 .blog-card-media { aspect-ratio: 4/3; overflow: hidden; }
 .blog-card-media img { width: 100%; height: 100%; object-fit: cover; }
-.blog-card-body { padding: 20px 22px 24px; }
+.blog-card-body { padding: 20px 22px 16px; }
+.blog-card-share {
+  padding: 0 22px 18px;
+}
+.blog-card-share .blog-share { margin-bottom: 0; padding-top: 14px; border-top: 1px solid rgba(31,61,43,0.08); }
+.blog-card-share .blog-share-label { display: none; }
+.blog-card-share .blog-share-btn { font-size: 0.74rem; padding: 5px 11px; }
 .blog-card-tag {
   display: inline-block;
   background: var(--gold-4);
