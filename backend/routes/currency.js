@@ -42,17 +42,19 @@ async function getEffectiveRates() {
 }
 
 // GET /api/currency/rates — INR-based conversion rates for the storefront's
-// currency selector. Display/reference only: checkout still charges in INR
-// since payment-gateway multi-currency settlement hasn't been set up.
+// currency selector, plus any country-wise minimum order value an admin has
+// set (in that country's own currency; absent/0 means no minimum).
+// Display/reference only: checkout still charges in INR since
+// payment-gateway multi-currency settlement hasn't been set up.
 router.get('/rates', async (req, res, next) => {
   try {
-    const rates = await getEffectiveRates();
-    res.json({ success: true, base: 'INR', rates });
+    const [rates, overrides] = await Promise.all([getEffectiveRates(), db.get('currency-overrides', 'main')]);
+    res.json({ success: true, base: 'INR', rates, minOrder: overrides?.minOrder || {} });
   } catch (err) {
     // Serve a stale cache rather than failing the whole storefront if the
     // upstream provider is briefly down.
     if (cache.liveRates) {
-      return res.json({ success: true, base: 'INR', rates: cache.liveRates, stale: true });
+      return res.json({ success: true, base: 'INR', rates: cache.liveRates, minOrder: {}, stale: true });
     }
     next(err);
   }

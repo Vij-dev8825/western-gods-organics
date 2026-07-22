@@ -14,7 +14,7 @@ export default function Cart() {
   const { items, updateQuantity, removeItem, clearCart } = useCart();
   const { isLoggedIn, token, user } = useAuth();
   const { showToast } = useToast();
-  const { isForeign } = useCurrency();
+  const { isForeign, checkMinOrder, country } = useCurrency();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -109,6 +109,7 @@ export default function Cart() {
   const couponStale = appliedCoupon && appliedCoupon.subtotalAtApply !== subtotal;
   const discount = appliedCoupon && !couponStale ? appliedCoupon.discount : 0;
   const total = subtotal + shipping - discount;
+  const minOrderCheck = checkMinOrder(subtotal);
 
   function updateAddress(field, value) {
     setAddress((a) => ({ ...a, [field]: value }));
@@ -140,6 +141,10 @@ export default function Cart() {
 
   async function handlePlaceOrder(e) {
     e.preventDefault();
+    if (!minOrderCheck.met) {
+      showToast(`Minimum order for ${country.label} is ${minOrderCheck.minFormatted}.`, 'error');
+      return;
+    }
     const errors = validateAddress(address);
     setAddressErrors(errors);
     if (Object.keys(errors).length) {
@@ -464,12 +469,19 @@ export default function Cart() {
                 </label>
               </div>
 
+              {!minOrderCheck.met && (
+                <div className="alert alert-error" style={{ marginTop: 16 }}>
+                  Minimum order for {country.label} is {minOrderCheck.minFormatted} — add{' '}
+                  {minOrderCheck.shortfallFormatted} more to continue.
+                </div>
+              )}
+
               <div className="cart-cta-bar">
                 <div className="cart-cta-total">
                   <span className="muted">Total</span>
                   <b>₹{total}</b>
                 </div>
-                <button className="btn btn-gold btn-block" style={{ marginTop: 18 }} disabled={placing}>
+                <button className="btn btn-gold btn-block" style={{ marginTop: 18 }} disabled={placing || !minOrderCheck.met}>
                   {placing ? 'Processing…' : paymentMethod === 'razorpay' ? 'Pay securely' : 'Place order'}
                 </button>
               </div>

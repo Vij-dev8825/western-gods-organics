@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { api } from '../../api';
 import { useAuth } from '../../context/AuthContext';
 
+const CURRENCY_SYMBOLS = { USD: '$', GBP: '£', CAD: 'C$', AUD: 'A$', SGD: 'S$', MYR: 'RM', AED: 'AED ' };
 const CURRENCY_LABELS = {
   USD: 'US Dollar (USA)',
   GBP: 'British Pound (UK)',
@@ -16,7 +17,8 @@ export default function AdminCurrency() {
   const { token } = useAuth();
   const [currencies, setCurrencies] = useState([]);
   const [liveInrPerUnit, setLiveInrPerUnit] = useState({});
-  const [inputs, setInputs] = useState({});
+  const [rateInputs, setRateInputs] = useState({});
+  const [minOrderInputs, setMinOrderInputs] = useState({});
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState(null);
 
@@ -24,26 +26,28 @@ export default function AdminCurrency() {
     api.admin.getCurrencyOverrides(token).then((d) => {
       setCurrencies(d.currencies);
       setLiveInrPerUnit(d.liveInrPerUnit);
-      setInputs(
+      setRateInputs(
         Object.fromEntries(d.currencies.map((code) => [code, d.inrPerUnit[code] ? String(d.inrPerUnit[code]) : '']))
+      );
+      setMinOrderInputs(
+        Object.fromEntries(d.currencies.map((code) => [code, d.minOrder[code] ? String(d.minOrder[code]) : '']))
       );
     }).catch(() => {});
   }
   useEffect(load, [token]);
-
-  function updateInput(code, value) {
-    setInputs((s) => ({ ...s, [code]: value }));
-  }
 
   async function save() {
     setSaving(true);
     setMessage(null);
     try {
       const inrPerUnit = Object.fromEntries(
-        Object.entries(inputs).map(([code, v]) => [code, v ? Number(v) : 0])
+        Object.entries(rateInputs).map(([code, v]) => [code, v ? Number(v) : 0])
       );
-      await api.admin.updateCurrencyOverrides(token, inrPerUnit);
-      setMessage({ type: 'success', text: 'Exchange rates updated.' });
+      const minOrder = Object.fromEntries(
+        Object.entries(minOrderInputs).map(([code, v]) => [code, v ? Number(v) : 0])
+      );
+      await api.admin.updateCurrencyOverrides(token, { inrPerUnit, minOrder });
+      setMessage({ type: 'success', text: 'Currency settings updated.' });
       load();
     } catch (err) {
       setMessage({ type: 'error', text: err.message });
@@ -55,12 +59,13 @@ export default function AdminCurrency() {
   return (
     <>
       <div className="admin-head">
-        <h1>Currency Rates</h1>
+        <h1>Currency Rates &amp; Minimum Order</h1>
       </div>
       <p className="muted">
         Prices shown while browsing (Shop, product pages) track the live exchange rate automatically. Set a fixed
-        rate for any currency below to override that — leave a field empty to go back to tracking the live rate.
-        Checkout always charges the real ₹ (INR) amount either way.
+        rate to override that for any currency, and/or a minimum order value below which checkout is blocked for
+        that country (e.g. to cover higher international shipping costs). Leave a field empty for no restriction —
+        checkout always charges the real ₹ (INR) amount either way.
       </p>
 
       {message && <div className={`alert alert-${message.type}`}>{message.text}</div>}
@@ -68,7 +73,12 @@ export default function AdminCurrency() {
       <div className="admin-card">
         <table className="admin-table">
           <thead>
-            <tr><th>Currency</th><th>Live rate (1 unit = ₹)</th><th>Fixed rate (optional, ₹ per unit)</th></tr>
+            <tr>
+              <th>Currency</th>
+              <th>Live rate (1 unit = ₹)</th>
+              <th>Fixed rate (optional, ₹ per unit)</th>
+              <th>Minimum order (optional, in that currency)</th>
+            </tr>
           </thead>
           <tbody>
             {currencies.map((code) => (
@@ -80,9 +90,20 @@ export default function AdminCurrency() {
                     type="number"
                     min="0"
                     step="0.01"
-                    value={inputs[code] || ''}
-                    onChange={(e) => updateInput(code, e.target.value)}
+                    value={rateInputs[code] || ''}
+                    onChange={(e) => setRateInputs((s) => ({ ...s, [code]: e.target.value }))}
                     placeholder={liveInrPerUnit[code] ? `Live: ${liveInrPerUnit[code]}` : 'e.g. 83.50'}
+                    style={{ maxWidth: 140 }}
+                  />
+                </td>
+                <td>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={minOrderInputs[code] || ''}
+                    onChange={(e) => setMinOrderInputs((s) => ({ ...s, [code]: e.target.value }))}
+                    placeholder={`e.g. 25 (${CURRENCY_SYMBOLS[code] || ''})`}
                     style={{ maxWidth: 140 }}
                   />
                 </td>
@@ -91,7 +112,7 @@ export default function AdminCurrency() {
           </tbody>
         </table>
         <button type="button" className="btn btn-gold btn-sm" disabled={saving} onClick={save} style={{ marginTop: 16 }}>
-          {saving ? 'Saving…' : 'Save rates'}
+          {saving ? 'Saving…' : 'Save'}
         </button>
       </div>
     </>

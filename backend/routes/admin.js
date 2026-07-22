@@ -735,7 +735,8 @@ router.put('/sale-banner', async (req, res, next) => {
 /* ------------------------------ Currency rates ----------------------------- */
 
 // GET /api/admin/currency-overrides — live rate (as "1 X = ₹Y", the usual
-// quoting convention) alongside any manual override currently set for it.
+// quoting convention) alongside any manual override and minimum order value
+// currently set for it.
 router.get('/currency-overrides', async (req, res, next) => {
   try {
     const [overrides, live] = await Promise.all([
@@ -751,23 +752,28 @@ router.get('/currency-overrides', async (req, res, next) => {
       currencies: CURRENCY_CODES,
       liveInrPerUnit,
       inrPerUnit: overrides?.inrPerUnit || {},
+      minOrder: overrides?.minOrder || {},
     });
   } catch (err) {
     next(err);
   }
 });
 
-// PUT /api/admin/currency-overrides  { inrPerUnit: { USD: 83.5, ... } } —
-// omit/0 for a currency to fall back to the live rate for it.
+// PUT /api/admin/currency-overrides  { inrPerUnit: { USD: 83.5, ... },
+// minOrder: { USD: 25, ... } } — omit/0 for a currency to fall back to the
+// live rate / no minimum for it.
 router.put('/currency-overrides', async (req, res, next) => {
   try {
     const inrPerUnit = {};
+    const minOrder = {};
     for (const code of CURRENCY_CODES) {
-      const v = Number(req.body.inrPerUnit?.[code]);
-      if (v > 0) inrPerUnit[code] = v;
+      const rate = Number(req.body.inrPerUnit?.[code]);
+      if (rate > 0) inrPerUnit[code] = rate;
+      const min = Number(req.body.minOrder?.[code]);
+      if (min > 0) minOrder[code] = min;
     }
-    await db.put('currency-overrides', { id: 'main', inrPerUnit });
-    res.json({ success: true, inrPerUnit });
+    await db.put('currency-overrides', { id: 'main', inrPerUnit, minOrder });
+    res.json({ success: true, inrPerUnit, minOrder });
   } catch (err) {
     next(err);
   }

@@ -24,9 +24,13 @@ export function CurrencyProvider({ children }) {
     return COUNTRIES.find((c) => c.code === saved) || COUNTRIES[0];
   });
   const [rates, setRates] = useState(null);
+  const [minOrder, setMinOrder] = useState({});
 
   useEffect(() => {
-    api.getCurrencyRates().then((d) => setRates(d.rates)).catch(() => {});
+    api.getCurrencyRates().then((d) => {
+      setRates(d.rates);
+      setMinOrder(d.minOrder || {});
+    }).catch(() => {});
   }, []);
 
   function setCountry(code) {
@@ -36,16 +40,38 @@ export function CurrencyProvider({ children }) {
     setCountryState(found);
   }
 
+  function convert(inrAmount) {
+    if (country.currency === 'INR' || !rates || !rates[country.currency]) return inrAmount;
+    return inrAmount * rates[country.currency];
+  }
+
   function formatPrice(inrAmount) {
     if (country.currency === 'INR' || !rates || !rates[country.currency]) {
       return `₹${Math.round(inrAmount).toLocaleString('en-IN')}`;
     }
-    const converted = inrAmount * rates[country.currency];
-    return `${country.symbol}${converted.toFixed(2)}`;
+    return `${country.symbol}${convert(inrAmount).toFixed(2)}`;
+  }
+
+  // Whether an order of this INR subtotal meets the current country's
+  // minimum order value (set per-currency by an admin; 0/absent = no
+  // minimum). Compares in the customer's own currency since that's the
+  // number they were quoted while browsing, even though checkout still
+  // charges the real ₹ amount.
+  function checkMinOrder(inrSubtotal) {
+    const min = minOrder[country.currency];
+    if (!min) return { met: true };
+    const converted = convert(inrSubtotal);
+    return {
+      met: converted >= min,
+      minFormatted: `${country.symbol}${min.toFixed(2)}`,
+      shortfallFormatted: `${country.symbol}${Math.max(0, min - converted).toFixed(2)}`,
+    };
   }
 
   return (
-    <CurrencyContext.Provider value={{ country, setCountry, formatPrice, isForeign: country.currency !== 'INR' }}>
+    <CurrencyContext.Provider
+      value={{ country, setCountry, formatPrice, checkMinOrder, isForeign: country.currency !== 'INR' }}
+    >
       {children}
     </CurrencyContext.Provider>
   );
