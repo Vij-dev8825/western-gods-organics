@@ -3,6 +3,9 @@ import { api } from '../../api';
 import { useAuth } from '../../context/AuthContext';
 import { getProductImage } from '../../utils/productImages';
 import ImageUploadField from '../../components/admin/ImageUploadField';
+import { COUNTRIES } from '../../context/CurrencyContext';
+
+const FOREIGN_COUNTRIES = COUNTRIES.filter((c) => c.currency !== 'INR');
 
 const EMPTY = {
   name: '',
@@ -15,6 +18,7 @@ const EMPTY = {
   tags: '',
   comboItems: '',
   isNew: false,
+  countryPrices: {},
 };
 
 function toForm(p) {
@@ -23,7 +27,21 @@ function toForm(p) {
     extraImages: (p.images || []).filter((img) => img && img !== p.image),
     tags: (p.tags || []).join(', '),
     comboItems: (p.comboItems || []).join(', '),
+    countryPrices: p.countryPrices || {},
   };
+}
+
+function normalizeCountryPrices(cp) {
+  const out = {};
+  for (const [code, sizes] of Object.entries(cp || {})) {
+    const sizeOut = {};
+    for (const [label, val] of Object.entries(sizes || {})) {
+      const num = Number(val);
+      if (val !== '' && val != null && Number.isFinite(num) && num > 0) sizeOut[label] = num;
+    }
+    if (Object.keys(sizeOut).length) out[code] = sizeOut;
+  }
+  return out;
 }
 
 function fromForm(f) {
@@ -39,6 +57,7 @@ function fromForm(f) {
     })),
     tags: f.tags.split(',').map((t) => t.trim()).filter(Boolean),
     comboItems: f.comboItems.split(',').map((t) => t.trim()).filter(Boolean),
+    countryPrices: normalizeCountryPrices(f.countryPrices),
   };
 }
 
@@ -51,12 +70,26 @@ export default function AdminProducts() {
   const [notifyCustomers, setNotifyCustomers] = useState(true);
   const [message, setMessage] = useState(null);
   const [busy, setBusy] = useState(false);
+  const [rates, setRates] = useState({});
 
   function load() {
     api.getProducts().then((d) => setProducts(d.products)).catch(() => {});
     api.admin.getCategories(token).then((d) => setCategories(d.categories)).catch(() => {});
   }
   useEffect(load, [token]);
+  useEffect(() => {
+    api.getCurrencyRates().then((d) => setRates(d.rates || {})).catch(() => {});
+  }, []);
+
+  function setCountryPrice(code, label, value) {
+    setForm((f) => ({
+      ...f,
+      countryPrices: {
+        ...f.countryPrices,
+        [code]: { ...(f.countryPrices[code] || {}), [label]: value },
+      },
+    }));
+  }
 
   function startNew() {
     setForm({ ...EMPTY, category: categories[0]?.id || '' });
@@ -250,6 +283,53 @@ export default function AdminProducts() {
           >
             + add size
           </button>
+
+          <label style={{ fontWeight: 600, fontSize: '0.85rem', display: 'block', marginTop: 20 }}>
+            Country-wise price override (optional)
+          </label>
+          <p className="muted" style={{ fontSize: '0.78rem', margin: '2px 0 10px' }}>
+            Leave a cell blank to auto-convert from ₹ using the live exchange rate. Set a value to
+            show shoppers browsing from that country a fixed price instead (e.g. round pricing
+            like $4.99). Checkout always charges the ₹ price regardless.
+          </p>
+          <div style={{ overflowX: 'auto' }}>
+            <table className="admin-table sizes-editor">
+              <thead>
+                <tr>
+                  <th>Country</th>
+                  {form.sizes.map((s, i) => (
+                    <th key={i}>{s.label || `Size ${i + 1}`}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {FOREIGN_COUNTRIES.map((c) => (
+                  <tr key={c.code}>
+                    <td>{c.label} ({c.currency})</td>
+                    {form.sizes.map((s, i) => {
+                      const label = s.label || `Size ${i + 1}`;
+                      const value = form.countryPrices[c.code]?.[label] ?? '';
+                      const auto = rates[c.currency] && s.price
+                        ? `≈ ${c.symbol}${(Number(s.price) * rates[c.currency]).toFixed(2)}`
+                        : c.symbol;
+                      return (
+                        <td key={i}>
+                          <input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            value={value}
+                            placeholder={auto}
+                            onChange={(e) => setCountryPrice(c.code, label, e.target.value)}
+                          />
+                        </td>
+                      );
+                    })}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
 
           <label className="check-row">
             <input type="checkbox" checked={form.isNew} onChange={(e) => setForm({ ...form, isNew: e.target.checked })} />

@@ -11,7 +11,7 @@ export default function ProductCard({ product }) {
   const { productIds, toggleWishlist } = useWishlist();
   const { addItem } = useCart();
   const { showToast } = useToast();
-  const { formatPrice } = useCurrency();
+  const { formatPrice, formatProductPrice } = useCurrency();
   const navigate = useNavigate();
   const [size, setSize] = useState(product.sizes[1]?.label || product.sizes[0].label);
   const [hoverIndex, setHoverIndex] = useState(0);
@@ -130,7 +130,7 @@ export default function ProductCard({ product }) {
         </select>
 
         <div className="price-row">
-          <span className="price">{formatPrice(activeSize.price)}</span>
+          <span className="price">{formatProductPrice(activeSize.price, product, activeSize.label)}</span>
           {activeSize.mrp > activeSize.price && <span className="mrp">{formatPrice(activeSize.mrp)}</span>}
           {discount > 0 && <span className="off">{discount}% off</span>}
         </div>

@@ -138,6 +138,24 @@ function validateProduct(body) {
   return null;
 }
 
+// Per-country display-price overrides, e.g. { US: { '500 ml': 4.99 } }.
+// Keyed by country code; values are already in that country's local
+// currency (not INR). Invalid/blank entries are silently dropped.
+function normalizeCountryPrices(raw) {
+  const out = {};
+  if (!raw || typeof raw !== 'object') return out;
+  for (const [code, sizes] of Object.entries(raw)) {
+    if (!sizes || typeof sizes !== 'object') continue;
+    const sizeOut = {};
+    for (const [label, val] of Object.entries(sizes)) {
+      const num = Number(val);
+      if (label && val !== '' && val != null && Number.isFinite(num) && num > 0) sizeOut[label] = num;
+    }
+    if (Object.keys(sizeOut).length) out[code] = sizeOut;
+  }
+  return out;
+}
+
 // POST /api/admin/products
 router.post('/products', async (req, res, next) => {
   try {
@@ -168,6 +186,7 @@ router.post('/products', async (req, res, next) => {
       tags: req.body.tags || [],
       comboItems: Array.isArray(req.body.comboItems) ? req.body.comboItems.filter(Boolean) : [],
       isNew: Boolean(req.body.isNew),
+      countryPrices: normalizeCountryPrices(req.body.countryPrices),
     };
     await db.put('products', product);
     res.status(201).json({ success: true, product });
@@ -196,6 +215,7 @@ router.put('/products/:id', async (req, res, next) => {
         mrp: Number(s.mrp || s.price),
         stock: Number(s.stock || 0),
       })),
+      countryPrices: normalizeCountryPrices(req.body.countryPrices ?? existing.countryPrices),
     };
     delete updated.notifyCustomers;
     await db.put('products', updated);

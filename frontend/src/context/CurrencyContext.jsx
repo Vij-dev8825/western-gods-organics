@@ -52,6 +52,21 @@ export function CurrencyProvider({ children }) {
     return `${country.symbol}${convert(inrAmount).toFixed(2)}`;
   }
 
+  // A product can set a fixed display price for the current country (see
+  // AdminProducts' "country-wise price override" table), overriding the
+  // live-rate conversion — useful for round numbers like $4.99 instead of
+  // whatever the day's exchange rate happens to produce.
+  function getCountryPrice(product, sizeLabel) {
+    const val = product?.countryPrices?.[country.code]?.[sizeLabel];
+    return typeof val === 'number' && val > 0 ? val : null;
+  }
+
+  function formatProductPrice(inrAmount, product, sizeLabel) {
+    const override = getCountryPrice(product, sizeLabel);
+    if (override != null) return `${country.symbol}${override.toFixed(2)}`;
+    return formatPrice(inrAmount);
+  }
+
   // Whether an order of this INR subtotal meets the current country's
   // minimum order value (set per-currency by an admin; 0/absent = no
   // minimum). Compares in the customer's own currency since that's the
@@ -70,7 +85,7 @@ export function CurrencyProvider({ children }) {
 
   return (
     <CurrencyContext.Provider
-      value={{ country, setCountry, formatPrice, checkMinOrder, isForeign: country.currency !== 'INR' }}
+      value={{ country, setCountry, formatPrice, formatProductPrice, getCountryPrice, checkMinOrder, isForeign: country.currency !== 'INR' }}
     >
       {children}
     </CurrencyContext.Provider>

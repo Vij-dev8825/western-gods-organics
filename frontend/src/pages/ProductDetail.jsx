@@ -67,7 +67,7 @@ export default function ProductDetail() {
   const { productIds, toggleWishlist } = useWishlist();
   const { isLoggedIn, token, user } = useAuth();
   const { showToast } = useToast();
-  const { formatPrice, isForeign } = useCurrency();
+  const { formatPrice, formatProductPrice, isForeign } = useCurrency();
 
   useEffect(() => {
     setProduct(null);
@@ -268,7 +268,7 @@ export default function ProductDetail() {
           </div>
 
           <div className="price-row" style={{ margin: '18px 0' }}>
-            <span className="price" style={{ fontSize: '1.6rem' }}>{formatPrice(activeSize.price)}</span>
+            <span className="price" style={{ fontSize: '1.6rem' }}>{formatProductPrice(activeSize.price, product, activeSize.label)}</span>
             {activeSize.mrp > activeSize.price && <span className="mrp">{formatPrice(activeSize.mrp)}</span>}
             {discount > 0 && <span className="off">{discount}% off</span>}
           </div>
