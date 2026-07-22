@@ -4,12 +4,12 @@ import { api } from '../api';
 export const COUNTRIES = [
   { code: 'IN', label: 'India', currency: 'INR', symbol: '₹' },
   { code: 'US', label: 'USA', currency: 'USD', symbol: '$' },
-  { code: 'GB', label: 'United Kingdom', currency: 'GBP', symbol: '£' },
+  { code: 'GB', label: 'UK', currency: 'GBP', symbol: '£' },
   { code: 'CA', label: 'Canada', currency: 'CAD', symbol: 'C$' },
   { code: 'AU', label: 'Australia', currency: 'AUD', symbol: 'A$' },
   { code: 'SG', label: 'Singapore', currency: 'SGD', symbol: 'S$' },
   { code: 'MY', label: 'Malaysia', currency: 'MYR', symbol: 'RM' },
-  { code: 'AE', label: 'United Arab Emirates', currency: 'AED', symbol: 'AED ' },
+  { code: 'AE', label: 'UAE', currency: 'AED', symbol: 'AED ' },
 ];
 
 const STORAGE_KEY = 'yo_country';

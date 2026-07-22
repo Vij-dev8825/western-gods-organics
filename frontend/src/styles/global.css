@@ -1642,7 +1642,7 @@ input:focus-visible + .filter-radio { outline: 2px solid var(--gold-2); outline-
   cursor: pointer;
 }
 .lang-select:focus { outline: none; border-color: var(--gold-2); }
-.currency-select { max-width: 78px; }
+.currency-select { max-width: 110px; }
 
 /* ---------- Category trio (3 wide tiles) ---------- */
 .category-trio {

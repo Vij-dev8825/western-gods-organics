@@ -5,7 +5,7 @@ import { api } from '../api';
 import { useCart } from '../context/CartContext';
 import { useWishlist } from '../context/WishlistContext';
 import { useAuth } from '../context/AuthContext';
-import { useLang, LANGS } from '../i18n';
+import { useLang } from '../i18n';
 import { useCurrency, COUNTRIES } from '../context/CurrencyContext';
 import { IconHeart, IconBag, IconUser, IconBell, IconMenu, IconBox, IconSearch } from './Icons';
 
@@ -15,7 +15,7 @@ export default function Navbar() {
   const { totalCount } = useCart();
   const { productIds } = useWishlist();
   const { isLoggedIn, user, token } = useAuth();
-  const { lang, setLang, t } = useLang();
+  const { t } = useLang();
   const { country, setCountry } = useCurrency();
   const navigate = useNavigate();
   const location = useLocation();
@@ -88,23 +88,13 @@ export default function Navbar() {
 
         <div className="nav-icons">
           <select
-            className="lang-select"
-            aria-label="Language"
-            value={lang}
-            onChange={(e) => setLang(e.target.value)}
-          >
-            {LANGS.map((l) => (
-              <option key={l.code} value={l.code}>{l.label}</option>
-            ))}
-          </select>
-          <select
             className="lang-select currency-select"
-            aria-label="Country / currency"
+            aria-label="Country"
             value={country.code}
             onChange={(e) => setCountry(e.target.value)}
           >
             {COUNTRIES.map((c) => (
-              <option key={c.code} value={c.code} title={c.label}>{c.currency}</option>
+              <option key={c.code} value={c.code} title={`${c.label} — ${c.currency}`}>{c.label}</option>
             ))}
           </select>
           {isLoggedIn && (

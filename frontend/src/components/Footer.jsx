@@ -166,7 +166,7 @@ export default function Footer() {
             onChange={(e) => setCountry(e.target.value)}
           >
             {COUNTRIES.map((c) => (
-              <option key={c.code} value={c.code} title={c.label}>{c.currency}</option>
+              <option key={c.code} value={c.code} title={`${c.label} — ${c.currency}`}>{c.label}</option>
             ))}
           </select>
         </div>
