@@ -6,7 +6,7 @@ import { useCart } from '../context/CartContext';
 import { useWishlist } from '../context/WishlistContext';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
-import { useCurrency } from '../context/CurrencyContext';
+import { useCurrency, COUNTRIES } from '../context/CurrencyContext';
 import { recordProductView } from '../utils/recentlyViewed';
 import { validateAddress } from '../utils/validators';
 import ChakkiWheel from '../components/ChakkiWheel';
@@ -60,7 +60,8 @@ export default function ProductDetail() {
   const [subCustom, setSubCustom] = useState(false);
   const [subCustomDays, setSubCustomDays] = useState('');
   const [subShowForm, setSubShowForm] = useState(false);
-  const [subAddress, setSubAddress] = useState({ line1: '', city: '', state: '', pincode: '', phone: '' });
+  const { formatPrice, formatProductPrice, isForeign, country } = useCurrency();
+  const [subAddress, setSubAddress] = useState({ line1: '', city: '', state: '', pincode: '', phone: '', country: country.code });
   const [subAddressErrors, setSubAddressErrors] = useState({});
   const [subscribing, setSubscribing] = useState(false);
   const [notifyEmail, setNotifyEmail] = useState('');
@@ -69,7 +70,6 @@ export default function ProductDetail() {
   const { productIds, toggleWishlist } = useWishlist();
   const { isLoggedIn, token, user } = useAuth();
   const { showToast } = useToast();
-  const { formatPrice, formatProductPrice, isForeign } = useCurrency();
 
   useEffect(() => {
     setProduct(null);
@@ -357,7 +357,7 @@ export default function ProductDetail() {
             </div>
           ) : (
             <div className="alert alert-info">
-              In stock: {activeSize.stock} units · Delivered in 3-5 business days
+              In stock: {activeSize.stock} units · Delivered in {isForeign ? '10-20' : '3-5'} business days
             </div>
           )}
 
@@ -425,6 +425,14 @@ export default function ProductDetail() {
                   </p>
                 )}
                 <div className="field">
+                  <label>Country</label>
+                  <select value={subAddress.country} onChange={(e) => updateSubAddress('country', e.target.value)}>
+                    {COUNTRIES.map((c) => (
+                      <option key={c.code} value={c.code}>{c.label}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="field">
                   <label>Address line</label>
                   <input required value={subAddress.line1} onChange={(e) => updateSubAddress('line1', e.target.value)} />
                   {subAddressErrors.line1 && <div className="field-error">{subAddressErrors.line1}</div>}
@@ -440,13 +448,18 @@ export default function ProductDetail() {
                   {subAddressErrors.state && <div className="field-error">{subAddressErrors.state}</div>}
                 </div>
                 <div className="field">
-                  <label>Pincode</label>
+                  <label>{subAddress.country === 'IN' ? 'Pincode' : 'Postal / ZIP code'}</label>
                   <input
                     required
-                    inputMode="numeric"
-                    maxLength={6}
+                    inputMode={subAddress.country === 'IN' ? 'numeric' : 'text'}
+                    maxLength={subAddress.country === 'IN' ? 6 : 10}
                     value={subAddress.pincode}
-                    onChange={(e) => updateSubAddress('pincode', e.target.value.replace(/\D/g, ''))}
+                    onChange={(e) => updateSubAddress(
+                      'pincode',
+                      subAddress.country === 'IN'
+                        ? e.target.value.replace(/\D/g, '')
+                        : e.target.value.replace(/[^A-Za-z0-9\s-]/g, '')
+                    )}
                   />
                   {subAddressErrors.pincode && <div className="field-error">{subAddressErrors.pincode}</div>}
                 </div>
@@ -455,10 +468,16 @@ export default function ProductDetail() {
                   <input
                     required
                     type="tel"
-                    inputMode="numeric"
-                    maxLength={10}
+                    inputMode={subAddress.country === 'IN' ? 'numeric' : 'tel'}
+                    maxLength={subAddress.country === 'IN' ? 10 : 16}
                     value={subAddress.phone}
-                    onChange={(e) => updateSubAddress('phone', e.target.value.replace(/\D/g, ''))}
+                    placeholder={subAddress.country === 'IN' ? undefined : '+1 555 123 4567'}
+                    onChange={(e) => updateSubAddress(
+                      'phone',
+                      subAddress.country === 'IN'
+                        ? e.target.value.replace(/\D/g, '')
+                        : e.target.value.replace(/[^\d+\s-]/g, '')
+                    )}
                   />
                   {subAddressErrors.phone && <div className="field-error">{subAddressErrors.phone}</div>}
                 </div>

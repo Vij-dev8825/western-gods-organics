@@ -4,7 +4,7 @@ import { api } from '../api';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
-import { useCurrency } from '../context/CurrencyContext';
+import { useCurrency, COUNTRIES } from '../context/CurrencyContext';
 import { getProductImage } from '../utils/productImages';
 import { loadRazorpay } from '../utils/loadRazorpay';
 import { validateAddress } from '../utils/validators';
@@ -14,7 +14,7 @@ export default function Cart() {
   const { items, updateQuantity, removeItem, clearCart } = useCart();
   const { isLoggedIn, token, user } = useAuth();
   const { showToast } = useToast();
-  const { isForeign, checkMinOrder, country } = useCurrency();
+  const { isForeign, checkMinOrder, getShippingFee, country } = useCurrency();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -27,7 +27,7 @@ export default function Cart() {
   const [products, setProducts] = useState([]);
   const [placing, setPlacing] = useState(false);
   const [showAddressForm, setShowAddressForm] = useState(false);
-  const [address, setAddress] = useState({ line1: '', city: '', state: '', pincode: '', phone: '' });
+  const [address, setAddress] = useState({ line1: '', city: '', state: '', pincode: '', phone: '', country: country.code });
   const [addressErrors, setAddressErrors] = useState({});
   const [cityOptions, setCityOptions] = useState([]);
   const [stateOptions, setStateOptions] = useState([]);
@@ -55,7 +55,7 @@ export default function Cart() {
   // customer picks from a dropdown instead of typing them (and can't typo a
   // city/state that doesn't match their pincode).
   useEffect(() => {
-    if (!/^\d{6}$/.test(address.pincode)) {
+    if (address.country !== 'IN' || !/^\d{6}$/.test(address.pincode)) {
       setCityOptions([]);
       setStateOptions([]);
       setPincodeLookupError('');
@@ -84,7 +84,7 @@ export default function Cart() {
     return () => {
       cancelled = true;
     };
-  }, [address.pincode]);
+  }, [address.pincode, address.country]);
 
   const lines = useMemo(() => {
     if (isBuyNow) {
@@ -105,7 +105,7 @@ export default function Cart() {
   }, [items, products, isBuyNow, buyNowItem, buyNowQty]);
 
   const subtotal = lines.reduce((sum, l) => sum + l.sizeInfo.price * l.quantity, 0);
-  const shipping = subtotal > 999 || subtotal === 0 ? 0 : 60;
+  const shipping = getShippingFee(address.country, subtotal);
   const couponStale = appliedCoupon && appliedCoupon.subtotalAtApply !== subtotal;
   const discount = appliedCoupon && !couponStale ? appliedCoupon.discount : 0;
   const total = subtotal + shipping - discount;
@@ -176,7 +176,7 @@ export default function Cart() {
   }
 
   async function payWithRazorpay(orderItems, couponCode) {
-    const rzpOrder = await api.createRazorpayOrder(token, { items: orderItems, couponCode });
+    const rzpOrder = await api.createRazorpayOrder(token, { items: orderItems, couponCode, address });
     await loadRazorpay();
 
     return new Promise((resolve, reject) => {
@@ -378,6 +378,14 @@ export default function Cart() {
                 </p>
               )}
               <div className="field">
+                <label>Country</label>
+                <select value={address.country} onChange={(e) => updateAddress('country', e.target.value)}>
+                  {COUNTRIES.map((c) => (
+                    <option key={c.code} value={c.code}>{c.label}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="field">
                 <label>Address line</label>
                 <input
                   required
@@ -387,13 +395,18 @@ export default function Cart() {
                 {addressErrors.line1 && <div className="field-error">{addressErrors.line1}</div>}
               </div>
               <div className="field">
-                <label>Pincode</label>
+                <label>{address.country === 'IN' ? 'Pincode' : 'Postal / ZIP code'}</label>
                 <input
                   required
-                  inputMode="numeric"
-                  maxLength={6}
+                  inputMode={address.country === 'IN' ? 'numeric' : 'text'}
+                  maxLength={address.country === 'IN' ? 6 : 10}
                   value={address.pincode}
-                  onChange={(e) => updateAddress('pincode', e.target.value.replace(/\D/g, ''))}
+                  onChange={(e) => updateAddress(
+                    'pincode',
+                    address.country === 'IN'
+                      ? e.target.value.replace(/\D/g, '')
+                      : e.target.value.replace(/[^A-Za-z0-9\s-]/g, '')
+                  )}
                 />
                 {addressErrors.pincode && <div className="field-error">{addressErrors.pincode}</div>}
                 {pincodeLookupError && <div className="field-error">{pincodeLookupError}</div>}
@@ -411,7 +424,7 @@ export default function Cart() {
                     required
                     value={address.city}
                     onChange={(e) => updateAddress('city', e.target.value)}
-                    placeholder="Enter your 6-digit pincode above to auto-fill"
+                    placeholder={address.country === 'IN' ? 'Enter your 6-digit pincode above to auto-fill' : 'Enter your city'}
                   />
                 )}
                 {addressErrors.city && <div className="field-error">{addressErrors.city}</div>}
@@ -429,7 +442,7 @@ export default function Cart() {
                     required
                     value={address.state}
                     onChange={(e) => updateAddress('state', e.target.value)}
-                    placeholder="Enter your 6-digit pincode above to auto-fill"
+                    placeholder={address.country === 'IN' ? 'Enter your 6-digit pincode above to auto-fill' : 'Enter your state/province'}
                   />
                 )}
                 {addressErrors.state && <div className="field-error">{addressErrors.state}</div>}
@@ -439,13 +452,25 @@ export default function Cart() {
                 <input
                   required
                   type="tel"
-                  inputMode="numeric"
-                  maxLength={10}
+                  inputMode={address.country === 'IN' ? 'numeric' : 'tel'}
+                  maxLength={address.country === 'IN' ? 10 : 16}
                   value={address.phone}
-                  onChange={(e) => updateAddress('phone', e.target.value.replace(/\D/g, ''))}
+                  placeholder={address.country === 'IN' ? undefined : '+1 555 123 4567'}
+                  onChange={(e) => updateAddress(
+                    'phone',
+                    address.country === 'IN'
+                      ? e.target.value.replace(/\D/g, '')
+                      : e.target.value.replace(/[^\d+\s-]/g, '')
+                  )}
                 />
                 {addressErrors.phone && <div className="field-error">{addressErrors.phone}</div>}
               </div>
+              {address.country !== 'IN' && (
+                <p className="muted" style={{ fontSize: '0.8rem' }}>
+                  🌍 International orders may be subject to customs duties or import taxes charged by your
+                  country on delivery — these aren't included in the total shown here.
+                </p>
+              )}
 
               <div className="checkout-step" style={{ marginTop: 22 }}>
                 <span className="checkout-step-num">2</span>

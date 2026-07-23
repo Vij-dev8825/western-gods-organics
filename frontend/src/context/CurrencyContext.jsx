@@ -25,11 +25,13 @@ export function CurrencyProvider({ children }) {
   });
   const [rates, setRates] = useState(null);
   const [minOrder, setMinOrder] = useState({});
+  const [shipping, setShipping] = useState({});
 
   useEffect(() => {
     api.getCurrencyRates().then((d) => {
       setRates(d.rates);
       setMinOrder(d.minOrder || {});
+      setShipping(d.shipping || {});
     }).catch(() => {});
   }, []);
 
@@ -83,9 +85,29 @@ export function CurrencyProvider({ children }) {
     };
   }
 
+  // Mirrors backend orderBuilder.calculateShipping — lets Cart preview the
+  // exact shipping fee for the address's destination country before placing
+  // the order (India keeps the existing tiered domestic rate; every other
+  // country gets a flat admin-set fee, defaulting to ₹1500 if unset).
+  const DEFAULT_INTL_SHIPPING = 1500;
+  function getShippingFee(destCountryCode, inrSubtotal) {
+    if (inrSubtotal === 0) return 0;
+    if (!destCountryCode || destCountryCode === 'IN') return inrSubtotal > 999 ? 0 : 60;
+    return shipping[destCountryCode] || DEFAULT_INTL_SHIPPING;
+  }
+
   return (
     <CurrencyContext.Provider
-      value={{ country, setCountry, formatPrice, formatProductPrice, getCountryPrice, checkMinOrder, isForeign: country.currency !== 'INR' }}
+      value={{
+        country,
+        setCountry,
+        formatPrice,
+        formatProductPrice,
+        getCountryPrice,
+        checkMinOrder,
+        getShippingFee,
+        isForeign: country.currency !== 'INR',
+      }}
     >
       {children}
     </CurrencyContext.Provider>

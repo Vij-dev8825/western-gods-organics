@@ -17,16 +17,28 @@ function notifyAdminOfOrder(order, user) {
       `Payment: ${order.paymentMethod}${order.paymentMethod === 'razorpay' ? ' (paid)' : ' (COD)'}\n\n` +
       `Items:\n${itemLines}\n\n` +
       `Total: ₹${order.total}\n\n` +
-      `Delivery address:\n${order.address.line1}, ${order.address.city}, ${order.address.state} - ${order.address.pincode}\n` +
+      `Delivery address:\n${order.address.line1}, ${order.address.city}, ${order.address.state} - ${order.address.pincode}` +
+      `${order.address.country && order.address.country !== 'IN' ? ` (${order.address.country})` : ''}\n` +
       `Phone: ${order.address.phone}`,
   }).catch(() => {});
 }
 
-function calculateShipping(subtotal) {
-  return subtotal > 999 || subtotal === 0 ? 0 : 60;
+const DOMESTIC_COUNTRY = 'IN';
+const DEFAULT_INTL_SHIPPING = 1500;
+
+// International shipping is a flat ₹ fee per destination country (admin-set
+// via /admin/currency-overrides' `shipping` map, keyed by country code — a
+// destination concept, unlike the currency-keyed rate/minOrder overrides),
+// falling back to DEFAULT_INTL_SHIPPING when the admin hasn't set one. India
+// keeps the existing tiered domestic rate untouched.
+async function calculateShipping(subtotal, destCountry = DOMESTIC_COUNTRY) {
+  if (subtotal === 0) return 0;
+  if (destCountry === DOMESTIC_COUNTRY) return subtotal > 999 ? 0 : 60;
+  const overrides = await db.get('currency-overrides', 'main');
+  return overrides?.shipping?.[destCountry] || DEFAULT_INTL_SHIPPING;
 }
 
-async function buildOrderItems(items, couponCode) {
+async function buildOrderItems(items, couponCode, destCountry) {
   const products = await db.list('products');
   let subtotal = 0;
   let stockError = null;
@@ -48,7 +60,7 @@ async function buildOrderItems(items, couponCode) {
       price,
     };
   });
-  const shipping = calculateShipping(subtotal);
+  const shipping = await calculateShipping(subtotal, destCountry);
 
   const coupon = await findValidCoupon(couponCode);
   const discount = computeDiscount(coupon, subtotal);

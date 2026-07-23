@@ -12,25 +12,37 @@ const CURRENCY_LABELS = {
   MYR: 'Malaysian Ringgit (Malaysia)',
   AED: 'UAE Dirham (United Arab Emirates)',
 };
+// Shipping is keyed by country code (a destination), not currency — mirrors
+// backend admin.js's SHIPPING_COUNTRIES, which happens to be the same 7
+// countries as CURRENCY_CODES here since each has one currency.
+const SHIPPING_COUNTRY_LABELS = {
+  US: 'USA', GB: 'UK', CA: 'Canada', AU: 'Australia', SG: 'Singapore', MY: 'Malaysia', AE: 'UAE',
+};
 
 export default function AdminCurrency() {
   const { token } = useAuth();
   const [currencies, setCurrencies] = useState([]);
+  const [shippingCountries, setShippingCountries] = useState([]);
   const [liveInrPerUnit, setLiveInrPerUnit] = useState({});
   const [rateInputs, setRateInputs] = useState({});
   const [minOrderInputs, setMinOrderInputs] = useState({});
+  const [shippingInputs, setShippingInputs] = useState({});
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState(null);
 
   function load() {
     api.admin.getCurrencyOverrides(token).then((d) => {
       setCurrencies(d.currencies);
+      setShippingCountries(d.shippingCountries || []);
       setLiveInrPerUnit(d.liveInrPerUnit);
       setRateInputs(
         Object.fromEntries(d.currencies.map((code) => [code, d.inrPerUnit[code] ? String(d.inrPerUnit[code]) : '']))
       );
       setMinOrderInputs(
         Object.fromEntries(d.currencies.map((code) => [code, d.minOrder[code] ? String(d.minOrder[code]) : '']))
+      );
+      setShippingInputs(
+        Object.fromEntries((d.shippingCountries || []).map((code) => [code, d.shipping?.[code] ? String(d.shipping[code]) : '']))
       );
     }).catch(() => {});
   }
@@ -46,7 +58,10 @@ export default function AdminCurrency() {
       const minOrder = Object.fromEntries(
         Object.entries(minOrderInputs).map(([code, v]) => [code, v ? Number(v) : 0])
       );
-      await api.admin.updateCurrencyOverrides(token, { inrPerUnit, minOrder });
+      const shipping = Object.fromEntries(
+        Object.entries(shippingInputs).map(([code, v]) => [code, v ? Number(v) : 0])
+      );
+      await api.admin.updateCurrencyOverrides(token, { inrPerUnit, minOrder, shipping });
       setMessage({ type: 'success', text: 'Currency settings updated.' });
       load();
     } catch (err) {
@@ -104,6 +119,41 @@ export default function AdminCurrency() {
                     value={minOrderInputs[code] || ''}
                     onChange={(e) => setMinOrderInputs((s) => ({ ...s, [code]: e.target.value }))}
                     placeholder={`e.g. 25 (${CURRENCY_SYMBOLS[code] || ''})`}
+                    style={{ maxWidth: 140 }}
+                  />
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <div className="admin-card">
+        <h3 style={{ marginTop: 0 }}>International Shipping</h3>
+        <p className="muted" style={{ fontSize: '0.85rem' }}>
+          Flat shipping fee (in ₹) charged on orders shipping to each country, since the free-over-₹999 /
+          ₹60 domestic rate doesn't cover real international shipping costs. Leave empty to use the default
+          (₹1500).
+        </p>
+        <table className="admin-table">
+          <thead>
+            <tr>
+              <th>Country</th>
+              <th>Shipping fee (₹, optional)</th>
+            </tr>
+          </thead>
+          <tbody>
+            {shippingCountries.map((code) => (
+              <tr key={code}>
+                <td><b>{SHIPPING_COUNTRY_LABELS[code] || code}</b></td>
+                <td>
+                  <input
+                    type="number"
+                    min="0"
+                    step="1"
+                    value={shippingInputs[code] || ''}
+                    onChange={(e) => setShippingInputs((s) => ({ ...s, [code]: e.target.value }))}
+                    placeholder="e.g. 1500"
                     style={{ maxWidth: 140 }}
                   />
                 </td>

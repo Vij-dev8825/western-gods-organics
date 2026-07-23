@@ -31,7 +31,8 @@ async function processDueSubscriptions() {
     try {
       const { orderItems, subtotal, shipping, stockError } = await buildOrderItems(
         [{ productId: sub.productId, size: sub.size, quantity: sub.quantity }],
-        null
+        null,
+        sub.address?.country
       );
       if (!orderItems[0]?.price || stockError) {
         results.push({ subscriptionId: sub.id, skipped: true, reason: stockError || 'Product or size no longer available' });

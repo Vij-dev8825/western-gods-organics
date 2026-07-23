@@ -23,7 +23,7 @@ router.post('/', requireAuth, async (req, res, next) => {
       return res.status(400).json({ success: false, message: 'A complete delivery address is required.' });
     }
 
-    const { orderItems, total, discount, couponCode: appliedCode, stockError } = await buildOrderItems(items, couponCode);
+    const { orderItems, total, discount, couponCode: appliedCode, stockError } = await buildOrderItems(items, couponCode, address.country);
     if (stockError) return res.status(400).json({ success: false, message: stockError });
     const order = await createOrderRecord({
       userId: req.user.id,
@@ -50,11 +50,11 @@ router.post('/razorpay/create', requireAuth, async (req, res, next) => {
         message: 'Online payment isn’t set up yet — please choose Cash on Delivery instead.',
       });
     }
-    const { items, couponCode } = req.body;
+    const { items, couponCode, address } = req.body;
     if (!items || !items.length) {
       return res.status(400).json({ success: false, message: 'Your cart is empty.' });
     }
-    const { total, stockError } = await buildOrderItems(items, couponCode);
+    const { total, stockError } = await buildOrderItems(items, couponCode, address?.country);
     if (stockError) return res.status(400).json({ success: false, message: stockError });
     if (total <= 0) {
       return res.status(400).json({ success: false, message: 'Order total must be greater than zero.' });
@@ -94,7 +94,7 @@ router.post('/razorpay/verify', requireAuth, async (req, res, next) => {
     // /razorpay/create check is the real gate; any oversell that still slips
     // through this narrow window is visible to the admin in Orders same as
     // a COD one and can be handled manually, same as any other refund case.
-    const { orderItems, total, discount, couponCode: appliedCode } = await buildOrderItems(items, couponCode);
+    const { orderItems, total, discount, couponCode: appliedCode } = await buildOrderItems(items, couponCode, address.country);
     const order = await createOrderRecord({
       userId: req.user.id,
       orderItems,

@@ -1,7 +1,10 @@
 import { useState } from 'react';
+import { useCurrency } from '../context/CurrencyContext';
 
 const MIN_BUSINESS_DAYS = 3;
 const MAX_BUSINESS_DAYS = 5;
+const INTL_MIN_BUSINESS_DAYS = 10;
+const INTL_MAX_BUSINESS_DAYS = 20;
 
 function isValidPincode(pin) {
   return /^[1-9]\d{5}$/.test(pin);
@@ -26,9 +29,22 @@ function formatDate(d) {
  * 3-5 business day window quoted elsewhere on the product page, rendered as
  * actual calendar dates instead of a generic range. */
 export default function DeliveryEstimate() {
+  const { isForeign } = useCurrency();
   const [pincode, setPincode] = useState('');
   const [error, setError] = useState('');
   const [result, setResult] = useState(null);
+
+  if (isForeign) {
+    return (
+      <div className="delivery-estimate">
+        <div className="delivery-estimate-label">📦 Estimated delivery date</div>
+        <p className="delivery-estimate-result">
+          International delivery typically takes <b>{INTL_MIN_BUSINESS_DAYS}-{INTL_MAX_BUSINESS_DAYS} business days</b>,
+          depending on your country's customs clearance.
+        </p>
+      </div>
+    );
+  }
 
   function handleChange(e) {
     setPincode(e.target.value.replace(/\D/g, '').slice(0, 6));

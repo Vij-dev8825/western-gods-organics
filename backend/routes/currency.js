@@ -49,12 +49,18 @@ async function getEffectiveRates() {
 router.get('/rates', async (req, res, next) => {
   try {
     const [rates, overrides] = await Promise.all([getEffectiveRates(), db.get('currency-overrides', 'main')]);
-    res.json({ success: true, base: 'INR', rates, minOrder: overrides?.minOrder || {} });
+    res.json({
+      success: true,
+      base: 'INR',
+      rates,
+      minOrder: overrides?.minOrder || {},
+      shipping: overrides?.shipping || {},
+    });
   } catch (err) {
     // Serve a stale cache rather than failing the whole storefront if the
     // upstream provider is briefly down.
     if (cache.liveRates) {
-      return res.json({ success: true, base: 'INR', rates: cache.liveRates, minOrder: {}, stale: true });
+      return res.json({ success: true, base: 'INR', rates: cache.liveRates, minOrder: {}, shipping: {}, stale: true });
     }
     next(err);
   }

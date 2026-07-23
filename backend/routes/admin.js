@@ -14,6 +14,11 @@ const { PAGES: PAGE_BANNER_PAGES } = require('./pageBanners');
 const { sendMail } = require('../utils/mailer');
 const { SUPPORTED: CURRENCY_CODES, getLiveRates } = require('./currency');
 
+// Country codes eligible for an international shipping-fee override (matches
+// frontend CurrencyContext's COUNTRIES list minus India, which uses the
+// domestic tiered rate in orderBuilder.calculateShipping instead).
+const SHIPPING_COUNTRIES = ['US', 'GB', 'CA', 'AU', 'SG', 'MY', 'AE'];
+
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || process.env.CONTACT_NOTIFY_EMAIL;
 
 const router = express.Router();
@@ -801,9 +806,11 @@ router.get('/currency-overrides', async (req, res, next) => {
     res.json({
       success: true,
       currencies: CURRENCY_CODES,
+      shippingCountries: SHIPPING_COUNTRIES,
       liveInrPerUnit,
       inrPerUnit: overrides?.inrPerUnit || {},
       minOrder: overrides?.minOrder || {},
+      shipping: overrides?.shipping || {},
     });
   } catch (err) {
     next(err);
@@ -811,8 +818,10 @@ router.get('/currency-overrides', async (req, res, next) => {
 });
 
 // PUT /api/admin/currency-overrides  { inrPerUnit: { USD: 83.5, ... },
-// minOrder: { USD: 25, ... } } — omit/0 for a currency to fall back to the
-// live rate / no minimum for it.
+// minOrder: { USD: 25, ... }, shipping: { US: 1500, ... } } — omit/0 for an
+// entry to fall back to the live rate / no minimum / default intl shipping.
+// shipping is keyed by country code (not currency) since it's a destination
+// concept, applied to international orders in orderBuilder.calculateShipping.
 router.put('/currency-overrides', async (req, res, next) => {
   try {
     const inrPerUnit = {};
@@ -823,8 +832,13 @@ router.put('/currency-overrides', async (req, res, next) => {
       const min = Number(req.body.minOrder?.[code]);
       if (min > 0) minOrder[code] = min;
     }
-    await db.put('currency-overrides', { id: 'main', inrPerUnit, minOrder });
-    res.json({ success: true, inrPerUnit, minOrder });
+    const shipping = {};
+    for (const code of SHIPPING_COUNTRIES) {
+      const fee = Number(req.body.shipping?.[code]);
+      if (fee > 0) shipping[code] = fee;
+    }
+    await db.put('currency-overrides', { id: 'main', inrPerUnit, minOrder, shipping });
+    res.json({ success: true, inrPerUnit, minOrder, shipping });
   } catch (err) {
     next(err);
   }
