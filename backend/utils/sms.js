@@ -1,7 +1,9 @@
 /**
  * SMS provider chain, checked in order for each call:
  *
- *  - sendOtpSms(phone, otp) — for login OTPs specifically.
+ *  - sendOtpSms(phone, otp) — for login OTPs specifically. A phone starting
+ *    with "+" (international, see auth.js) always skips straight to Twilio —
+ *    Fast2SMS and MSG91 only deliver to Indian numbers. Otherwise:
  *    1. Fast2SMS OTP route (FAST2SMS_API_KEY) — free-credit Indian provider,
  *       no DLT template needed for their built-in numeric-OTP route.
  *    2. MSG91's dedicated OTP API (MSG91_AUTH_KEY) — matches an OTP-category
@@ -11,7 +13,7 @@
  *    4. Console log (dev).
  *
  *  - sendSms(phone, message) — for free-form text (admin broadcast
- *    notifications).
+ *    notifications). Domestic-only for now (India phone numbers).
  *    1. Fast2SMS Quick SMS route (best-effort — Indian carriers increasingly
  *       require DLT-registered templates for non-OTP text, so this may be
  *       rejected without one).
@@ -36,6 +38,15 @@ async function fast2SmsRequest(params) {
 
 async function sendOtpSms(phone, otp) {
   if (!phone) return { sent: false, reason: 'no-phone' };
+
+  // A leading "+" marks an already-fully-qualified international number
+  // (see auth.js's isValidPhone) — Fast2SMS and MSG91 only deliver to Indian
+  // numbers, so route straight to Twilio (the only configured provider that
+  // can actually reach international numbers) using the number as-is,
+  // instead of the domestic path's hardcoded +91 prefix.
+  if (phone.startsWith('+')) {
+    return sendViaTwilioOrLog(phone, `${otp} is your Western Gods Organics OTP. Do not share this code.`, { international: true });
+  }
 
   if (process.env.FAST2SMS_API_KEY) {
     try {
@@ -85,13 +96,13 @@ async function sendSms(phone, message) {
   return sendViaTwilioOrLog(phone, message);
 }
 
-async function sendViaTwilioOrLog(phone, message) {
+async function sendViaTwilioOrLog(phone, message, { international = false } = {}) {
   if (process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN && process.env.TWILIO_FROM) {
     try {
       const sid = process.env.TWILIO_ACCOUNT_SID;
       const auth = Buffer.from(`${sid}:${process.env.TWILIO_AUTH_TOKEN}`).toString('base64');
       const body = new URLSearchParams({
-        To: `+91${phone}`,
+        To: international ? phone : `+91${phone}`,
         From: process.env.TWILIO_FROM,
         Body: message,
       });

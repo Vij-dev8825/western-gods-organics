@@ -21,7 +21,7 @@ async function request(path, { method = 'GET', body, token, formData } = {}) {
 
 export const api = {
   // auth
-  sendOtp: (phone) => request('/auth/send-otp', { method: 'POST', body: { phone } }),
+  sendOtp: (phone, country) => request('/auth/send-otp', { method: 'POST', body: { phone, country } }),
   verifyOtp: (phone, otp, name) =>
     request('/auth/verify-otp', { method: 'POST', body: { phone, otp, name } }),
   me: (token) => request('/auth/me', { token }),

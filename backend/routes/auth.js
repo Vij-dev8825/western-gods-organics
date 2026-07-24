@@ -16,8 +16,13 @@ function generateOtp() {
   return String(Math.floor(1000 + Math.random() * 9000)); // 4-digit OTP
 }
 
-function isValidPhone(phone) {
-  return /^[6-9]\d{9}$/.test(phone); // Indian 10-digit mobile format
+// India keeps the existing 10-digit format. Every other country must submit
+// the full number with a leading "+" and its own calling code (e.g.
+// +15551234567) — the leading "+" doubles as the signal sms.js uses to route
+// through Twilio instead of the India-only Fast2SMS/MSG91 gateways.
+function isValidPhone(phone, country = 'IN') {
+  if (country === 'IN') return /^[6-9]\d{9}$/.test(phone);
+  return /^\+\d{6,15}$/.test(phone);
 }
 
 function signToken(user) {
@@ -28,13 +33,19 @@ function signToken(user) {
   );
 }
 
-// POST /api/auth/send-otp  { phone }
+// POST /api/auth/send-otp  { phone, country? }  — country defaults to 'IN'
+// for older clients; anything else expects a full "+"-prefixed number.
 router.post('/send-otp', async (req, res, next) => {
   try {
-    const { phone } = req.body;
+    const { phone, country = 'IN' } = req.body;
 
-    if (!phone || !isValidPhone(phone)) {
-      return res.status(400).json({ success: false, message: 'Enter a valid 10-digit mobile number.' });
+    if (!phone || !isValidPhone(phone, country)) {
+      return res.status(400).json({
+        success: false,
+        message: country === 'IN'
+          ? 'Enter a valid 10-digit mobile number.'
+          : 'Enter a valid phone number with your country code (e.g. +15551234567).',
+      });
     }
 
     const otp = generateOtp();

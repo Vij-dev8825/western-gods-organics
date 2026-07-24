@@ -3,11 +3,19 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { api } from '../api';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
+import { useCurrency } from '../context/CurrencyContext';
 import { useResendCooldown } from '../hooks/useResendCooldown';
 import logo from '../assets/logo.svg';
 
+function isValidPhoneInput(phone, country) {
+  if (country === 'IN') return /^[6-9]\d{9}$/.test(phone);
+  return /^\+\d{6,15}$/.test(phone.replace(/[\s-]/g, ''));
+}
+
 export default function Login() {
+  const { country, countries } = useCurrency();
   const [step, setStep] = useState('phone'); // 'phone' | 'otp'
+  const [phoneCountry, setPhoneCountry] = useState(country.code);
   const [phone, setPhone] = useState('');
   const [otp, setOtp] = useState(['', '', '', '']);
   const [name, setName] = useState('');
@@ -24,6 +32,12 @@ export default function Login() {
   const redirectTo = location.state?.from || '/';
   const redirectState = location.state?.buyNow ? { buyNow: location.state.buyNow } : undefined;
 
+  const isIndia = phoneCountry === 'IN';
+  // Normalized form actually sent to the API — India stays bare digits;
+  // everything else must be the full "+"-prefixed number with no spaces/
+  // hyphens (matches auth.js's isValidPhone and sms.js's routing check).
+  const apiPhone = isIndia ? phone : phone.replace(/[\s-]/g, '');
+
   // Deliberately NOT wired to a <form onSubmit> — mobile Chrome ignores
   // autocomplete="off" on phone fields and can both autofill AND
   // auto-dispatch a native form "submit" event after doing so, silently
@@ -32,8 +46,12 @@ export default function Login() {
   async function handleSendOtp() {
     if (loading) return;
     setError('');
-    if (!/^[6-9]\d{9}$/.test(phone)) {
-      setError('Enter a valid 10-digit mobile number.');
+    if (!isValidPhoneInput(phone, phoneCountry)) {
+      setError(
+        isIndia
+          ? 'Enter a valid 10-digit mobile number.'
+          : 'Enter a valid phone number with your country code (e.g. +1 555 123 4567).'
+      );
       return;
     }
     if (name.trim().length < 2) {
@@ -42,7 +60,7 @@ export default function Login() {
     }
     setLoading(true);
     try {
-      const data = await api.sendOtp(phone);
+      const data = await api.sendOtp(apiPhone, phoneCountry);
       setStep('otp');
       setOtp(['', '', '', '']);
       if (data.devOtp) setDevOtp(data.devOtp);
@@ -65,7 +83,7 @@ export default function Login() {
     }
     setLoading(true);
     try {
-      const data = await api.verifyOtp(phone, code, name);
+      const data = await api.verifyOtp(apiPhone, code, name);
       login(data.token, data.user);
       showToast(`Welcome${data.user.name ? `, ${data.user.name}` : ''}!`);
       navigate(redirectTo, { replace: true, state: redirectState });
@@ -111,7 +129,7 @@ export default function Login() {
         <p className="muted center" style={{ marginBottom: 26 }}>
           {step === 'phone'
             ? 'We will send a one-time password to your mobile number.'
-            : `Enter the 4-digit code sent to +91 ${phone}`}
+            : `Enter the 4-digit code sent to ${isIndia ? `+91 ${phone}` : apiPhone}`}
         </p>
 
         {error && <div className="alert alert-error">{error}</div>}
@@ -122,15 +140,27 @@ export default function Login() {
         {step === 'phone' ? (
           <div>
             <div className="field">
+              <label>Country</label>
+              <select value={phoneCountry} onChange={(e) => setPhoneCountry(e.target.value)}>
+                {countries.map((c) => (
+                  <option key={c.code} value={c.code}>{c.label}</option>
+                ))}
+              </select>
+            </div>
+            <div className="field">
               <label>Mobile number</label>
               <input
                 type="tel"
-                inputMode="numeric"
+                inputMode={isIndia ? 'numeric' : 'tel'}
                 autoComplete="off"
-                placeholder="98765 43210"
+                placeholder={isIndia ? '98765 43210' : '+1 555 123 4567'}
                 value={phone}
-                maxLength={10}
-                onChange={(e) => setPhone(e.target.value.replace(/\D/g, ''))}
+                maxLength={isIndia ? 10 : 17}
+                onChange={(e) => setPhone(
+                  isIndia
+                    ? e.target.value.replace(/\D/g, '')
+                    : e.target.value.replace(/[^\d+\s-]/g, '')
+                )}
                 onKeyDown={onEnterKey(handleSendOtp)}
               />
             </div>
