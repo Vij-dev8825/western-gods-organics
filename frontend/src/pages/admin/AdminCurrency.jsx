@@ -1,26 +1,17 @@
 import { useEffect, useState } from 'react';
 import { api } from '../../api';
 import { useAuth } from '../../context/AuthContext';
-
-const CURRENCY_SYMBOLS = { USD: '$', GBP: '£', CAD: 'C$', AUD: 'A$', SGD: 'S$', MYR: 'RM', AED: 'AED ' };
-const CURRENCY_LABELS = {
-  USD: 'US Dollar (USA)',
-  GBP: 'British Pound (UK)',
-  CAD: 'Canadian Dollar (Canada)',
-  AUD: 'Australian Dollar (Australia)',
-  SGD: 'Singapore Dollar (Singapore)',
-  MYR: 'Malaysian Ringgit (Malaysia)',
-  AED: 'UAE Dirham (United Arab Emirates)',
-};
-// Shipping is keyed by country code (a destination), not currency — mirrors
-// backend admin.js's SHIPPING_COUNTRIES, which happens to be the same 7
-// countries as CURRENCY_CODES here since each has one currency.
-const SHIPPING_COUNTRY_LABELS = {
-  US: 'USA', GB: 'UK', CA: 'Canada', AU: 'Australia', SG: 'Singapore', MY: 'Malaysia', AE: 'UAE',
-};
+import { useCurrency } from '../../context/CurrencyContext';
 
 export default function AdminCurrency() {
   const { token } = useAuth();
+  const { countries } = useCurrency();
+  // Labels/symbols come straight from the (admin-managed) country catalog,
+  // so a newly-added country/currency displays properly with no extra
+  // per-currency lookup map to keep in sync by hand.
+  const currencyLabel = (code) => countries.find((x) => x.currency === code)?.label || code;
+  const currencySymbol = (code) => countries.find((x) => x.currency === code)?.symbol || '';
+  const countryLabel = (code) => countries.find((x) => x.code === code)?.label || code;
   const [currencies, setCurrencies] = useState([]);
   const [shippingCountries, setShippingCountries] = useState([]);
   const [liveInrPerUnit, setLiveInrPerUnit] = useState({});
@@ -98,7 +89,7 @@ export default function AdminCurrency() {
           <tbody>
             {currencies.map((code) => (
               <tr key={code}>
-                <td><b>{code}</b><div className="muted" style={{ fontSize: '0.75rem' }}>{CURRENCY_LABELS[code] || code}</div></td>
+                <td><b>{code}</b><div className="muted" style={{ fontSize: '0.75rem' }}>{currencyLabel(code)}</div></td>
                 <td className="muted">{liveInrPerUnit[code] ? `₹${liveInrPerUnit[code]}` : '—'}</td>
                 <td>
                   <input
@@ -118,7 +109,7 @@ export default function AdminCurrency() {
                     step="0.01"
                     value={minOrderInputs[code] || ''}
                     onChange={(e) => setMinOrderInputs((s) => ({ ...s, [code]: e.target.value }))}
-                    placeholder={`e.g. 25 (${CURRENCY_SYMBOLS[code] || ''})`}
+                    placeholder={`e.g. 25 (${currencySymbol(code)})`}
                     style={{ maxWidth: 140 }}
                   />
                 </td>
@@ -145,7 +136,7 @@ export default function AdminCurrency() {
           <tbody>
             {shippingCountries.map((code) => (
               <tr key={code}>
-                <td><b>{SHIPPING_COUNTRY_LABELS[code] || code}</b></td>
+                <td><b>{countryLabel(code)}</b></td>
                 <td>
                   <input
                     type="number"

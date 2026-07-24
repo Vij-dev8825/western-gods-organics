@@ -1,7 +1,10 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import { api } from '../api';
 
-export const COUNTRIES = [
+// Fallback used only until the real admin-managed catalog loads from
+// /currency/rates (and if that fetch fails). See AdminCountries for the
+// admin UI that manages the real list.
+export const DEFAULT_COUNTRIES = [
   { code: 'IN', label: 'India', currency: 'INR', symbol: '₹' },
   { code: 'US', label: 'USA', currency: 'USD', symbol: '$' },
   { code: 'GB', label: 'UK', currency: 'GBP', symbol: '£' },
@@ -19,9 +22,10 @@ const CurrencyContext = createContext(null);
  * in INR (no payment-gateway multi-currency settlement is set up), so
  * formatPrice is for shop/product pages, not the actual amount billed. */
 export function CurrencyProvider({ children }) {
+  const [countries, setCountries] = useState(DEFAULT_COUNTRIES);
   const [country, setCountryState] = useState(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
-    return COUNTRIES.find((c) => c.code === saved) || COUNTRIES[0];
+    return DEFAULT_COUNTRIES.find((c) => c.code === saved) || DEFAULT_COUNTRIES[0];
   });
   const [rates, setRates] = useState(null);
   const [minOrder, setMinOrder] = useState({});
@@ -32,11 +36,18 @@ export function CurrencyProvider({ children }) {
       setRates(d.rates);
       setMinOrder(d.minOrder || {});
       setShipping(d.shipping || {});
+      if (d.countries?.length) setCountries(d.countries);
     }).catch(() => {});
   }, []);
 
+  // Once the real catalog loads, re-validate the current selection against
+  // it — the synchronous guess above only had DEFAULT_COUNTRIES to go on.
+  useEffect(() => {
+    setCountryState((current) => countries.find((c) => c.code === current.code) || countries[0]);
+  }, [countries]);
+
   function setCountry(code) {
-    const found = COUNTRIES.find((c) => c.code === code);
+    const found = countries.find((c) => c.code === code);
     if (!found) return;
     localStorage.setItem(STORAGE_KEY, code);
     setCountryState(found);
@@ -101,6 +112,7 @@ export function CurrencyProvider({ children }) {
       value={{
         country,
         setCountry,
+        countries,
         formatPrice,
         formatProductPrice,
         getCountryPrice,

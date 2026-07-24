@@ -4,7 +4,7 @@ import { api } from '../api';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
-import { useCurrency, COUNTRIES } from '../context/CurrencyContext';
+import { useCurrency } from '../context/CurrencyContext';
 import { getProductImage } from '../utils/productImages';
 import { loadRazorpay } from '../utils/loadRazorpay';
 import { validateAddress } from '../utils/validators';
@@ -14,7 +14,7 @@ export default function Cart() {
   const { items, updateQuantity, removeItem, clearCart } = useCart();
   const { isLoggedIn, token, user } = useAuth();
   const { showToast } = useToast();
-  const { isForeign, checkMinOrder, getShippingFee, country } = useCurrency();
+  const { isForeign, checkMinOrder, getShippingFee, country, countries } = useCurrency();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -385,7 +385,7 @@ export default function Cart() {
               <div className="field">
                 <label>Country</label>
                 <select value={address.country} onChange={(e) => updateAddress('country', e.target.value)}>
-                  {COUNTRIES.map((c) => (
+                  {countries.map((c) => (
                     <option key={c.code} value={c.code}>{c.label}</option>
                   ))}
                 </select>

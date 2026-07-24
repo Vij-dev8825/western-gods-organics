@@ -24,7 +24,7 @@ export function isValidEmail(email) {
 
 /** Delivery address validation shared by Cart checkout and the subscription
  * form. Returns an { fieldName: message } map — empty object means valid.
- * address.country (a CurrencyContext COUNTRIES code) selects strict India
+ * address.country (a CurrencyContext country code) selects strict India
  * rules vs a permissive international check; defaults to India when unset. */
 export function validateAddress(address) {
   const country = address.country || 'IN';

@@ -14,6 +14,7 @@ const links = [
   { to: '/admin/banners', label: 'Home Banners' },
   { to: '/admin/page-banners', label: 'Page Banners' },
   { to: '/admin/sale-banner', label: 'Sale Banner' },
+  { to: '/admin/countries', label: 'Countries & Currencies' },
   { to: '/admin/currency', label: 'Currency Rates' },
   { to: '/admin/homepage-reviews', label: 'Homepage Reviews' },
   { to: '/admin/blog', label: 'Blog' },

@@ -6,7 +6,7 @@ import { useCart } from '../context/CartContext';
 import { useWishlist } from '../context/WishlistContext';
 import { useAuth } from '../context/AuthContext';
 import { useLang } from '../i18n';
-import { useCurrency, COUNTRIES } from '../context/CurrencyContext';
+import { useCurrency } from '../context/CurrencyContext';
 import { IconHeart, IconBag, IconUser, IconBell, IconMenu, IconBox, IconSearch } from './Icons';
 
 export default function Navbar() {
@@ -16,7 +16,7 @@ export default function Navbar() {
   const { productIds } = useWishlist();
   const { isLoggedIn, user, token } = useAuth();
   const { t } = useLang();
-  const { country, setCountry } = useCurrency();
+  const { country, setCountry, countries } = useCurrency();
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams] = useSearchParams();
@@ -93,7 +93,7 @@ export default function Navbar() {
             value={country.code}
             onChange={(e) => setCountry(e.target.value)}
           >
-            {COUNTRIES.map((c) => (
+            {countries.map((c) => (
               <option key={c.code} value={c.code} title={`${c.label} — ${c.currency}`}>{c.label}</option>
             ))}
           </select>

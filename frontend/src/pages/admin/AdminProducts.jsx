@@ -3,9 +3,7 @@ import { api } from '../../api';
 import { useAuth } from '../../context/AuthContext';
 import { getProductImage } from '../../utils/productImages';
 import ImageUploadField from '../../components/admin/ImageUploadField';
-import { COUNTRIES } from '../../context/CurrencyContext';
-
-const FOREIGN_COUNTRIES = COUNTRIES.filter((c) => c.currency !== 'INR');
+import { useCurrency } from '../../context/CurrencyContext';
 
 const EMPTY = {
   name: '',
@@ -63,6 +61,8 @@ function fromForm(f) {
 
 export default function AdminProducts() {
   const { token } = useAuth();
+  const { countries } = useCurrency();
+  const foreignCountries = countries.filter((c) => c.currency !== 'INR');
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [editing, setEditing] = useState(null); // null | 'new' | product id
@@ -303,7 +303,7 @@ export default function AdminProducts() {
                 </tr>
               </thead>
               <tbody>
-                {FOREIGN_COUNTRIES.map((c) => (
+                {foreignCountries.map((c) => (
                   <tr key={c.code}>
                     <td>{c.label} ({c.currency})</td>
                     {form.sizes.map((s, i) => {

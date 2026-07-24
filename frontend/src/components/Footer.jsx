@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useLang, LANGS } from '../i18n';
-import { useCurrency, COUNTRIES } from '../context/CurrencyContext';
+import { useCurrency } from '../context/CurrencyContext';
 import { STORE_LOCATIONS, mapEmbedSrc, directionsUrl } from '../data/storeLocations';
 
 const SUPPORT_PHONE = '+918825875607';
@@ -29,7 +29,7 @@ function FooterAccordion({ title, isOpen, onToggle, children }) {
 
 export default function Footer() {
   const { t, lang, setLang } = useLang();
-  const { country, setCountry } = useCurrency();
+  const { country, setCountry, countries } = useCurrency();
   const [openSection, setOpenSection] = useState(null);
   const [showBackToTop, setShowBackToTop] = useState(false);
 
@@ -167,7 +167,7 @@ export default function Footer() {
             value={country.code}
             onChange={(e) => setCountry(e.target.value)}
           >
-            {COUNTRIES.map((c) => (
+            {countries.map((c) => (
               <option key={c.code} value={c.code} title={`${c.label} — ${c.currency}`}>{c.label}</option>
             ))}
           </select>

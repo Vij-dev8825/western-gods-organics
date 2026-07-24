@@ -12,12 +12,7 @@ const { compressAndStore, compressVideoAndStore } = require('../utils/mediaStore
 const { processDueSubscriptions } = require('../utils/subscriptions');
 const { PAGES: PAGE_BANNER_PAGES } = require('./pageBanners');
 const { sendMail } = require('../utils/mailer');
-const { SUPPORTED: CURRENCY_CODES, getLiveRates } = require('./currency');
-
-// Country codes eligible for an international shipping-fee override (matches
-// frontend CurrencyContext's COUNTRIES list minus India, which uses the
-// domestic tiered rate in orderBuilder.calculateShipping instead).
-const SHIPPING_COUNTRIES = ['US', 'GB', 'CA', 'AU', 'SG', 'MY', 'AE'];
+const { getCountries, getFullLiveRates } = require('./currency');
 
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || process.env.CONTACT_NOTIFY_EMAIL;
 
@@ -836,21 +831,25 @@ router.put('/homepage-reviews', async (req, res, next) => {
 
 // GET /api/admin/currency-overrides — live rate (as "1 X = ₹Y", the usual
 // quoting convention) alongside any manual override and minimum order value
-// currently set for it.
+// currently set for it. Currency/country lists are derived from the
+// admin-managed country-catalog (see below), not a fixed set.
 router.get('/currency-overrides', async (req, res, next) => {
   try {
-    const [overrides, live] = await Promise.all([
+    const countries = await getCountries();
+    const foreignCountries = countries.filter((c) => c.currency !== 'INR');
+    const currencyCodes = [...new Set(foreignCountries.map((c) => c.currency))];
+    const [overrides, full] = await Promise.all([
       db.get('currency-overrides', 'main'),
-      getLiveRates().catch(() => ({})),
+      getFullLiveRates().catch(() => ({})),
     ]);
     const liveInrPerUnit = {};
-    for (const code of CURRENCY_CODES) {
-      if (live[code]) liveInrPerUnit[code] = +(1 / live[code]).toFixed(4);
+    for (const code of currencyCodes) {
+      if (full[code]) liveInrPerUnit[code] = +(1 / full[code]).toFixed(4);
     }
     res.json({
       success: true,
-      currencies: CURRENCY_CODES,
-      shippingCountries: SHIPPING_COUNTRIES,
+      currencies: currencyCodes,
+      shippingCountries: foreignCountries.map((c) => c.code),
       liveInrPerUnit,
       inrPerUnit: overrides?.inrPerUnit || {},
       minOrder: overrides?.minOrder || {},
@@ -868,21 +867,87 @@ router.get('/currency-overrides', async (req, res, next) => {
 // concept, applied to international orders in orderBuilder.calculateShipping.
 router.put('/currency-overrides', async (req, res, next) => {
   try {
+    const countries = await getCountries();
+    const foreignCountries = countries.filter((c) => c.currency !== 'INR');
+    const currencyCodes = [...new Set(foreignCountries.map((c) => c.currency))];
+    const countryCodes = foreignCountries.map((c) => c.code);
+
     const inrPerUnit = {};
     const minOrder = {};
-    for (const code of CURRENCY_CODES) {
+    for (const code of currencyCodes) {
       const rate = Number(req.body.inrPerUnit?.[code]);
       if (rate > 0) inrPerUnit[code] = rate;
       const min = Number(req.body.minOrder?.[code]);
       if (min > 0) minOrder[code] = min;
     }
     const shipping = {};
-    for (const code of SHIPPING_COUNTRIES) {
+    for (const code of countryCodes) {
       const fee = Number(req.body.shipping?.[code]);
       if (fee > 0) shipping[code] = fee;
     }
     await db.put('currency-overrides', { id: 'main', inrPerUnit, minOrder, shipping });
     res.json({ success: true, inrPerUnit, minOrder, shipping });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/* ------------------------------ Country catalog ---------------------------- */
+
+// GET /api/admin/country-catalog
+router.get('/country-catalog', async (req, res, next) => {
+  try {
+    const countries = await getCountries();
+    res.json({ success: true, countries });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// PUT /api/admin/country-catalog  { countries: [{ code, label, currency, symbol }] }
+// Country/currency codes are validated for shape; the currency code (other
+// than INR) is also checked against the live exchange-rate provider when
+// reachable, so a typo doesn't silently create a currency with no rate.
+router.put('/country-catalog', async (req, res, next) => {
+  try {
+    if (!Array.isArray(req.body.countries) || !req.body.countries.length) {
+      return res.status(400).json({ success: false, message: 'At least one country is required.' });
+    }
+    let full = null;
+    try {
+      full = await getFullLiveRates();
+    } catch {
+      full = null; // provider unreachable — skip live-currency validation rather than block the save
+    }
+
+    const seen = new Set();
+    const countries = [];
+    for (const c of req.body.countries) {
+      const code = (c.code || '').trim().toUpperCase();
+      const currency = (c.currency || '').trim().toUpperCase();
+      const label = (c.label || '').trim();
+      const symbol = (c.symbol || '').trim();
+      if (!/^[A-Z]{2}$/.test(code)) {
+        return res.status(400).json({ success: false, message: `"${c.code || ''}" isn't a valid 2-letter country code.` });
+      }
+      if (!/^[A-Z]{3}$/.test(currency)) {
+        return res.status(400).json({ success: false, message: `"${c.currency || ''}" isn't a valid 3-letter currency code.` });
+      }
+      if (!label) return res.status(400).json({ success: false, message: `"${code}" needs a display label.` });
+      if (!symbol) return res.status(400).json({ success: false, message: `"${code}" needs a currency symbol.` });
+      if (full && currency !== 'INR' && !full[currency]) {
+        return res.status(400).json({ success: false, message: `"${currency}" isn't a currency our exchange-rate provider tracks — double-check the code.` });
+      }
+      if (seen.has(code)) return res.status(400).json({ success: false, message: `Duplicate country code "${code}".` });
+      seen.add(code);
+      countries.push({ code, label, currency, symbol });
+    }
+    if (!countries.some((c) => c.currency === 'INR')) {
+      return res.status(400).json({ success: false, message: 'The country list must include one India (INR) entry.' });
+    }
+
+    await db.put('country-catalog', { id: 'main', countries });
+    res.json({ success: true, countries });
   } catch (err) {
     next(err);
   }

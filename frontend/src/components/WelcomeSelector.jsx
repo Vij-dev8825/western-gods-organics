@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useLang, LANGS } from '../i18n';
-import { useCurrency, COUNTRIES } from '../context/CurrencyContext';
+import { useCurrency } from '../context/CurrencyContext';
 
 const SEEN_KEY = 'yo_welcome_seen';
 
@@ -10,7 +10,7 @@ const SEEN_KEY = 'yo_welcome_seen';
  * is still just the navbar/footer dropdowns. */
 export default function WelcomeSelector() {
   const { lang, setLang, t } = useLang();
-  const { country, setCountry } = useCurrency();
+  const { country, setCountry, countries } = useCurrency();
   const [visible, setVisible] = useState(() => !localStorage.getItem(SEEN_KEY));
   const [selectedLang, setSelectedLang] = useState(lang);
   const [selectedCountry, setSelectedCountry] = useState(country.code);
@@ -48,7 +48,7 @@ export default function WelcomeSelector() {
         <div className="field">
           <label>{t('welcomeSelectorRegionLabel')}</label>
           <select className="select" value={selectedCountry} onChange={(e) => setSelectedCountry(e.target.value)}>
-            {COUNTRIES.map((c) => (
+            {countries.map((c) => (
               <option key={c.code} value={c.code}>{c.label}</option>
             ))}
           </select>

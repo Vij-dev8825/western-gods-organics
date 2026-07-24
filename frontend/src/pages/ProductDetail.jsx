@@ -6,7 +6,7 @@ import { useCart } from '../context/CartContext';
 import { useWishlist } from '../context/WishlistContext';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
-import { useCurrency, COUNTRIES } from '../context/CurrencyContext';
+import { useCurrency } from '../context/CurrencyContext';
 import { recordProductView } from '../utils/recentlyViewed';
 import { validateAddress } from '../utils/validators';
 import ChakkiWheel from '../components/ChakkiWheel';
@@ -60,7 +60,7 @@ export default function ProductDetail() {
   const [subCustom, setSubCustom] = useState(false);
   const [subCustomDays, setSubCustomDays] = useState('');
   const [subShowForm, setSubShowForm] = useState(false);
-  const { formatPrice, formatProductPrice, isForeign, country } = useCurrency();
+  const { formatPrice, formatProductPrice, isForeign, country, countries } = useCurrency();
   const [subAddress, setSubAddress] = useState({ line1: '', city: '', state: '', pincode: '', phone: '', country: country.code });
   const [subAddressErrors, setSubAddressErrors] = useState({});
   const [subscribing, setSubscribing] = useState(false);
@@ -432,7 +432,7 @@ export default function ProductDetail() {
                 <div className="field">
                   <label>Country</label>
                   <select value={subAddress.country} onChange={(e) => updateSubAddress('country', e.target.value)}>
-                    {COUNTRIES.map((c) => (
+                    {countries.map((c) => (
                       <option key={c.code} value={c.code}>{c.label}</option>
                     ))}
                   </select>

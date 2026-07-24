@@ -38,6 +38,7 @@ const COLLECTIONS = [
   'push-subscriptions',
   'stock-notify',
   'homepage-reviews',
+  'country-catalog',
 ];
 
 let mode = 'json';

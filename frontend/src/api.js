@@ -158,6 +158,8 @@ export const api = {
     updateSaleBanner: (token, settings) => request('/admin/sale-banner', { method: 'PUT', body: settings, token }),
     getHomepageReviews: (token) => request('/admin/homepage-reviews', { token }),
     updateHomepageReviews: (token, settings) => request('/admin/homepage-reviews', { method: 'PUT', body: settings, token }),
+    getCountryCatalog: (token) => request('/admin/country-catalog', { token }),
+    updateCountryCatalog: (token, countries) => request('/admin/country-catalog', { method: 'PUT', body: { countries }, token }),
 
     getCurrencyOverrides: (token) => request('/admin/currency-overrides', { token }),
     updateCurrencyOverrides: (token, body) =>
