@@ -5,11 +5,47 @@ import ProductCard from '../components/ProductCard';
 import SectionDivider from '../components/SectionDivider';
 import ChakkiWheel from '../components/ChakkiWheel';
 import GoogleReviewsWidget from '../components/GoogleReviewsWidget';
+import StructuredData from '../components/StructuredData';
 import { getProductImage } from '../utils/productImages';
 import { getRecentlyViewedIds } from '../utils/recentlyViewed';
 import { useLang } from '../i18n';
+import { CANONICAL_ORIGIN } from '../utils/site';
 
 const USP_ICONS = ['🌾', '🪵', '🧪', '🚚'];
+
+// schema.org Organization + WebSite structured data — describes the
+// business entity (helps with Knowledge Panel-style recognition) and
+// registers the site's search bar for Google's sitelinks search box.
+const ORGANIZATION_SCHEMA = {
+  '@context': 'https://schema.org',
+  '@type': 'Organization',
+  name: 'Western Gods Organics',
+  url: CANONICAL_ORIGIN,
+  logo: `${CANONICAL_ORIGIN}/favicon-96x96.png`,
+  image: `${CANONICAL_ORIGIN}/favicon-96x96.png`,
+  telephone: '+918825875607',
+  email: 'westerngodsorganic@gmail.com',
+  address: {
+    '@type': 'PostalAddress',
+    streetAddress: 'Shri Gopal Flour & Oil Mills, Udumalpet',
+    addressLocality: 'Tiruppur District',
+    addressRegion: 'Tamil Nadu',
+    postalCode: '642126',
+    addressCountry: 'IN',
+  },
+};
+
+const WEBSITE_SCHEMA = {
+  '@context': 'https://schema.org',
+  '@type': 'WebSite',
+  name: 'Western Gods Organics',
+  url: CANONICAL_ORIGIN,
+  potentialAction: {
+    '@type': 'SearchAction',
+    target: `${CANONICAL_ORIGIN}/shop?search={search_term_string}`,
+    'query-input': 'required name=search_term_string',
+  },
+};
 
 const TESTIMONIALS = [
   {
@@ -72,6 +108,9 @@ export default function Home() {
 
   return (
     <>
+      <StructuredData id="ld-organization" data={ORGANIZATION_SCHEMA} />
+      <StructuredData id="ld-website" data={WEBSITE_SCHEMA} />
+
       {/* ---------- Video hero ---------- */}
       <section className="hero-video">
         {banners.map((b, i) =>

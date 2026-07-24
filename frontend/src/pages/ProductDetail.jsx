@@ -14,7 +14,9 @@ import ProductCard from '../components/ProductCard';
 import ImageLightbox from '../components/ImageLightbox';
 import DeliveryEstimate from '../components/DeliveryEstimate';
 import TrustBadges from '../components/TrustBadges';
+import StructuredData from '../components/StructuredData';
 import { IconHeart } from '../components/Icons';
+import { CANONICAL_ORIGIN } from '../utils/site';
 
 const SUBSCRIPTION_DISCOUNT_PERCENT = 10;
 const MIN_FREQUENCY_DAYS = 7;
@@ -41,6 +43,50 @@ function StarPicker({ value, onChange }) {
       ))}
     </div>
   );
+}
+
+// schema.org Product structured data, so Google can show price/availability/
+// rating rich snippets directly in search results. Describes the product as
+// a whole (all sizes via AggregateOffer) rather than whichever size is
+// currently toggled in the UI — Googlebot reads a snapshot, not a live
+// session, so this shouldn't chase the customer's in-page selection.
+function buildProductSchema(product) {
+  const prices = product.sizes.map((s) => s.price);
+  const inStock = product.sizes.some((s) => s.stock > 0);
+  const url = `${CANONICAL_ORIGIN}/product/${product.id}`;
+  const rawImage = getProductImage(product.image);
+  const image = rawImage.startsWith('http') ? rawImage : `${CANONICAL_ORIGIN}${rawImage}`;
+
+  const schema = {
+    '@context': 'https://schema.org',
+    '@type': 'Product',
+    name: product.name,
+    description: product.shortDescription || product.description,
+    image,
+    sku: product.id,
+    url,
+    brand: { '@type': 'Brand', name: 'Western Gods Organics' },
+    offers: {
+      '@type': 'AggregateOffer',
+      priceCurrency: 'INR',
+      lowPrice: Math.min(...prices),
+      highPrice: Math.max(...prices),
+      offerCount: product.sizes.length,
+      availability: inStock ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
+      url,
+    },
+  };
+
+  // Google's guidelines say not to include AggregateRating with zero reviews.
+  if (product.reviewsCount > 0) {
+    schema.aggregateRating = {
+      '@type': 'AggregateRating',
+      ratingValue: product.rating,
+      reviewCount: product.reviewsCount,
+    };
+  }
+
+  return schema;
 }
 
 export default function ProductDetail() {
@@ -127,6 +173,7 @@ export default function ProductDetail() {
   const outOfStock = activeSize.stock <= 0;
   const isWished = productIds.includes(product.id);
   const gallery = product.images?.length ? product.images : [product.image];
+  const productSchema = buildProductSchema(product);
 
   function handleAdd() {
     if (outOfStock) return;
@@ -233,6 +280,7 @@ export default function ProductDetail() {
 
   return (
     <div className="container section">
+      <StructuredData id="ld-product" data={productSchema} />
       <div className="breadcrumb">
         <Link to="/shop">Shop</Link> / {product.name}
       </div>

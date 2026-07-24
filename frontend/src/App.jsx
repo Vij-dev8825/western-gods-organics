@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { Routes, Route, Outlet, useLocation } from 'react-router-dom';
 import { useLang } from './i18n';
+import { CANONICAL_ORIGIN } from './utils/site';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -96,8 +97,6 @@ function ScrollToTop() {
   }, [pathname]);
   return null;
 }
-
-const CANONICAL_ORIGIN = 'https://www.westerngodsorganic.com';
 
 // This is a client-rendered SPA on a single static index.html, so the
 // canonical tag has to be updated per-route in JS rather than baked into
