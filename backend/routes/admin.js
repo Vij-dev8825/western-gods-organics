@@ -268,6 +268,24 @@ router.put('/products/:id', async (req, res, next) => {
       }
     }
 
+    // Alert the admin the moment a size crosses down into low stock (same
+    // ≤10 threshold as the Dashboard's "Low stock" widget), so a restock can
+    // happen before it silently runs out — instead of finding out from a
+    // customer's back-in-stock signup after the fact.
+    const LOW_STOCK_THRESHOLD = 10;
+    const newlyLowStock = updated.sizes.filter((s) => {
+      const before = existing.sizes.find((x) => x.label === s.label);
+      return before && before.stock > LOW_STOCK_THRESHOLD && s.stock <= LOW_STOCK_THRESHOLD;
+    });
+    if (newlyLowStock.length && ADMIN_EMAIL) {
+      const lines = newlyLowStock.map((s) => `${s.label}: ${s.stock} unit(s) left`).join('\n');
+      await sendMail({
+        to: ADMIN_EMAIL,
+        subject: `Low stock: ${updated.name}`,
+        text: `${updated.name} just dropped to low stock:\n\n${lines}\n\nRestock soon to avoid running out.`,
+      }).catch(() => {});
+    }
+
     res.json({ success: true, product: updated, notified });
   } catch (err) {
     next(err);
