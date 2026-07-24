@@ -57,7 +57,7 @@ export default function Shop() {
     <div className="section" style={{ paddingTop: 0 }}>
       <SeoMeta
         title={category === 'all' ? 'Shop All Products | Western Gods Organics' : `${heading} | Western Gods Organics`}
-        description="Browse our full range of traditional wood-pressed cold-pressed oils, handmade herbal soaps and stone-ground herbal powders — 100% natural, chemical-free, shipped across India and worldwide."
+        description="Browse our cold-pressed oils, handmade herbal soaps and stone-ground herbal powders — 100% natural, shipped across India and worldwide."
         path="/shop"
       />
       <PageBanner page="shop" title={t('shopTitle')} subtitle={t('shopBannerSub')} />

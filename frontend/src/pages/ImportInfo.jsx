@@ -54,7 +54,7 @@ export default function ImportInfo() {
     <div className="container section">
       <SeoMeta
         title="Import Cold-Pressed Oils, Herbal Soaps & Powders | Western Gods Organics"
-        description="Import authentic Indian cold-pressed oils, handmade herbal soaps and stone-ground herbal powders to your country. Export-ready, GST/IEC invoicing, worldwide shipping."
+        description="Import authentic Indian cold-pressed oils, herbal soaps and herbal powders to your country. Export-ready, GST/IEC invoicing, worldwide shipping."
         path="/import"
       />
       <div className="breadcrumb">Home / Import to Your Country</div>

@@ -113,7 +113,7 @@ export default function Home() {
     <>
       <SeoMeta
         title="Western Gods Organics — Cold-Pressed Oils, Herbal Soaps & Powders"
-        description="Shop traditional wood-pressed cold-pressed oils, handmade herbal soaps and stone-ground herbal powders from a family mill in Tamil Nadu, India. 100% natural, chemical-free, shipped across India and worldwide."
+        description="Traditional wood-pressed cold-pressed oils, handmade herbal soaps and stone-ground herbal powders — 100% natural, from Tamil Nadu, shipped worldwide."
         path="/"
       />
       <StructuredData id="ld-organization" data={ORGANIZATION_SCHEMA} />
