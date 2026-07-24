@@ -1,11 +1,51 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
 const { v4: uuid } = require('uuid');
 const db = require('../data/db');
 const { requireAuth } = require('../middleware/auth');
 const { sendOtpSms } = require('../utils/sms');
 
 const router = express.Router();
+
+const REFERRAL_WELCOME_INR = 100;
+
+// Short, shareable code (not the DB id) every customer gets so they can
+// refer friends. Retries on the near-impossible collision rather than
+// trusting randomness alone, since this doubles as a lookup key.
+async function generateReferralCode() {
+  const users = await db.list('users');
+  const existing = new Set(users.map((u) => u.referralCode).filter(Boolean));
+  let code;
+  do {
+    code = crypto.randomBytes(4).toString('hex').toUpperCase();
+  } while (existing.has(code));
+  return code;
+}
+
+// Creates the one-time "welcome" discount for a customer who signed up via
+// a friend's referral link — assignedToUserId + redeemed make it personal
+// and single-use (see utils/coupons.js), unlike the site's regular coupons.
+async function issueWelcomeCoupon(userId) {
+  const coupon = {
+    id: uuid(),
+    code: `WELCOME${crypto.randomBytes(3).toString('hex').toUpperCase()}`,
+    type: 'flat',
+    value: REFERRAL_WELCOME_INR,
+    minOrder: 0,
+    expiresAt: null,
+    active: true,
+    featured: false,
+    promoImage: '',
+    promoHeadline: '',
+    promoSubtext: '',
+    assignedToUserId: userId,
+    redeemed: false,
+    createdAt: new Date().toISOString(),
+  };
+  await db.put('coupons', coupon);
+  return coupon;
+}
 
 // In-memory OTP store: { [phone]: { otp, expiresAt, attempts } }
 const otpStore = new Map();
@@ -70,10 +110,10 @@ router.post('/send-otp', async (req, res, next) => {
   }
 });
 
-// POST /api/auth/verify-otp  { phone, otp, name? }
+// POST /api/auth/verify-otp  { phone, otp, name?, referralCode? }
 router.post('/verify-otp', async (req, res, next) => {
   try {
-    const { phone, otp, name } = req.body;
+    const { phone, otp, name, referralCode } = req.body;
 
     if (!phone || !otp) {
       return res.status(400).json({ success: false, message: 'Mobile number and OTP are required.' });
@@ -112,7 +152,13 @@ router.post('/verify-otp', async (req, res, next) => {
 
     otpStore.delete(phone);
 
+    let welcomeCoupon = null;
+
     if (!user) {
+      const referrer = referralCode
+        ? users.find((u) => u.referralCode === referralCode.trim().toUpperCase())
+        : null;
+
       user = {
         id: uuid(),
         phone,
@@ -120,12 +166,25 @@ router.post('/verify-otp', async (req, res, next) => {
         email: '',
         role: phone === (process.env.ADMIN_PHONE || '9999999999') ? 'admin' : 'customer',
         addresses: [],
+        referralCode: await generateReferralCode(),
+        referredBy: referrer ? referrer.id : null,
+        referralRewardIssued: false,
         createdAt: new Date().toISOString(),
       };
       await db.put('users', user);
+
+      if (referrer) {
+        welcomeCoupon = await issueWelcomeCoupon(user.id);
+      }
     }
 
-    res.json({ success: true, message: 'Logged in successfully.', token: signToken(user), user });
+    res.json({
+      success: true,
+      message: 'Logged in successfully.',
+      token: signToken(user),
+      user,
+      ...(welcomeCoupon ? { welcomeCoupon } : {}),
+    });
   } catch (err) {
     next(err);
   }
@@ -137,6 +196,11 @@ router.get('/me', requireAuth, async (req, res, next) => {
     const user = await db.get('users', req.user.id);
     if (!user) {
       return res.status(404).json({ success: false, message: 'User not found.' });
+    }
+    // Backfill for accounts created before the referral program existed.
+    if (!user.referralCode) {
+      user.referralCode = await generateReferralCode();
+      await db.put('users', user);
     }
     res.json({ success: true, user });
   } catch (err) {

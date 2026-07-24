@@ -6,6 +6,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { IconBox } from '../components/Icons';
 import { isValidEmail } from '../utils/validators';
 import ChakkiWheel from '../components/ChakkiWheel';
+import { CANONICAL_ORIGIN } from '../utils/site';
 
 export default function Profile() {
   const { user, token, logout, updateUser } = useAuth();
@@ -49,6 +50,17 @@ export default function Profile() {
     navigate('/');
   }
 
+  const referralLink = user?.referralCode ? `${CANONICAL_ORIGIN}/login?ref=${user.referralCode}` : '';
+
+  async function handleCopyReferralLink() {
+    try {
+      await navigator.clipboard.writeText(referralLink);
+      showToast('Referral link copied!');
+    } catch {
+      showToast('Could not copy automatically — please copy the link manually.', 'error');
+    }
+  }
+
   if (!user) {
     return (
       <div className="center" style={{ padding: '120px 0' }}>
@@ -89,6 +101,21 @@ export default function Profile() {
         </span>
         <span className="profile-orders-link-arrow">→</span>
       </Link>
+
+      {referralLink && (
+        <div className="form-card" style={{ margin: '0 0 22px' }}>
+          <h3 style={{ marginTop: 0 }}>🎁 Refer a friend, earn ₹100</h3>
+          <p className="muted" style={{ marginBottom: 14 }}>
+            Share your link — when a friend signs up and places their first order, you both get ₹100 off.
+          </p>
+          <div className="field" style={{ display: 'flex', gap: 8 }}>
+            <input readOnly value={referralLink} onFocus={(e) => e.target.select()} style={{ flex: 1 }} />
+            <button type="button" className="btn btn-outline btn-sm" onClick={handleCopyReferralLink}>
+              Copy
+            </button>
+          </div>
+        </div>
+      )}
 
       <form className="form-card" style={{ margin: 0 }} onSubmit={handleSave} noValidate>
         <div className="field">

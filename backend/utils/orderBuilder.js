@@ -5,6 +5,7 @@ const { findValidCoupon, computeDiscount } = require('./coupons');
 const { sendMail } = require('./mailer');
 
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || process.env.CONTACT_NOTIFY_EMAIL;
+const REFERRAL_REWARD_INR = 100;
 
 function notifyAdminOfOrder(order, user) {
   if (!ADMIN_EMAIL) return;
@@ -38,7 +39,7 @@ async function calculateShipping(subtotal, destCountry = DOMESTIC_COUNTRY) {
   return overrides?.shipping?.[destCountry] || DEFAULT_INTL_SHIPPING;
 }
 
-async function buildOrderItems(items, couponCode, destCountry) {
+async function buildOrderItems(items, couponCode, destCountry, userId) {
   const products = await db.list('products');
   let subtotal = 0;
   let stockError = null;
@@ -62,7 +63,7 @@ async function buildOrderItems(items, couponCode, destCountry) {
   });
   const shipping = await calculateShipping(subtotal, destCountry);
 
-  const coupon = await findValidCoupon(couponCode);
+  const coupon = await findValidCoupon(couponCode, userId);
   const discount = computeDiscount(coupon, subtotal);
 
   return {
@@ -76,7 +77,42 @@ async function buildOrderItems(items, couponCode, destCountry) {
   };
 }
 
+// Grants the referrer a personal ₹100 coupon once the friend they referred
+// places their first real order — see routes/auth.js's issueWelcomeCoupon
+// for the mirror-image reward the referred customer already got at signup.
+async function issueReferralReward(referrerId, referredName) {
+  const referrer = await db.get('users', referrerId);
+  if (!referrer) return;
+  const coupon = {
+    id: uuid(),
+    code: `REF${uuid().replace(/-/g, '').slice(0, 6).toUpperCase()}`,
+    type: 'flat',
+    value: REFERRAL_REWARD_INR,
+    minOrder: 0,
+    expiresAt: null,
+    active: true,
+    featured: false,
+    promoImage: '',
+    promoHeadline: '',
+    promoSubtext: '',
+    assignedToUserId: referrerId,
+    redeemed: false,
+    createdAt: new Date().toISOString(),
+  };
+  await db.put('coupons', coupon);
+  await notifyUser(referrer, {
+    title: `You earned a ₹${REFERRAL_REWARD_INR} reward!`,
+    message: `${referredName || 'Your friend'} just placed their first order using your referral link. Use code ${coupon.code} for ₹${REFERRAL_REWARD_INR} off your next order.`,
+    channels: { inapp: true, email: true },
+  });
+}
+
 async function createOrderRecord({ userId, orderItems, address, total, discount, couponCode, paymentMethod, payment, subscriptionId }) {
+  // Computed before this order is persisted, so it only reflects orders that
+  // already existed — used below to detect a customer's genuine first order,
+  // whether that's a manual checkout or their first subscription renewal.
+  const isFirstOrder = (await db.list('orders')).filter((o) => o.userId === userId).length === 0;
+
   const order = {
     id: uuid(),
     orderNumber: `YO${Date.now().toString().slice(-8)}`,
@@ -99,7 +135,26 @@ async function createOrderRecord({ userId, orderItems, address, total, discount,
     await db.put('carts', { id: userId, items: [] });
   }
 
+  // A personal single-use coupon (welcome/referral reward) is spent the
+  // moment it's used in a placed order — everyday site-wide coupons have no
+  // assignedToUserId and are unaffected.
+  if (couponCode) {
+    const coupons = await db.list('coupons');
+    const usedCoupon = coupons.find((c) => c.code === couponCode);
+    if (usedCoupon?.assignedToUserId === userId) {
+      usedCoupon.redeemed = true;
+      await db.put('coupons', usedCoupon);
+    }
+  }
+
   const user = await db.get('users', userId);
+
+  if (isFirstOrder && user?.referredBy && !user.referralRewardIssued) {
+    await issueReferralReward(user.referredBy, user.name);
+    user.referralRewardIssued = true;
+    await db.put('users', user);
+  }
+
   if (user) {
     await notifyUser(user, {
       title: `Order ${order.orderNumber} placed`,

@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { api } from '../api';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
@@ -29,6 +29,8 @@ export default function Login() {
   const { showToast } = useToast();
   const navigate = useNavigate();
   const location = useLocation();
+  const [searchParams] = useSearchParams();
+  const referralCode = searchParams.get('ref') || undefined;
   const redirectTo = location.state?.from || '/';
   const redirectState = location.state?.buyNow ? { buyNow: location.state.buyNow } : undefined;
 
@@ -83,9 +85,13 @@ export default function Login() {
     }
     setLoading(true);
     try {
-      const data = await api.verifyOtp(apiPhone, code, name);
+      const data = await api.verifyOtp(apiPhone, code, name, referralCode);
       login(data.token, data.user);
-      showToast(`Welcome${data.user.name ? `, ${data.user.name}` : ''}!`);
+      showToast(
+        data.welcomeCoupon
+          ? `Welcome${data.user.name ? `, ${data.user.name}` : ''}! Use code ${data.welcomeCoupon.code} for ₹${data.welcomeCoupon.value} off your first order.`
+          : `Welcome${data.user.name ? `, ${data.user.name}` : ''}!`
+      );
       navigate(redirectTo, { replace: true, state: redirectState });
     } catch (err) {
       setError(err.message);
@@ -132,6 +138,11 @@ export default function Login() {
             : `Enter the 4-digit code sent to ${isIndia ? `+91 ${phone}` : apiPhone}`}
         </p>
 
+        {referralCode && step === 'phone' && (
+          <div className="alert alert-info">
+            🎁 Referred by a friend — sign up now and get ₹100 off your first order!
+          </div>
+        )}
         {error && <div className="alert alert-error">{error}</div>}
         {devOtp && step === 'otp' && (
           <div className="alert alert-info">Test mode — your OTP is <b>{devOtp}</b></div>

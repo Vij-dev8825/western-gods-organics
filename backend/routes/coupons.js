@@ -39,7 +39,7 @@ router.get('/featured', async (req, res, next) => {
 router.post('/validate', requireAuth, async (req, res, next) => {
   try {
     const { code, subtotal } = req.body;
-    const coupon = await findValidCoupon(code);
+    const coupon = await findValidCoupon(code, req.user.id);
     if (!coupon) {
       return res.status(404).json({ success: false, message: 'Invalid or expired coupon code.' });
     }
