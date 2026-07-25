@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useLang, LANGS } from '../i18n';
 import { useCurrency } from '../context/CurrencyContext';
+import logo from '../assets/logo.svg';
 
 const SEEN_KEY = 'yo_welcome_seen';
 
@@ -33,7 +34,8 @@ export default function WelcomeSelector() {
     <div className="welcome-selector-overlay" role="dialog" aria-modal="true" aria-label="Choose language and country">
       <div className="welcome-selector-card">
         <button className="welcome-selector-close" aria-label="Close" onClick={dismiss}>×</button>
-        <span className="welcome-selector-badge">🌏 Welcome</span>
+        <img src={logo} alt="Western Gods Organics" className="welcome-selector-logo" />
+        <span className="welcome-selector-badge">Welcome</span>
         <h3>{t('welcomeSelectorTitle')}</h3>
         <p className="muted">{t('welcomeSelectorSub')}</p>
 

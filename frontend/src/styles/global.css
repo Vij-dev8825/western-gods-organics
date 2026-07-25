@@ -2942,6 +2942,7 @@ input:focus-visible + .filter-radio { outline: 2px solid var(--gold-2); outline-
   color: var(--forest-light);
   cursor: pointer;
 }
+.welcome-selector-logo { height: 44px; margin-bottom: 12px; }
 .welcome-selector-badge {
   display: inline-block;
   font-size: 0.8rem;
