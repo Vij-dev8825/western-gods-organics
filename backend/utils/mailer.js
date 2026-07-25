@@ -9,6 +9,12 @@ if (process.env.SMTP_HOST) {
     auth: process.env.SMTP_USER
       ? { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS }
       : undefined,
+    // Without these, a misconfigured/unreachable SMTP host hangs the whole
+    // request indefinitely instead of failing fast (e.g. a stuck "Sending
+    // OTP…" button with no error ever shown).
+    connectionTimeout: 10_000,
+    greetingTimeout: 10_000,
+    socketTimeout: 10_000,
   });
 }
 
