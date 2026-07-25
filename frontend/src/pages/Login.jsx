@@ -5,11 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { useCurrency } from '../context/CurrencyContext';
 import { useResendCooldown } from '../hooks/useResendCooldown';
-import { useFirebasePhoneAuth } from '../hooks/useFirebasePhoneAuth';
-import { firebaseConfigured } from '../utils/firebase';
 import logo from '../assets/logo.svg';
-
-const RECAPTCHA_CONTAINER_ID = 'recaptcha-container-login';
 
 function isValidPhoneInput(phone, country) {
   if (country === 'IN') return /^[6-9]\d{9}$/.test(phone);
@@ -21,15 +17,13 @@ export default function Login() {
   const [step, setStep] = useState('phone'); // 'phone' | 'otp'
   const [phoneCountry, setPhoneCountry] = useState(country.code);
   const [phone, setPhone] = useState('');
-  // Firebase phone auth always sends a 6-digit code (unlike the old custom
-  // 4-digit OTP generator, which we controlled ourselves).
-  const [otp, setOtp] = useState(['', '', '', '', '', '']);
+  const [otp, setOtp] = useState(['', '', '', '']);
   const [name, setName] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [devOtp, setDevOtp] = useState('');
   const otpRefs = useRef([]);
   const { secondsLeft, start: startCooldown } = useResendCooldown(30);
-  const { sendCode, confirmCode, reset } = useFirebasePhoneAuth(RECAPTCHA_CONTAINER_ID);
 
   const { login } = useAuth();
   const { showToast } = useToast();
@@ -41,11 +35,10 @@ export default function Login() {
   const redirectState = location.state?.buyNow ? { buyNow: location.state.buyNow } : undefined;
 
   const isIndia = phoneCountry === 'IN';
-  // Normalized form actually sent to Firebase — India stays bare digits in
-  // the input but needs the full E.164 "+91" form for phone auth; everything
-  // else must already be the full "+"-prefixed number with no spaces/hyphens.
+  // Normalized form actually sent to the API — India stays bare digits;
+  // everything else must be the full "+"-prefixed number with no spaces/
+  // hyphens (matches auth.js's isValidPhone and sms.js's routing check).
   const apiPhone = isIndia ? phone : phone.replace(/[\s-]/g, '');
-  const e164Phone = isIndia ? `+91${phone}` : apiPhone;
 
   // Deliberately NOT wired to a <form onSubmit> — mobile Chrome ignores
   // autocomplete="off" on phone fields and can both autofill AND
@@ -55,10 +48,6 @@ export default function Login() {
   async function handleSendOtp() {
     if (loading) return;
     setError('');
-    if (!firebaseConfigured) {
-      setError('Phone login is not set up yet — please contact support.');
-      return;
-    }
     if (!isValidPhoneInput(phone, phoneCountry)) {
       setError(
         isIndia
@@ -73,9 +62,10 @@ export default function Login() {
     }
     setLoading(true);
     try {
-      await sendCode(e164Phone);
+      const data = await api.sendOtp(apiPhone, phoneCountry);
       setStep('otp');
-      setOtp(['', '', '', '', '', '']);
+      setOtp(['', '', '', '']);
+      if (data.devOtp) setDevOtp(data.devOtp);
       showToast('OTP sent to your mobile number.');
       startCooldown();
     } catch (err) {
@@ -89,14 +79,13 @@ export default function Login() {
     if (loading) return;
     setError('');
     const code = otp.join('');
-    if (code.length !== 6) {
-      setError('Enter the 6-digit OTP.');
+    if (code.length !== 4) {
+      setError('Enter the 4-digit OTP.');
       return;
     }
     setLoading(true);
     try {
-      const idToken = await confirmCode(code);
-      const data = await api.firebaseLogin(idToken, name, referralCode);
+      const data = await api.verifyOtp(apiPhone, code, name, referralCode);
       login(data.token, data.user);
       showToast(
         data.welcomeCoupon
@@ -116,15 +105,15 @@ export default function Login() {
     const next = [...otp];
     next[i] = value;
     setOtp(next);
-    if (value && i < 5) otpRefs.current[i + 1]?.focus();
+    if (value && i < 3) otpRefs.current[i + 1]?.focus();
   }
 
   function handleChangeNumber() {
-    reset();
     setStep('phone');
     setPhone('');
-    setOtp(['', '', '', '', '', '']);
+    setOtp(['', '', '', '']);
     setError('');
+    setDevOtp('');
   }
 
   function onEnterKey(handler) {
@@ -146,7 +135,7 @@ export default function Login() {
         <p className="muted center" style={{ marginBottom: 26 }}>
           {step === 'phone'
             ? 'We will send a one-time password to your mobile number.'
-            : `Enter the code sent to ${isIndia ? `+91 ${phone}` : apiPhone}`}
+            : `Enter the 4-digit code sent to ${isIndia ? `+91 ${phone}` : apiPhone}`}
         </p>
 
         {referralCode && step === 'phone' && (
@@ -155,6 +144,9 @@ export default function Login() {
           </div>
         )}
         {error && <div className="alert alert-error">{error}</div>}
+        {devOtp && step === 'otp' && (
+          <div className="alert alert-info">Test mode — your OTP is <b>{devOtp}</b></div>
+        )}
 
         {step === 'phone' ? (
           <div>
@@ -193,7 +185,6 @@ export default function Login() {
                 placeholder="e.g. Priya Sharma"
               />
             </div>
-            <div id={RECAPTCHA_CONTAINER_ID} />
             <button type="button" className="btn btn-gold btn-block" disabled={loading} onClick={handleSendOtp}>
               {loading ? 'Sending OTP…' : 'Send OTP'}
             </button>

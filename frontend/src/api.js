@@ -21,8 +21,9 @@ async function request(path, { method = 'GET', body, token, formData } = {}) {
 
 export const api = {
   // auth
-  firebaseLogin: (idToken, name, referralCode) =>
-    request('/auth/firebase-login', { method: 'POST', body: { idToken, name, referralCode } }),
+  sendOtp: (phone, country) => request('/auth/send-otp', { method: 'POST', body: { phone, country } }),
+  verifyOtp: (phone, otp, name, referralCode) =>
+    request('/auth/verify-otp', { method: 'POST', body: { phone, otp, name, referralCode } }),
   me: (token) => request('/auth/me', { token }),
   updateProfile: (token, updates) => request('/auth/me', { method: 'PUT', body: updates, token }),
 
