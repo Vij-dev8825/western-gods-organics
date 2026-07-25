@@ -137,6 +137,16 @@ export default function Cart() {
     setCouponError('');
   }
 
+  // A guest's phone number matched an existing account (backend/routes/
+  // orders.js) — send them straight to login instead of leaving them to find
+  // it themselves; `from: '/cart'` brings them right back to checkout after.
+  function handleOrderError(err) {
+    showToast(err.message, 'error');
+    if (err.message.includes('account already exists')) {
+      navigate('/login', { state: { from: '/cart' } });
+    }
+  }
+
   async function handlePlaceOrder(e) {
     e.preventDefault();
     if (hasOutOfStock) {
@@ -167,7 +177,7 @@ export default function Cart() {
         finishOrder(data, address);
       }
     } catch (err) {
-      showToast(err.message, 'error');
+      handleOrderError(err);
     } finally {
       setPlacing(false);
     }
@@ -227,7 +237,7 @@ export default function Cart() {
             finishOrder(data, address);
             resolve();
           } catch (err) {
-            showToast(err.message, 'error');
+            handleOrderError(err);
             reject(err);
           }
         },
