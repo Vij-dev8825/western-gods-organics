@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { api } from '../../api';
 import { useAuth } from '../../context/AuthContext';
 import { getProductImage } from '../../utils/productImages';
@@ -80,6 +80,7 @@ export default function AdminProducts() {
   const [rates, setRates] = useState({});
   const [translating, setTranslating] = useState(false);
   const [bulkTranslating, setBulkTranslating] = useState(false);
+  const formRef = useRef(null);
 
   function load() {
     api.getProducts().then((d) => setProducts(d.products)).catch(() => {});
@@ -89,6 +90,13 @@ export default function AdminProducts() {
   useEffect(() => {
     api.getCurrencyRates().then((d) => setRates(d.rates || {})).catch(() => {});
   }, []);
+  // The edit form renders above the product table, so clicking "edit" on a
+  // row further down the (potentially long) list leaves the newly-opened
+  // form off-screen above the current scroll position — scroll it into view
+  // instead of leaving the admin to hunt for it.
+  useEffect(() => {
+    if (editing) formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, [editing]);
 
   function setCountryPrice(code, label, value) {
     setForm((f) => ({
@@ -234,7 +242,7 @@ export default function AdminProducts() {
       {message && <div className={`alert alert-${message.type}`}>{message.text}</div>}
 
       {editing && (
-        <form className="admin-card" onSubmit={save}>
+        <form className="admin-card" onSubmit={save} ref={formRef}>
           <h3>{editing === 'new' ? 'New product' : `Edit: ${form.name}`}</h3>
           <div className="form-grid">
             <div className="field">
