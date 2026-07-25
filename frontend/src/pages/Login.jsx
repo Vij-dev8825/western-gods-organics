@@ -201,31 +201,28 @@ export default function Login() {
             <div className="field">
               <label>Send my code via</label>
               <div className="flex gap-2">
-                <label className="payment-option" style={{ flex: 1 }}>
-                  <input
-                    type="radio"
-                    name="otp-channel"
-                    checked={channel === 'whatsapp'}
-                    onChange={() => setChannel('whatsapp')}
-                  />
+                <label
+                  className={`payment-option ${channel === 'whatsapp' ? 'active' : ''}`}
+                  style={{ flex: 1, justifyContent: 'center' }}
+                  onClick={() => setChannel('whatsapp')}
+                >
+                  <input type="radio" name="otp-channel" readOnly checked={channel === 'whatsapp'} />
                   WhatsApp
                 </label>
-                <label className="payment-option" style={{ flex: 1 }}>
-                  <input
-                    type="radio"
-                    name="otp-channel"
-                    checked={channel === 'sms'}
-                    onChange={() => setChannel('sms')}
-                  />
+                <label
+                  className={`payment-option ${channel === 'sms' ? 'active' : ''}`}
+                  style={{ flex: 1, justifyContent: 'center' }}
+                  onClick={() => setChannel('sms')}
+                >
+                  <input type="radio" name="otp-channel" readOnly checked={channel === 'sms'} />
                   SMS
                 </label>
-                <label className="payment-option" style={{ flex: 1 }}>
-                  <input
-                    type="radio"
-                    name="otp-channel"
-                    checked={channel === 'email'}
-                    onChange={() => setChannel('email')}
-                  />
+                <label
+                  className={`payment-option ${channel === 'email' ? 'active' : ''}`}
+                  style={{ flex: 1, justifyContent: 'center' }}
+                  onClick={() => setChannel('email')}
+                >
+                  <input type="radio" name="otp-channel" readOnly checked={channel === 'email'} />
                   Email
                 </label>
               </div>
