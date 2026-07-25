@@ -4,9 +4,15 @@ import { api } from '../../api';
 import { useAuth } from '../../context/AuthContext';
 import { useResendCooldown } from '../../hooks/useResendCooldown';
 
+function isValidEmailInput(email) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
 export default function AdminLogin() {
   const [step, setStep] = useState('phone'); // 'phone' | 'otp'
   const [phone, setPhone] = useState('');
+  const [channel, setChannel] = useState('whatsapp'); // 'whatsapp' | 'sms' | 'email'
+  const [email, setEmail] = useState('');
   const [otp, setOtp] = useState(['', '', '', '']);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -29,9 +35,13 @@ export default function AdminLogin() {
       setError('Enter a valid 10-digit mobile number.');
       return;
     }
+    if (channel === 'email' && !isValidEmailInput(email)) {
+      setError('Enter a valid email address.');
+      return;
+    }
     setLoading(true);
     try {
-      const data = await api.sendOtp(phone);
+      const data = await api.sendOtp(phone, 'IN', channel, channel === 'email' ? email : undefined);
       setStep('otp');
       setOtp(['', '', '', '']);
       if (data.devOtp) setDevOtp(data.devOtp);
@@ -105,7 +115,9 @@ export default function AdminLogin() {
         <p className="muted center" style={{ marginBottom: 26, color: 'rgba(250,246,236,0.65)' }}>
           {step === 'phone'
             ? 'Restricted access — sign in with your registered admin number.'
-            : `Enter the 4-digit code sent to +91 ${phone}`}
+            : channel === 'email'
+              ? `Enter the 4-digit code sent to ${email}`
+              : `Enter the 4-digit code sent to +91 ${phone}`}
         </p>
 
         {error && <div className="alert alert-error">{error}</div>}
@@ -129,6 +141,54 @@ export default function AdminLogin() {
                 autoFocus
               />
             </div>
+
+            <div className="field">
+              <label style={{ color: 'rgba(250,246,236,0.85)' }}>Send my code via</label>
+              <div className="flex gap-2">
+                <label className="payment-option" style={{ flex: 1 }}>
+                  <input
+                    type="radio"
+                    name="admin-otp-channel"
+                    checked={channel === 'whatsapp'}
+                    onChange={() => setChannel('whatsapp')}
+                  />
+                  WhatsApp
+                </label>
+                <label className="payment-option" style={{ flex: 1 }}>
+                  <input
+                    type="radio"
+                    name="admin-otp-channel"
+                    checked={channel === 'sms'}
+                    onChange={() => setChannel('sms')}
+                  />
+                  SMS
+                </label>
+                <label className="payment-option" style={{ flex: 1 }}>
+                  <input
+                    type="radio"
+                    name="admin-otp-channel"
+                    checked={channel === 'email'}
+                    onChange={() => setChannel('email')}
+                  />
+                  Email
+                </label>
+              </div>
+            </div>
+
+            {channel === 'email' && (
+              <div className="field">
+                <label style={{ color: 'rgba(250,246,236,0.85)' }}>Email address</label>
+                <input
+                  type="email"
+                  autoComplete="off"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  onKeyDown={onEnterKey(handleSendOtp)}
+                  placeholder="you@example.com"
+                />
+              </div>
+            )}
+
             <button type="button" className="btn btn-gold btn-block" disabled={loading} onClick={handleSendOtp}>
               {loading ? 'Sending OTP…' : 'Send OTP'}
             </button>

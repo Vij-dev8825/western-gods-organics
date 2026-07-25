@@ -12,11 +12,17 @@ function isValidPhoneInput(phone, country) {
   return /^\+\d{6,15}$/.test(phone.replace(/[\s-]/g, ''));
 }
 
+function isValidEmailInput(email) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
 export default function Login() {
   const { country, countries } = useCurrency();
   const [step, setStep] = useState('phone'); // 'phone' | 'otp'
   const [phoneCountry, setPhoneCountry] = useState(country.code);
   const [phone, setPhone] = useState('');
+  const [channel, setChannel] = useState('whatsapp'); // 'whatsapp' | 'sms' | 'email' — where the OTP is delivered
+  const [email, setEmail] = useState('');
   const [otp, setOtp] = useState(['', '', '', '']);
   const [name, setName] = useState('');
   const [error, setError] = useState('');
@@ -60,13 +66,17 @@ export default function Login() {
       setError('Enter your name.');
       return;
     }
+    if (channel === 'email' && !isValidEmailInput(email)) {
+      setError('Enter a valid email address.');
+      return;
+    }
     setLoading(true);
     try {
-      const data = await api.sendOtp(apiPhone, phoneCountry);
+      const data = await api.sendOtp(apiPhone, phoneCountry, channel, channel === 'email' ? email : undefined);
       setStep('otp');
       setOtp(['', '', '', '']);
       if (data.devOtp) setDevOtp(data.devOtp);
-      showToast('OTP sent to your mobile number.');
+      showToast(channel === 'email' ? 'OTP sent to your email address.' : 'OTP sent to your mobile number.');
       startCooldown();
     } catch (err) {
       setError(err.message);
@@ -134,8 +144,10 @@ export default function Login() {
         <h2 className="center">{step === 'phone' ? 'Log in / Sign up' : 'Verify OTP'}</h2>
         <p className="muted center" style={{ marginBottom: 26 }}>
           {step === 'phone'
-            ? 'We will send a one-time password to your mobile number.'
-            : `Enter the 4-digit code sent to ${isIndia ? `+91 ${phone}` : apiPhone}`}
+            ? 'We will send a one-time password to verify you.'
+            : channel === 'email'
+              ? `Enter the 4-digit code sent to ${email}`
+              : `Enter the 4-digit code sent to ${isIndia ? `+91 ${phone}` : apiPhone}`}
         </p>
 
         {referralCode && step === 'phone' && (
@@ -185,6 +197,54 @@ export default function Login() {
                 placeholder="e.g. Priya Sharma"
               />
             </div>
+
+            <div className="field">
+              <label>Send my code via</label>
+              <div className="flex gap-2">
+                <label className="payment-option" style={{ flex: 1 }}>
+                  <input
+                    type="radio"
+                    name="otp-channel"
+                    checked={channel === 'whatsapp'}
+                    onChange={() => setChannel('whatsapp')}
+                  />
+                  WhatsApp
+                </label>
+                <label className="payment-option" style={{ flex: 1 }}>
+                  <input
+                    type="radio"
+                    name="otp-channel"
+                    checked={channel === 'sms'}
+                    onChange={() => setChannel('sms')}
+                  />
+                  SMS
+                </label>
+                <label className="payment-option" style={{ flex: 1 }}>
+                  <input
+                    type="radio"
+                    name="otp-channel"
+                    checked={channel === 'email'}
+                    onChange={() => setChannel('email')}
+                  />
+                  Email
+                </label>
+              </div>
+            </div>
+
+            {channel === 'email' && (
+              <div className="field">
+                <label>Email address</label>
+                <input
+                  type="email"
+                  autoComplete="off"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  onKeyDown={onEnterKey(handleSendOtp)}
+                  placeholder="you@example.com"
+                />
+              </div>
+            )}
+
             <button type="button" className="btn btn-gold btn-block" disabled={loading} onClick={handleSendOtp}>
               {loading ? 'Sending OTP…' : 'Send OTP'}
             </button>

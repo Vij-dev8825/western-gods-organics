@@ -6,6 +6,7 @@ const db = require('../data/db');
 const { requireAuth } = require('../middleware/auth');
 const { sendOtpSms } = require('../utils/sms');
 const { sendWhatsApp } = require('../utils/whatsapp');
+const { sendMail } = require('../utils/mailer');
 
 const router = express.Router();
 
@@ -74,11 +75,18 @@ function signToken(user) {
   );
 }
 
-// POST /api/auth/send-otp  { phone, country? }  — country defaults to 'IN'
-// for older clients; anything else expects a full "+"-prefixed number.
+function isValidEmail(email) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
+// POST /api/auth/send-otp  { phone, country?, channel?, email? }  — country
+// defaults to 'IN' for older clients; anything else expects a full
+// "+"-prefixed number. The account is always keyed by phone regardless of
+// channel — channel: 'email' only changes where the OTP is delivered
+// (customer's choice when phone-based delivery isn't working for them).
 router.post('/send-otp', async (req, res, next) => {
   try {
-    const { phone, country = 'IN' } = req.body;
+    const { phone, country = 'IN', channel, email } = req.body;
 
     if (!phone || !isValidPhone(phone, country)) {
       return res.status(400).json({
@@ -89,21 +97,43 @@ router.post('/send-otp', async (req, res, next) => {
       });
     }
 
+    if (channel === 'email' && !isValidEmail(email || '')) {
+      return res.status(400).json({ success: false, message: 'Enter a valid email address.' });
+    }
+
     const otp = generateOtp();
     otpStore.set(phone, { otp, expiresAt: Date.now() + OTP_EXPIRY_MS, attempts: 0 });
 
-    // WhatsApp first — India's SMS DLT registration requirement doesn't apply
-    // to WhatsApp Business messages, and this reuses the same Twilio WhatsApp
-    // sender already configured for order-update notifications. Only falls
-    // back to the SMS provider chain (which does need DLT for real delivery)
-    // if the WhatsApp send actually errors, not just when it's unconfigured.
     const otpMessage = `${otp} is your Western Gods Organics OTP. Do not share this code.`;
-    const waResult = await sendWhatsApp(phone, otpMessage);
-    if (!waResult.sent) {
+
+    if (channel === 'email') {
+      await sendMail({
+        to: email,
+        subject: 'Your Western Gods Organics OTP',
+        text: `${otpMessage} It expires in ${Math.round(OTP_EXPIRY_MS / 60000)} minutes.`,
+      });
+    } else if (channel === 'sms') {
+      // Explicit SMS choice — skips WhatsApp entirely and goes straight to
+      // the SMS provider chain (Fast2SMS/MSG91/Twilio), which needs DLT
+      // registration for real delivery in India.
       await sendOtpSms(phone, otp);
+    } else {
+      // Default: WhatsApp first — India's SMS DLT registration requirement
+      // doesn't apply to WhatsApp Business messages, and this reuses the
+      // same Twilio WhatsApp sender already configured for order-update
+      // notifications. Only falls back to the SMS provider chain (which
+      // does need DLT for real delivery) if the WhatsApp send actually
+      // errors, not just when it's unconfigured.
+      const waResult = await sendWhatsApp(phone, otpMessage);
+      if (!waResult.sent) {
+        await sendOtpSms(phone, otp);
+      }
     }
 
-    const response = { success: true, message: 'OTP sent to your mobile number.' };
+    const response = {
+      success: true,
+      message: channel === 'email' ? 'OTP sent to your email address.' : 'OTP sent to your mobile number.',
+    };
 
     // Echo the OTP back so the flow can be tested without a working SMS gateway.
     // Always on outside production; in production it requires an explicit opt-in
