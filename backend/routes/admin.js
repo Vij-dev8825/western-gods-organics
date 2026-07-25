@@ -205,6 +205,7 @@ router.post('/products', async (req, res, next) => {
       comboItems: Array.isArray(req.body.comboItems) ? req.body.comboItems.filter(Boolean) : [],
       isNew: Boolean(req.body.isNew),
       countryPrices: normalizeCountryPrices(req.body.countryPrices),
+      createdAt: new Date().toISOString(),
     };
     await db.put('products', product);
     res.status(201).json({ success: true, product });
@@ -236,6 +237,7 @@ router.put('/products/:id', async (req, res, next) => {
       countryPrices: normalizeCountryPrices(req.body.countryPrices ?? existing.countryPrices),
       shortDescriptions: sanitizeLangMap(req.body.shortDescriptions ?? existing.shortDescriptions),
       descriptions: sanitizeLangMap(req.body.descriptions ?? existing.descriptions),
+      updatedAt: new Date().toISOString(),
     };
     delete updated.notifyCustomers;
     await db.put('products', updated);

@@ -5,7 +5,10 @@ import ProductCard from '../components/ProductCard';
 import ChakkiWheel from '../components/ChakkiWheel';
 import PageBanner from '../components/PageBanner';
 import SeoMeta from '../components/SeoMeta';
+import StructuredData from '../components/StructuredData';
 import { useLang } from '../i18n';
+import { buildBreadcrumbSchema } from '../utils/breadcrumbSchema';
+import { CANONICAL_ORIGIN } from '../utils/site';
 
 export default function Shop() {
   const { t } = useLang();
@@ -53,6 +56,33 @@ export default function Shop() {
     return found ? found.label : t('allProducts');
   }, [category, categories, t]);
 
+  // Lets Google understand this page lists specific products, not just text —
+  // only meaningful with an explicit crawl order, so it's skipped whenever a
+  // sort/search/filter has scrambled the "recommended" order into something
+  // that wouldn't reproduce for the next crawl.
+  const itemListSchema = useMemo(() => {
+    if (!products.length || sort || search || price || isNewOnly) return null;
+    return {
+      '@context': 'https://schema.org',
+      '@type': 'ItemList',
+      itemListElement: products.map((p, i) => ({
+        '@type': 'ListItem',
+        position: i + 1,
+        url: `${CANONICAL_ORIGIN}/product/${p.id}`,
+      })),
+    };
+  }, [products, sort, search, price, isNewOnly]);
+
+  const breadcrumbSchema = useMemo(
+    () =>
+      buildBreadcrumbSchema([
+        { name: 'Home', path: '/' },
+        { name: 'Shop', path: '/shop' },
+        ...(category !== 'all' ? [{ name: heading, path: `/shop?category=${category}` }] : []),
+      ]),
+    [category, heading]
+  );
+
   return (
     <div className="section" style={{ paddingTop: 0 }}>
       <SeoMeta
@@ -60,6 +90,8 @@ export default function Shop() {
         description="Browse our cold-pressed oils, handmade herbal soaps and stone-ground herbal powders — 100% natural, shipped across India and worldwide."
         path="/shop"
       />
+      <StructuredData id="ld-breadcrumb" data={breadcrumbSchema} />
+      {itemListSchema && <StructuredData id="ld-itemlist" data={itemListSchema} />}
       <PageBanner page="shop" title={t('shopTitle')} subtitle={t('shopBannerSub')} />
       <div className="container">
       <div className="breadcrumb">{t('navHome')} / {t('shopTitle')} {category !== 'all' && `/ ${heading}`}</div>

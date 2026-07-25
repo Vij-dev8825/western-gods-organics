@@ -37,7 +37,13 @@ router.get('/', async (req, res, next) => {
 
     const entries = [
       ...STATIC_PATHS.map((p) => urlEntry(`${SITE_URL}${p.path}`, p)),
-      ...products.map((p) => urlEntry(`${SITE_URL}/product/${p.id}`, { priority: '0.8', changefreq: 'weekly' })),
+      ...products.map((p) =>
+        urlEntry(`${SITE_URL}/product/${p.id}`, {
+          priority: '0.8',
+          changefreq: 'weekly',
+          lastmod: (p.updatedAt || p.createdAt)?.slice(0, 10),
+        })
+      ),
       ...posts
         .filter((p) => p.published)
         .map((p) =>

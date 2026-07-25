@@ -22,6 +22,7 @@ import { IconHeart } from '../components/Icons';
 import { CANONICAL_ORIGIN } from '../utils/site';
 import { useLang } from '../i18n';
 import { localizeProductText } from '../utils/productLocale';
+import { buildBreadcrumbSchema } from '../utils/breadcrumbSchema';
 
 const SUBSCRIPTION_DISCOUNT_PERCENT = 10;
 const MIN_FREQUENCY_DAYS = 7;
@@ -81,6 +82,12 @@ function buildProductSchema(product) {
       highPrice: Math.max(...prices),
       offerCount: product.sizes.length,
       availability: inStock ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
+      // Handmade/small-batch goods, always sold new — never used/refurbished.
+      itemCondition: 'https://schema.org/NewCondition',
+      // No fixed sale end date, so roll this forward a year from whenever a
+      // crawler reads it rather than hardcoding a date that goes stale.
+      priceValidUntil: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10),
+      seller: { '@type': 'Organization', name: 'Western Gods Organics' },
       url,
     },
   };
@@ -300,8 +307,18 @@ export default function ProductDetail() {
         image={productSchema.image.startsWith('http') ? productSchema.image : undefined}
         type="product"
         path={`/product/${product.id}`}
+        price={productSchema.offers.lowPrice}
+        availability={productSchema.offers.availability.endsWith('InStock') ? 'instock' : 'oos'}
       />
       <StructuredData id="ld-product" data={productSchema} />
+      <StructuredData
+        id="ld-breadcrumb"
+        data={buildBreadcrumbSchema([
+          { name: 'Home', path: '/' },
+          { name: 'Shop', path: '/shop' },
+          { name: product.name, path: `/product/${product.id}` },
+        ])}
+      />
       <div className="breadcrumb">
         <Link to="/shop">Shop</Link> / {product.name}
       </div>

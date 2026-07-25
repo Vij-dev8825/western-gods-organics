@@ -22,7 +22,17 @@ function upsertMeta(attr, key, content) {
  * description regardless of what it actually shows. `title` should
  * already include the brand name (callers control the exact format, e.g.
  * "Product Name | Western Gods Organics"). */
-export default function SeoMeta({ title, description, image, type = 'website', path }) {
+export default function SeoMeta({
+  title,
+  description,
+  image,
+  type = 'website',
+  path,
+  price,
+  currency = 'INR',
+  availability,
+  robots,
+}) {
   useEffect(() => {
     const url = `${CANONICAL_ORIGIN}${path ?? window.location.pathname}`;
     const img = image || DEFAULT_IMAGE;
@@ -38,7 +48,18 @@ export default function SeoMeta({ title, description, image, type = 'website', p
     upsertMeta('name', 'twitter:title', title);
     upsertMeta('name', 'twitter:description', description);
     upsertMeta('name', 'twitter:image', img);
-  }, [title, description, image, type, path]);
+    // Open Graph's product object type — read by Facebook/Pinterest link
+    // previews and shopping surfaces, separate from the schema.org Product
+    // JSON-LD (StructuredData) that Google reads for rich results.
+    if (type === 'product' && price != null) {
+      upsertMeta('property', 'product:price:amount', String(price));
+      upsertMeta('property', 'product:price:currency', currency);
+    }
+    if (type === 'product' && availability) {
+      upsertMeta('property', 'product:availability', availability);
+    }
+    if (robots) upsertMeta('name', 'robots', robots);
+  }, [title, description, image, type, path, price, currency, availability, robots]);
 
   return null;
 }
