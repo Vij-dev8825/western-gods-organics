@@ -5,6 +5,7 @@ const { v4: uuid } = require('uuid');
 const db = require('../data/db');
 const { requireAuth } = require('../middleware/auth');
 const { sendOtpSms } = require('../utils/sms');
+const { sendWhatsApp } = require('../utils/whatsapp');
 
 const router = express.Router();
 
@@ -91,8 +92,16 @@ router.post('/send-otp', async (req, res, next) => {
     const otp = generateOtp();
     otpStore.set(phone, { otp, expiresAt: Date.now() + OTP_EXPIRY_MS, attempts: 0 });
 
-    // Goes through the SMS provider when configured; logs to console otherwise.
-    await sendOtpSms(phone, otp);
+    // WhatsApp first — India's SMS DLT registration requirement doesn't apply
+    // to WhatsApp Business messages, and this reuses the same Twilio WhatsApp
+    // sender already configured for order-update notifications. Only falls
+    // back to the SMS provider chain (which does need DLT for real delivery)
+    // if the WhatsApp send actually errors, not just when it's unconfigured.
+    const otpMessage = `${otp} is your Western Gods Organics OTP. Do not share this code.`;
+    const waResult = await sendWhatsApp(phone, otpMessage);
+    if (!waResult.sent) {
+      await sendOtpSms(phone, otp);
+    }
 
     const response = { success: true, message: 'OTP sent to your mobile number.' };
 
