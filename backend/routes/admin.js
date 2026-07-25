@@ -14,6 +14,7 @@ const { processAbandonedCarts } = require('../utils/abandonedCarts');
 const { PAGES: PAGE_BANNER_PAGES } = require('./pageBanners');
 const { sendMail } = require('../utils/mailer');
 const { getCountries, getFullLiveRates } = require('./currency');
+const { translateProductText } = require('../utils/translateProduct');
 
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || process.env.CONTACT_NOTIFY_EMAIL;
 
@@ -319,6 +320,59 @@ router.delete('/products/:id', async (req, res, next) => {
   try {
     await db.remove('products', req.params.id);
     res.json({ success: true });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /api/admin/products/translate-description  { name, shortDescription, description }
+// Stateless — translates whatever text is currently in the form (including
+// unsaved edits) and returns suggestions for the admin to review before
+// clicking Save. Doesn't touch the database itself.
+router.post('/products/translate-description', async (req, res, next) => {
+  try {
+    const { name, shortDescription, description } = req.body;
+    if (!name) return res.status(400).json({ success: false, message: 'Product name is required.' });
+    const result = await translateProductText({ name, shortDescription, description });
+    res.json({ success: true, ...result });
+  } catch (err) {
+    res.status(err.status || 500).json({ success: false, message: err.message });
+  }
+});
+
+// POST /api/admin/products/translate-all — best-effort bulk pass: translates
+// and saves every product that's missing one or more of the 4 languages,
+// leaving products that already have all 4 (e.g. hand-edited ones) untouched
+// so it never clobbers a manual correction. Meant to be triggered explicitly
+// from a confirm dialog in Admin, not run silently.
+router.post('/products/translate-all', async (req, res, next) => {
+  try {
+    const products = await db.list('products');
+    const LANGS = ['hi', 'ta', 'te', 'kn'];
+    const todo = products.filter((p) => LANGS.some((l) => !p.descriptions?.[l] || !p.shortDescriptions?.[l]));
+
+    let translated = 0;
+    const errors = [];
+    for (const product of todo) {
+      try {
+        const result = await translateProductText({
+          name: product.name,
+          shortDescription: product.shortDescription,
+          description: product.description,
+        });
+        await db.put('products', {
+          ...product,
+          shortDescriptions: { ...result.shortDescriptions, ...product.shortDescriptions },
+          descriptions: { ...result.descriptions, ...product.descriptions },
+          updatedAt: new Date().toISOString(),
+        });
+        translated += 1;
+      } catch (err) {
+        errors.push({ id: product.id, name: product.name, message: err.message });
+      }
+    }
+
+    res.json({ success: true, total: todo.length, translated, skipped: products.length - todo.length, errors });
   } catch (err) {
     next(err);
   }

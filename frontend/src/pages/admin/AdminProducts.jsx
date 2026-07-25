@@ -78,6 +78,8 @@ export default function AdminProducts() {
   const [message, setMessage] = useState(null);
   const [busy, setBusy] = useState(false);
   const [rates, setRates] = useState({});
+  const [translating, setTranslating] = useState(false);
+  const [bulkTranslating, setBulkTranslating] = useState(false);
 
   function load() {
     api.getProducts().then((d) => setProducts(d.products)).catch(() => {});
@@ -160,6 +162,53 @@ export default function AdminProducts() {
     }
   }
 
+  async function autoTranslate() {
+    if (!form.name.trim()) {
+      setMessage({ type: 'error', text: 'Add a product name first — translation needs it for context.' });
+      return;
+    }
+    setTranslating(true);
+    setMessage(null);
+    try {
+      const res = await api.admin.translateDescription(token, {
+        name: form.name,
+        shortDescription: form.shortDescription,
+        description: form.description,
+      });
+      setForm((f) => ({
+        ...f,
+        shortDescriptions: { ...f.shortDescriptions, ...res.shortDescriptions },
+        descriptions: { ...f.descriptions, ...res.descriptions },
+      }));
+      setMessage({ type: 'success', text: 'Translations filled in below — review, then Save product.' });
+    } catch (err) {
+      setMessage({ type: 'error', text: err.message });
+    } finally {
+      setTranslating(false);
+    }
+  }
+
+  async function translateAll() {
+    if (!window.confirm(
+      "Auto-translate every product that's missing a Hindi/Tamil/Telugu/Kannada description, and save those translations immediately? Products that already have all 4 languages are left untouched."
+    )) return;
+    setBulkTranslating(true);
+    setMessage(null);
+    try {
+      const res = await api.admin.translateAllProducts(token);
+      setMessage({
+        type: res.errors.length ? 'error' : 'success',
+        text: `Translated ${res.translated} of ${res.total} product(s) needing it (${res.skipped} already complete).` +
+          (res.errors.length ? ` Failed: ${res.errors.map((e) => e.name).join(', ')}.` : ''),
+      });
+      load();
+    } catch (err) {
+      setMessage({ type: 'error', text: err.message });
+    } finally {
+      setBulkTranslating(false);
+    }
+  }
+
   async function del(p) {
     if (!window.confirm(`Delete "${p.name}"? This cannot be undone.`)) return;
     try {
@@ -174,7 +223,12 @@ export default function AdminProducts() {
     <>
       <div className="admin-head">
         <h1>Products</h1>
-        <button className="btn btn-gold btn-sm" onClick={startNew}>+ Add product</button>
+        <div className="flex gap-2">
+          <button className="btn btn-outline btn-sm" onClick={translateAll} disabled={bulkTranslating}>
+            {bulkTranslating ? 'Translating all…' : '✨ Auto-translate all missing'}
+          </button>
+          <button className="btn btn-gold btn-sm" onClick={startNew}>+ Add product</button>
+        </div>
       </div>
 
       {message && <div className={`alert alert-${message.type}`}>{message.text}</div>}
@@ -260,9 +314,12 @@ export default function AdminProducts() {
             <textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
           </div>
 
-          <label style={{ fontWeight: 600, fontSize: '0.85rem', display: 'block', marginTop: 16 }}>
-            Translations (optional)
-          </label>
+          <div className="flex gap-2" style={{ alignItems: 'baseline', marginTop: 16, flexWrap: 'wrap' }}>
+            <label style={{ fontWeight: 600, fontSize: '0.85rem' }}>Translations (optional)</label>
+            <button type="button" className="link-btn" onClick={autoTranslate} disabled={translating}>
+              {translating ? 'Translating…' : '✨ Auto-translate from English'}
+            </button>
+          </div>
           <p className="muted" style={{ fontSize: '0.78rem', margin: '2px 0 10px' }}>
             Add a translated description so shoppers see it when they've selected that language.
             Leave a language blank and it'll fall back to the English text above.

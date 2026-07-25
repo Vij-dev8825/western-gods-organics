@@ -128,6 +128,8 @@ export const api = {
     createProduct: (token, product) => request('/admin/products', { method: 'POST', body: product, token }),
     updateProduct: (token, id, product) => request(`/admin/products/${id}`, { method: 'PUT', body: product, token }),
     deleteProduct: (token, id) => request(`/admin/products/${id}`, { method: 'DELETE', token }),
+    translateDescription: (token, body) => request('/admin/products/translate-description', { method: 'POST', body, token }),
+    translateAllProducts: (token) => request('/admin/products/translate-all', { method: 'POST', token }),
 
     getCategories: (token) => request('/admin/categories', { token }),
     createCategory: (token, category) => request('/admin/categories', { method: 'POST', body: category, token }),
