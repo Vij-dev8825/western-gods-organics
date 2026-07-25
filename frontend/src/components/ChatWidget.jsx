@@ -15,8 +15,8 @@ export default function ChatWidget() {
   const bottomRef = useRef(null);
   const location = useLocation();
 
-  // Hide on admin pages and login
-  const hidden = location.pathname.startsWith('/admin') || location.pathname === '/login';
+  // Hide on admin pages, login, and cart/checkout (crowds "Place order" on mobile)
+  const hidden = location.pathname.startsWith('/admin') || location.pathname === '/login' || location.pathname === '/cart';
 
   // Poll for unread admin replies while the panel is closed, so the FAB can
   // show a count without opening the thread (which marks everything read).

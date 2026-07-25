@@ -57,7 +57,8 @@ export default function AiAssistant() {
   const bottomRef = useRef(null);
   const location = useLocation();
 
-  const hidden = location.pathname.startsWith('/admin') || location.pathname === '/login';
+  // Hidden on admin/login and on cart/checkout, where it crowds the "Place order" button on mobile.
+  const hidden = location.pathname.startsWith('/admin') || location.pathname === '/login' || location.pathname === '/cart';
 
   useEffect(() => {
     api.getProducts().then((d) => setProducts(d.products)).catch(() => {});
