@@ -3,16 +3,21 @@ import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { api } from '../../api';
 import { useAuth } from '../../context/AuthContext';
 import { useResendCooldown } from '../../hooks/useResendCooldown';
+import { useFirebasePhoneAuth } from '../../hooks/useFirebasePhoneAuth';
+import { firebaseConfigured } from '../../utils/firebase';
+
+const RECAPTCHA_CONTAINER_ID = 'recaptcha-container-admin-login';
 
 export default function AdminLogin() {
   const [step, setStep] = useState('phone'); // 'phone' | 'otp'
   const [phone, setPhone] = useState('');
-  const [otp, setOtp] = useState(['', '', '', '']);
+  // Firebase phone auth always sends a 6-digit code.
+  const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [devOtp, setDevOtp] = useState('');
   const otpRefs = useRef([]);
   const { secondsLeft, start: startCooldown } = useResendCooldown(30);
+  const { sendCode, confirmCode, reset } = useFirebasePhoneAuth(RECAPTCHA_CONTAINER_ID);
 
   const { login, isLoggedIn, user } = useAuth();
   const navigate = useNavigate();
@@ -25,16 +30,19 @@ export default function AdminLogin() {
   async function handleSendOtp() {
     if (loading) return;
     setError('');
+    if (!firebaseConfigured) {
+      setError('Phone login is not set up yet.');
+      return;
+    }
     if (!/^[6-9]\d{9}$/.test(phone)) {
       setError('Enter a valid 10-digit mobile number.');
       return;
     }
     setLoading(true);
     try {
-      const data = await api.sendOtp(phone);
+      await sendCode(`+91${phone}`);
       setStep('otp');
-      setOtp(['', '', '', '']);
-      if (data.devOtp) setDevOtp(data.devOtp);
+      setOtp(['', '', '', '', '', '']);
       startCooldown();
     } catch (err) {
       setError(err.message);
@@ -47,13 +55,14 @@ export default function AdminLogin() {
     if (loading) return;
     setError('');
     const code = otp.join('');
-    if (code.length !== 4) {
-      setError('Enter the 4-digit OTP.');
+    if (code.length !== 6) {
+      setError('Enter the 6-digit OTP.');
       return;
     }
     setLoading(true);
     try {
-      const data = await api.verifyOtp(phone, code);
+      const idToken = await confirmCode(code);
+      const data = await api.firebaseLogin(idToken);
       if (data.user.role !== 'admin') {
         setError('This mobile number is not registered for admin access.');
         return;
@@ -72,15 +81,15 @@ export default function AdminLogin() {
     const next = [...otp];
     next[i] = value;
     setOtp(next);
-    if (value && i < 3) otpRefs.current[i + 1]?.focus();
+    if (value && i < 5) otpRefs.current[i + 1]?.focus();
   }
 
   function handleChangeNumber() {
+    reset();
     setStep('phone');
     setPhone('');
-    setOtp(['', '', '', '']);
+    setOtp(['', '', '', '', '', '']);
     setError('');
-    setDevOtp('');
   }
 
   function onEnterKey(handler) {
@@ -105,13 +114,10 @@ export default function AdminLogin() {
         <p className="muted center" style={{ marginBottom: 26, color: 'rgba(250,246,236,0.65)' }}>
           {step === 'phone'
             ? 'Restricted access — sign in with your registered admin number.'
-            : `Enter the 4-digit code sent to +91 ${phone}`}
+            : `Enter the code sent to +91 ${phone}`}
         </p>
 
         {error && <div className="alert alert-error">{error}</div>}
-        {devOtp && step === 'otp' && (
-          <div className="alert alert-info">Test mode — your OTP is <b>{devOtp}</b></div>
-        )}
 
         {step === 'phone' ? (
           <div>
@@ -129,6 +135,7 @@ export default function AdminLogin() {
                 autoFocus
               />
             </div>
+            <div id={RECAPTCHA_CONTAINER_ID} />
             <button type="button" className="btn btn-gold btn-block" disabled={loading} onClick={handleSendOtp}>
               {loading ? 'Sending OTP…' : 'Send OTP'}
             </button>

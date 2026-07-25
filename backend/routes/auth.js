@@ -4,7 +4,7 @@ const crypto = require('crypto');
 const { v4: uuid } = require('uuid');
 const db = require('../data/db');
 const { requireAuth } = require('../middleware/auth');
-const { sendOtpSms } = require('../utils/sms');
+const { verifyIdToken } = require('../utils/firebaseAdmin');
 
 const router = express.Router();
 
@@ -47,24 +47,6 @@ async function issueWelcomeCoupon(userId) {
   return coupon;
 }
 
-// In-memory OTP store: { [phone]: { otp, expiresAt, attempts } }
-const otpStore = new Map();
-
-const OTP_EXPIRY_MS = (parseInt(process.env.OTP_EXPIRY_MINUTES, 10) || 5) * 60 * 1000;
-
-function generateOtp() {
-  return String(Math.floor(1000 + Math.random() * 9000)); // 4-digit OTP
-}
-
-// India keeps the existing 10-digit format. Every other country must submit
-// the full number with a leading "+" and its own calling code (e.g.
-// +15551234567) — the leading "+" doubles as the signal sms.js uses to route
-// through Twilio instead of the India-only Fast2SMS/MSG91 gateways.
-function isValidPhone(phone, country = 'IN') {
-  if (country === 'IN') return /^[6-9]\d{9}$/.test(phone);
-  return /^\+\d{6,15}$/.test(phone);
-}
-
 function signToken(user) {
   return jwt.sign(
     { id: user.id, phone: user.phone, role: user.role || 'customer' },
@@ -73,84 +55,47 @@ function signToken(user) {
   );
 }
 
-// POST /api/auth/send-otp  { phone, country? }  — country defaults to 'IN'
-// for older clients; anything else expects a full "+"-prefixed number.
-router.post('/send-otp', async (req, res, next) => {
+// POST /api/auth/firebase-login  { idToken, name?, referralCode? }
+// idToken comes from the frontend's Firebase phone-auth flow (see
+// hooks/useFirebasePhoneAuth.js) — Firebase itself generates and verifies the
+// OTP client-side; this route just verifies the resulting token server-side
+// and resolves/creates the matching account, same as the old verify-otp did.
+router.post('/firebase-login', async (req, res, next) => {
   try {
-    const { phone, country = 'IN' } = req.body;
+    const { idToken, name, referralCode } = req.body;
 
-    if (!phone || !isValidPhone(phone, country)) {
-      return res.status(400).json({
+    if (!idToken) {
+      return res.status(400).json({ success: false, message: 'Missing verification token.' });
+    }
+
+    let decoded;
+    try {
+      decoded = await verifyIdToken(idToken);
+    } catch (err) {
+      return res.status(err.status || 401).json({
         success: false,
-        message: country === 'IN'
-          ? 'Enter a valid 10-digit mobile number.'
-          : 'Enter a valid phone number with your country code (e.g. +15551234567).',
+        message: err.status === 503 ? err.message : 'Could not verify your phone number. Please try again.',
       });
     }
 
-    const otp = generateOtp();
-    otpStore.set(phone, { otp, expiresAt: Date.now() + OTP_EXPIRY_MS, attempts: 0 });
-
-    // Goes through the SMS provider when configured; logs to console otherwise.
-    await sendOtpSms(phone, otp);
-
-    const response = { success: true, message: 'OTP sent to your mobile number.' };
-
-    // Echo the OTP back so the flow can be tested without a working SMS gateway.
-    // Always on outside production; in production it requires an explicit opt-in
-    // (SHOW_OTP_ONSCREEN=true) since it would otherwise expose real login codes
-    // in the API response — turn it off again once real SMS delivery works.
-    if (process.env.NODE_ENV !== 'production' || process.env.SHOW_OTP_ONSCREEN === 'true') {
-      response.devOtp = otp;
+    const rawPhone = decoded.phone_number; // E.164, e.g. +919876543210
+    if (!rawPhone) {
+      return res.status(400).json({ success: false, message: 'No verified phone number found.' });
     }
 
-    res.json(response);
-  } catch (err) {
-    next(err);
-  }
-});
-
-// POST /api/auth/verify-otp  { phone, otp, name?, referralCode? }
-router.post('/verify-otp', async (req, res, next) => {
-  try {
-    const { phone, otp, name, referralCode } = req.body;
-
-    if (!phone || !otp) {
-      return res.status(400).json({ success: false, message: 'Mobile number and OTP are required.' });
-    }
-
-    const record = otpStore.get(phone);
-
-    if (!record) {
-      return res.status(400).json({ success: false, message: 'Please request a new OTP.' });
-    }
-
-    if (Date.now() > record.expiresAt) {
-      otpStore.delete(phone);
-      return res.status(400).json({ success: false, message: 'OTP expired. Please request a new one.' });
-    }
-
-    record.attempts += 1;
-    if (record.attempts > 5) {
-      otpStore.delete(phone);
-      return res.status(429).json({ success: false, message: 'Too many attempts. Please request a new OTP.' });
-    }
-
-    if (record.otp !== otp) {
-      return res.status(400).json({ success: false, message: 'Incorrect OTP. Please try again.' });
-    }
+    // Existing accounts store Indian numbers as bare 10 digits (pre-Firebase
+    // convention) — normalize so returning customers still match their
+    // account instead of silently getting a duplicate. Every other country
+    // keeps the full "+"-prefixed E.164 form, same as before.
+    const indiaMatch = rawPhone.match(/^\+91([6-9]\d{9})$/);
+    const phone = indiaMatch ? indiaMatch[1] : rawPhone;
 
     const users = await db.list('users');
     let user = users.find((u) => u.phone === phone);
 
-    // Correct OTP but missing name for a new signup — don't consume the OTP
-    // for this, so the customer can just resubmit with a name using the
-    // same code instead of waiting for a whole new SMS.
     if (!user && (!name || name.trim().length < 2)) {
       return res.status(400).json({ success: false, message: 'Enter your name.' });
     }
-
-    otpStore.delete(phone);
 
     let welcomeCoupon = null;
 

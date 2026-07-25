@@ -33,6 +33,24 @@ services:
         sync: false
       - key: ADMIN_PHONE # phone number that gets admin access via OTP login
         sync: false
+      # Firebase phone-auth (login OTPs) — see backend/.env.example and
+      # frontend/.env.example for where each value comes from. The VITE_*
+      # ones must be set here too since the frontend build (which reads
+      # them) runs as part of this same service's buildCommand.
+      - key: FIREBASE_PROJECT_ID
+        sync: false
+      - key: FIREBASE_CLIENT_EMAIL
+        sync: false
+      - key: FIREBASE_PRIVATE_KEY
+        sync: false
+      - key: VITE_FIREBASE_API_KEY
+        sync: false
+      - key: VITE_FIREBASE_AUTH_DOMAIN
+        sync: false
+      - key: VITE_FIREBASE_PROJECT_ID
+        sync: false
+      - key: VITE_FIREBASE_APP_ID
+        sync: false
       - key: CLOUDINARY_CLOUD_NAME
         sync: false
       - key: CLOUDINARY_API_KEY

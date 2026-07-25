@@ -1017,12 +1017,18 @@ input:focus-visible + .filter-radio { outline: 2px solid var(--gold-2); outline-
   border-color: var(--gold-2);
 }
 .field textarea { resize: vertical; min-height: 100px; }
-.otp-inputs { display: flex; gap: 10px; justify-content: center; }
+/* 6 boxes (Firebase phone-auth codes are 6 digits) — sized down from the
+   old 4-digit layout so the row still fits on narrow phone screens. */
+.otp-inputs { display: flex; gap: 8px; justify-content: center; }
 .otp-inputs input {
-  width: 52px; height: 58px;
+  width: 44px; height: 52px;
   text-align: center;
-  font-size: 1.4rem;
+  font-size: 1.3rem;
   font-family: var(--font-mono);
+}
+@media (max-width: 400px) {
+  .otp-inputs { gap: 6px; }
+  .otp-inputs input { width: 38px; height: 46px; font-size: 1.15rem; }
 }
 .field-error { color: #c0392b; font-size: 0.8rem; margin-top: 6px; }
 .helper-text { font-size: 0.82rem; color: var(--forest-light); margin-top: 6px; }
