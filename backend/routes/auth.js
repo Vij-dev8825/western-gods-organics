@@ -112,11 +112,6 @@ router.post('/send-otp', async (req, res, next) => {
         subject: 'Your Western Gods Organics OTP',
         text: `${otpMessage} It expires in ${Math.round(OTP_EXPIRY_MS / 60000)} minutes.`,
       });
-    } else if (channel === 'sms') {
-      // Explicit SMS choice — skips WhatsApp entirely and goes straight to
-      // the SMS provider chain (Fast2SMS/MSG91/Twilio), which needs DLT
-      // registration for real delivery in India.
-      await sendOtpSms(phone, otp);
     } else {
       // Default: WhatsApp first — India's SMS DLT registration requirement
       // doesn't apply to WhatsApp Business messages, and this reuses the

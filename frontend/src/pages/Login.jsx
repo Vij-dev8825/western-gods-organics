@@ -210,14 +210,6 @@ export default function Login() {
                   WhatsApp
                 </label>
                 <label
-                  className={`payment-option ${channel === 'sms' ? 'active' : ''}`}
-                  style={{ flex: 1, justifyContent: 'center' }}
-                  onClick={() => setChannel('sms')}
-                >
-                  <input type="radio" name="otp-channel" readOnly checked={channel === 'sms'} />
-                  SMS
-                </label>
-                <label
                   className={`payment-option ${channel === 'email' ? 'active' : ''}`}
                   style={{ flex: 1, justifyContent: 'center' }}
                   onClick={() => setChannel('email')}
