@@ -130,6 +130,7 @@ export default function ChatWidget() {
         aria-label={open ? 'Close chat' : 'Chat with us'}
         onClick={() => setOpen((o) => !o)}
       >
+        {!open && <span className="fab-label">Chat with us</span>}
         {open ? '✕' : '💬'}
         {!open && unread > 0 && <span className="badge-count">{unread}</span>}
       </button>

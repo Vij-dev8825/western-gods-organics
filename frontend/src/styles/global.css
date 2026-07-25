@@ -1413,7 +1413,7 @@ input:focus-visible + .filter-radio { outline: 2px solid var(--gold-2); outline-
 .invoice-footer { margin-top: 34px; padding-top: 18px; border-top: 1px solid rgba(31,61,43,0.12); text-align: center; font-size: 0.85rem; }
 
 @media print {
-  .no-print, .announce-bar, .navbar, .footer, .chat-fab, .chat-panel, .whatsapp-widget, .ai-assistant-fab { display: none !important; }
+  .no-print, .announce-bar, .navbar, .footer, .chat-fab, .chat-panel, .whatsapp-fab, .ai-assistant-fab { display: none !important; }
   .invoice-page { background: none; padding: 0; }
   .invoice-sheet { box-shadow: none; padding: 0; max-width: none; }
 }
@@ -2168,27 +2168,10 @@ input:focus-visible + .filter-radio { outline: 2px solid var(--gold-2); outline-
   box-shadow: var(--shadow-lift);
   z-index: 180;
 }
-.whatsapp-widget {
+.whatsapp-fab {
   position: fixed;
   left: 24px;
   bottom: 24px;
-  z-index: 180;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  text-decoration: none;
-}
-.whatsapp-widget-label {
-  background: var(--paper);
-  color: var(--forest-deep);
-  padding: 10px 16px;
-  border-radius: 999px;
-  box-shadow: var(--shadow-lift);
-  font-size: 0.85rem;
-  font-weight: 600;
-  white-space: nowrap;
-}
-.whatsapp-fab {
   width: 56px;
   height: 56px;
   border-radius: 50%;
@@ -2198,10 +2181,11 @@ input:focus-visible + .filter-radio { outline: 2px solid var(--gold-2); outline-
   background: #25D366;
   color: #fff;
   box-shadow: var(--shadow-lift);
-  flex-shrink: 0;
+  z-index: 180;
   transition: transform 0.15s ease;
+  text-decoration: none;
 }
-.whatsapp-widget:hover .whatsapp-fab { transform: scale(1.06); }
+.whatsapp-fab:hover, .whatsapp-fab:focus-visible { transform: scale(1.06); }
 
 /* Stacked above chat-fab (24px + 56px + 10px gap) so the two don't overlap. */
 .ai-assistant-fab {
@@ -2219,9 +2203,45 @@ input:focus-visible + .filter-radio { outline: 2px solid var(--gold-2); outline-
   z-index: 180;
   transition: transform 0.15s ease;
 }
-.ai-assistant-fab:hover { transform: scale(1.06); }
+.ai-assistant-fab:hover, .ai-assistant-fab:focus-visible { transform: scale(1.06); }
 /* Opens further above the AI fab itself. */
 .ai-assistant-panel { bottom: 158px !important; }
+
+/* Hover/tap-revealed label for the three floating buttons above — shown
+   next to whichever fixed button it's nested in, without shifting that
+   button's own position. Works on touch too: mobile browsers generally
+   keep :hover applied after a tap until the next tap elsewhere. */
+.fab-label {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%) translateX(4px);
+  background: var(--paper);
+  color: var(--forest-deep);
+  padding: 8px 14px;
+  border-radius: 999px;
+  box-shadow: var(--shadow-lift);
+  font-size: 0.82rem;
+  font-weight: 600;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+.chat-fab .fab-label, .ai-assistant-fab .fab-label {
+  right: 100%;
+  margin-right: 12px;
+}
+.whatsapp-fab .fab-label {
+  left: 100%;
+  margin-left: 12px;
+  transform: translateY(-50%) translateX(-4px);
+}
+.chat-fab:hover .fab-label, .chat-fab:focus-visible .fab-label,
+.ai-assistant-fab:hover .fab-label, .ai-assistant-fab:focus-visible .fab-label,
+.whatsapp-fab:hover .fab-label, .whatsapp-fab:focus-visible .fab-label {
+  opacity: 1;
+  transform: translateY(-50%) translateX(0);
+}
 
 .chat-panel {
   position: fixed;
@@ -2741,9 +2761,7 @@ input:focus-visible + .filter-radio { outline: 2px solid var(--gold-2); outline-
 
   .chat-panel { bottom: 82px; right: 16px; left: 16px; width: auto; height: min(64vh, 460px); }
   .chat-fab { right: 16px; bottom: 16px; width: 50px; height: 50px; font-size: 1.2rem; }
-  .whatsapp-widget { left: 16px; bottom: 16px; }
-  .whatsapp-widget-label { display: none; }
-  .whatsapp-fab { width: 50px; height: 50px; }
+  .whatsapp-fab { left: 16px; bottom: 16px; width: 50px; height: 50px; }
   .ai-assistant-fab { right: 16px; bottom: 76px; width: 50px; height: 50px; font-size: 1.2rem; }
   .ai-assistant-panel { bottom: 138px !important; }
 
@@ -3142,7 +3160,7 @@ input:focus-visible + .filter-radio { outline: 2px solid var(--gold-2); outline-
    bar's buttons — --cookie-bar-height is set live by CookieConsent.jsx. */
 body.has-cookie-bar .chat-fab { bottom: calc(var(--cookie-bar-height, 0px) + 16px); }
 body.has-cookie-bar .push-optin { bottom: calc(var(--cookie-bar-height, 0px) + 16px); }
-body.has-cookie-bar .whatsapp-widget { bottom: calc(var(--cookie-bar-height, 0px) + 16px); }
+body.has-cookie-bar .whatsapp-fab { bottom: calc(var(--cookie-bar-height, 0px) + 16px); }
 body.has-cookie-bar .ai-assistant-fab { bottom: calc(var(--cookie-bar-height, 0px) + 82px); }
 body.has-cookie-bar .back-to-top { bottom: calc(var(--cookie-bar-height, 0px) + 148px); }
 

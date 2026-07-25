@@ -140,6 +140,7 @@ export default function AiAssistant() {
         aria-label={open ? 'Close AI assistant' : 'Shop with AI'}
         onClick={() => setOpen((o) => !o)}
       >
+        {!open && <span className="fab-label">Shop with AI</span>}
         {open ? '✕' : '✨'}
       </button>
     </>
