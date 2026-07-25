@@ -8,6 +8,8 @@ import { useToast } from '../context/ToastContext';
 import { useCurrency } from '../context/CurrencyContext';
 import { useAuth } from '../context/AuthContext';
 import { IconHeart } from './Icons';
+import { useLang } from '../i18n';
+import { localizeProductText } from '../utils/productLocale';
 
 export default function ProductCard({ product }) {
   const { productIds, toggleWishlist } = useWishlist();
@@ -15,6 +17,7 @@ export default function ProductCard({ product }) {
   const { showToast } = useToast();
   const { formatPrice, formatProductPrice } = useCurrency();
   const { isLoggedIn, token } = useAuth();
+  const { lang } = useLang();
   const navigate = useNavigate();
   const [size, setSize] = useState(product.sizes[1]?.label || product.sizes[0].label);
   const [hoverIndex, setHoverIndex] = useState(0);
@@ -153,7 +156,7 @@ export default function ProductCard({ product }) {
       </div>
       <div className="product-body">
         <h3>{product.name}</h3>
-        <p className="product-desc">{product.shortDescription}</p>
+        <p className="product-desc">{localizeProductText(product, 'shortDescription', lang)}</p>
         <div className="rating-row">
           ★ {product.rating} <span className="count">({product.reviewsCount})</span>
         </div>

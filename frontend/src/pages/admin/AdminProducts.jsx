@@ -4,12 +4,17 @@ import { useAuth } from '../../context/AuthContext';
 import { getProductImage } from '../../utils/productImages';
 import ImageUploadField from '../../components/admin/ImageUploadField';
 import { useCurrency } from '../../context/CurrencyContext';
+import { LANGS } from '../../i18n';
+
+const TRANSLATABLE_LANGS = LANGS.filter((l) => l.code !== 'en');
 
 const EMPTY = {
   name: '',
   category: '',
   shortDescription: '',
   description: '',
+  shortDescriptions: {},
+  descriptions: {},
   image: '',
   extraImages: [],
   sizes: [{ label: '500 ml', price: '', mrp: '', stock: '' }],
@@ -26,6 +31,8 @@ function toForm(p) {
     tags: (p.tags || []).join(', '),
     comboItems: (p.comboItems || []).join(', '),
     countryPrices: p.countryPrices || {},
+    shortDescriptions: p.shortDescriptions || {},
+    descriptions: p.descriptions || {},
   };
 }
 
@@ -245,13 +252,49 @@ export default function AdminProducts() {
           </div>
 
           <div className="field">
-            <label>Short description</label>
+            <label>Short description (English)</label>
             <input value={form.shortDescription} onChange={(e) => setForm({ ...form, shortDescription: e.target.value })} />
           </div>
           <div className="field">
-            <label>Full description</label>
+            <label>Full description (English)</label>
             <textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
           </div>
+
+          <label style={{ fontWeight: 600, fontSize: '0.85rem', display: 'block', marginTop: 16 }}>
+            Translations (optional)
+          </label>
+          <p className="muted" style={{ fontSize: '0.78rem', margin: '2px 0 10px' }}>
+            Add a translated description so shoppers see it when they've selected that language.
+            Leave a language blank and it'll fall back to the English text above.
+          </p>
+          {TRANSLATABLE_LANGS.map((l) => (
+            <div key={l.code} className="form-grid" style={{ marginBottom: 8 }}>
+              <div className="field">
+                <label>Short description ({l.label})</label>
+                <input
+                  value={form.shortDescriptions[l.code] || ''}
+                  onChange={(e) =>
+                    setForm((f) => ({
+                      ...f,
+                      shortDescriptions: { ...f.shortDescriptions, [l.code]: e.target.value },
+                    }))
+                  }
+                />
+              </div>
+              <div className="field">
+                <label>Full description ({l.label})</label>
+                <textarea
+                  value={form.descriptions[l.code] || ''}
+                  onChange={(e) =>
+                    setForm((f) => ({
+                      ...f,
+                      descriptions: { ...f.descriptions, [l.code]: e.target.value },
+                    }))
+                  }
+                />
+              </div>
+            </div>
+          ))}
 
           <label style={{ fontWeight: 600, fontSize: '0.85rem' }}>Sizes, rates & stock</label>
           <table className="admin-table sizes-editor">

@@ -157,6 +157,21 @@ function normalizeCountryPrices(raw) {
   return out;
 }
 
+// Per-language description overrides, e.g. { hi: '...', ta: '...' }. English
+// isn't a key here — it stays in the base name/description/shortDescription
+// fields and is the fallback whenever a language has no translation yet.
+const TRANSLATABLE_LANG_CODES = ['hi', 'ta', 'te', 'kn'];
+
+function sanitizeLangMap(raw) {
+  const out = {};
+  if (!raw || typeof raw !== 'object') return out;
+  for (const code of TRANSLATABLE_LANG_CODES) {
+    const val = raw[code];
+    if (typeof val === 'string' && val.trim()) out[code] = val.trim();
+  }
+  return out;
+}
+
 // POST /api/admin/products
 router.post('/products', async (req, res, next) => {
   try {
@@ -174,6 +189,8 @@ router.post('/products', async (req, res, next) => {
       category: req.body.category,
       shortDescription: req.body.shortDescription || '',
       description: req.body.description || '',
+      shortDescriptions: sanitizeLangMap(req.body.shortDescriptions),
+      descriptions: sanitizeLangMap(req.body.descriptions),
       image: req.body.image || '',
       images: Array.isArray(req.body.images) && req.body.images.length ? req.body.images : (req.body.image ? [req.body.image] : []),
       sizes: req.body.sizes.map((s) => ({
@@ -217,6 +234,8 @@ router.put('/products/:id', async (req, res, next) => {
         stock: Number(s.stock || 0),
       })),
       countryPrices: normalizeCountryPrices(req.body.countryPrices ?? existing.countryPrices),
+      shortDescriptions: sanitizeLangMap(req.body.shortDescriptions ?? existing.shortDescriptions),
+      descriptions: sanitizeLangMap(req.body.descriptions ?? existing.descriptions),
     };
     delete updated.notifyCustomers;
     await db.put('products', updated);

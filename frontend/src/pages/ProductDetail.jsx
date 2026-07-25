@@ -20,6 +20,8 @@ import SeoMeta from '../components/SeoMeta';
 import AddressForm from '../components/AddressForm';
 import { IconHeart } from '../components/Icons';
 import { CANONICAL_ORIGIN } from '../utils/site';
+import { useLang } from '../i18n';
+import { localizeProductText } from '../utils/productLocale';
 
 const SUBSCRIPTION_DISCOUNT_PERCENT = 10;
 const MIN_FREQUENCY_DAYS = 7;
@@ -122,6 +124,7 @@ export default function ProductDetail() {
   const { productIds, toggleWishlist } = useWishlist();
   const { isLoggedIn, token, user } = useAuth();
   const { showToast } = useToast();
+  const { lang } = useLang();
 
   useEffect(() => {
     setProduct(null);
@@ -290,7 +293,7 @@ export default function ProductDetail() {
     <div className="container section">
       <SeoMeta
         title={`${product.name} | Western Gods Organics`}
-        description={(product.shortDescription || product.description || '').slice(0, 160)}
+        description={(localizeProductText(product, 'shortDescription', lang) || localizeProductText(product, 'description', lang)).slice(0, 160)}
         // Placeholder products use an inline data: URI image — social-share
         // crawlers can't fetch that as an og:image, so fall back to the
         // site logo instead of a link preview with a broken picture.
@@ -339,7 +342,7 @@ export default function ProductDetail() {
           <div className="rating-row" style={{ marginBottom: 16 }}>
             ★ {product.rating} <span className="count">({product.reviewsCount} reviews)</span>
           </div>
-          <p className="muted">{product.description}</p>
+          <p className="muted">{localizeProductText(product, 'description', lang)}</p>
 
           {product.comboItems?.length > 0 && (
             <div className="combo-includes">

@@ -3,7 +3,9 @@ import { createContext, useContext, useEffect, useState } from 'react';
 /**
  * Lightweight i18n: flat key → string dictionaries per language.
  * Missing keys fall back to English, so partial translations never break the UI.
- * Product names/descriptions come from the database and stay as entered by the admin.
+ * Product names always come from the database as entered by the admin (untranslated).
+ * Product descriptions can optionally be translated per-language via the admin's
+ * product form — see utils/productLocale.js for the fallback-to-English lookup.
  */
 
 export const LANGS = [
