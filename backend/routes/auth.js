@@ -7,6 +7,7 @@ const { requireAuth } = require('../middleware/auth');
 const { sendOtpSms } = require('../utils/sms');
 const { sendWhatsApp } = require('../utils/whatsapp');
 const { sendMail } = require('../utils/mailer');
+const { otpStore, OTP_EXPIRY_MS, generateOtp } = require('../utils/otpStore');
 
 const router = express.Router();
 
@@ -47,15 +48,6 @@ async function issueWelcomeCoupon(userId) {
   };
   await db.put('coupons', coupon);
   return coupon;
-}
-
-// In-memory OTP store: { [phone]: { otp, expiresAt, attempts } }
-const otpStore = new Map();
-
-const OTP_EXPIRY_MS = (parseInt(process.env.OTP_EXPIRY_MINUTES, 10) || 5) * 60 * 1000;
-
-function generateOtp() {
-  return String(Math.floor(1000 + Math.random() * 9000)); // 4-digit OTP
 }
 
 // India keeps the existing 10-digit format. Every other country must submit

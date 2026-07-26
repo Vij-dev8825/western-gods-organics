@@ -80,6 +80,7 @@ export const api = {
   removeWishlist: (token, productId) => request(`/wishlist/${productId}`, { method: 'DELETE', token }),
 
   // orders
+  verifyCodPhone: (phone, otp) => request('/orders/verify-cod-phone', { method: 'POST', body: { phone, otp } }),
   placeOrder: (token, payload) => request('/orders', { method: 'POST', body: payload, token }),
   getOrders: (token) => request('/orders', { token }),
   getOrder: (token, id) => request(`/orders/${id}`, { token }),

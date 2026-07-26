@@ -11,6 +11,7 @@ import { validateAddress, isValidEmail } from '../utils/validators';
 import { normalizeAddresses } from '../utils/addresses';
 import ChakkiWheel from '../components/ChakkiWheel';
 import AddressForm from '../components/AddressForm';
+import CodPhoneVerify from '../components/CodPhoneVerify';
 
 function validateGuestInfo(name, email) {
   const errors = {};
@@ -44,6 +45,7 @@ export default function Cart() {
   const [guestErrors, setGuestErrors] = useState({});
   const [paymentMethod, setPaymentMethod] = useState('cod'); // 'cod' | 'razorpay'
   const [razorpayEnabled, setRazorpayEnabled] = useState(false);
+  const [codVerifiedPhone, setCodVerifiedPhone] = useState(null);
   const [buyNowQty, setBuyNowQty] = useState(buyNowItem?.quantity || 1);
   const [couponInput, setCouponInput] = useState('');
   const [appliedCoupon, setAppliedCoupon] = useState(null); // { code, discount, subtotalAtApply }
@@ -108,6 +110,11 @@ export default function Cart() {
   const total = subtotal + shipping - discount;
   const minOrderCheck = checkMinOrder(subtotal);
   const hasOutOfStock = lines.some((l) => l.sizeInfo.stock <= 0);
+  // Guests placing a Cash-on-Delivery order must verify the delivery phone
+  // first (see backend/routes/orders.js) — logged-in customers already
+  // proved phone ownership at signup, and prepaid orders are already
+  // trust-gated by a captured payment.
+  const codNeedsVerification = !isLoggedIn && paymentMethod === 'cod' && codVerifiedPhone !== address.phone;
 
   function updateAddress(field, value) {
     setAddress((a) => ({ ...a, [field]: value }));
@@ -155,6 +162,10 @@ export default function Cart() {
     }
     if (!minOrderCheck.met) {
       showToast(`Minimum order for ${country.label} is ${minOrderCheck.minFormatted}.`, 'error');
+      return;
+    }
+    if (codNeedsVerification) {
+      showToast('Please verify your phone number to place a Cash on Delivery order.', 'error');
       return;
     }
     const errors = validateAddress(address);
@@ -489,6 +500,15 @@ export default function Cart() {
                 </label>
               </div>
 
+              {!isLoggedIn && paymentMethod === 'cod' && (
+                <CodPhoneVerify
+                  phone={address.phone}
+                  country={address.country}
+                  verified={codVerifiedPhone === address.phone}
+                  onVerified={setCodVerifiedPhone}
+                />
+              )}
+
               {hasOutOfStock && (
                 <div className="alert alert-error" style={{ marginTop: 16 }}>
                   One or more items in your cart are currently out of stock. Please remove them to continue.
@@ -506,7 +526,11 @@ export default function Cart() {
                   <span className="muted">Total</span>
                   <b>₹{total}</b>
                 </div>
-                <button className="btn btn-gold btn-block" style={{ marginTop: 18 }} disabled={placing || !minOrderCheck.met || hasOutOfStock}>
+                <button
+                  className="btn btn-gold btn-block"
+                  style={{ marginTop: 18 }}
+                  disabled={placing || !minOrderCheck.met || hasOutOfStock || codNeedsVerification}
+                >
                   {placing ? 'Processing…' : paymentMethod === 'razorpay' ? 'Pay securely' : 'Place order'}
                 </button>
               </div>

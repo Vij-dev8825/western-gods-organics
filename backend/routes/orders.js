@@ -6,6 +6,8 @@ const { signToken } = require('./auth');
 const razorpay = require('../utils/razorpay');
 const { buildOrderItems, createOrderRecord } = require('../utils/orderBuilder');
 const { notifyUser } = require('../utils/notify');
+const { otpStore } = require('../utils/otpStore');
+const { markPhoneVerified, isPhoneVerified, consumePhoneVerification } = require('../utils/phoneVerification');
 
 const CANCELLABLE_STATUSES = ['placed', 'confirmed'];
 const RETURN_WINDOW_DAYS = 7;
@@ -46,12 +48,49 @@ async function isPhoneAvailable(phone) {
   return !users.some((u) => u.phone === phone);
 }
 
+// POST /api/orders/verify-cod-phone  { phone, otp } — confirms a guest
+// actually owns the delivery phone before Cash on Delivery is allowed.
+// Reuses the same OTP requested via /api/auth/send-otp; doesn't create or
+// touch any user account, just a short-lived proof consumed by POST / below.
+router.post('/verify-cod-phone', async (req, res, next) => {
+  try {
+    const { phone, otp } = req.body;
+    if (!phone || !otp) {
+      return res.status(400).json({ success: false, message: 'Phone number and code are required.' });
+    }
+
+    const record = otpStore.get(phone);
+    if (!record) {
+      return res.status(400).json({ success: false, message: 'Please request a new code.' });
+    }
+    if (Date.now() > record.expiresAt) {
+      otpStore.delete(phone);
+      return res.status(400).json({ success: false, message: 'Code expired. Please request a new one.' });
+    }
+    record.attempts += 1;
+    if (record.attempts > 5) {
+      otpStore.delete(phone);
+      return res.status(429).json({ success: false, message: 'Too many attempts. Please request a new code.' });
+    }
+    if (record.otp !== otp) {
+      return res.status(400).json({ success: false, message: 'Incorrect code. Please try again.' });
+    }
+
+    otpStore.delete(phone);
+    markPhoneVerified(phone);
+    res.json({ success: true, message: 'Phone verified.' });
+  } catch (err) {
+    next(err);
+  }
+});
+
 // POST /api/orders  { items, address, paymentMethod, guestInfo? }  — COD path.
 // guestInfo: { name, email? } is required when not logged in; the delivery
 // address's phone number doubles as the guest's identity.
 router.post('/', optionalAuth, async (req, res, next) => {
   try {
     const { items, address, paymentMethod, couponCode, guestInfo } = req.body;
+    const effectivePaymentMethod = paymentMethod || 'cod';
 
     if (!items || !items.length) {
       return res.status(400).json({ success: false, message: 'Your cart is empty.' });
@@ -69,11 +108,24 @@ router.post('/', optionalAuth, async (req, res, next) => {
           message: 'An account already exists with this phone number. Please log in to continue.',
         });
       }
+      // Guests are the one checkout path with no account history behind
+      // them, so Cash on Delivery — the only payment method with zero cost
+      // to a fraudster — requires proving ownership of the delivery phone
+      // first (see /verify-cod-phone above). Prepaid orders skip this: a
+      // captured payment is itself proof enough.
+      if (effectivePaymentMethod === 'cod' && !isPhoneVerified(address.phone)) {
+        return res.status(403).json({
+          success: false,
+          message: 'Please verify your phone number to place a Cash on Delivery order.',
+          requiresPhoneVerification: true,
+        });
+      }
       const resolved = await resolveGuestUser(guestInfo, address.phone);
       if (resolved.error) return res.status(resolved.error.status).json({ success: false, message: resolved.error.message });
       newAccount = resolved.user;
       await db.put('users', newAccount);
       userId = newAccount.id;
+      if (effectivePaymentMethod === 'cod') consumePhoneVerification(address.phone);
     }
 
     const { orderItems, total, discount, couponCode: appliedCode, stockError } = await buildOrderItems(items, couponCode, address.country, userId);
@@ -85,7 +137,7 @@ router.post('/', optionalAuth, async (req, res, next) => {
       total,
       discount,
       couponCode: appliedCode,
-      paymentMethod: paymentMethod || 'cod',
+      paymentMethod: effectivePaymentMethod,
     });
 
     const response = { success: true, message: 'Order placed successfully.', order };

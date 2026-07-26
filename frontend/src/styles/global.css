@@ -1246,6 +1246,24 @@ input:focus-visible + .filter-radio { outline: 2px solid var(--gold-2); outline-
 .payment-option-body .muted { font-size: 0.8rem; }
 .empty-state .chakki-wheel { margin: 0 auto 20px; width: 70px; height: 70px; }
 
+/* ---------- Guest Cash-on-Delivery phone verification ---------- */
+.cod-verify {
+  margin-top: 14px;
+  padding: 14px;
+  border: 1.5px solid rgba(31,61,43,0.15);
+  border-radius: var(--radius-sm);
+  background: rgba(155, 232, 154, 0.06);
+}
+.cod-verify-done { margin-top: 14px; }
+.cod-verify-otp-row { display: flex; align-items: center; gap: 10px; }
+.cod-verify-otp-input {
+  width: 90px;
+  text-align: center;
+  font-size: 1.1rem;
+  font-family: var(--font-mono);
+  letter-spacing: 0.1em;
+}
+
 /* ---------- Steps / process ---------- */
 .process-steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 30px; }
 .process-step { text-align: left; }
