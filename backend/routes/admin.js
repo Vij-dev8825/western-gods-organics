@@ -13,10 +13,12 @@ const { processDueSubscriptions } = require('../utils/subscriptions');
 const { processAbandonedCarts } = require('../utils/abandonedCarts');
 const { PAGES: PAGE_BANNER_PAGES } = require('./pageBanners');
 const { sendMail } = require('../utils/mailer');
+const { sendWhatsApp } = require('../utils/whatsapp');
 const { getCountries, getFullLiveRates } = require('./currency');
 const { translateProductText } = require('../utils/translateProduct');
 
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || process.env.CONTACT_NOTIFY_EMAIL;
+const ADMIN_PHONE = process.env.ADMIN_PHONE;
 
 const router = express.Router();
 router.use(requireAdmin);
@@ -300,13 +302,15 @@ router.put('/products/:id', async (req, res, next) => {
       const before = existing.sizes.find((x) => x.label === s.label);
       return before && before.stock > LOW_STOCK_THRESHOLD && s.stock <= LOW_STOCK_THRESHOLD;
     });
-    if (newlyLowStock.length && ADMIN_EMAIL) {
+    if (newlyLowStock.length) {
       const lines = newlyLowStock.map((s) => `${s.label}: ${s.stock} unit(s) left`).join('\n');
-      await sendMail({
-        to: ADMIN_EMAIL,
-        subject: `Low stock: ${updated.name}`,
-        text: `${updated.name} just dropped to low stock:\n\n${lines}\n\nRestock soon to avoid running out.`,
-      }).catch(() => {});
+      const message = `${updated.name} just dropped to low stock:\n\n${lines}\n\nRestock soon to avoid running out.`;
+      if (ADMIN_EMAIL) {
+        await sendMail({ to: ADMIN_EMAIL, subject: `Low stock: ${updated.name}`, text: message }).catch(() => {});
+      }
+      if (ADMIN_PHONE) {
+        await sendWhatsApp(ADMIN_PHONE, `*Low stock: ${updated.name}*\n${message}`).catch(() => {});
+      }
     }
 
     res.json({ success: true, product: updated, notified });
