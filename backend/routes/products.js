@@ -2,6 +2,7 @@ const express = require('express');
 const { v4: uuid } = require('uuid');
 const db = require('../data/db');
 const { requireAuth } = require('../middleware/auth');
+const { imageUpload, storeUploadedFile } = require('../utils/imageUploadHandler');
 
 const router = express.Router();
 
@@ -126,8 +127,21 @@ router.get('/:id/reviews', async (req, res, next) => {
   }
 });
 
-// POST /api/products/:id/reviews  { rating, text? } — one review per customer per
-// product; re-submitting updates their existing review instead of duplicating it.
+// POST /api/products/reviews/photo — multipart 'file' → { url }, uploaded
+// ahead of the review itself so the submit form can send back plain URLs.
+router.post('/reviews/photo', requireAuth, imageUpload.single('file'), async (req, res, next) => {
+  try {
+    if (!req.file) return res.status(400).json({ success: false, message: 'An image file is required.' });
+    const url = await storeUploadedFile(req.file);
+    res.status(201).json({ success: true, url });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /api/products/:id/reviews  { rating, text?, images? } — one review per
+// customer per product; re-submitting updates their existing review instead
+// of duplicating it.
 router.post('/:id/reviews', requireAuth, async (req, res, next) => {
   try {
     const product = await db.get('products', req.params.id);
@@ -139,6 +153,9 @@ router.post('/:id/reviews', requireAuth, async (req, res, next) => {
       return res.status(400).json({ success: false, message: 'Rating must be between 1 and 5.' });
     }
     const text = (req.body.text || '').trim().slice(0, 1000);
+    const images = Array.isArray(req.body.images)
+      ? req.body.images.filter((u) => typeof u === 'string' && u.trim()).slice(0, 4)
+      : [];
 
     const reviews = await db.list('reviews');
     const existing = reviews.find((r) => r.productId === req.params.id && r.userId === req.user.id);
@@ -151,6 +168,7 @@ router.post('/:id/reviews', requireAuth, async (req, res, next) => {
       userName: author?.name || 'Customer',
       rating,
       text,
+      images,
       createdAt: existing?.createdAt || new Date().toISOString(),
     };
     await db.put('reviews', review);

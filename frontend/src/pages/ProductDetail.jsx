@@ -27,6 +27,7 @@ import { buildBreadcrumbSchema } from '../utils/breadcrumbSchema';
 const SUBSCRIPTION_DISCOUNT_PERCENT = 10;
 const MIN_FREQUENCY_DAYS = 7;
 const MAX_FREQUENCY_DAYS = 180;
+const MAX_REVIEW_PHOTOS = 4;
 const FREQUENCIES = [
   { days: 14, label: 'Every 2 weeks' },
   { days: 28, label: 'Every 4 weeks' },
@@ -116,7 +117,10 @@ export default function ProductDetail() {
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [myRating, setMyRating] = useState(0);
   const [myText, setMyText] = useState('');
+  const [myImages, setMyImages] = useState([]);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [submittingReview, setSubmittingReview] = useState(false);
+  const [reviewLightbox, setReviewLightbox] = useState(null); // { images, index } | null
   const [subFrequency, setSubFrequency] = useState(28);
   const [subCustom, setSubCustom] = useState(false);
   const [subCustomDays, setSubCustomDays] = useState('');
@@ -138,6 +142,7 @@ export default function ProductDetail() {
     setReviews([]);
     setMyRating(0);
     setMyText('');
+    setMyImages([]);
     api.getProduct(id).then((d) => {
       setProduct(d.product);
       setSize(d.product.sizes[1]?.label || d.product.sizes[0].label);
@@ -159,6 +164,7 @@ export default function ProductDetail() {
     if (mine) {
       setMyRating(mine.rating);
       setMyText(mine.text || '');
+      setMyImages(mine.images || []);
     }
   }, [reviews, user]);
 
@@ -283,7 +289,7 @@ export default function ProductDetail() {
     }
     setSubmittingReview(true);
     try {
-      await api.submitReview(token, product.id, { rating: myRating, text: myText });
+      await api.submitReview(token, product.id, { rating: myRating, text: myText, images: myImages });
       const d = await api.getReviews(id);
       setReviews(d.reviews);
       const p = await api.getProduct(id);
@@ -294,6 +300,31 @@ export default function ProductDetail() {
     } finally {
       setSubmittingReview(false);
     }
+  }
+
+  async function handlePhotoSelect(e) {
+    const file = e.target.files[0];
+    e.target.value = '';
+    if (!file) return;
+    if (myImages.length >= MAX_REVIEW_PHOTOS) {
+      showToast(`You can attach up to ${MAX_REVIEW_PHOTOS} photos.`, 'error');
+      return;
+    }
+    setUploadingPhoto(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const res = await api.uploadReviewPhoto(token, formData);
+      setMyImages((imgs) => [...imgs, res.url]);
+    } catch (err) {
+      showToast(err.message, 'error');
+    } finally {
+      setUploadingPhoto(false);
+    }
+  }
+
+  function removeMyImage(idx) {
+    setMyImages((imgs) => imgs.filter((_, i) => i !== idx));
   }
 
   return (
@@ -556,6 +587,33 @@ export default function ProductDetail() {
               onChange={(e) => setMyText(e.target.value)}
               maxLength={1000}
             />
+            <div className="review-photo-attach">
+              {myImages.map((src, i) => (
+                <div key={src + i} className="review-photo-thumb">
+                  <img src={src} alt="" />
+                  <button
+                    type="button"
+                    className="review-photo-remove"
+                    onClick={() => removeMyImage(i)}
+                    aria-label="Remove photo"
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+              {myImages.length < MAX_REVIEW_PHOTOS && (
+                <label className={`review-photo-add ${uploadingPhoto ? 'disabled' : ''}`}>
+                  {uploadingPhoto ? '…' : '+ Photo'}
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    onChange={handlePhotoSelect}
+                    disabled={uploadingPhoto}
+                    hidden
+                  />
+                </label>
+              )}
+            </div>
             <button className="btn btn-gold btn-sm" disabled={submittingReview}>
               {submittingReview ? 'Saving…' : 'Submit review'}
             </button>
@@ -580,6 +638,20 @@ export default function ProductDetail() {
                   </span>
                 </div>
                 {r.text && <p>{r.text}</p>}
+                {r.images?.length > 0 && (
+                  <div className="review-item-photos">
+                    {r.images.map((src, i) => (
+                      <button
+                        key={src + i}
+                        type="button"
+                        className="review-item-photo-btn"
+                        onClick={() => setReviewLightbox({ images: r.images, index: i })}
+                      >
+                        <img src={src} alt="" />
+                      </button>
+                    ))}
+                  </div>
+                )}
                 <span className="review-item-date muted">
                   {new Date(r.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
                 </span>
@@ -588,6 +660,15 @@ export default function ProductDetail() {
           </ul>
         )}
       </div>
+
+      {reviewLightbox && (
+        <ImageLightbox
+          images={reviewLightbox.images}
+          index={reviewLightbox.index}
+          onIndexChange={(i) => setReviewLightbox((s) => ({ ...s, index: i }))}
+          onClose={() => setReviewLightbox(null)}
+        />
+      )}
 
       {/* ---------- Related products ---------- */}
       {related.length > 0 && (

@@ -16,6 +16,7 @@ const { sendMail } = require('../utils/mailer');
 const { sendWhatsApp } = require('../utils/whatsapp');
 const { getCountries, getFullLiveRates } = require('./currency');
 const { translateProductText } = require('../utils/translateProduct');
+const { imageUpload, storeUploadedFile } = require('../utils/imageUploadHandler');
 
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || process.env.CONTACT_NOTIFY_EMAIL;
 const ADMIN_PHONE = process.env.ADMIN_PHONE;
@@ -103,28 +104,11 @@ router.get('/stats', async (req, res, next) => {
 
 // POST /api/admin/upload-image — multipart 'file' → { url } for use as a
 // product/category image (banners have their own dedicated upload below).
-const imageUpload = multer({
-  storage,
-  limits: { fileSize: 10 * 1024 * 1024 }, // 10 MB
-  fileFilter: (req, file, cb) => {
-    const ok = /\.(jpe?g|png|webp)$/i.test(file.originalname);
-    cb(ok ? null : new Error('Only jpg/png/webp image files are allowed.'), ok);
-  },
-});
-
+// Shared with the customer-facing review-photo upload in routes/products.js.
 router.post('/upload-image', imageUpload.single('file'), async (req, res, next) => {
   try {
     if (!req.file) return res.status(400).json({ success: false, message: 'An image file is required.' });
-    if (cloudinary.isConfigured()) {
-      const { url } = await cloudinary.uploadFile(req.file.path, { resourceType: 'image' });
-      fs.unlink(req.file.path, () => {});
-      return res.status(201).json({ success: true, url });
-    }
-    // No Cloudinary configured — compress and store in the database instead
-    // of local disk, which Render's free plan wipes on every redeploy.
-    const buffer = fs.readFileSync(req.file.path);
-    const url = await compressAndStore(buffer);
-    fs.unlink(req.file.path, () => {});
+    const url = await storeUploadedFile(req.file);
     res.status(201).json({ success: true, url });
   } catch (err) {
     next(err);
