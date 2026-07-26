@@ -3201,7 +3201,7 @@ input:focus-visible + .filter-radio { outline: 2px solid var(--gold-2); outline-
 /* Keep other fixed-to-the-bottom controls from sitting on top of the cookie
    bar's buttons — --cookie-bar-height is set live by CookieConsent.jsx. */
 body.has-cookie-bar .chat-fab { bottom: calc(var(--cookie-bar-height, 0px) + 16px); }
-body.has-cookie-bar .push-optin { bottom: calc(var(--cookie-bar-height, 0px) + 16px); }
+body.has-cookie-bar .push-optin { bottom: calc(var(--cookie-bar-height, 0px) + 82px); }
 body.has-cookie-bar .whatsapp-fab { bottom: calc(var(--cookie-bar-height, 0px) + 16px); }
 body.has-cookie-bar .ai-assistant-fab { bottom: calc(var(--cookie-bar-height, 0px) + 82px); }
 body.has-cookie-bar .back-to-top { bottom: calc(var(--cookie-bar-height, 0px) + 148px); }
@@ -3209,7 +3209,9 @@ body.has-cookie-bar .back-to-top { bottom: calc(var(--cookie-bar-height, 0px) + 
 .push-optin {
   position: fixed;
   left: 20px;
-  bottom: 24px;
+  /* Stacked above whatsapp-fab (24px + 56px + 10px gap) so the WhatsApp
+     button doesn't sit on top of the Enable/Not now buttons. */
+  bottom: 90px;
   z-index: 170;
   max-width: 300px;
   background: var(--paper);
