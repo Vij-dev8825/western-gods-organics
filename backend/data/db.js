@@ -82,11 +82,20 @@ async function init() {
   const url = process.env.DATABASE_URL;
   if (url && /^mysql:\/\//i.test(url)) {
     const mysql = require('mysql2/promise');
-    pool = mysql.createPool({
-      uri: url,
-      connectionLimit: 5,
-      ssl: /localhost|127\.0\.0\.1/.test(url) ? undefined : { rejectUnauthorized: false },
-    });
+    // Shared hosting (e.g. MilesWeb) commonly disables TCP for MySQL entirely —
+    // only a local Unix socket connection is accepted, even from 127.0.0.1.
+    if (/localhost|127\.0\.0\.1/.test(url)) {
+      const parsed = new URL(url);
+      pool = mysql.createPool({
+        socketPath: '/run/mysqld/mysqld.sock',
+        user: decodeURIComponent(parsed.username),
+        password: decodeURIComponent(parsed.password),
+        database: parsed.pathname.replace(/^\//, ''),
+        connectionLimit: 5,
+      });
+    } else {
+      pool = mysql.createPool({ uri: url, connectionLimit: 5, ssl: { rejectUnauthorized: false } });
+    }
     for (const col of COLLECTIONS) {
       await pool.query(
         `CREATE TABLE IF NOT EXISTS ${tableName(col)} (
