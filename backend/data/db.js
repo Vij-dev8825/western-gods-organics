@@ -1,11 +1,13 @@
 /**
- * Data layer with two interchangeable backends:
- *  - Postgres (Neon) when DATABASE_URL is set  → each collection is a table
- *    (id TEXT PRIMARY KEY, data JSONB, created_at) so the app needs zero SQL
- *    knowledge elsewhere and can move to a fully relational schema later.
+ * Data layer with three interchangeable backends:
+ *  - Postgres (Neon) when DATABASE_URL starts with postgres:// or postgresql://
+ *    → each collection is a table (id TEXT PRIMARY KEY, data JSONB, created_at).
+ *  - MySQL when DATABASE_URL starts with mysql:// → same shape, adapted to
+ *    MySQL syntax (id VARCHAR(255), data JSON, created_at TIMESTAMP).
  *  - JSON files in ./data when DATABASE_URL is absent → zero-setup local dev.
  *
- * Every function is async so routes are identical in both modes.
+ * All three keep the app itself free of any SQL/schema knowledge, and every
+ * function is async so routes are identical across modes.
  */
 const fs = require('fs');
 const path = require('path');
@@ -77,9 +79,26 @@ function jsonWrite(col, rows) {
 /* ------------------------------- Public API ------------------------------- */
 
 async function init() {
-  if (process.env.DATABASE_URL) {
+  const url = process.env.DATABASE_URL;
+  if (url && /^mysql:\/\//i.test(url)) {
+    const mysql = require('mysql2/promise');
+    pool = mysql.createPool({
+      uri: url,
+      connectionLimit: 5,
+      ssl: /localhost|127\.0\.0\.1/.test(url) ? undefined : { rejectUnauthorized: false },
+    });
+    for (const col of COLLECTIONS) {
+      await pool.query(
+        `CREATE TABLE IF NOT EXISTS ${tableName(col)} (
+           id VARCHAR(255) PRIMARY KEY,
+           data JSON NOT NULL,
+           created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+         )`
+      );
+    }
+    mode = 'mysql';
+  } else if (url) {
     const { Pool } = require('pg');
-    const url = process.env.DATABASE_URL;
     pool = new Pool({
       connectionString: url,
       max: 5,
@@ -104,7 +123,19 @@ async function init() {
   return mode;
 }
 
+// MySQL's JSON columns come back already-parsed via mysql2 in some configs
+// and as raw strings in others — handle both rather than assume one.
+function parseMysqlJson(value) {
+  return typeof value === 'string' ? JSON.parse(value) : value;
+}
+
 async function list(col) {
+  if (mode === 'mysql') {
+    const [rows] = await pool.query(
+      `SELECT data FROM ${tableName(col)} ORDER BY created_at ASC`
+    );
+    return rows.map((r) => parseMysqlJson(r.data));
+  }
   if (mode === 'postgres') {
     const { rows } = await pool.query(
       `SELECT data FROM ${tableName(col)} ORDER BY created_at ASC`
@@ -115,6 +146,10 @@ async function list(col) {
 }
 
 async function get(col, id) {
+  if (mode === 'mysql') {
+    const [rows] = await pool.query(`SELECT data FROM ${tableName(col)} WHERE id = ?`, [id]);
+    return rows[0] ? parseMysqlJson(rows[0].data) : null;
+  }
   if (mode === 'postgres') {
     const { rows } = await pool.query(`SELECT data FROM ${tableName(col)} WHERE id = $1`, [id]);
     return rows[0] ? rows[0].data : null;
@@ -125,6 +160,14 @@ async function get(col, id) {
 /** Upsert by obj.id (full replace of the document). */
 async function put(col, obj) {
   if (!obj || !obj.id) throw new Error(`db.put(${col}): object must have an id`);
+  if (mode === 'mysql') {
+    await pool.query(
+      `INSERT INTO ${tableName(col)} (id, data) VALUES (?, ?)
+       ON DUPLICATE KEY UPDATE data = VALUES(data)`,
+      [obj.id, JSON.stringify(obj)]
+    );
+    return obj;
+  }
   if (mode === 'postgres') {
     await pool.query(
       `INSERT INTO ${tableName(col)} (id, data) VALUES ($1, $2)
@@ -142,6 +185,10 @@ async function put(col, obj) {
 }
 
 async function remove(col, id) {
+  if (mode === 'mysql') {
+    await pool.query(`DELETE FROM ${tableName(col)} WHERE id = ?`, [id]);
+    return;
+  }
   if (mode === 'postgres') {
     await pool.query(`DELETE FROM ${tableName(col)} WHERE id = $1`, [id]);
     return;
@@ -150,6 +197,10 @@ async function remove(col, id) {
 }
 
 async function count(col) {
+  if (mode === 'mysql') {
+    const [rows] = await pool.query(`SELECT COUNT(*) AS n FROM ${tableName(col)}`);
+    return Number(rows[0].n);
+  }
   if (mode === 'postgres') {
     const { rows } = await pool.query(`SELECT COUNT(*)::int AS n FROM ${tableName(col)}`);
     return rows[0].n;
