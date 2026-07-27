@@ -11,6 +11,7 @@ import { getProductImage } from '../utils/productImages';
 import { getRecentlyViewedIds } from '../utils/recentlyViewed';
 import { useLang } from '../i18n';
 import { CANONICAL_ORIGIN } from '../utils/site';
+import skincareCertificate from '../assets/skincare-workshop-certificate.jpg';
 
 const USP_ICONS = ['🌾', '🪵', '🧪', '🚚'];
 
@@ -305,6 +306,28 @@ export default function Home() {
               <p className="muted">{t(`step${n}d`)}</p>
             </div>
           ))}
+        </div>
+      </section>
+
+      {/* ---------- Certification ---------- */}
+      <section className="section container center">
+        <span className="eyebrow">Certified &amp; trained</span>
+        <h2 style={{ marginBottom: 8 }}>Trained in organic skin &amp; hair care making</h2>
+        <p className="muted" style={{ maxWidth: 480, margin: '0 auto 24px' }}>
+          Our soaps are handcrafted by a team formally trained in organic skin and hair care product-making.
+        </p>
+        <div className="certificate-frame">
+          <img
+            src={skincareCertificate}
+            alt="Certificate of completion for the Basic Skin & Hair Care Products Making Workshop"
+            draggable={false}
+            onContextMenu={(e) => e.preventDefault()}
+          />
+          <div className="certificate-watermark" aria-hidden="true">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <span key={i}>Western Gods Organics</span>
+            ))}
+          </div>
         </div>
       </section>
 

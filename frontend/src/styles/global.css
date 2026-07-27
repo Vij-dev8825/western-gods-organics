@@ -2161,6 +2161,41 @@ input:focus-visible + .filter-radio { outline: 2px solid var(--gold-2); outline-
 }
 .testimonial figcaption { font-size: 0.85rem; color: var(--forest-light); }
 
+/* ---------- Certificate ---------- */
+.certificate-frame {
+  position: relative;
+  display: inline-block;
+  max-width: 560px;
+  width: 100%;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  box-shadow: var(--shadow-card);
+}
+.certificate-frame img {
+  display: block;
+  width: 100%;
+  height: auto;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+.certificate-watermark {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-content: space-around;
+  justify-content: space-around;
+  pointer-events: none;
+  overflow: hidden;
+}
+.certificate-watermark span {
+  transform: rotate(-28deg);
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: rgba(31, 61, 43, 0.14);
+  white-space: nowrap;
+}
+
 /* ---------- Google Reviews widget ---------- */
 .google-reviews-head {
   display: flex;
