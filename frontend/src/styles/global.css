@@ -225,11 +225,11 @@ p { margin: 0 0 1em; }
 .navbar-inner {
   max-width: var(--container);
   margin: 0 auto;
-  padding: 14px 24px;
+  padding: 14px 18px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 20px;
+  gap: 14px;
 }
 .navbar-inner > a {
   order: 1;
@@ -284,7 +284,7 @@ p { margin: 0 0 1em; }
   order: 3;
   display: flex;
   flex-shrink: 0;
-  gap: 28px;
+  gap: 18px;
   align-items: center;
 }
 .nav-links a {
@@ -385,12 +385,14 @@ p { margin: 0 0 1em; }
 .mobile-toggle:hover { background: var(--cream-deep); }
 
 /* The full desktop nav row (logo + search + 7 links + icons) needs ~1350px
-   of comfortable room; below that the search box gets squeezed down to
-   nothing before the row actually overflows. Switch to the compact
-   logo/icons-row + full-width-search + drawer-nav layout well before that
-   point, rather than at the much narrower 900px used for page content
-   layouts (hero/shop/cart) below. */
-@media (max-width: 1150px) {
+   of comfortable room — more once logged in, since the icon row grows by
+   two buttons (notifications + orders). Below that, .nav-links' flex-
+   shrink:0 forces .navbar-search (the only shrinkable item) down to a
+   sliver, and the search button can visually spill onto the first nav
+   link. Switch to the compact logo/icons-row + full-width-search +
+   drawer-nav layout at this width, rather than at the much narrower
+   900px used for page content layouts (hero/shop/cart) below. */
+@media (max-width: 1350px) {
   .navbar-inner {
     display: grid;
     grid-template-columns: auto 1fr auto;
