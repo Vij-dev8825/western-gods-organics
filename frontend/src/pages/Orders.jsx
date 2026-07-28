@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { useToast } from '../context/ToastContext';
 import { getProductImage } from '../utils/productImages';
+import { loadRazorpay } from '../utils/loadRazorpay';
 import ChakkiWheel from '../components/ChakkiWheel';
 import OrderTracker from '../components/OrderTracker';
 
@@ -46,6 +47,7 @@ export default function Orders() {
   const [orders, setOrders] = useState(null);
   const [products, setProducts] = useState([]);
   const [cancellingId, setCancellingId] = useState(null);
+  const [payingId, setPayingId] = useState(null);
   const [returnFormId, setReturnFormId] = useState(null);
   const [returnReason, setReturnReason] = useState(RETURN_REASONS[0].value);
   const [returnDescription, setReturnDescription] = useState('');
@@ -82,6 +84,47 @@ export default function Orders() {
       showToast(err.message, 'error');
     } finally {
       setCancellingId(null);
+    }
+  }
+
+  function canPayOnline(order) {
+    return order.paymentMethod !== 'razorpay' && order.paymentStatus !== 'paid' && CANCELLABLE_STATUSES.includes(order.status);
+  }
+
+  async function handlePayOnline(order) {
+    setPayingId(order.id);
+    try {
+      const rzpOrder = await api.createOrderPayment(token, order.id);
+      await loadRazorpay();
+      await new Promise((resolve, reject) => {
+        const rzp = new window.Razorpay({
+          key: rzpOrder.keyId,
+          amount: rzpOrder.amount,
+          currency: rzpOrder.currency,
+          order_id: rzpOrder.razorpayOrderId,
+          name: 'Western Gods Organics',
+          description: `Order #${order.orderNumber}`,
+          prefill: { contact: order.address.phone },
+          theme: { color: '#6fae4f' },
+          modal: { ondismiss: () => reject(new Error('Payment cancelled.')) },
+          handler: async (response) => {
+            try {
+              const { order: updated } = await api.verifyOrderPayment(token, order.id, response);
+              setOrders((os) => os.map((o) => (o.id === updated.id ? updated : o)));
+              showToast('Payment successful — this order is now marked as paid online.');
+              resolve();
+            } catch (err) {
+              reject(err);
+            }
+          },
+        });
+        rzp.on('payment.failed', () => reject(new Error('Payment failed. Please try again.')));
+        rzp.open();
+      });
+    } catch (err) {
+      showToast(err.message, 'error');
+    } finally {
+      setPayingId(null);
     }
   }
 
@@ -190,6 +233,15 @@ export default function Orders() {
                   <Link to={`/invoice/${o.id}`} className="btn btn-outline btn-sm">
                     Invoice
                   </Link>
+                  {canPayOnline(o) && (
+                    <button
+                      className="btn btn-gold btn-sm"
+                      disabled={payingId === o.id}
+                      onClick={() => handlePayOnline(o)}
+                    >
+                      {payingId === o.id ? 'Opening…' : 'Pay Online'}
+                    </button>
+                  )}
                   {CANCELLABLE_STATUSES.includes(o.status) && (
                     <button
                       className="btn btn-outline btn-danger btn-sm"

@@ -9,10 +9,8 @@ const { getPointsBalance, redeemPointsForOrder, REDEEM_VALUE_INR_PER_POINT } = r
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || process.env.CONTACT_NOTIFY_EMAIL;
 const REFERRAL_REWARD_INR = 100;
 
-function notifyAdminOfOrder(order, user) {
-  const itemLines = order.items.map((i) => `${i.quantity}× ${i.name} (${i.size}) — ₹${i.price}`).join('\n');
-  const paymentLine = order.paymentMethod === 'razorpay' ? 'Paid online (Razorpay)' : 'Cash on Delivery';
-  const placedAt = new Date(order.createdAt).toLocaleString('en-IN', {
+function formatIST(dateStringOrDate) {
+  return new Date(dateStringOrDate).toLocaleString('en-IN', {
     day: '2-digit',
     month: 'short',
     year: 'numeric',
@@ -20,6 +18,12 @@ function notifyAdminOfOrder(order, user) {
     minute: '2-digit',
     hour12: true,
   });
+}
+
+function notifyAdminOfOrder(order, user) {
+  const itemLines = order.items.map((i) => `${i.quantity}× ${i.name} (${i.size}) — ₹${i.price}`).join('\n');
+  const paymentLine = order.paymentMethod === 'razorpay' ? 'Paid online (Razorpay)' : 'Cash on Delivery';
+  const placedAt = formatIST(order.createdAt);
   const addressLine =
     `${order.address.line1}, ${order.address.city}, ${order.address.state} - ${order.address.pincode}` +
     `${order.address.country && order.address.country !== 'IN' ? ` (${order.address.country})` : ''}`;
@@ -51,6 +55,25 @@ function notifyAdminOfOrder(order, user) {
         `${user?.name || 'Unknown'} (${user?.phone || '—'})\n` +
         `${addressLine}`
     ).catch(() => {});
+  }
+}
+
+// A COD order the customer later chose to prepay online (see
+// POST /orders/:id/pay/verify) — a payment-method change on an existing
+// order, not a new one, so it gets its own shorter admin message.
+function notifyAdminOfPaymentSwitch(order, user) {
+  const paidAt = formatIST(new Date());
+  const message =
+    `*Order ${order.orderNumber} — switched to online payment*\n` +
+    `Paid online (Razorpay) at ${paidAt}\n` +
+    `Total: ₹${order.total}\n` +
+    `${user?.name || 'Unknown'} (${user?.phone || '—'})`;
+
+  if (ADMIN_EMAIL) {
+    sendMail({ to: ADMIN_EMAIL, subject: `Order ${order.orderNumber} — switched to online payment`, text: message }).catch(() => {});
+  }
+  if (process.env.ADMIN_PHONE) {
+    sendWhatsApp(process.env.ADMIN_PHONE, message).catch(() => {});
   }
 }
 
@@ -215,4 +238,4 @@ async function createOrderRecord({ userId, orderItems, address, total, discount,
   return order;
 }
 
-module.exports = { calculateShipping, buildOrderItems, createOrderRecord };
+module.exports = { calculateShipping, buildOrderItems, createOrderRecord, notifyAdminOfPaymentSwitch };

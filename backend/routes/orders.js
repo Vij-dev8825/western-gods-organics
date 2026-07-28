@@ -4,7 +4,7 @@ const db = require('../data/db');
 const { requireAuth, optionalAuth } = require('../middleware/auth');
 const { signToken } = require('./auth');
 const razorpay = require('../utils/razorpay');
-const { buildOrderItems, createOrderRecord } = require('../utils/orderBuilder');
+const { buildOrderItems, createOrderRecord, notifyAdminOfPaymentSwitch } = require('../utils/orderBuilder');
 const { notifyUser } = require('../utils/notify');
 const { otpStore } = require('../utils/otpStore');
 const { markPhoneVerified, isPhoneVerified, consumePhoneVerification } = require('../utils/phoneVerification');
@@ -316,6 +316,70 @@ router.patch('/:id/cancel', requireAuth, async (req, res, next) => {
         channels: { inapp: true, email: true, whatsapp: true },
       });
     }
+
+    res.json({ success: true, order });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /api/orders/:id/pay/create — customer decided to prepay online for an
+// order already placed as Cash on Delivery. Same amount as the order itself;
+// only allowed while it's still in a cancellable/pre-shipping state.
+router.post('/:id/pay/create', requireAuth, async (req, res, next) => {
+  try {
+    if (!razorpay.isConfigured()) {
+      return res.status(503).json({
+        success: false,
+        message: 'Online payment isn’t set up yet — please continue with Cash on Delivery.',
+      });
+    }
+    const order = await db.get('orders', req.params.id);
+    if (!order || order.userId !== req.user.id) {
+      return res.status(404).json({ success: false, message: 'Order not found.' });
+    }
+    if (order.paymentMethod === 'razorpay' || order.paymentStatus === 'paid') {
+      return res.status(400).json({ success: false, message: 'This order is already paid.' });
+    }
+    if (!CANCELLABLE_STATUSES.includes(order.status)) {
+      return res.status(400).json({
+        success: false,
+        message: `This order can no longer be switched to online payment (current status: ${order.status}).`,
+      });
+    }
+
+    const rzpOrder = await razorpay.createOrder(order.total, `yo_pay_${order.orderNumber}`);
+    res.json({
+      success: true,
+      razorpayOrderId: rzpOrder.id,
+      amount: rzpOrder.amount,
+      currency: rzpOrder.currency,
+      keyId: process.env.RAZORPAY_KEY_ID,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /api/orders/:id/pay/verify  { razorpay_order_id, razorpay_payment_id, razorpay_signature }
+router.post('/:id/pay/verify', requireAuth, async (req, res, next) => {
+  try {
+    const order = await db.get('orders', req.params.id);
+    if (!order || order.userId !== req.user.id) {
+      return res.status(404).json({ success: false, message: 'Order not found.' });
+    }
+    const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
+    if (!razorpay.verifySignature({ razorpay_order_id, razorpay_payment_id, razorpay_signature })) {
+      return res.status(400).json({ success: false, message: 'Payment verification failed. Please contact support before retrying.' });
+    }
+
+    order.paymentMethod = 'razorpay';
+    order.paymentStatus = 'paid';
+    order.payment = { razorpay_order_id, razorpay_payment_id };
+    await db.put('orders', order);
+
+    const user = await db.get('users', order.userId);
+    notifyAdminOfPaymentSwitch(order, user);
 
     res.json({ success: true, order });
   } catch (err) {

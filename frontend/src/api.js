@@ -89,6 +89,8 @@ export const api = {
   requestReturn: (token, id, payload) => request(`/orders/${id}/return`, { method: 'PATCH', body: payload, token }),
   createRazorpayOrder: (token, payload) => request('/orders/razorpay/create', { method: 'POST', body: payload, token }),
   verifyRazorpayPayment: (token, payload) => request('/orders/razorpay/verify', { method: 'POST', body: payload, token }),
+  createOrderPayment: (token, id) => request(`/orders/${id}/pay/create`, { method: 'POST', token }),
+  verifyOrderPayment: (token, id, payload) => request(`/orders/${id}/pay/verify`, { method: 'POST', body: payload, token }),
 
   // coupons
   validateCoupon: (token, payload) => request('/coupons/validate', { method: 'POST', body: payload, token }),
