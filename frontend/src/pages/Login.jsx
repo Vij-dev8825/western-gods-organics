@@ -21,7 +21,7 @@ export default function Login() {
   const [step, setStep] = useState('phone'); // 'phone' | 'otp'
   const [phoneCountry, setPhoneCountry] = useState(country.code);
   const [phone, setPhone] = useState('');
-  const [channel, setChannel] = useState('whatsapp'); // 'whatsapp' | 'sms' | 'email' — where the OTP is delivered
+  const [channel, setChannel] = useState('mobile'); // 'mobile' | 'email' — where the OTP is delivered
   const [email, setEmail] = useState('');
   const [otp, setOtp] = useState(['', '', '', '']);
   const [name, setName] = useState('');
@@ -202,12 +202,12 @@ export default function Login() {
               <label>Send my code via</label>
               <div className="flex gap-2">
                 <label
-                  className={`payment-option ${channel === 'whatsapp' ? 'active' : ''}`}
+                  className={`payment-option ${channel === 'mobile' ? 'active' : ''}`}
                   style={{ flex: 1, justifyContent: 'center' }}
-                  onClick={() => setChannel('whatsapp')}
+                  onClick={() => setChannel('mobile')}
                 >
-                  <input type="radio" name="otp-channel" readOnly checked={channel === 'whatsapp'} />
-                  WhatsApp
+                  <input type="radio" name="otp-channel" readOnly checked={channel === 'mobile'} />
+                  Mobile (SMS)
                 </label>
                 <label
                   className={`payment-option ${channel === 'email' ? 'active' : ''}`}

@@ -105,15 +105,17 @@ router.post('/send-otp', async (req, res, next) => {
         text: `${otpMessage} It expires in ${Math.round(OTP_EXPIRY_MS / 60000)} minutes.`,
       });
     } else {
-      // Default: WhatsApp first — India's SMS DLT registration requirement
-      // doesn't apply to WhatsApp Business messages, and this reuses the
-      // same Twilio WhatsApp sender already configured for order-update
-      // notifications. Only falls back to the SMS provider chain (which
-      // does need DLT for real delivery) if the WhatsApp send actually
-      // errors, not just when it's unconfigured.
-      const waResult = await sendWhatsApp(phone, otpMessage);
-      if (!waResult.sent) {
-        await sendOtpSms(phone, otp);
+      // Default: SMS first, via Fast2SMS's dedicated OTP route — this
+      // delivers to any real Indian number with no setup on the customer's
+      // end. Twilio's WhatsApp integration is still on the free Sandbox
+      // tier, which only delivers to numbers that have manually joined it,
+      // so it's only tried as a secondary attempt (Twilio reports the
+      // sandbox send as "successful" even when the recipient never
+      // actually receives it, so it can't be trusted as the primary path
+      // until a real WhatsApp Business sender is approved).
+      const smsResult = await sendOtpSms(phone, otp);
+      if (!smsResult.sent) {
+        await sendWhatsApp(phone, otpMessage);
       }
     }
 
