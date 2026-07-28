@@ -184,6 +184,9 @@ export const api = {
     getSubscriptions: (token) => request('/admin/subscriptions', { token }),
     runSubscriptions: (token) => request('/admin/subscriptions/run', { method: 'POST', token }),
 
+    getWhatsAppStatus: (token) => request('/admin/whatsapp', { token }),
+    resetWhatsApp: (token) => request('/admin/whatsapp/reset', { method: 'POST', token }),
+
     getCustomers: (token) => request('/admin/customers', { token }),
     getEnquiries: (token) => request('/admin/enquiries', { token }),
     updateEnquiry: (token, id, status) =>

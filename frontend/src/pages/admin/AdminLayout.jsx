@@ -22,6 +22,7 @@ const links = [
   { to: '/admin/returns', label: 'Returns' },
   { to: '/admin/leads', label: 'Enquiries & Leads' },
   { to: '/admin/notify', label: 'Notifications' },
+  { to: '/admin/whatsapp', label: 'WhatsApp' },
   { to: '/admin/chat', label: 'Chat' },
 ];
 

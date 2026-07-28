@@ -25,6 +25,7 @@ const subscriptionRoutes = require('./routes/subscriptions');
 const loyaltyRoutes = require('./routes/loyalty');
 const { processDueSubscriptions } = require('./utils/subscriptions');
 const { processAbandonedCarts } = require('./utils/abandonedCarts');
+const whatsappBaileys = require('./utils/whatsappBaileys');
 const mediaRoutes = require('./routes/media');
 const catalogRoutes = require('./routes/catalog');
 const blogRoutes = require('./routes/blog');
@@ -119,6 +120,10 @@ const PORT = process.env.PORT || 5000;
     app.listen(PORT, () => {
       console.log(`Western Gods Organics API listening on http://localhost:${PORT} (db: ${mode})`);
     });
+
+    // Connects (or resumes) the linked-WhatsApp session in the background —
+    // never blocks server startup; see /api/admin/whatsapp for pairing status.
+    whatsappBaileys.init().catch((err) => console.error('[whatsapp] init failed:', err));
 
     // No worker/cron process on Render's free plan — piggyback on this
     // long-lived request process instead (kept alive by the external

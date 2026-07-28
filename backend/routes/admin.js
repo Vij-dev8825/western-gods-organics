@@ -18,6 +18,7 @@ const { getCountries, getFullLiveRates } = require('./currency');
 const { translateProductText } = require('../utils/translateProduct');
 const { imageUpload, storeUploadedFile } = require('../utils/imageUploadHandler');
 const { creditPointsForOrder } = require('../utils/loyalty');
+const whatsappBaileys = require('../utils/whatsappBaileys');
 
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || process.env.CONTACT_NOTIFY_EMAIL;
 const ADMIN_PHONE = process.env.ADMIN_PHONE;
@@ -1192,6 +1193,28 @@ router.post('/chat/:userId', async (req, res, next) => {
     };
     await db.put('chat-messages', message);
     res.status(201).json({ success: true, message });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/* -------------------------------- WhatsApp --------------------------------- */
+
+// GET /api/admin/whatsapp — connection state + QR code (as a data URL) when pairing is needed.
+router.get('/whatsapp', async (req, res, next) => {
+  try {
+    res.json({ success: true, ...whatsappBaileys.getStatus() });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /api/admin/whatsapp/reset — wipes the current session and generates a fresh QR,
+// for re-pairing to a different number.
+router.post('/whatsapp/reset', async (req, res, next) => {
+  try {
+    await whatsappBaileys.resetSession();
+    res.json({ success: true });
   } catch (err) {
     next(err);
   }

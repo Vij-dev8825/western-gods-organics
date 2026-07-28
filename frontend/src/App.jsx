@@ -47,6 +47,7 @@ import AdminProducts from './pages/admin/AdminProducts';
 import AdminCategories from './pages/admin/AdminCategories';
 import AdminCoupons from './pages/admin/AdminCoupons';
 import AdminSubscriptions from './pages/admin/AdminSubscriptions';
+import AdminWhatsApp from './pages/admin/AdminWhatsApp';
 import AdminBanners from './pages/admin/AdminBanners';
 import AdminOrders from './pages/admin/AdminOrders';
 import AdminReturns from './pages/admin/AdminReturns';
@@ -137,6 +138,7 @@ export default function App() {
         <Route path="categories" element={<AdminCategories />} />
         <Route path="coupons" element={<AdminCoupons />} />
         <Route path="subscriptions" element={<AdminSubscriptions />} />
+        <Route path="whatsapp" element={<AdminWhatsApp />} />
         <Route path="banners" element={<AdminBanners />} />
         <Route path="orders" element={<AdminOrders />} />
         <Route path="returns" element={<AdminReturns />} />
