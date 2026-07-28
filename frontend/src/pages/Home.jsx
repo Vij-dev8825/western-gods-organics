@@ -37,6 +37,10 @@ const ORGANIZATION_SCHEMA = {
     postalCode: '642126',
     addressCountry: 'IN',
   },
+  sameAs: [
+    'https://www.facebook.com/share/1T6wVtX3dC/',
+    'https://www.instagram.com/westerngodsorganic',
+  ],
 };
 
 const WEBSITE_SCHEMA = {

@@ -3,6 +3,10 @@ import { Link } from 'react-router-dom';
 import { useLang, LANGS } from '../i18n';
 import { useCurrency } from '../context/CurrencyContext';
 import { STORE_LOCATIONS, mapEmbedSrc, directionsUrl } from '../data/storeLocations';
+import { IconFacebook, IconInstagram, IconWhatsApp } from './Icons';
+
+const FACEBOOK_URL = 'https://www.facebook.com/share/1T6wVtX3dC/';
+const INSTAGRAM_URL = 'https://www.instagram.com/westerngodsorganic?igsh=cmZqcHhraGZhZTNk';
 
 const SUPPORT_PHONE = '+918825875607';
 const SUPPORT_EMAIL = 'westerngodsorganic@gmail.com';
@@ -55,10 +59,14 @@ export default function Footer() {
           </div>
           <p style={{ maxWidth: 420, fontSize: '0.9rem' }}>{t('footerTagline')}</p>
           <div className="social-row">
-            <a href="#" aria-label="Instagram">IG</a>
-            <a href="#" aria-label="Facebook">FB</a>
+            <a href={INSTAGRAM_URL} target="_blank" rel="noreferrer" aria-label="Instagram">
+              <IconInstagram />
+            </a>
+            <a href={FACEBOOK_URL} target="_blank" rel="noreferrer" aria-label="Facebook">
+              <IconFacebook />
+            </a>
             <a href={`https://wa.me/${SUPPORT_PHONE.replace('+', '')}`} target="_blank" rel="noreferrer" aria-label="WhatsApp">
-              WA
+              <IconWhatsApp size={18} />
             </a>
           </div>
         </div>
