@@ -59,14 +59,28 @@ export default function Footer() {
           </div>
           <p style={{ maxWidth: 420, fontSize: '0.9rem' }}>{t('footerTagline')}</p>
           <div className="social-row">
-            <a href={INSTAGRAM_URL} target="_blank" rel="noreferrer" aria-label="Instagram">
-              <IconInstagram />
+            <a
+              href={INSTAGRAM_URL}
+              target="_blank"
+              rel="noreferrer"
+              aria-label="Instagram"
+              className="social-badge"
+              style={{ background: 'linear-gradient(45deg, #FEDA75, #FA7E1E, #D62976, #962FBF, #4F5BD5)' }}
+            >
+              <IconInstagram color="#fff" />
             </a>
-            <a href={FACEBOOK_URL} target="_blank" rel="noreferrer" aria-label="Facebook">
-              <IconFacebook />
+            <a href={FACEBOOK_URL} target="_blank" rel="noreferrer" aria-label="Facebook" className="social-badge" style={{ background: '#1877F2' }}>
+              <IconFacebook color="#fff" />
             </a>
-            <a href={`https://wa.me/${SUPPORT_PHONE.replace('+', '')}`} target="_blank" rel="noreferrer" aria-label="WhatsApp">
-              <IconWhatsApp size={18} />
+            <a
+              href={`https://wa.me/${SUPPORT_PHONE.replace('+', '')}`}
+              target="_blank"
+              rel="noreferrer"
+              aria-label="WhatsApp"
+              className="social-badge"
+              style={{ background: '#25D366' }}
+            >
+              <IconWhatsApp size={18} color="#fff" />
             </a>
           </div>
         </div>

@@ -1306,6 +1306,8 @@ input:focus-visible + .filter-radio { outline: 2px solid var(--gold-2); outline-
   display: flex; align-items: center; justify-content: center;
 }
 .social-row a:hover { background-image: var(--gold-shine); color: var(--forest-deep); }
+.social-row a.social-badge:hover { background-image: none; transform: scale(1.08); }
+.social-row a.social-badge { transition: transform 0.15s ease; }
 
 .footer-brand-row { padding-bottom: 28px; }
 
