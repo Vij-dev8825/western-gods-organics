@@ -384,15 +384,19 @@ p { margin: 0 0 1em; }
 }
 .mobile-toggle:hover { background: var(--cream-deep); }
 
-/* The full desktop nav row (logo + search + 7 links + icons) needs ~1350px
-   of comfortable room — more once logged in, since the icon row grows by
-   two buttons (notifications + orders). Below that, .nav-links' flex-
-   shrink:0 forces .navbar-search (the only shrinkable item) down to a
-   sliver, and the search button can visually spill onto the first nav
-   link. Switch to the compact logo/icons-row + full-width-search +
-   drawer-nav layout at this width, rather than at the much narrower
-   900px used for page content layouts (hero/shop/cart) below. */
-@media (max-width: 1350px) {
+/* .navbar-inner is capped at var(--container) (1200px) same as page
+   content, so it never gets more room on a wider window past that point
+   — 1600px and 1300px give it the exact same usable width. That means
+   the right cutover is exactly the container width itself: below it,
+   available room shrinks with the viewport and .nav-links' flex-
+   shrink:0 would force .navbar-search (the only shrinkable item) down
+   to a sliver, the search button spilling onto the first nav link
+   (worse once logged in — two more icons compete for the same space).
+   At/above it, the row fits (verified: ~115px left for search even
+   logged in). Switch to the compact logo/icons-row + full-width-search
+   + drawer-nav layout below that, not at the much narrower 900px used
+   for page content layouts (hero/shop/cart) below. */
+@media (max-width: 1199px) {
   .navbar-inner {
     display: grid;
     grid-template-columns: auto 1fr auto;
