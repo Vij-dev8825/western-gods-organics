@@ -34,6 +34,7 @@ export default function Navbar() {
     { to: '/shop', label: t('navShop') },
     { to: '/categories', label: t('navCategories') },
     { to: '/combos', label: t('navCombos') },
+    { to: '/finder', label: t('navFinder') },
     { to: '/blog', label: t('navBlog') },
     { to: '/contact', label: t('navContact') },
   ];

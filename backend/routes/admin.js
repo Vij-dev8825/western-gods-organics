@@ -194,6 +194,13 @@ router.post('/products', async (req, res, next) => {
       comboItems: Array.isArray(req.body.comboItems) ? req.body.comboItems.filter(Boolean) : [],
       isNew: Boolean(req.body.isNew),
       countryPrices: normalizeCountryPrices(req.body.countryPrices),
+      batchNumber: req.body.batchNumber || '',
+      productionDate: req.body.productionDate || '',
+      bestBeforeDate: req.body.bestBeforeDate || '',
+      fssaiLicense: req.body.fssaiLicense || '',
+      inciIngredients: req.body.inciIngredients || '',
+      labReportUrl: req.body.labReportUrl || '',
+      marketPricePer100: req.body.marketPricePer100 ? Number(req.body.marketPricePer100) : null,
       createdAt: new Date().toISOString(),
     };
     await db.put('products', product);

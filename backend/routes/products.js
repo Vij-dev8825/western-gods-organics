@@ -102,6 +102,36 @@ router.get('/categories', async (req, res, next) => {
   }
 });
 
+// GET /api/products/batch/:batchNumber — public "batch passport" lookup,
+// meant to be reached via a QR code printed on the physical bottle/pack.
+// Only the current batch on file is shown — the product record holds the
+// latest batch info, not a history of past ones.
+router.get('/batch/:batchNumber', async (req, res, next) => {
+  try {
+    const products = await db.list('products');
+    const product = products.find((p) => p.batchNumber === req.params.batchNumber);
+    if (!product) {
+      return res.status(404).json({ success: false, message: 'No product found for this batch number.' });
+    }
+    res.json({
+      success: true,
+      batch: {
+        productId: product.id,
+        productName: product.name,
+        image: product.image,
+        batchNumber: product.batchNumber,
+        productionDate: product.productionDate || null,
+        bestBeforeDate: product.bestBeforeDate || null,
+        fssaiLicense: product.fssaiLicense || null,
+        labReportUrl: product.labReportUrl || null,
+        inciIngredients: product.inciIngredients || null,
+      },
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
 // GET /api/products/:id
 router.get('/:id', async (req, res, next) => {
   try {

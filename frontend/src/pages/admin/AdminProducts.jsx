@@ -22,6 +22,13 @@ const EMPTY = {
   comboItems: '',
   isNew: false,
   countryPrices: {},
+  batchNumber: '',
+  productionDate: '',
+  bestBeforeDate: '',
+  fssaiLicense: '',
+  inciIngredients: '',
+  labReportUrl: '',
+  marketPricePer100: '',
 };
 
 function toForm(p) {
@@ -33,6 +40,13 @@ function toForm(p) {
     countryPrices: p.countryPrices || {},
     shortDescriptions: p.shortDescriptions || {},
     descriptions: p.descriptions || {},
+    batchNumber: p.batchNumber || '',
+    productionDate: p.productionDate || '',
+    bestBeforeDate: p.bestBeforeDate || '',
+    fssaiLicense: p.fssaiLicense || '',
+    inciIngredients: p.inciIngredients || '',
+    labReportUrl: p.labReportUrl || '',
+    marketPricePer100: p.marketPricePer100 ?? '',
   };
 }
 
@@ -63,6 +77,7 @@ function fromForm(f) {
     tags: f.tags.split(',').map((t) => t.trim()).filter(Boolean),
     comboItems: f.comboItems.split(',').map((t) => t.trim()).filter(Boolean),
     countryPrices: normalizeCountryPrices(f.countryPrices),
+    marketPricePer100: f.marketPricePer100 ? Number(f.marketPricePer100) : null,
   };
 }
 
@@ -437,6 +452,72 @@ export default function AdminProducts() {
                 ))}
               </tbody>
             </table>
+          </div>
+
+          <label style={{ fontWeight: 600, fontSize: '0.85rem', display: 'block', marginTop: 20 }}>
+            Batch, compliance &amp; pricing info (optional — shown on the product page when filled in)
+          </label>
+          <div className="form-grid">
+            <div className="field">
+              <label>Batch number</label>
+              <input
+                placeholder="e.g. WG-0347"
+                value={form.batchNumber}
+                onChange={(e) => setForm({ ...form, batchNumber: e.target.value })}
+              />
+            </div>
+            <div className="field">
+              <label>Production date</label>
+              <input
+                type="date"
+                value={form.productionDate}
+                onChange={(e) => setForm({ ...form, productionDate: e.target.value })}
+              />
+            </div>
+            <div className="field">
+              <label>Best before</label>
+              <input
+                type="date"
+                value={form.bestBeforeDate}
+                onChange={(e) => setForm({ ...form, bestBeforeDate: e.target.value })}
+              />
+            </div>
+            <div className="field">
+              <label>FSSAI license number</label>
+              <input
+                placeholder="e.g. 12345678901234"
+                value={form.fssaiLicense}
+                onChange={(e) => setForm({ ...form, fssaiLicense: e.target.value })}
+              />
+            </div>
+            <div className="field">
+              <label>Lab report link (optional)</label>
+              <input
+                placeholder="https://…"
+                value={form.labReportUrl}
+                onChange={(e) => setForm({ ...form, labReportUrl: e.target.value })}
+              />
+            </div>
+            <div className="field">
+              <label>Typical supermarket price, per 100ml/100g (₹)</label>
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                placeholder="e.g. 45"
+                value={form.marketPricePer100}
+                onChange={(e) => setForm({ ...form, marketPricePer100: e.target.value })}
+              />
+            </div>
+          </div>
+          <div className="field">
+            <label>Ingredients (INCI) — mainly for soaps</label>
+            <textarea
+              rows={2}
+              placeholder="e.g. Saponified Coconut Oil, Saponified Palm Oil, Neem Oil, Tulsi Extract"
+              value={form.inciIngredients}
+              onChange={(e) => setForm({ ...form, inciIngredients: e.target.value })}
+            />
           </div>
 
           <label className="check-row">

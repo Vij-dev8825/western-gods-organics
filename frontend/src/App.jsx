@@ -29,6 +29,8 @@ import Profile from './pages/Profile';
 import Orders from './pages/Orders';
 import Subscriptions from './pages/Subscriptions';
 import Rewards from './pages/Rewards';
+import BatchPassport from './pages/BatchPassport';
+import Finder from './pages/Finder';
 import OrderSuccess from './pages/OrderSuccess';
 import Notifications from './pages/Notifications';
 import Invoice from './pages/Invoice';
@@ -162,6 +164,8 @@ export default function App() {
         <Route path="/blog" element={<Blog />} />
         <Route path="/blog/:slug" element={<BlogPost />} />
         <Route path="/product/:id" element={<ProductDetail />} />
+        <Route path="/batch/:batchNumber" element={<BatchPassport />} />
+        <Route path="/finder" element={<Finder />} />
         <Route path="/cart" element={<Cart />} />
         <Route path="/wishlist" element={<Wishlist />} />
         <Route path="/login" element={<Login />} />

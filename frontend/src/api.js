@@ -35,6 +35,7 @@ export const api = {
   },
   getCategories: () => request('/products/categories'),
   getProduct: (id) => request(`/products/${id}`),
+  getBatch: (batchNumber) => request(`/products/batch/${encodeURIComponent(batchNumber)}`),
   getReviews: (id) => request(`/products/${id}/reviews`),
   submitReview: (token, id, payload) => request(`/products/${id}/reviews`, { method: 'POST', body: payload, token }),
   uploadReviewPhoto: (token, formData) => request('/products/reviews/photo', { method: 'POST', formData, token }),

@@ -10,6 +10,7 @@ import { useCurrency } from '../context/CurrencyContext';
 import { recordProductView } from '../utils/recentlyViewed';
 import { validateAddress } from '../utils/validators';
 import { normalizeAddresses } from '../utils/addresses';
+import { pricePer100, parseSizeLabel } from '../utils/sizeParsing';
 import ChakkiWheel from '../components/ChakkiWheel';
 import ProductCard from '../components/ProductCard';
 import ImageLightbox from '../components/ImageLightbox';
@@ -195,6 +196,13 @@ export default function ProductDetail() {
   const activeSize = product.sizes.find((s) => s.label === size) || product.sizes[0];
   const discount = Math.round(((activeSize.mrp - activeSize.price) / activeSize.mrp) * 100);
   const outOfStock = activeSize.stock <= 0;
+  const ourPer100 = pricePer100(activeSize.price, activeSize.label);
+  const per100Unit = parseSizeLabel(activeSize.label)?.unit;
+  const marketPer100 = product.marketPricePer100 > 0 ? product.marketPricePer100 : null;
+  const hasBatchInfo = Boolean(
+    product.batchNumber || product.productionDate || product.bestBeforeDate ||
+    product.fssaiLicense || product.labReportUrl || product.inciIngredients
+  );
   const isWished = productIds.includes(product.id);
   const gallery = product.images?.length ? product.images : [product.image];
   const productSchema = buildProductSchema(product);
@@ -428,6 +436,12 @@ export default function ProductDetail() {
               Reference price — you'll be charged in ₹ (INR) at checkout.
             </p>
           )}
+          {!isForeign && ourPer100 != null && marketPer100 && (
+            <p className="muted" style={{ marginTop: -12, marginBottom: 18, fontSize: '0.82rem' }}>
+              You pay ₹{ourPer100.toFixed(0)} per 100{per100Unit} — typical supermarket refined
+              versions average ~₹{marketPer100.toFixed(0)}.
+            </p>
+          )}
 
           <div className="flex gap-1 product-actions-row" style={{ marginBottom: 22 }}>
             {!outOfStock && (
@@ -485,6 +499,31 @@ export default function ProductDetail() {
 
           <DeliveryEstimate />
           <TrustBadges />
+
+          {hasBatchInfo && (
+            <div className="batch-info-card">
+              <h4>Batch &amp; product info</h4>
+              <ul>
+                {product.batchNumber && (
+                  <li>
+                    <b>Batch:</b> {product.batchNumber}{' '}
+                    <Link to={`/batch/${encodeURIComponent(product.batchNumber)}`}>View batch details →</Link>
+                  </li>
+                )}
+                {product.productionDate && (
+                  <li><b>Made on:</b> {new Date(product.productionDate).toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' })}</li>
+                )}
+                {product.bestBeforeDate && (
+                  <li><b>Best before:</b> {new Date(product.bestBeforeDate).toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' })}</li>
+                )}
+                {product.fssaiLicense && <li><b>FSSAI license:</b> {product.fssaiLicense}</li>}
+                {product.labReportUrl && (
+                  <li><a href={product.labReportUrl} target="_blank" rel="noreferrer">View lab report →</a></li>
+                )}
+                {product.inciIngredients && <li><b>Ingredients:</b> {product.inciIngredients}</li>}
+              </ul>
+            </div>
+          )}
 
           <div className="subscribe-box">
             <span className="subscribe-badge">🔁 Subscribe &amp; Save {SUBSCRIPTION_DISCOUNT_PERCENT}%</span>

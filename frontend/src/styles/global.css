@@ -645,6 +645,43 @@ p { margin: 0 0 1em; }
 .combo-includes ul { list-style: disc; padding-left: 20px; margin: 8px 0 0; }
 .combo-includes li { font-size: 0.9rem; color: var(--forest-light); margin-bottom: 4px; }
 
+.batch-info-card {
+  background: var(--paper);
+  border: 1px solid rgba(31,61,43,0.08);
+  border-radius: var(--radius-md);
+  padding: 16px 20px;
+  margin-top: 16px;
+}
+.batch-info-card h4 { margin: 0 0 8px; font-size: 0.85rem; }
+.batch-info-card ul { list-style: none; margin: 0; padding: 0; }
+.batch-info-card li { font-size: 0.85rem; color: var(--forest-light); margin-bottom: 6px; }
+.batch-info-card li:last-child { margin-bottom: 0; }
+.batch-info-card a { color: var(--gold-1); }
+
+.finder-options {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-top: 8px;
+}
+.finder-option {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  background: var(--paper);
+  border: 1px solid rgba(31,61,43,0.08);
+  border-radius: var(--radius-md);
+  padding: 28px 16px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: var(--forest-deep);
+  box-shadow: var(--shadow-card);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.finder-option:hover { transform: translateY(-3px); box-shadow: var(--shadow-lift); }
+.finder-option-icon { font-size: 2rem; }
+
 .subscribe-box {
   background: var(--cream-deep);
   border-radius: var(--radius-md);
