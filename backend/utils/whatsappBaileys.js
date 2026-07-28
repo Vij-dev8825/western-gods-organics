@@ -92,7 +92,10 @@ async function resetSession() {
 
 async function sendWhatsAppMessage(phone, message) {
   if (!phone) return { sent: false, reason: 'no-phone' };
-  if (!sock || state !== 'open') return { sent: false, reason: 'not-connected' };
+  if (!sock || state !== 'open') {
+    console.log(`[whatsapp:not-connected] to=${phone} | ${message}`);
+    return { sent: false, reason: 'not-connected' };
+  }
   try {
     const digits = phone.startsWith('+') ? phone.slice(1) : `91${phone}`;
     await sock.sendMessage(`${digits}@s.whatsapp.net`, { text: message });

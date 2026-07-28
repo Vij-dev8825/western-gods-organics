@@ -3,26 +3,55 @@ const db = require('../data/db');
 const { notifyUser } = require('./notify');
 const { findValidCoupon, computeDiscount } = require('./coupons');
 const { sendMail } = require('./mailer');
+const { sendWhatsApp } = require('./whatsapp');
 const { getPointsBalance, redeemPointsForOrder, REDEEM_VALUE_INR_PER_POINT } = require('./loyalty');
 
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || process.env.CONTACT_NOTIFY_EMAIL;
 const REFERRAL_REWARD_INR = 100;
 
 function notifyAdminOfOrder(order, user) {
-  if (!ADMIN_EMAIL) return;
   const itemLines = order.items.map((i) => `${i.quantity}× ${i.name} (${i.size}) — ₹${i.price}`).join('\n');
-  sendMail({
-    to: ADMIN_EMAIL,
-    subject: `New order ${order.orderNumber} — ₹${order.total}`,
-    text:
-      `Customer: ${user?.name || 'Unknown'} (${user?.phone || '—'})\n` +
-      `Payment: ${order.paymentMethod}${order.paymentMethod === 'razorpay' ? ' (paid)' : ' (COD)'}\n\n` +
-      `Items:\n${itemLines}\n\n` +
-      `Total: ₹${order.total}\n\n` +
-      `Delivery address:\n${order.address.line1}, ${order.address.city}, ${order.address.state} - ${order.address.pincode}` +
-      `${order.address.country && order.address.country !== 'IN' ? ` (${order.address.country})` : ''}\n` +
-      `Phone: ${order.address.phone}`,
-  }).catch(() => {});
+  const paymentLine = order.paymentMethod === 'razorpay' ? 'Paid online (Razorpay)' : 'Cash on Delivery';
+  const placedAt = new Date(order.createdAt).toLocaleString('en-IN', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+  });
+  const addressLine =
+    `${order.address.line1}, ${order.address.city}, ${order.address.state} - ${order.address.pincode}` +
+    `${order.address.country && order.address.country !== 'IN' ? ` (${order.address.country})` : ''}`;
+
+  if (ADMIN_EMAIL) {
+    sendMail({
+      to: ADMIN_EMAIL,
+      subject: `New order ${order.orderNumber} — ₹${order.total}`,
+      text:
+        `Customer: ${user?.name || 'Unknown'} (${user?.phone || '—'})\n` +
+        `Payment: ${paymentLine}\n` +
+        `Placed: ${placedAt}\n\n` +
+        `Items:\n${itemLines}\n\n` +
+        `Total: ₹${order.total}\n\n` +
+        `Delivery address:\n${addressLine}\n` +
+        `Phone: ${order.address.phone}`,
+    }).catch(() => {});
+  }
+
+  // Admin's own WhatsApp (see utils/whatsappBaileys.js) — same number used to
+  // log into /admin, kept separate from the customer-facing order updates.
+  if (process.env.ADMIN_PHONE) {
+    sendWhatsApp(
+      process.env.ADMIN_PHONE,
+      `*New order ${order.orderNumber}* — ₹${order.total}\n` +
+        `${paymentLine}\n` +
+        `Placed: ${placedAt}\n\n` +
+        `${itemLines}\n\n` +
+        `${user?.name || 'Unknown'} (${user?.phone || '—'})\n` +
+        `${addressLine}`
+    ).catch(() => {});
+  }
 }
 
 const DOMESTIC_COUNTRY = 'IN';
