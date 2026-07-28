@@ -51,11 +51,18 @@ export default function Cart() {
   const [appliedCoupon, setAppliedCoupon] = useState(null); // { code, discount, subtotalAtApply }
   const [couponError, setCouponError] = useState('');
   const [applyingCoupon, setApplyingCoupon] = useState(false);
+  const [pointsBalance, setPointsBalance] = useState(0);
+  const [usePoints, setUsePoints] = useState(false);
 
   useEffect(() => {
     api.getProducts().then((d) => setProducts(d.products));
     api.getConfig().then((d) => setRazorpayEnabled(!!d.razorpayEnabled)).catch(() => {});
   }, []);
+
+  useEffect(() => {
+    if (!isLoggedIn) return;
+    api.getLoyalty(token).then((d) => setPointsBalance(d.balance)).catch(() => {});
+  }, [isLoggedIn, token]);
 
   // Prefill from the default saved address so returning customers don't have
   // to retype it every order. Addresses saved before this field existed
@@ -107,7 +114,8 @@ export default function Cart() {
   const shipping = getShippingFee(address.country, subtotal);
   const couponStale = appliedCoupon && appliedCoupon.subtotalAtApply !== subtotal;
   const discount = appliedCoupon && !couponStale ? appliedCoupon.discount : 0;
-  const total = subtotal + shipping - discount;
+  const pointsToRedeem = usePoints ? Math.min(pointsBalance, Math.max(0, subtotal + shipping - discount)) : 0;
+  const total = subtotal + shipping - discount - pointsToRedeem;
   const minOrderCheck = checkMinOrder(subtotal);
   const hasOutOfStock = lines.some((l) => l.sizeInfo.stock <= 0);
   // Guests placing a Cash-on-Delivery order must verify the delivery phone
@@ -184,7 +192,7 @@ export default function Cart() {
       if (paymentMethod === 'razorpay') {
         await payWithRazorpay(orderItems, couponCode, guestInfo);
       } else {
-        const data = await api.placeOrder(token, { items: orderItems, address, paymentMethod: 'cod', couponCode, guestInfo });
+        const data = await api.placeOrder(token, { items: orderItems, address, paymentMethod: 'cod', couponCode, pointsToRedeem, guestInfo });
         finishOrder(data, address);
       }
     } catch (err) {
@@ -220,7 +228,7 @@ export default function Cart() {
   }
 
   async function payWithRazorpay(orderItems, couponCode, guestInfo) {
-    const rzpOrder = await api.createRazorpayOrder(token, { items: orderItems, couponCode, address, guestInfo });
+    const rzpOrder = await api.createRazorpayOrder(token, { items: orderItems, couponCode, pointsToRedeem, address, guestInfo });
     await loadRazorpay();
 
     return new Promise((resolve, reject) => {
@@ -244,7 +252,7 @@ export default function Cart() {
         },
         handler: async (response) => {
           try {
-            const data = await api.verifyRazorpayPayment(token, { items: orderItems, address, couponCode, guestInfo, ...response });
+            const data = await api.verifyRazorpayPayment(token, { items: orderItems, address, couponCode, pointsToRedeem, guestInfo, ...response });
             finishOrder(data, address);
             resolve();
           } catch (err) {
@@ -354,6 +362,11 @@ export default function Cart() {
               <span>Coupon ({appliedCoupon.code})</span><span>−₹{discount}</span>
             </div>
           )}
+          {pointsToRedeem > 0 && (
+            <div className="summary-row" style={{ color: '#1e6b34' }}>
+              <span>Reward points</span><span>−₹{pointsToRedeem}</span>
+            </div>
+          )}
           <div className="summary-row total"><span>Total</span><span>₹{total}</span></div>
 
           <div className="coupon-field">
@@ -387,6 +400,18 @@ export default function Cart() {
               </>
             )}
           </div>
+
+          {isLoggedIn && pointsBalance > 0 && (
+            <div className="coupon-field">
+              <label className="flex gap-2" style={{ alignItems: 'center', cursor: 'pointer' }}>
+                <input type="checkbox" checked={usePoints} onChange={(e) => setUsePoints(e.target.checked)} />
+                <span>
+                  Use your {pointsBalance} reward points
+                  {usePoints ? ` (₹${pointsToRedeem} off)` : ` (worth ₹${pointsBalance})`}
+                </span>
+              </label>
+            </div>
+          )}
 
           {!showAddressForm ? (
             <div className="cart-cta-bar">

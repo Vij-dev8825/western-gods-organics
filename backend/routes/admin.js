@@ -17,6 +17,7 @@ const { sendWhatsApp } = require('../utils/whatsapp');
 const { getCountries, getFullLiveRates } = require('./currency');
 const { translateProductText } = require('../utils/translateProduct');
 const { imageUpload, storeUploadedFile } = require('../utils/imageUploadHandler');
+const { creditPointsForOrder } = require('../utils/loyalty');
 
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || process.env.CONTACT_NOTIFY_EMAIL;
 const ADMIN_PHONE = process.env.ADMIN_PHONE;
@@ -768,10 +769,14 @@ router.patch('/orders/:id', async (req, res, next) => {
       return res.status(400).json({ success: false, message: `Status must be one of: ${allowed.join(', ')}` });
     }
     order.status = req.body.status;
-    if (order.status === 'delivered' && !order.deliveredAt) {
+    const justDelivered = order.status === 'delivered' && !order.deliveredAt;
+    if (justDelivered) {
       order.deliveredAt = new Date().toISOString();
     }
     await db.put('orders', order);
+    if (justDelivered) {
+      await creditPointsForOrder(order);
+    }
 
     const user = await db.get('users', order.userId);
     if (user) {

@@ -41,6 +41,7 @@ const COLLECTIONS = [
   'stock-notify',
   'homepage-reviews',
   'country-catalog',
+  'loyalty-ledger',
 ];
 
 let mode = 'json';

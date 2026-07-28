@@ -89,7 +89,7 @@ router.post('/verify-cod-phone', async (req, res, next) => {
 // address's phone number doubles as the guest's identity.
 router.post('/', optionalAuth, async (req, res, next) => {
   try {
-    const { items, address, paymentMethod, couponCode, guestInfo } = req.body;
+    const { items, address, paymentMethod, couponCode, pointsToRedeem, guestInfo } = req.body;
     const effectivePaymentMethod = paymentMethod || 'cod';
 
     if (!items || !items.length) {
@@ -128,7 +128,8 @@ router.post('/', optionalAuth, async (req, res, next) => {
       if (effectivePaymentMethod === 'cod') consumePhoneVerification(address.phone);
     }
 
-    const { orderItems, total, discount, couponCode: appliedCode, stockError } = await buildOrderItems(items, couponCode, address.country, userId);
+    const { orderItems, total, discount, couponCode: appliedCode, pointsRedeemed, stockError } =
+      await buildOrderItems(items, couponCode, address.country, userId, pointsToRedeem);
     if (stockError) return res.status(400).json({ success: false, message: stockError });
     const order = await createOrderRecord({
       userId,
@@ -137,6 +138,7 @@ router.post('/', optionalAuth, async (req, res, next) => {
       total,
       discount,
       couponCode: appliedCode,
+      pointsRedeemed,
       paymentMethod: effectivePaymentMethod,
     });
 
@@ -160,7 +162,7 @@ router.post('/razorpay/create', optionalAuth, async (req, res, next) => {
         message: 'Online payment isn’t set up yet — please choose Cash on Delivery instead.',
       });
     }
-    const { items, couponCode, address, guestInfo } = req.body;
+    const { items, couponCode, pointsToRedeem, address, guestInfo } = req.body;
     if (!items || !items.length) {
       return res.status(400).json({ success: false, message: 'Your cart is empty.' });
     }
@@ -182,7 +184,7 @@ router.post('/razorpay/create', optionalAuth, async (req, res, next) => {
       if (resolved.error) return res.status(resolved.error.status).json({ success: false, message: resolved.error.message });
     }
 
-    const { total, stockError } = await buildOrderItems(items, couponCode, address?.country, req.user?.id);
+    const { total, stockError } = await buildOrderItems(items, couponCode, address?.country, req.user?.id, pointsToRedeem);
     if (stockError) return res.status(400).json({ success: false, message: stockError });
     if (total <= 0) {
       return res.status(400).json({ success: false, message: 'Order total must be greater than zero.' });
@@ -204,7 +206,7 @@ router.post('/razorpay/create', optionalAuth, async (req, res, next) => {
 // { items, address, guestInfo?, razorpay_order_id, razorpay_payment_id, razorpay_signature }
 router.post('/razorpay/verify', optionalAuth, async (req, res, next) => {
   try {
-    const { items, address, couponCode, guestInfo, razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
+    const { items, address, couponCode, pointsToRedeem, guestInfo, razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
 
     if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
       return res.status(400).json({ success: false, message: 'Missing payment confirmation details.' });
@@ -236,7 +238,8 @@ router.post('/razorpay/verify', optionalAuth, async (req, res, next) => {
     // /razorpay/create check is the real gate; any oversell that still slips
     // through this narrow window is visible to the admin in Orders same as
     // a COD one and can be handled manually, same as any other refund case.
-    const { orderItems, total, discount, couponCode: appliedCode } = await buildOrderItems(items, couponCode, address.country, userId);
+    const { orderItems, total, discount, couponCode: appliedCode, pointsRedeemed } =
+      await buildOrderItems(items, couponCode, address.country, userId, pointsToRedeem);
     const order = await createOrderRecord({
       userId,
       orderItems,
@@ -244,6 +247,7 @@ router.post('/razorpay/verify', optionalAuth, async (req, res, next) => {
       total,
       discount,
       couponCode: appliedCode,
+      pointsRedeemed,
       paymentMethod: 'razorpay',
       payment: { razorpay_order_id, razorpay_payment_id },
     });

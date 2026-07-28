@@ -3,6 +3,7 @@ const db = require('../data/db');
 const { notifyUser } = require('./notify');
 const { findValidCoupon, computeDiscount } = require('./coupons');
 const { sendMail } = require('./mailer');
+const { getPointsBalance, redeemPointsForOrder, REDEEM_VALUE_INR_PER_POINT } = require('./loyalty');
 
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || process.env.CONTACT_NOTIFY_EMAIL;
 const REFERRAL_REWARD_INR = 100;
@@ -39,7 +40,7 @@ async function calculateShipping(subtotal, destCountry = DOMESTIC_COUNTRY) {
   return overrides?.shipping?.[destCountry] || DEFAULT_INTL_SHIPPING;
 }
 
-async function buildOrderItems(items, couponCode, destCountry, userId) {
+async function buildOrderItems(items, couponCode, destCountry, userId, pointsToRedeem = 0) {
   const products = await db.list('products');
   let subtotal = 0;
   let stockError = null;
@@ -66,13 +67,25 @@ async function buildOrderItems(items, couponCode, destCountry, userId) {
   const coupon = await findValidCoupon(couponCode, userId);
   const discount = computeDiscount(coupon, subtotal);
 
+  // Clamped against both the customer's real balance and the order's own
+  // value — never trust the requested amount, and never let points push
+  // the total below zero.
+  let pointsRedeemed = 0;
+  if (pointsToRedeem > 0 && userId) {
+    const balance = await getPointsBalance(userId);
+    const maxRedeemable = Math.max(0, subtotal + shipping - discount);
+    pointsRedeemed = Math.min(Math.floor(pointsToRedeem), balance, maxRedeemable);
+  }
+  const pointsDiscount = pointsRedeemed * REDEEM_VALUE_INR_PER_POINT;
+
   return {
     orderItems,
     subtotal,
     shipping,
     discount,
     couponCode: discount > 0 ? coupon.code : null,
-    total: subtotal + shipping - discount,
+    pointsRedeemed,
+    total: subtotal + shipping - discount - pointsDiscount,
     stockError,
   };
 }
@@ -107,7 +120,7 @@ async function issueReferralReward(referrerId, referredName) {
   });
 }
 
-async function createOrderRecord({ userId, orderItems, address, total, discount, couponCode, paymentMethod, payment, subscriptionId }) {
+async function createOrderRecord({ userId, orderItems, address, total, discount, couponCode, pointsRedeemed, paymentMethod, payment, subscriptionId }) {
   // Computed before this order is persisted, so it only reflects orders that
   // already existed — used below to detect a customer's genuine first order,
   // whether that's a manual checkout or their first subscription renewal.
@@ -124,6 +137,7 @@ async function createOrderRecord({ userId, orderItems, address, total, discount,
     payment: payment || null,
     discount: discount || 0,
     couponCode: couponCode || null,
+    pointsRedeemed: pointsRedeemed || 0,
     subscriptionId: subscriptionId || null,
     total,
     status: 'placed',
@@ -133,6 +147,9 @@ async function createOrderRecord({ userId, orderItems, address, total, discount,
   if (!subscriptionId) {
     // Subscription-generated orders don't touch the customer's live cart.
     await db.put('carts', { id: userId, items: [] });
+  }
+  if (pointsRedeemed > 0) {
+    await redeemPointsForOrder(userId, order, pointsRedeemed);
   }
 
   // A personal single-use coupon (welcome/referral reward) is spent the

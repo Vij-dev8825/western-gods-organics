@@ -98,6 +98,9 @@ export const api = {
   createSubscription: (token, payload) => request('/subscriptions', { method: 'POST', body: payload, token }),
   updateSubscription: (token, id, patch) => request(`/subscriptions/${id}`, { method: 'PATCH', body: patch, token }),
 
+  // loyalty (reward points)
+  getLoyalty: (token) => request('/loyalty', { token }),
+
   // public config flags
   getConfig: () => request('/config'),
 

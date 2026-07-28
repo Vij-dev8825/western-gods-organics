@@ -28,6 +28,11 @@ export default function Profile() {
   const [addrErrors, setAddrErrors] = useState({});
   const [savingAddr, setSavingAddr] = useState(false);
 
+  const [pointsBalance, setPointsBalance] = useState(null);
+  useEffect(() => {
+    api.getLoyalty(token).then((d) => setPointsBalance(d.balance)).catch(() => setPointsBalance(0));
+  }, [token]);
+
   useEffect(() => {
     if (user) {
       setName(user.name || '');
@@ -191,6 +196,17 @@ export default function Profile() {
           <b>My Subscriptions</b>
           <span className="muted" style={{ display: 'block', fontSize: '0.82rem' }}>
             Manage auto-delivery — pause, resume, or cancel anytime
+          </span>
+        </span>
+        <span className="profile-orders-link-arrow">→</span>
+      </Link>
+
+      <Link to="/rewards" className="profile-orders-link">
+        <span className="profile-orders-link-icon" aria-hidden="true">⭐</span>
+        <span>
+          <b>My Rewards</b>
+          <span className="muted" style={{ display: 'block', fontSize: '0.82rem' }}>
+            {pointsBalance === null ? 'Loading…' : `${pointsBalance} points available — worth ₹${pointsBalance}`}
           </span>
         </span>
         <span className="profile-orders-link-arrow">→</span>

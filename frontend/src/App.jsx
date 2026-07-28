@@ -28,6 +28,7 @@ import Login from './pages/Login';
 import Profile from './pages/Profile';
 import Orders from './pages/Orders';
 import Subscriptions from './pages/Subscriptions';
+import Rewards from './pages/Rewards';
 import OrderSuccess from './pages/OrderSuccess';
 import Notifications from './pages/Notifications';
 import Invoice from './pages/Invoice';
@@ -183,6 +184,14 @@ export default function App() {
           element={
             <ProtectedRoute>
               <Subscriptions />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/rewards"
+          element={
+            <ProtectedRoute>
+              <Rewards />
             </ProtectedRoute>
           }
         />
