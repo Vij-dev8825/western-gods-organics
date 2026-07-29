@@ -5,6 +5,7 @@ import ProductCard from '../components/ProductCard';
 import SectionDivider from '../components/SectionDivider';
 import ChakkiWheel from '../components/ChakkiWheel';
 import GoogleReviewsWidget from '../components/GoogleReviewsWidget';
+import UgcGallery from '../components/UgcGallery';
 import StructuredData from '../components/StructuredData';
 import SeoMeta from '../components/SeoMeta';
 import { getProductImage } from '../utils/productImages';
@@ -359,6 +360,8 @@ export default function Home() {
       </section>
 
       <GoogleReviewsWidget />
+
+      <UgcGallery />
 
       {/* ---------- Bulk CTA ---------- */}
       <section className="section container center" style={{ paddingTop: 0 }}>

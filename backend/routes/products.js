@@ -132,6 +132,43 @@ router.get('/batch/:batchNumber', async (req, res, next) => {
   }
 });
 
+// GET /api/products/reviews/gallery?limit=24 — most recent review photos
+// across every product, newest first, for the UGC shoppable wall on
+// Home/ProductDetail. One entry per photo (a review with several photos
+// contributes several tiles), so the wall reads as a photo grid rather than
+// a review list.
+router.get('/reviews/gallery', async (req, res, next) => {
+  try {
+    const limit = Math.min(Number(req.query.limit) || 24, 60);
+    const [reviews, products] = await Promise.all([db.list('reviews'), db.list('products')]);
+    const withPhotos = reviews
+      .filter((r) => r.images && r.images.length)
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+
+    const gallery = [];
+    outer: for (const r of withPhotos) {
+      const product = products.find((p) => p.id === r.productId);
+      if (!product) continue;
+      for (const image of r.images) {
+        gallery.push({
+          image,
+          reviewId: r.id,
+          productId: product.id,
+          productName: product.name,
+          productImage: product.image,
+          userName: r.userName,
+          rating: r.rating,
+          text: r.text,
+        });
+        if (gallery.length >= limit) break outer;
+      }
+    }
+    res.json({ success: true, gallery });
+  } catch (err) {
+    next(err);
+  }
+});
+
 // GET /api/products/:id
 router.get('/:id', async (req, res, next) => {
   try {

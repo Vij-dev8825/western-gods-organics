@@ -2183,6 +2183,41 @@ input:focus-visible + .filter-radio { outline: 2px solid var(--gold-2); outline-
 }
 
 /* ---------- Testimonials ---------- */
+/* ---------- UGC shoppable photo wall (Home) ---------- */
+.ugc-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 12px;
+}
+.ugc-tile {
+  position: relative;
+  display: block;
+  aspect-ratio: 1 / 1;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: var(--paper);
+}
+.ugc-tile img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.35s ease; }
+.ugc-tile:hover img { transform: scale(1.06); }
+.ugc-tile-overlay {
+  position: absolute;
+  inset: auto 0 0 0;
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  background: linear-gradient(0deg, rgba(20,38,27,0.85) 0%, rgba(20,38,27,0) 100%);
+  color: #fff;
+}
+.ugc-tile-stars { color: var(--gold-2); font-size: 0.8rem; letter-spacing: 1px; }
+.ugc-tile-product {
+  font-size: 0.78rem;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .testimonial-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));

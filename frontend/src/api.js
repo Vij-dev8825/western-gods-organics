@@ -39,6 +39,7 @@ export const api = {
   getReviews: (id) => request(`/products/${id}/reviews`),
   submitReview: (token, id, payload) => request(`/products/${id}/reviews`, { method: 'POST', body: payload, token }),
   uploadReviewPhoto: (token, formData) => request('/products/reviews/photo', { method: 'POST', formData, token }),
+  getReviewGallery: (limit) => request(`/products/reviews/gallery${limit ? `?limit=${limit}` : ''}`),
 
   // banners (home page hero)
   getBanners: () => request('/banners'),
