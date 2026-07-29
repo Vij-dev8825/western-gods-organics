@@ -29,6 +29,8 @@ const SUBSCRIPTION_DISCOUNT_PERCENT = 10;
 const MIN_FREQUENCY_DAYS = 7;
 const MAX_FREQUENCY_DAYS = 180;
 const MAX_REVIEW_PHOTOS = 4;
+const LOW_STOCK_THRESHOLD = 10;
+const RECENT_ORDER_WINDOW_LABEL = '2 days'; // mirrors backend RECENT_ORDER_WINDOW_HOURS (48h)
 const FREQUENCIES = [
   { days: 14, label: 'Every 2 weeks' },
   { days: 28, label: 'Every 4 weeks' },
@@ -492,8 +494,16 @@ export default function ProductDetail() {
               )}
             </div>
           ) : (
-            <div className="alert alert-info">
-              In stock: {activeSize.stock} units · Delivered in {isForeign ? '10-20' : '3-5'} business days
+            <div className={`alert ${activeSize.stock <= LOW_STOCK_THRESHOLD ? 'alert-warning' : 'alert-info'}`}>
+              {activeSize.stock <= LOW_STOCK_THRESHOLD
+                ? `⚡ Only ${activeSize.stock} left in stock — order soon!`
+                : `In stock: ${activeSize.stock} units`}
+              {' '}· Delivered in {isForeign ? '10-20' : '3-5'} business days
+              {product.recentOrderCount > 0 && (
+                <div style={{ marginTop: 4, fontSize: '0.85rem' }}>
+                  🔥 {product.recentOrderCount} {product.recentOrderCount === 1 ? 'person' : 'people'} ordered this in the last {RECENT_ORDER_WINDOW_LABEL}
+                </div>
+              )}
             </div>
           )}
 

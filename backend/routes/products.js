@@ -169,6 +169,21 @@ router.get('/reviews/gallery', async (req, res, next) => {
   }
 });
 
+// Genuine (not fabricated) "recently ordered" count for PDP urgency copy —
+// distinct non-cancelled orders containing this product within the window,
+// not a per-line count, so a single bulk order can't inflate the number.
+const RECENT_ORDER_WINDOW_HOURS = 48;
+async function getRecentOrderCount(productId) {
+  const orders = await db.list('orders');
+  const cutoff = Date.now() - RECENT_ORDER_WINDOW_HOURS * 60 * 60 * 1000;
+  return orders.filter(
+    (o) =>
+      o.status !== 'cancelled' &&
+      new Date(o.createdAt).getTime() >= cutoff &&
+      o.items.some((it) => it.productId === productId)
+  ).length;
+}
+
 // GET /api/products/:id
 router.get('/:id', async (req, res, next) => {
   try {
@@ -176,6 +191,7 @@ router.get('/:id', async (req, res, next) => {
     if (!product) {
       return res.status(404).json({ success: false, message: 'Product not found.' });
     }
+    product.recentOrderCount = await getRecentOrderCount(product.id);
     res.json({ success: true, product });
   } catch (err) {
     next(err);
