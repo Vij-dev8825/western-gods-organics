@@ -30,12 +30,28 @@ const RETURN_STATUS_LABELS = {
   rejected: 'Return Rejected',
   refunded: 'Refunded',
 };
+const BOTTLE_RETURN_STATUS_LABELS = {
+  requested: 'Bottle Return Requested',
+  approved: 'Bottle Credit Issued',
+  rejected: 'Bottle Return Rejected',
+};
 
 function canRequestReturn(order) {
   if (order.status !== 'delivered' || order.returnRequest) return false;
   if (!order.deliveredAt) return true;
   const daysSinceDelivery = (Date.now() - new Date(order.deliveredAt).getTime()) / (1000 * 60 * 60 * 24);
   return daysSinceDelivery <= RETURN_WINDOW_DAYS;
+}
+
+// How many oil-bottle units this order could still have a return requested
+// for — only "oils" ship in the reusable glass bottles this program is for.
+function maxReturnableBottles(order, products) {
+  const oilProductIds = new Set(products.filter((p) => p.category === 'oils').map((p) => p.id));
+  return order.items.filter((it) => oilProductIds.has(it.productId)).reduce((sum, it) => sum + it.quantity, 0);
+}
+
+function canReturnBottle(order, products) {
+  return order.status === 'delivered' && !order.bottleReturn && maxReturnableBottles(order, products) > 0;
 }
 
 export default function Orders() {
@@ -52,6 +68,9 @@ export default function Orders() {
   const [returnReason, setReturnReason] = useState(RETURN_REASONS[0].value);
   const [returnDescription, setReturnDescription] = useState('');
   const [submittingReturn, setSubmittingReturn] = useState(false);
+  const [bottleFormId, setBottleFormId] = useState(null);
+  const [bottleQty, setBottleQty] = useState(1);
+  const [submittingBottle, setSubmittingBottle] = useState(false);
 
   useEffect(() => {
     api.getOrders(token).then((d) => setOrders(d.orders)).catch(() => setOrders([]));
@@ -152,6 +171,25 @@ export default function Orders() {
       showToast(err.message, 'error');
     } finally {
       setSubmittingReturn(false);
+    }
+  }
+
+  function openBottleForm(order) {
+    setBottleFormId(order.id);
+    setBottleQty(1);
+  }
+
+  async function handleSubmitBottleReturn(order) {
+    setSubmittingBottle(true);
+    try {
+      const { order: updated } = await api.requestBottleReturn(token, order.id, bottleQty);
+      setOrders((os) => os.map((o) => (o.id === updated.id ? updated : o)));
+      setBottleFormId(null);
+      showToast("Bottle return requested — we'll review it and send your refill credit shortly.");
+    } catch (err) {
+      showToast(err.message, 'error');
+    } finally {
+      setSubmittingBottle(false);
     }
   }
 
@@ -261,6 +299,16 @@ export default function Orders() {
                       {RETURN_STATUS_LABELS[o.returnRequest.status] || o.returnRequest.status}
                     </span>
                   )}
+                  {canReturnBottle(o, products) && bottleFormId !== o.id && (
+                    <button className="btn btn-outline btn-sm" onClick={() => openBottleForm(o)}>
+                      ♻️ Return bottle for credit
+                    </button>
+                  )}
+                  {o.bottleReturn && (
+                    <span className={`status-pill status-${o.bottleReturn.status}`}>
+                      {BOTTLE_RETURN_STATUS_LABELS[o.bottleReturn.status] || o.bottleReturn.status}
+                    </span>
+                  )}
                 </div>
 
                 {returnFormId === o.id && (
@@ -291,6 +339,39 @@ export default function Orders() {
                         {submittingReturn ? 'Submitting…' : 'Submit Request'}
                       </button>
                       <button className="btn btn-outline btn-sm" onClick={() => setReturnFormId(null)}>
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {bottleFormId === o.id && (
+                  <div className="return-request-form">
+                    <div className="field">
+                      <label>How many bottles are you returning?</label>
+                      <input
+                        type="number"
+                        className="input"
+                        min={1}
+                        max={maxReturnableBottles(o, products)}
+                        value={bottleQty}
+                        onChange={(e) =>
+                          setBottleQty(Math.min(Math.max(1, Number(e.target.value) || 1), maxReturnableBottles(o, products)))
+                        }
+                      />
+                      <span className="muted" style={{ fontSize: '0.8rem' }}>
+                        Up to {maxReturnableBottles(o, products)} eligible from this order · ₹20 credit per bottle
+                      </span>
+                    </div>
+                    <div className="flex gap-1">
+                      <button
+                        className="btn btn-gold btn-sm"
+                        disabled={submittingBottle}
+                        onClick={() => handleSubmitBottleReturn(o)}
+                      >
+                        {submittingBottle ? 'Submitting…' : 'Submit Request'}
+                      </button>
+                      <button className="btn btn-outline btn-sm" onClick={() => setBottleFormId(null)}>
                         Cancel
                       </button>
                     </div>

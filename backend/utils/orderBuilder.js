@@ -8,6 +8,7 @@ const { getPointsBalance, redeemPointsForOrder, getTierInfo, REDEEM_VALUE_INR_PE
 
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || process.env.CONTACT_NOTIFY_EMAIL;
 const REFERRAL_REWARD_INR = 100;
+const BOTTLE_RETURN_CREDIT_INR = 20;
 
 function formatIST(dateStringOrDate) {
   return new Date(dateStringOrDate).toLocaleString('en-IN', {
@@ -71,6 +72,22 @@ function notifyAdminOfPaymentSwitch(order, user) {
 
   if (ADMIN_EMAIL) {
     sendMail({ to: ADMIN_EMAIL, subject: `Order ${order.orderNumber} — switched to online payment`, text: message }).catch(() => {});
+  }
+  if (process.env.ADMIN_PHONE) {
+    sendWhatsApp(process.env.ADMIN_PHONE, message).catch(() => {});
+  }
+}
+
+// A customer asked to return empty bottle(s) from a delivered order — tells
+// the admin to expect them back physically; the credit itself is only
+// issued once the admin approves (see routes/admin.js PATCH .../bottle-return).
+function notifyAdminOfBottleReturn(order, user, quantity) {
+  const message =
+    `*Bottle return requested — order ${order.orderNumber}*\n` +
+    `${quantity} bottle(s) from ${user?.name || 'Unknown'} (${user?.phone || '—'})\n` +
+    `Review in Admin → Bottle Returns.`;
+  if (ADMIN_EMAIL) {
+    sendMail({ to: ADMIN_EMAIL, subject: `Bottle return requested — order ${order.orderNumber}`, text: message }).catch(() => {});
   }
   if (process.env.ADMIN_PHONE) {
     sendWhatsApp(process.env.ADMIN_PHONE, message).catch(() => {});
@@ -178,6 +195,37 @@ async function issueReferralReward(referrerId, referredName) {
   });
 }
 
+// Rewards a customer for returning an empty glass bottle for reuse — a flat
+// ₹20/bottle coupon, same shape/pattern as issueReferralReward above.
+async function issueBottleReturnCredit(userId, quantity) {
+  const user = await db.get('users', userId);
+  if (!user) return null;
+  const value = BOTTLE_RETURN_CREDIT_INR * quantity;
+  const coupon = {
+    id: uuid(),
+    code: `REFILL${uuid().replace(/-/g, '').slice(0, 6).toUpperCase()}`,
+    type: 'flat',
+    value,
+    minOrder: 0,
+    expiresAt: null,
+    active: true,
+    featured: false,
+    promoImage: '',
+    promoHeadline: '',
+    promoSubtext: '',
+    assignedToUserId: userId,
+    redeemed: false,
+    createdAt: new Date().toISOString(),
+  };
+  await db.put('coupons', coupon);
+  await notifyUser(user, {
+    title: `You earned a ₹${value} refill credit!`,
+    message: `Thanks for returning ${quantity} bottle(s) for reuse — use code ${coupon.code} for ₹${value} off your next order.`,
+    channels: { inapp: true, email: true, whatsapp: true },
+  });
+  return coupon;
+}
+
 async function createOrderRecord({ userId, orderItems, address, total, discount, couponCode, pointsRedeemed, paymentMethod, payment, subscriptionId }) {
   // Computed before this order is persisted, so it only reflects orders that
   // already existed — used below to detect a customer's genuine first order,
@@ -244,4 +292,11 @@ async function createOrderRecord({ userId, orderItems, address, total, discount,
   return order;
 }
 
-module.exports = { calculateShipping, buildOrderItems, createOrderRecord, notifyAdminOfPaymentSwitch };
+module.exports = {
+  calculateShipping,
+  buildOrderItems,
+  createOrderRecord,
+  notifyAdminOfPaymentSwitch,
+  issueBottleReturnCredit,
+  notifyAdminOfBottleReturn,
+};

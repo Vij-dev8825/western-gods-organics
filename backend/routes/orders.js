@@ -4,7 +4,7 @@ const db = require('../data/db');
 const { requireAuth, optionalAuth } = require('../middleware/auth');
 const { signToken } = require('./auth');
 const razorpay = require('../utils/razorpay');
-const { buildOrderItems, createOrderRecord, notifyAdminOfPaymentSwitch } = require('../utils/orderBuilder');
+const { buildOrderItems, createOrderRecord, notifyAdminOfPaymentSwitch, notifyAdminOfBottleReturn } = require('../utils/orderBuilder');
 const { notifyUser } = require('../utils/notify');
 const { otpStore } = require('../utils/otpStore');
 const { markPhoneVerified, isPhoneVerified, consumePhoneVerification } = require('../utils/phoneVerification');
@@ -438,6 +438,48 @@ router.patch('/:id/return', requireAuth, async (req, res, next) => {
         channels: { inapp: true, email: true, whatsapp: true },
       });
     }
+
+    res.json({ success: true, order });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /api/orders/:id/bottle-return  { quantity } — customer asks to send
+// back empty glass bottles from a delivered order for a refill credit;
+// admin approval (routes/admin.js) is what actually issues the coupon.
+router.post('/:id/bottle-return', requireAuth, async (req, res, next) => {
+  try {
+    const order = await db.get('orders', req.params.id);
+    if (!order || order.userId !== req.user.id) {
+      return res.status(404).json({ success: false, message: 'Order not found.' });
+    }
+    if (order.status !== 'delivered') {
+      return res.status(400).json({ success: false, message: 'Only delivered orders are eligible for a bottle return.' });
+    }
+    if (order.bottleReturn) {
+      return res.status(400).json({ success: false, message: 'A bottle return has already been requested for this order.' });
+    }
+
+    const products = await db.list('products');
+    const oilProductIds = new Set(products.filter((p) => p.category === 'oils').map((p) => p.id));
+    const maxBottles = order.items
+      .filter((it) => oilProductIds.has(it.productId))
+      .reduce((sum, it) => sum + it.quantity, 0);
+    if (maxBottles === 0) {
+      return res.status(400).json({ success: false, message: 'This order has no oil bottles eligible for return.' });
+    }
+
+    const quantity = Math.min(Math.max(1, Math.floor(Number(req.body.quantity)) || 0), maxBottles);
+    if (!quantity) {
+      return res.status(400).json({ success: false, message: 'Enter how many bottles you’re returning.' });
+    }
+
+    order.bottleReturn = { quantity, status: 'requested', createdAt: new Date().toISOString() };
+    await db.put('orders', order);
+
+    const user = await db.get('users', order.userId);
+    notifyAdminOfBottleReturn(order, user, quantity);
 
     res.json({ success: true, order });
   } catch (err) {

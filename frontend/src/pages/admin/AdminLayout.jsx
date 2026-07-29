@@ -20,6 +20,7 @@ const links = [
   { to: '/admin/blog', label: 'Blog' },
   { to: '/admin/orders', label: 'Orders' },
   { to: '/admin/returns', label: 'Returns' },
+  { to: '/admin/bottle-returns', label: 'Bottle Returns' },
   { to: '/admin/leads', label: 'Enquiries & Leads' },
   { to: '/admin/notify', label: 'Notifications' },
   { to: '/admin/whatsapp', label: 'WhatsApp' },

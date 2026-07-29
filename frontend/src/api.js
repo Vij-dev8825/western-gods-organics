@@ -88,6 +88,7 @@ export const api = {
   getOrder: (token, id) => request(`/orders/${id}`, { token }),
   cancelOrder: (token, id) => request(`/orders/${id}/cancel`, { method: 'PATCH', token }),
   requestReturn: (token, id, payload) => request(`/orders/${id}/return`, { method: 'PATCH', body: payload, token }),
+  requestBottleReturn: (token, id, quantity) => request(`/orders/${id}/bottle-return`, { method: 'POST', body: { quantity }, token }),
   createRazorpayOrder: (token, payload) => request('/orders/razorpay/create', { method: 'POST', body: payload, token }),
   verifyRazorpayPayment: (token, payload) => request('/orders/razorpay/verify', { method: 'POST', body: payload, token }),
   createOrderPayment: (token, id) => request(`/orders/${id}/pay/create`, { method: 'POST', token }),
@@ -156,6 +157,8 @@ export const api = {
       request(`/admin/orders/${id}`, { method: 'PATCH', body: { status }, token }),
     updateReturnStatus: (token, id, status) =>
       request(`/admin/orders/${id}/return`, { method: 'PATCH', body: { status }, token }),
+    updateBottleReturnStatus: (token, id, status) =>
+      request(`/admin/orders/${id}/bottle-return`, { method: 'PATCH', body: { status }, token }),
 
     getBlogPosts: (token) => request('/admin/blog', { token }),
     createBlogPost: (token, post) => request('/admin/blog', { method: 'POST', body: post, token }),

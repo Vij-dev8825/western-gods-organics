@@ -18,6 +18,7 @@ const { getCountries, getFullLiveRates } = require('./currency');
 const { translateProductText } = require('../utils/translateProduct');
 const { imageUpload, storeUploadedFile } = require('../utils/imageUploadHandler');
 const { creditPointsForOrder } = require('../utils/loyalty');
+const { issueBottleReturnCredit } = require('../utils/orderBuilder');
 const whatsappBaileys = require('../utils/whatsappBaileys');
 
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || process.env.CONTACT_NOTIFY_EMAIL;
@@ -841,6 +842,46 @@ router.patch('/orders/:id/return', async (req, res, next) => {
     }
 
     res.json({ success: true, order });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// PATCH /api/admin/orders/:id/bottle-return  { status } — approve/reject a
+// customer's empty-bottle return; approving issues the refill credit coupon.
+const BOTTLE_RETURN_STATUSES = ['requested', 'approved', 'rejected'];
+router.patch('/orders/:id/bottle-return', async (req, res, next) => {
+  try {
+    const order = await db.get('orders', req.params.id);
+    if (!order || !order.bottleReturn) {
+      return res.status(404).json({ success: false, message: 'No bottle return request found for this order.' });
+    }
+    if (!BOTTLE_RETURN_STATUSES.includes(req.body.status)) {
+      return res.status(400).json({ success: false, message: `Status must be one of: ${BOTTLE_RETURN_STATUSES.join(', ')}` });
+    }
+
+    const alreadyApproved = order.bottleReturn.status === 'approved';
+    order.bottleReturn.status = req.body.status;
+    order.bottleReturn.updatedAt = new Date().toISOString();
+    await db.put('orders', order);
+
+    let creditIssued = null;
+    if (req.body.status === 'approved' && !alreadyApproved) {
+      const coupon = await issueBottleReturnCredit(order.userId, order.bottleReturn.quantity);
+      creditIssued = coupon?.value || null;
+    } else if (req.body.status === 'rejected') {
+      const user = await db.get('users', order.userId);
+      if (user) {
+        await notifyUser(user, {
+          title: `Bottle return update — order ${order.orderNumber}`,
+          message: 'Your bottle return request was not approved. Contact support if you have questions.',
+          meta: { orderId: order.id },
+          channels: { inapp: true, email: true, whatsapp: true },
+        });
+      }
+    }
+
+    res.json({ success: true, order, creditIssued });
   } catch (err) {
     next(err);
   }
