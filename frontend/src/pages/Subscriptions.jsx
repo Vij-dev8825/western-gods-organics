@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { api } from '../api';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
+import { loadRazorpay } from '../utils/loadRazorpay';
 import ChakkiWheel from '../components/ChakkiWheel';
 
 const FREQUENCY_LABELS = { 14: 'Every 2 weeks', 28: 'Every 4 weeks', 42: 'Every 6 weeks' };
@@ -26,6 +27,40 @@ export default function Subscriptions() {
     try {
       await api.updateSubscription(token, sub.id, { status });
       showToast(status === 'cancelled' ? 'Subscription cancelled.' : status === 'paused' ? 'Subscription paused.' : 'Subscription resumed.');
+      load();
+    } catch (err) {
+      showToast(err.message, 'error');
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  async function enableAutopay(sub) {
+    setBusyId(sub.id);
+    try {
+      const setup = await api.createSubscriptionAutopay(token, sub.id);
+      await loadRazorpay();
+      await new Promise((resolve, reject) => {
+        const rzp = new window.Razorpay({
+          key: setup.keyId,
+          subscription_id: setup.razorpaySubscriptionId,
+          name: 'Western Gods Organics',
+          description: `${sub.productName} (${sub.size}) — auto-pay every delivery`,
+          theme: { color: '#6fae4f' },
+          modal: { ondismiss: () => reject(new Error('Autopay setup cancelled.')) },
+          handler: async (response) => {
+            try {
+              await api.verifySubscriptionAutopay(token, sub.id, response);
+              showToast('UPI Autopay enabled — future deliveries are charged automatically.');
+              resolve();
+            } catch (err) {
+              reject(err);
+            }
+          },
+        });
+        rzp.on('payment.failed', () => reject(new Error('Mandate setup failed. Please try again.')));
+        rzp.open();
+      });
       load();
     } catch (err) {
       showToast(err.message, 'error');
@@ -76,6 +111,7 @@ export default function Subscriptions() {
                 {s.status === 'active'
                   ? `Next delivery: ${new Date(s.nextOrderDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })} · ${s.discountPercent}% off every order`
                   : `${s.discountPercent}% off every order when active`}
+                {s.autopayEnabled && ' · 🔁 UPI Autopay on — charged automatically each delivery'}
               </p>
               <div className="order-card-actions">
                 {s.status === 'active' && (
@@ -86,6 +122,11 @@ export default function Subscriptions() {
                 {s.status === 'paused' && (
                   <button className="btn btn-forest btn-sm" disabled={busyId === s.id} onClick={() => setStatus(s, 'active')}>
                     Resume
+                  </button>
+                )}
+                {s.status === 'active' && !s.autopayEnabled && (
+                  <button className="btn btn-gold btn-sm" disabled={busyId === s.id} onClick={() => enableAutopay(s)}>
+                    {busyId === s.id ? 'Opening…' : '🔁 Enable UPI Autopay'}
                   </button>
                 )}
                 {s.status !== 'cancelled' && (

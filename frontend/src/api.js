@@ -104,6 +104,8 @@ export const api = {
   getSubscriptions: (token) => request('/subscriptions', { token }),
   createSubscription: (token, payload) => request('/subscriptions', { method: 'POST', body: payload, token }),
   updateSubscription: (token, id, patch) => request(`/subscriptions/${id}`, { method: 'PATCH', body: patch, token }),
+  createSubscriptionAutopay: (token, id) => request(`/subscriptions/${id}/autopay/create`, { method: 'POST', token }),
+  verifySubscriptionAutopay: (token, id, payload) => request(`/subscriptions/${id}/autopay/verify`, { method: 'POST', body: payload, token }),
 
   // loyalty (reward points)
   getLoyalty: (token) => request('/loyalty', { token }),
