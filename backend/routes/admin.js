@@ -11,6 +11,7 @@ const cloudinary = require('../utils/cloudinary');
 const { compressAndStore, compressVideoAndStore } = require('../utils/mediaStore');
 const { processDueSubscriptions } = require('../utils/subscriptions');
 const { processAbandonedCarts } = require('../utils/abandonedCarts');
+const { processReorderNudges } = require('../utils/reorderNudges');
 const { PAGES: PAGE_BANNER_PAGES } = require('./pageBanners');
 const { sendMail } = require('../utils/mailer');
 const { sendWhatsApp } = require('../utils/whatsapp');
@@ -1292,6 +1293,17 @@ router.get('/subscriptions', async (req, res, next) => {
 router.post('/subscriptions/run', async (req, res, next) => {
   try {
     const results = await processDueSubscriptions();
+    res.json({ success: true, results });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /api/admin/reorder-nudges/run — manually process predictive reorder
+// nudges (fallback alongside the automatic daily check in server.js)
+router.post('/reorder-nudges/run', async (req, res, next) => {
+  try {
+    const results = await processReorderNudges();
     res.json({ success: true, results });
   } catch (err) {
     next(err);

@@ -26,6 +26,7 @@ const loyaltyRoutes = require('./routes/loyalty');
 const impactRoutes = require('./routes/impact');
 const { processDueSubscriptions } = require('./utils/subscriptions');
 const { processAbandonedCarts } = require('./utils/abandonedCarts');
+const { processReorderNudges } = require('./utils/reorderNudges');
 const whatsappBaileys = require('./utils/whatsappBaileys');
 const mediaRoutes = require('./routes/media');
 const catalogRoutes = require('./routes/catalog');
@@ -139,6 +140,13 @@ const PORT = process.env.PORT || 5000;
     setInterval(() => {
       processAbandonedCarts().catch((err) => console.error('processAbandonedCarts failed:', err));
     }, 60 * 60 * 1000);
+
+    // Reorder timing is day-granular, not hourly, so this runs once a day
+    // rather than piggybacking on the hourly cadence above.
+    processReorderNudges().catch((err) => console.error('processReorderNudges failed:', err));
+    setInterval(() => {
+      processReorderNudges().catch((err) => console.error('processReorderNudges failed:', err));
+    }, 24 * 60 * 60 * 1000);
   } catch (err) {
     console.error('Failed to start:', err);
     process.exit(1);
