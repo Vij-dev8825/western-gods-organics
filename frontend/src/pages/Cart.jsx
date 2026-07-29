@@ -43,7 +43,7 @@ export default function Cart() {
   const [guestName, setGuestName] = useState('');
   const [guestEmail, setGuestEmail] = useState('');
   const [guestErrors, setGuestErrors] = useState({});
-  const [paymentMethod, setPaymentMethod] = useState('cod'); // 'cod' | 'razorpay'
+  const [paymentMethod, setPaymentMethod] = useState('cod'); // 'cod' | 'razorpay' | 'cod_advance'
   const [razorpayEnabled, setRazorpayEnabled] = useState(false);
   const [codVerifiedPhone, setCodVerifiedPhone] = useState(null);
   const [buyNowQty, setBuyNowQty] = useState(buyNowItem?.quantity || 1);
@@ -55,9 +55,11 @@ export default function Cart() {
   const [usePoints, setUsePoints] = useState(false);
   const [loyaltyTier, setLoyaltyTier] = useState(null);
 
+  const [codAdvanceInr, setCodAdvanceInr] = useState(0);
+
   useEffect(() => {
     api.getProducts().then((d) => setProducts(d.products));
-    api.getConfig().then((d) => setRazorpayEnabled(!!d.razorpayEnabled)).catch(() => {});
+    api.getConfig().then((d) => { setRazorpayEnabled(!!d.razorpayEnabled); setCodAdvanceInr(d.codAdvanceInr || 0); }).catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -192,6 +194,8 @@ export default function Cart() {
     try {
       if (paymentMethod === 'razorpay') {
         await payWithRazorpay(orderItems, couponCode, guestInfo);
+      } else if (paymentMethod === 'cod_advance') {
+        await payCodAdvance(orderItems, couponCode, guestInfo);
       } else {
         const data = await api.placeOrder(token, { items: orderItems, address, paymentMethod: 'cod', couponCode, pointsToRedeem, guestInfo });
         finishOrder(data, address);
@@ -254,6 +258,50 @@ export default function Cart() {
         handler: async (response) => {
           try {
             const data = await api.verifyRazorpayPayment(token, { items: orderItems, address, couponCode, pointsToRedeem, guestInfo, ...response });
+            finishOrder(data, address);
+            resolve();
+          } catch (err) {
+            handleOrderError(err);
+            reject(err);
+          }
+        },
+      });
+      rzp.on('payment.failed', () => {
+        setPlacing(false);
+        reject(new Error('Payment failed. Please try again or choose Cash on Delivery.'));
+      });
+      rzp.open();
+    });
+  }
+
+  // Same flow as payWithRazorpay, but only the small COD_ADVANCE_INR advance
+  // is charged — the order itself still records the rest as due on delivery.
+  async function payCodAdvance(orderItems, couponCode, guestInfo) {
+    const rzpOrder = await api.createCodAdvanceOrder(token, { items: orderItems, couponCode, pointsToRedeem, address, guestInfo });
+    await loadRazorpay();
+
+    return new Promise((resolve, reject) => {
+      const rzp = new window.Razorpay({
+        key: rzpOrder.keyId,
+        amount: rzpOrder.amount,
+        currency: rzpOrder.currency,
+        order_id: rzpOrder.razorpayOrderId,
+        name: 'Western Gods Organics',
+        description: `₹${rzpOrder.advanceAmount} advance · Order · ${orderItems.length} item(s)`,
+        prefill: {
+          name: user?.name || '',
+          contact: address.phone,
+        },
+        theme: { color: '#6fae4f' },
+        modal: {
+          ondismiss: () => {
+            setPlacing(false);
+            reject(new Error('Payment cancelled.'));
+          },
+        },
+        handler: async (response) => {
+          try {
+            const data = await api.verifyCodAdvancePayment(token, { items: orderItems, address, couponCode, pointsToRedeem, guestInfo, ...response });
             finishOrder(data, address);
             resolve();
           } catch (err) {
@@ -524,6 +572,21 @@ export default function Cart() {
                     </span>
                   </span>
                 </label>
+                {razorpayEnabled && codAdvanceInr > 0 && (
+                  <label className={`payment-option ${paymentMethod === 'cod_advance' ? 'active' : ''}`}>
+                    <input
+                      type="radio"
+                      name="paymentMethod"
+                      checked={paymentMethod === 'cod_advance'}
+                      onChange={() => setPaymentMethod('cod_advance')}
+                    />
+                    <span className="filter-radio" aria-hidden="true" />
+                    <span className="payment-option-body">
+                      <b>Pay ₹{codAdvanceInr} now, rest on delivery</b>
+                      <span className="muted">A small advance confirms your order — pay the balance in cash when it arrives</span>
+                    </span>
+                  </label>
+                )}
               </div>
 
               {!isLoggedIn && paymentMethod === 'cod' && (
@@ -557,7 +620,13 @@ export default function Cart() {
                   style={{ marginTop: 18 }}
                   disabled={placing || !minOrderCheck.met || hasOutOfStock || codNeedsVerification}
                 >
-                  {placing ? 'Processing…' : paymentMethod === 'razorpay' ? 'Pay securely' : 'Place order'}
+                  {placing
+                    ? 'Processing…'
+                    : paymentMethod === 'razorpay'
+                    ? 'Pay securely'
+                    : paymentMethod === 'cod_advance'
+                    ? `Pay ₹${codAdvanceInr} & place order`
+                    : 'Place order'}
                 </button>
               </div>
             </form>

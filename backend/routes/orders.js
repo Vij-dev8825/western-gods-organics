@@ -4,7 +4,13 @@ const db = require('../data/db');
 const { requireAuth, optionalAuth } = require('../middleware/auth');
 const { signToken } = require('./auth');
 const razorpay = require('../utils/razorpay');
-const { buildOrderItems, createOrderRecord, notifyAdminOfPaymentSwitch, notifyAdminOfBottleReturn } = require('../utils/orderBuilder');
+const {
+  buildOrderItems,
+  createOrderRecord,
+  notifyAdminOfPaymentSwitch,
+  notifyAdminOfBottleReturn,
+  COD_ADVANCE_INR,
+} = require('../utils/orderBuilder');
 const { notifyUser } = require('../utils/notify');
 const { otpStore } = require('../utils/otpStore');
 const { markPhoneVerified, isPhoneVerified, consumePhoneVerification } = require('../utils/phoneVerification');
@@ -263,6 +269,112 @@ router.post('/razorpay/verify', optionalAuth, async (req, res, next) => {
   }
 });
 
+// POST /api/orders/cod-advance/create  { items, address, guestInfo? } →
+// { razorpayOrderId, amount, currency, keyId } — a small flat advance
+// (COD_ADVANCE_INR) to confirm a Cash-on-Delivery order; the remainder
+// stays due on delivery, same as a plain COD order.
+router.post('/cod-advance/create', optionalAuth, async (req, res, next) => {
+  try {
+    if (!razorpay.isConfigured()) {
+      return res.status(503).json({
+        success: false,
+        message: 'Online payment isn’t set up yet — please choose Cash on Delivery instead.',
+      });
+    }
+    const { items, couponCode, pointsToRedeem, address, guestInfo } = req.body;
+    if (!items || !items.length) {
+      return res.status(400).json({ success: false, message: 'Your cart is empty.' });
+    }
+    if (!address || !address.line1 || !address.pincode || !address.phone) {
+      return res.status(400).json({ success: false, message: 'A complete delivery address is required.' });
+    }
+
+    if (!req.user) {
+      if (!(await isPhoneAvailable(address.phone))) {
+        return res.status(409).json({
+          success: false,
+          message: 'An account already exists with this phone number. Please log in to continue.',
+        });
+      }
+      const resolved = await resolveGuestUser(guestInfo, address.phone);
+      if (resolved.error) return res.status(resolved.error.status).json({ success: false, message: resolved.error.message });
+    }
+
+    const { total, stockError } = await buildOrderItems(items, couponCode, address.country, req.user?.id, pointsToRedeem);
+    if (stockError) return res.status(400).json({ success: false, message: stockError });
+    if (total <= COD_ADVANCE_INR) {
+      return res.status(400).json({ success: false, message: `Order total must be greater than the ₹${COD_ADVANCE_INR} advance.` });
+    }
+
+    const rzpOrder = await razorpay.createOrder(COD_ADVANCE_INR, `yo_adv_${Date.now()}`);
+    res.json({
+      success: true,
+      razorpayOrderId: rzpOrder.id,
+      amount: rzpOrder.amount,
+      currency: rzpOrder.currency,
+      keyId: process.env.RAZORPAY_KEY_ID,
+      advanceAmount: COD_ADVANCE_INR,
+      orderTotal: total,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /api/orders/cod-advance/verify
+// { items, address, guestInfo?, razorpay_order_id, razorpay_payment_id, razorpay_signature }
+router.post('/cod-advance/verify', optionalAuth, async (req, res, next) => {
+  try {
+    const { items, address, couponCode, pointsToRedeem, guestInfo, razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
+
+    if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
+      return res.status(400).json({ success: false, message: 'Missing payment confirmation details.' });
+    }
+    if (!address || !address.line1 || !address.pincode || !address.phone) {
+      return res.status(400).json({ success: false, message: 'A complete delivery address is required.' });
+    }
+    if (!razorpay.verifySignature({ razorpay_order_id, razorpay_payment_id, razorpay_signature })) {
+      return res.status(400).json({ success: false, message: 'Payment verification failed. Please contact support before retrying.' });
+    }
+
+    let userId = req.user?.id;
+    let newAccount = null;
+    if (!userId) {
+      const resolved = await resolveGuestUser(guestInfo, address.phone);
+      if (resolved.error) return res.status(resolved.error.status).json({ success: false, message: resolved.error.message });
+      newAccount = resolved.user;
+      await db.put('users', newAccount);
+      userId = newAccount.id;
+    }
+
+    // No stock re-check here, same reasoning as /razorpay/verify — the
+    // advance has already been captured by this point.
+    const { orderItems, total, discount, couponCode: appliedCode, pointsRedeemed } =
+      await buildOrderItems(items, couponCode, address.country, userId, pointsToRedeem);
+    const order = await createOrderRecord({
+      userId,
+      orderItems,
+      address,
+      total,
+      discount,
+      couponCode: appliedCode,
+      pointsRedeemed,
+      paymentMethod: 'cod_advance',
+      payment: { razorpay_order_id, razorpay_payment_id },
+      advancePaid: COD_ADVANCE_INR,
+    });
+
+    const response = { success: true, message: 'Advance payment verified and order placed.', order };
+    if (newAccount) {
+      response.token = signToken(newAccount);
+      response.user = newAccount;
+    }
+    res.status(201).json(response);
+  } catch (err) {
+    next(err);
+  }
+});
+
 // GET /api/orders (my orders)
 router.get('/', requireAuth, async (req, res, next) => {
   try {
@@ -348,7 +460,11 @@ router.post('/:id/pay/create', requireAuth, async (req, res, next) => {
       });
     }
 
-    const rzpOrder = await razorpay.createOrder(order.total, `yo_pay_${order.orderNumber}`);
+    // A cod_advance order already had its advance captured at checkout —
+    // only the remaining balance should be charged here, or this would
+    // double-charge that advance on top of what was already paid.
+    const amountDue = order.total - (order.advancePaid || 0);
+    const rzpOrder = await razorpay.createOrder(amountDue, `yo_pay_${order.orderNumber}`);
     res.json({
       success: true,
       razorpayOrderId: rzpOrder.id,

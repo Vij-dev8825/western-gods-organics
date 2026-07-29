@@ -9,6 +9,19 @@ const { getPointsBalance, redeemPointsForOrder, getTierInfo, REDEEM_VALUE_INR_PE
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || process.env.CONTACT_NOTIFY_EMAIL;
 const REFERRAL_REWARD_INR = 100;
 const BOTTLE_RETURN_CREDIT_INR = 20;
+// Small flat advance to confirm a COD order at checkout (paymentMethod
+// 'cod_advance') — low enough to stay low-friction, real enough to filter
+// out non-serious/fake COD orders. Rest of the total is still cash on
+// delivery, same as a plain COD order.
+const COD_ADVANCE_INR = 49;
+
+function paymentLineFor(order) {
+  if (order.paymentMethod === 'razorpay') return 'Paid online (Razorpay)';
+  if (order.paymentMethod === 'cod_advance') {
+    return `₹${order.advancePaid} paid online, ₹${order.total - order.advancePaid} due on delivery (COD)`;
+  }
+  return 'Cash on Delivery';
+}
 
 function formatIST(dateStringOrDate) {
   return new Date(dateStringOrDate).toLocaleString('en-IN', {
@@ -23,7 +36,7 @@ function formatIST(dateStringOrDate) {
 
 function notifyAdminOfOrder(order, user) {
   const itemLines = order.items.map((i) => `${i.quantity}× ${i.name} (${i.size}) — ₹${i.price}`).join('\n');
-  const paymentLine = order.paymentMethod === 'razorpay' ? 'Paid online (Razorpay)' : 'Cash on Delivery';
+  const paymentLine = paymentLineFor(order);
   const placedAt = formatIST(order.createdAt);
   const addressLine =
     `${order.address.line1}, ${order.address.city}, ${order.address.state} - ${order.address.pincode}` +
@@ -226,7 +239,7 @@ async function issueBottleReturnCredit(userId, quantity) {
   return coupon;
 }
 
-async function createOrderRecord({ userId, orderItems, address, total, discount, couponCode, pointsRedeemed, paymentMethod, payment, subscriptionId }) {
+async function createOrderRecord({ userId, orderItems, address, total, discount, couponCode, pointsRedeemed, paymentMethod, payment, subscriptionId, advancePaid }) {
   // Computed before this order is persisted, so it only reflects orders that
   // already existed — used below to detect a customer's genuine first order,
   // whether that's a manual checkout or their first subscription renewal.
@@ -239,8 +252,9 @@ async function createOrderRecord({ userId, orderItems, address, total, discount,
     items: orderItems,
     address,
     paymentMethod,
-    paymentStatus: paymentMethod === 'razorpay' ? 'paid' : 'pending',
+    paymentStatus: paymentMethod === 'razorpay' ? 'paid' : paymentMethod === 'cod_advance' ? 'partial' : 'pending',
     payment: payment || null,
+    advancePaid: paymentMethod === 'cod_advance' ? advancePaid || 0 : 0,
     discount: discount || 0,
     couponCode: couponCode || null,
     pointsRedeemed: pointsRedeemed || 0,
@@ -299,4 +313,5 @@ module.exports = {
   notifyAdminOfPaymentSwitch,
   issueBottleReturnCredit,
   notifyAdminOfBottleReturn,
+  COD_ADVANCE_INR,
 };

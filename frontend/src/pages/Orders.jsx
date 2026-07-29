@@ -241,6 +241,11 @@ export default function Orders() {
                   <div className="order-card-total">
                     <span className="muted">Total</span>
                     <b>₹{o.total}</b>
+                    {o.paymentMethod === 'cod_advance' && (
+                      <span className="muted" style={{ display: 'block', fontSize: '0.78rem' }}>
+                        ₹{o.advancePaid} paid · ₹{o.total - o.advancePaid} due on delivery
+                      </span>
+                    )}
                   </div>
                 </div>
 
@@ -277,7 +282,11 @@ export default function Orders() {
                       disabled={payingId === o.id}
                       onClick={() => handlePayOnline(o)}
                     >
-                      {payingId === o.id ? 'Opening…' : 'Pay Online'}
+                      {payingId === o.id
+                        ? 'Opening…'
+                        : o.paymentMethod === 'cod_advance'
+                        ? `Pay remaining ₹${o.total - o.advancePaid}`
+                        : 'Pay Online'}
                     </button>
                   )}
                   {CANCELLABLE_STATUSES.includes(o.status) && (

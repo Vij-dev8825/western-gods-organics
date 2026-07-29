@@ -91,6 +91,8 @@ export const api = {
   requestBottleReturn: (token, id, quantity) => request(`/orders/${id}/bottle-return`, { method: 'POST', body: { quantity }, token }),
   createRazorpayOrder: (token, payload) => request('/orders/razorpay/create', { method: 'POST', body: payload, token }),
   verifyRazorpayPayment: (token, payload) => request('/orders/razorpay/verify', { method: 'POST', body: payload, token }),
+  createCodAdvanceOrder: (token, payload) => request('/orders/cod-advance/create', { method: 'POST', body: payload, token }),
+  verifyCodAdvancePayment: (token, payload) => request('/orders/cod-advance/verify', { method: 'POST', body: payload, token }),
   createOrderPayment: (token, id) => request(`/orders/${id}/pay/create`, { method: 'POST', token }),
   verifyOrderPayment: (token, id, payload) => request(`/orders/${id}/pay/verify`, { method: 'POST', body: payload, token }),
 

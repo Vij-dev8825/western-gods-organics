@@ -61,7 +61,17 @@ export default function AdminOrders() {
                       </div>
                     ))}
                   </td>
-                  <td>₹{o.total}</td>
+                  <td>
+                    ₹{o.total}
+                    {o.paymentMethod === 'cod_advance' && (
+                      <div className="muted" style={{ fontSize: '0.72rem' }}>
+                        ₹{o.advancePaid} paid · ₹{o.total - o.advancePaid} cash due
+                      </div>
+                    )}
+                    {o.paymentMethod === 'razorpay' && (
+                      <div className="muted" style={{ fontSize: '0.72rem' }}>Paid online</div>
+                    )}
+                  </td>
                   <td>
                     <select className="select" value={o.status} onChange={(e) => setStatus(o, e.target.value)}>
                       {STATUSES.map((s) => (
