@@ -106,6 +106,10 @@ export const api = {
   // loyalty (reward points)
   getLoyalty: (token) => request('/loyalty', { token }),
 
+  // sustainability impact (bottle reuse) — token optional, returns site-wide
+  // totals either way and adds a personal breakdown when logged in
+  getImpact: (token) => request('/impact', { token }),
+
   // public config flags
   getConfig: () => request('/config'),
 

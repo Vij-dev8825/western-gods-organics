@@ -11,6 +11,10 @@ import ChakkiWheel from '../components/ChakkiWheel';
 import AddressForm from '../components/AddressForm';
 import { CANONICAL_ORIGIN } from '../utils/site';
 
+function formatGlassWeight(grams) {
+  return grams >= 1000 ? `${(grams / 1000).toFixed(1)}kg` : `${grams}g`;
+}
+
 export default function Profile() {
   const { user, token, logout, updateUser } = useAuth();
   const { showToast } = useToast();
@@ -31,6 +35,11 @@ export default function Profile() {
   const [pointsBalance, setPointsBalance] = useState(null);
   useEffect(() => {
     api.getLoyalty(token).then((d) => setPointsBalance(d.balance)).catch(() => setPointsBalance(0));
+  }, [token]);
+
+  const [impact, setImpact] = useState(null);
+  useEffect(() => {
+    api.getImpact(token).then(setImpact).catch(() => {});
   }, [token]);
 
   useEffect(() => {
@@ -207,6 +216,21 @@ export default function Profile() {
           <b>My Rewards</b>
           <span className="muted" style={{ display: 'block', fontSize: '0.82rem' }}>
             {pointsBalance === null ? 'Loading…' : `${pointsBalance} points available — worth ₹${pointsBalance}`}
+          </span>
+        </span>
+        <span className="profile-orders-link-arrow">→</span>
+      </Link>
+
+      <Link to="/orders" className="profile-orders-link">
+        <span className="profile-orders-link-icon" aria-hidden="true">🌍</span>
+        <span>
+          <b>Your Environmental Impact</b>
+          <span className="muted" style={{ display: 'block', fontSize: '0.82rem' }}>
+            {!impact
+              ? 'Loading…'
+              : impact.myBottles > 0
+              ? `${impact.myBottles} bottle(s) reused — ~${formatGlassWeight(impact.myGlassDivertedGrams)} of glass diverted from landfill`
+              : 'Return empty bottles from your delivered orders for a refill credit — see My Orders'}
           </span>
         </span>
         <span className="profile-orders-link-arrow">→</span>

@@ -6,6 +6,7 @@ import SectionDivider from '../components/SectionDivider';
 import ChakkiWheel from '../components/ChakkiWheel';
 import GoogleReviewsWidget from '../components/GoogleReviewsWidget';
 import UgcGallery from '../components/UgcGallery';
+import ImpactBanner from '../components/ImpactBanner';
 import StructuredData from '../components/StructuredData';
 import SeoMeta from '../components/SeoMeta';
 import { getProductImage } from '../utils/productImages';
@@ -361,6 +362,7 @@ export default function Home() {
 
       <GoogleReviewsWidget />
 
+      <ImpactBanner />
       <UgcGallery />
 
       {/* ---------- Bulk CTA ---------- */}
