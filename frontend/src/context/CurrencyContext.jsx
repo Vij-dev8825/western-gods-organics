@@ -101,9 +101,12 @@ export function CurrencyProvider({ children }) {
   // the order (India keeps the existing tiered domestic rate; every other
   // country gets a flat admin-set fee, defaulting to ₹1500 if unset).
   const DEFAULT_INTL_SHIPPING = 1500;
-  function getShippingFee(destCountryCode, inrSubtotal) {
+  // freeShippingThreshold lets a logged-in customer's loyalty tier (Silver/
+  // Gold — see backend/utils/loyalty.js TIERS) lower or remove the ₹999 bar;
+  // guests and Bronze members get the standard default.
+  function getShippingFee(destCountryCode, inrSubtotal, freeShippingThreshold = 999) {
     if (inrSubtotal === 0) return 0;
-    if (!destCountryCode || destCountryCode === 'IN') return inrSubtotal > 999 ? 0 : 60;
+    if (!destCountryCode || destCountryCode === 'IN') return inrSubtotal > freeShippingThreshold ? 0 : 60;
     return shipping[destCountryCode] || DEFAULT_INTL_SHIPPING;
   }
 

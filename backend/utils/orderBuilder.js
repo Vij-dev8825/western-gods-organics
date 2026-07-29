@@ -4,7 +4,7 @@ const { notifyUser } = require('./notify');
 const { findValidCoupon, computeDiscount } = require('./coupons');
 const { sendMail } = require('./mailer');
 const { sendWhatsApp } = require('./whatsapp');
-const { getPointsBalance, redeemPointsForOrder, REDEEM_VALUE_INR_PER_POINT } = require('./loyalty');
+const { getPointsBalance, redeemPointsForOrder, getTierInfo, REDEEM_VALUE_INR_PER_POINT } = require('./loyalty');
 
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || process.env.CONTACT_NOTIFY_EMAIL;
 const REFERRAL_REWARD_INR = 100;
@@ -85,9 +85,15 @@ const DEFAULT_INTL_SHIPPING = 1500;
 // destination concept, unlike the currency-keyed rate/minOrder overrides),
 // falling back to DEFAULT_INTL_SHIPPING when the admin hasn't set one. India
 // keeps the existing tiered domestic rate untouched.
-async function calculateShipping(subtotal, destCountry = DOMESTIC_COUNTRY) {
+async function calculateShipping(subtotal, destCountry = DOMESTIC_COUNTRY, userId = null) {
   if (subtotal === 0) return 0;
-  if (destCountry === DOMESTIC_COUNTRY) return subtotal > 999 ? 0 : 60;
+  if (destCountry === DOMESTIC_COUNTRY) {
+    // Silver/Gold loyalty tiers lower (or remove) the free-shipping bar —
+    // see backend/utils/loyalty.js TIERS. Guests and brand-new customers
+    // fall back to the standard Bronze/no-tier threshold.
+    const threshold = userId ? (await getTierInfo(userId)).freeShippingMinOrder : 999;
+    return subtotal > threshold ? 0 : 60;
+  }
   const overrides = await db.get('currency-overrides', 'main');
   return overrides?.shipping?.[destCountry] || DEFAULT_INTL_SHIPPING;
 }
@@ -114,7 +120,7 @@ async function buildOrderItems(items, couponCode, destCountry, userId, pointsToR
       price,
     };
   });
-  const shipping = await calculateShipping(subtotal, destCountry);
+  const shipping = await calculateShipping(subtotal, destCountry, userId);
 
   const coupon = await findValidCoupon(couponCode, userId);
   const discount = computeDiscount(coupon, subtotal);

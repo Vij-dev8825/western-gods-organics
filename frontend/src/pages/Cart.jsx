@@ -53,6 +53,7 @@ export default function Cart() {
   const [applyingCoupon, setApplyingCoupon] = useState(false);
   const [pointsBalance, setPointsBalance] = useState(0);
   const [usePoints, setUsePoints] = useState(false);
+  const [loyaltyTier, setLoyaltyTier] = useState(null);
 
   useEffect(() => {
     api.getProducts().then((d) => setProducts(d.products));
@@ -61,7 +62,7 @@ export default function Cart() {
 
   useEffect(() => {
     if (!isLoggedIn) return;
-    api.getLoyalty(token).then((d) => setPointsBalance(d.balance)).catch(() => {});
+    api.getLoyalty(token).then((d) => { setPointsBalance(d.balance); setLoyaltyTier(d.tier); }).catch(() => {});
   }, [isLoggedIn, token]);
 
   // Prefill from the default saved address so returning customers don't have
@@ -111,7 +112,7 @@ export default function Cart() {
   }, [items, products, isBuyNow, buyNowItem, buyNowQty]);
 
   const subtotal = lines.reduce((sum, l) => sum + l.sizeInfo.price * l.quantity, 0);
-  const shipping = getShippingFee(address.country, subtotal);
+  const shipping = getShippingFee(address.country, subtotal, loyaltyTier?.freeShippingMinOrder);
   const couponStale = appliedCoupon && appliedCoupon.subtotalAtApply !== subtotal;
   const discount = appliedCoupon && !couponStale ? appliedCoupon.discount : 0;
   const pointsToRedeem = usePoints ? Math.min(pointsBalance, Math.max(0, subtotal + shipping - discount)) : 0;

@@ -16,6 +16,17 @@ const { notifyUser } = require('./notify');
 const EARN_RATE_INR_PER_POINT = 10;
 const REDEEM_VALUE_INR_PER_POINT = 1;
 
+// Tiers are based on LIFETIME points earned (never reduced by redemptions —
+// see getLifetimeEarnedPoints), so spending points on a discount can never
+// demote a customer. Ordered highest-first so tierForLifetimePoints can
+// return the first threshold met. earnMultiplier applies to future orders
+// only, based on the tier held BEFORE that order's points are credited.
+const TIERS = [
+  { key: 'gold', label: 'Gold', minLifetimePoints: 1500, earnMultiplier: 1.5, freeShippingMinOrder: 0 },
+  { key: 'silver', label: 'Silver', minLifetimePoints: 500, earnMultiplier: 1.25, freeShippingMinOrder: 699 },
+  { key: 'bronze', label: 'Bronze', minLifetimePoints: 0, earnMultiplier: 1, freeShippingMinOrder: 999 },
+];
+
 async function getLedger(userId) {
   return (await db.list('loyalty-ledger')).filter((e) => e.userId === userId);
 }
@@ -25,13 +36,41 @@ async function getPointsBalance(userId) {
   return ledger.reduce((sum, e) => sum + e.points, 0);
 }
 
+async function getLifetimeEarnedPoints(userId) {
+  const ledger = await getLedger(userId);
+  return ledger.filter((e) => e.type === 'earn').reduce((sum, e) => sum + e.points, 0);
+}
+
+function tierForLifetimePoints(lifetimePoints) {
+  return TIERS.find((t) => lifetimePoints >= t.minLifetimePoints);
+}
+
+/** Full tier snapshot for a user: current tier, perks, and progress to the next one. */
+async function getTierInfo(userId) {
+  const lifetimePoints = await getLifetimeEarnedPoints(userId);
+  const tier = tierForLifetimePoints(lifetimePoints);
+  const idx = TIERS.indexOf(tier);
+  const next = idx > 0 ? TIERS[idx - 1] : null;
+  return {
+    key: tier.key,
+    label: tier.label,
+    lifetimePoints,
+    earnMultiplier: tier.earnMultiplier,
+    freeShippingMinOrder: tier.freeShippingMinOrder,
+    nextTier: next ? { key: next.key, label: next.label, pointsNeeded: next.minLifetimePoints - lifetimePoints } : null,
+  };
+}
+
 function pointsForOrderTotal(orderTotal) {
   return Math.floor(orderTotal / EARN_RATE_INR_PER_POINT);
 }
 
-/** Credits points for a delivered order and notifies the customer. */
+/** Credits points for a delivered order (at the customer's tier multiplier
+ * held BEFORE this order) and notifies the customer. */
 async function creditPointsForOrder(order) {
-  const points = pointsForOrderTotal(order.total);
+  const lifetimeBefore = await getLifetimeEarnedPoints(order.userId);
+  const tier = tierForLifetimePoints(lifetimeBefore);
+  const points = Math.floor(pointsForOrderTotal(order.total) * tier.earnMultiplier);
   if (points <= 0) return;
 
   await db.put('loyalty-ledger', {
@@ -73,6 +112,8 @@ async function redeemPointsForOrder(userId, order, points) {
 module.exports = {
   getLedger,
   getPointsBalance,
+  getLifetimeEarnedPoints,
+  getTierInfo,
   pointsForOrderTotal,
   creditPointsForOrder,
   redeemPointsForOrder,

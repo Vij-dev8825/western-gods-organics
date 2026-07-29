@@ -4,12 +4,36 @@ import { api } from '../api';
 import { useAuth } from '../context/AuthContext';
 import ChakkiWheel from '../components/ChakkiWheel';
 
+const TIER_STYLE = {
+  bronze: { background: '#f0e2d3', color: '#7a4a21', border: '1px solid #d9bd9c' },
+  silver: { background: '#eef1f3', color: '#54626a', border: '1px solid #cfd8dd' },
+  gold: { backgroundImage: 'var(--gold-shine)', color: 'var(--forest-deep)', border: 'none' },
+};
+
+function TierBadge({ tier }) {
+  if (!tier) return null;
+  return (
+    <span
+      style={{
+        display: 'inline-block',
+        padding: '4px 14px',
+        borderRadius: 999,
+        fontWeight: 700,
+        fontSize: '0.85rem',
+        ...TIER_STYLE[tier.key],
+      }}
+    >
+      {tier.label}
+    </span>
+  );
+}
+
 export default function Rewards() {
   const { token } = useAuth();
   const [data, setData] = useState(null);
 
   useEffect(() => {
-    api.getLoyalty(token).then(setData).catch(() => setData({ balance: 0, history: [] }));
+    api.getLoyalty(token).then(setData).catch(() => setData({ balance: 0, history: [], tier: null }));
   }, [token]);
 
   if (!data) {
@@ -20,6 +44,8 @@ export default function Rewards() {
     );
   }
 
+  const tier = data.tier;
+
   return (
     <div className="container section">
       <div className="breadcrumb">Home / My Rewards</div>
@@ -28,6 +54,24 @@ export default function Rewards() {
         Earn 1 point for every ₹10 you spend, credited once your order is delivered. Redeem points for ₹1 off
         per point at checkout.
       </p>
+
+      {tier && (
+        <div className="form-card" style={{ margin: '0 0 22px' }}>
+          <div className="flex" style={{ alignItems: 'center', gap: 10, marginBottom: 6 }}>
+            <span className="muted" style={{ fontSize: '0.85rem' }}>Your tier</span>
+            <TierBadge tier={tier} />
+          </div>
+          <div className="muted" style={{ fontSize: '0.85rem', lineHeight: 1.6 }}>
+            {tier.earnMultiplier > 1 && <>Earning {tier.earnMultiplier}× points on every order. </>}
+            {tier.freeShippingMinOrder > 0
+              ? <>Free shipping over ₹{tier.freeShippingMinOrder}. </>
+              : <>Free shipping on every order. </>}
+            {tier.nextTier && (
+              <>Earn {tier.nextTier.pointsNeeded} more lifetime point(s) to reach {tier.nextTier.label}.</>
+            )}
+          </div>
+        </div>
+      )}
 
       <div className="form-card" style={{ margin: '0 0 22px' }}>
         <span className="muted" style={{ fontSize: '0.85rem' }}>Available balance</span>
