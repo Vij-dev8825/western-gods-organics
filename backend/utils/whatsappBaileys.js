@@ -15,6 +15,7 @@
  */
 const path = require('path');
 const fs = require('fs');
+const whatsappOrdering = require('./whatsappOrdering');
 
 const AUTH_DIR = path.join(__dirname, '..', 'whatsapp-auth');
 
@@ -22,6 +23,37 @@ let sock = null;
 let state = 'connecting'; // 'connecting' | 'qr' | 'open' | 'close'
 let qrDataUrl = null;
 let startPromise = null;
+
+// Converts a Baileys JID (e.g. "919999999999@s.whatsapp.net" or with a
+// ":deviceId" suffix) back to this app's own phone format — the reverse of
+// sendWhatsAppMessage's own `91${phone}` convention below, so it round-trips
+// with however a customer's phone is actually stored on their account.
+function jidToPhone(jid) {
+  const digits = jid.split('@')[0].split(':')[0];
+  if (digits.startsWith('91') && digits.length === 12) return digits.slice(2);
+  return `+${digits}`;
+}
+
+function extractText(message) {
+  return message?.conversation || message?.extendedTextMessage?.text || '';
+}
+
+async function handleIncomingMessages({ messages, type }) {
+  if (type !== 'notify') return; // 'append' etc. is historical sync, not a new message
+  for (const msg of messages) {
+    try {
+      const jid = msg.key?.remoteJid;
+      if (!jid || msg.key?.fromMe || jid.endsWith('@g.us')) continue; // skip our own sends and group chats
+      const text = extractText(msg.message);
+      if (!text) continue;
+
+      const reply = await whatsappOrdering.handleIncomingMessage(jidToPhone(jid), text);
+      if (reply) await sock.sendMessage(jid, { text: reply });
+    } catch (err) {
+      console.error('[whatsapp:ordering] error handling message', err.message);
+    }
+  }
+}
 
 async function connect() {
   const { default: makeWASocket, useMultiFileAuthState, DisconnectReason, fetchLatestBaileysVersion } = await import(
@@ -40,6 +72,7 @@ async function connect() {
   });
 
   sock.ev.on('creds.update', saveCreds);
+  sock.ev.on('messages.upsert', handleIncomingMessages);
 
   sock.ev.on('connection.update', async (update) => {
     if (update.qr) {

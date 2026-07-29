@@ -42,6 +42,7 @@ const COLLECTIONS = [
   'homepage-reviews',
   'country-catalog',
   'loyalty-ledger',
+  'whatsapp-ordering',
 ];
 
 let mode = 'json';

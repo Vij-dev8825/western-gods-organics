@@ -202,6 +202,7 @@ export const api = {
 
     getWhatsAppStatus: (token) => request('/admin/whatsapp', { token }),
     resetWhatsApp: (token) => request('/admin/whatsapp/reset', { method: 'POST', token }),
+    setWhatsAppOrdering: (token, enabled) => request('/admin/whatsapp/ordering', { method: 'POST', body: { enabled }, token }),
 
     getCustomers: (token) => request('/admin/customers', { token }),
     getEnquiries: (token) => request('/admin/enquiries', { token }),

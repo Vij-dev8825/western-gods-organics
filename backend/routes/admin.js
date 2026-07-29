@@ -21,6 +21,7 @@ const { imageUpload, storeUploadedFile } = require('../utils/imageUploadHandler'
 const { creditPointsForOrder } = require('../utils/loyalty');
 const { issueBottleReturnCredit } = require('../utils/orderBuilder');
 const whatsappBaileys = require('../utils/whatsappBaileys');
+const whatsappOrdering = require('../utils/whatsappOrdering');
 
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || process.env.CONTACT_NOTIFY_EMAIL;
 const ADMIN_PHONE = process.env.ADMIN_PHONE;
@@ -1252,7 +1253,19 @@ router.post('/chat/:userId', async (req, res, next) => {
 // GET /api/admin/whatsapp — connection state + QR code (as a data URL) when pairing is needed.
 router.get('/whatsapp', async (req, res, next) => {
   try {
-    res.json({ success: true, ...whatsappBaileys.getStatus() });
+    const orderingEnabled = await whatsappOrdering.isEnabled();
+    res.json({ success: true, ...whatsappBaileys.getStatus(), orderingEnabled });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /api/admin/whatsapp/ordering  { enabled } — turns the "reorder" chat
+// flow on/off without a redeploy; off by default until an admin opts in.
+router.post('/whatsapp/ordering', async (req, res, next) => {
+  try {
+    await whatsappOrdering.setEnabled(!!req.body.enabled);
+    res.json({ success: true, orderingEnabled: !!req.body.enabled });
   } catch (err) {
     next(err);
   }
