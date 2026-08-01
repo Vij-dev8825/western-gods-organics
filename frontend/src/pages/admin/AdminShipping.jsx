@@ -4,7 +4,12 @@ import { useAuth } from '../../context/AuthContext';
 
 export default function AdminShipping() {
   const { token } = useAuth();
-  const [settings, setSettings] = useState({ domesticFee: '', domesticFreeThreshold: '', domesticShippingEnabled: true });
+  const [settings, setSettings] = useState({
+    domesticFee: '',
+    domesticFreeThreshold: '',
+    domesticShippingEnabled: true,
+    chargeLabel: 'To Pay',
+  });
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState(null);
 
@@ -13,6 +18,7 @@ export default function AdminShipping() {
       domesticFee: String(d.shippingSettings.domesticFee),
       domesticFreeThreshold: String(d.shippingSettings.domesticFreeThreshold),
       domesticShippingEnabled: d.shippingSettings.domesticShippingEnabled,
+      chargeLabel: d.shippingSettings.chargeLabel,
     })).catch(() => {});
   }, [token]);
 
@@ -30,11 +36,13 @@ export default function AdminShipping() {
         domesticFee,
         domesticFreeThreshold,
         domesticShippingEnabled: settings.domesticShippingEnabled,
+        chargeLabel: settings.chargeLabel,
       });
       setSettings({
         domesticFee: String(d.shippingSettings.domesticFee),
         domesticFreeThreshold: String(d.shippingSettings.domesticFreeThreshold),
         domesticShippingEnabled: d.shippingSettings.domesticShippingEnabled,
+        chargeLabel: d.shippingSettings.chargeLabel,
       });
       setMessage({ type: 'success', text: 'Shipping settings updated.' });
     } catch (err) {
@@ -93,6 +101,32 @@ export default function AdminShipping() {
               onChange={(e) => setSettings((s) => ({ ...s, domesticFreeThreshold: e.target.value }))}
               placeholder="e.g. 999"
             />
+          </div>
+        </div>
+
+        <div className="field" style={{ marginTop: 16 }}>
+          <label>Customer-facing label</label>
+          <p className="muted" style={{ fontSize: '0.85rem', marginTop: 0 }}>
+            What this charge is called on the cart and invoice — "To Pay" matches courier terminology for a
+            fee collected from the customer; "Shipping" is the more familiar storefront term.
+          </p>
+          <div className="flex gap-2">
+            <label
+              className={`payment-option ${settings.chargeLabel === 'Shipping' ? 'active' : ''}`}
+              style={{ flex: 1, justifyContent: 'center' }}
+              onClick={() => setSettings((s) => ({ ...s, chargeLabel: 'Shipping' }))}
+            >
+              <input type="radio" name="chargeLabel" readOnly checked={settings.chargeLabel === 'Shipping'} />
+              Shipping
+            </label>
+            <label
+              className={`payment-option ${settings.chargeLabel === 'To Pay' ? 'active' : ''}`}
+              style={{ flex: 1, justifyContent: 'center' }}
+              onClick={() => setSettings((s) => ({ ...s, chargeLabel: 'To Pay' }))}
+            >
+              <input type="radio" name="chargeLabel" readOnly checked={settings.chargeLabel === 'To Pay'} />
+              To Pay
+            </label>
           </div>
         </div>
 

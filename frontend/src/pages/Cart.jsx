@@ -24,7 +24,7 @@ export default function Cart() {
   const { items, updateQuantity, removeItem, clearCart } = useCart();
   const { isLoggedIn, token, user, login } = useAuth();
   const { showToast } = useToast();
-  const { isForeign, checkMinOrder, getShippingFee, domesticShippingEnabled, country } = useCurrency();
+  const { isForeign, checkMinOrder, getShippingFee, domesticShippingLabel, country } = useCurrency();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -127,13 +127,16 @@ export default function Cart() {
 
   const subtotal = lines.reduce((sum, l) => sum + l.sizeInfo.price * l.quantity, 0);
   const shipping = getShippingFee(address.country, subtotal, loyaltyTier?.freeShippingMinOrder);
-  // When an admin switches domestic shipping off entirely, drop the row
-  // instead of showing "Free" — that label is reserved for actually crossing
-  // the free-shipping threshold, not for the charge being disabled outright.
-  // Matches CurrencyContext.getShippingFee's own domestic check (by delivery
-  // address, not the currency-selector country, which can differ).
+  // Omit the row entirely whenever there's nothing to pay — whether that's
+  // because an admin switched domestic shipping off, the order crossed the
+  // free-shipping threshold, or a loyalty perk waived it — rather than
+  // showing a "To Pay: Free" line.
+  const showShippingRow = shipping > 0;
+  // The admin-configurable label (see AdminShipping.jsx) only applies to the
+  // domestic courier charge it actually describes; international shipping
+  // keeps its own generic "Shipping" label.
   const isDomesticAddress = !address.country || address.country === 'IN';
-  const showShippingRow = !(isDomesticAddress && !domesticShippingEnabled);
+  const shippingLabel = isDomesticAddress ? domesticShippingLabel : 'Shipping';
   const couponStale = appliedCoupon && appliedCoupon.subtotalAtApply !== subtotal;
   const discount = appliedCoupon && !couponStale ? appliedCoupon.discount : 0;
   const pointsToRedeem = usePoints ? Math.min(pointsBalance, Math.max(0, subtotal + shipping - discount)) : 0;
@@ -424,7 +427,7 @@ export default function Cart() {
           <div className="summary-row"><span>Subtotal</span><span>₹{subtotal}</span></div>
           {showShippingRow && (
             <div className="summary-row">
-              <span>To Pay</span><span>{shipping === 0 ? 'Free' : `₹${shipping}`}</span>
+              <span>{shippingLabel}</span><span>₹{shipping}</span>
             </div>
           )}
           {discount > 0 && (

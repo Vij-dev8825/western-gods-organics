@@ -36,6 +36,7 @@ export function CurrencyProvider({ children }) {
   const [domesticShippingFee, setDomesticShippingFee] = useState(60);
   const [domesticFreeShippingThreshold, setDomesticFreeShippingThreshold] = useState(999);
   const [domesticShippingEnabled, setDomesticShippingEnabled] = useState(true);
+  const [domesticShippingLabel, setDomesticShippingLabel] = useState('To Pay');
 
   useEffect(() => {
     api.getCurrencyRates().then((d) => {
@@ -46,6 +47,7 @@ export function CurrencyProvider({ children }) {
       if (typeof d.domesticShippingFee === 'number') setDomesticShippingFee(d.domesticShippingFee);
       if (typeof d.domesticFreeShippingThreshold === 'number') setDomesticFreeShippingThreshold(d.domesticFreeShippingThreshold);
       if (typeof d.domesticShippingEnabled === 'boolean') setDomesticShippingEnabled(d.domesticShippingEnabled);
+      if (typeof d.domesticShippingLabel === 'string') setDomesticShippingLabel(d.domesticShippingLabel);
     }).catch(() => {});
   }, []);
 
@@ -135,6 +137,7 @@ export function CurrencyProvider({ children }) {
         checkMinOrder,
         getShippingFee,
         domesticShippingEnabled,
+        domesticShippingLabel,
         isForeign: country.currency !== 'INR',
       }}
     >

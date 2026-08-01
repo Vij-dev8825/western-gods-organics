@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { api } from '../api';
 import { useAuth } from '../context/AuthContext';
+import { useCurrency } from '../context/CurrencyContext';
 import logo from '../assets/logo.svg';
 import ChakkiWheel from '../components/ChakkiWheel';
 
@@ -10,6 +11,7 @@ const PAYMENT_LABELS = { cod: 'Cash on Delivery', razorpay: 'Paid Online (Razorp
 export default function Invoice() {
   const { orderId } = useParams();
   const { token } = useAuth();
+  const { domesticShippingLabel } = useCurrency();
   const [order, setOrder] = useState(null);
   const [error, setError] = useState('');
 
@@ -37,6 +39,8 @@ export default function Invoice() {
   const subtotal = order.items.reduce((sum, it) => sum + it.price * it.quantity, 0);
   const discount = order.discount || 0;
   const shipping = order.total - subtotal + discount;
+  const isDomesticAddress = !order.address.country || order.address.country === 'IN';
+  const shippingLabel = isDomesticAddress ? domesticShippingLabel : 'Shipping';
 
   return (
     <div className="invoice-page">
@@ -101,7 +105,9 @@ export default function Invoice() {
 
         <div className="invoice-totals">
           <div><span>Subtotal</span><span>₹{subtotal}</span></div>
-          <div><span>To Pay</span><span>{shipping === 0 ? 'Free' : `₹${shipping}`}</span></div>
+          {shipping > 0 && (
+            <div><span>{shippingLabel}</span><span>₹{shipping}</span></div>
+          )}
           {discount > 0 && (
             <div><span>Coupon {order.couponCode ? `(${order.couponCode})` : ''}</span><span>−₹{discount}</span></div>
           )}
