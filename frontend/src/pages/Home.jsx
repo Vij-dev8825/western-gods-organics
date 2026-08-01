@@ -11,6 +11,7 @@ import StructuredData from '../components/StructuredData';
 import SeoMeta from '../components/SeoMeta';
 import { getProductImage } from '../utils/productImages';
 import { getRecentlyViewedIds } from '../utils/recentlyViewed';
+import { useAuth } from '../context/AuthContext';
 import { useLang } from '../i18n';
 import { CANONICAL_ORIGIN } from '../utils/site';
 import skincareCertificate from '../assets/skincare-workshop-certificate.jpg';
@@ -77,10 +78,12 @@ const TESTIMONIALS = [
 
 export default function Home() {
   const { t, lang } = useLang();
+  const { isLoggedIn, token } = useAuth();
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [banners, setBanners] = useState([]);
   const [current, setCurrent] = useState(0);
+  const [pastOrders, setPastOrders] = useState([]);
   const timerRef = useRef(null);
 
   useEffect(() => {
@@ -88,6 +91,11 @@ export default function Home() {
     api.getCategories().then((d) => setCategories(d.categories)).catch(() => {});
     api.getBanners().then((d) => setBanners(d.banners)).catch(() => {});
   }, []);
+
+  useEffect(() => {
+    if (!isLoggedIn) { setPastOrders([]); return; }
+    api.getOrders(token).then((d) => setPastOrders(d.orders)).catch(() => {});
+  }, [isLoggedIn, token]);
 
   // Auto-rotate hero banners
   useEffect(() => {
@@ -103,6 +111,22 @@ export default function Home() {
     .map((id) => products.find((p) => p.id === id))
     .filter(Boolean);
   const comboProducts = products.filter((p) => p.comboItems?.length > 0);
+
+  // "Recommended for you" — the logged-in customer's most-bought category,
+  // excluding what they've already bought, so it reads as "more like this"
+  // rather than re-suggesting what's already in their cupboard.
+  const purchasedProductIds = new Set(pastOrders.flatMap((o) => o.items.map((it) => it.productId)));
+  const categoryCounts = {};
+  for (const o of pastOrders) {
+    for (const it of o.items) {
+      const product = products.find((p) => p.id === it.productId);
+      if (product?.category) categoryCounts[product.category] = (categoryCounts[product.category] || 0) + 1;
+    }
+  }
+  const topCategory = Object.entries(categoryCounts).sort((a, b) => b[1] - a[1])[0]?.[0];
+  const recommendedProducts = topCategory
+    ? products.filter((p) => p.category === topCategory && !purchasedProductIds.has(p.id)).slice(0, 4)
+    : [];
 
   const activeBanner = banners[current];
   // Admin-entered banner text is shown as-is in English; translated brand copy otherwise.
@@ -249,6 +273,23 @@ export default function Home() {
           </div>
           <div className="grid">
             {comboProducts.slice(0, 4).map((p) => (
+              <ProductCard key={p.id} product={p} />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* ---------- Recommended for you (logged-in, purchase-history-based) ---------- */}
+      {recommendedProducts.length > 0 && (
+        <section className="section container">
+          <div className="section-head">
+            <div>
+              <span className="eyebrow">Just for you</span>
+              <h2>Recommended for You</h2>
+            </div>
+          </div>
+          <div className="grid">
+            {recommendedProducts.map((p) => (
               <ProductCard key={p.id} product={p} />
             ))}
           </div>
