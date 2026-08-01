@@ -41,6 +41,7 @@ const homepageReviewsRoutes = require('./routes/homepageReviews');
 const aiAssistantRoutes = require('./routes/aiAssistant');
 const webhookRoutes = require('./routes/webhooks');
 const giftCardRoutes = require('./routes/giftCards');
+const affiliateRoutes = require('./routes/affiliates');
 
 const app = express();
 
@@ -89,6 +90,7 @@ app.use('/api/homepage-reviews', homepageReviewsRoutes);
 app.use('/api/ai-assistant', aiAssistantRoutes);
 app.use('/api/webhooks', webhookRoutes);
 app.use('/api/gift-cards', giftCardRoutes);
+app.use('/api/affiliates', affiliateRoutes);
 
 // Uploaded banner videos/images
 app.use('/uploads', express.static(UPLOADS_DIR, { maxAge: '7d' }));

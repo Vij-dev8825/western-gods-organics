@@ -107,6 +107,10 @@ export const api = {
   createGiftCardPurchase: (token, payload) => request('/gift-cards/purchase/create', { method: 'POST', body: payload, token }),
   verifyGiftCardPurchase: (token, payload) => request('/gift-cards/purchase/verify', { method: 'POST', body: payload, token }),
 
+  // affiliate program
+  validateAffiliateCode: (token, code) => request('/affiliates/validate', { method: 'POST', body: { code }, token }),
+  getMyAffiliate: (token) => request('/affiliates/me', { token }),
+
   // subscriptions (Subscribe & Save)
   getSubscriptions: (token) => request('/subscriptions', { token }),
   createSubscription: (token, payload) => request('/subscriptions', { method: 'POST', body: payload, token }),
@@ -195,6 +199,9 @@ export const api = {
     updateShippingSettings: (token, settings) => request('/admin/shipping-settings', { method: 'PUT', body: settings, token }),
     getGiftCards: (token) => request('/admin/gift-cards', { token }),
     cancelGiftCard: (token, code) => request(`/admin/gift-cards/${code}/cancel`, { method: 'PATCH', token }),
+    setCustomerAffiliate: (token, id, payload) => request(`/admin/customers/${id}/affiliate`, { method: 'PATCH', body: payload, token }),
+    getAffiliates: (token) => request('/admin/affiliates', { token }),
+    recordAffiliatePayout: (token, id, payload) => request(`/admin/affiliates/${id}/payout`, { method: 'POST', body: payload, token }),
     getHomepageReviews: (token) => request('/admin/homepage-reviews', { token }),
     updateHomepageReviews: (token, settings) => request('/admin/homepage-reviews', { method: 'PUT', body: settings, token }),
     getCountryCatalog: (token) => request('/admin/country-catalog', { token }),

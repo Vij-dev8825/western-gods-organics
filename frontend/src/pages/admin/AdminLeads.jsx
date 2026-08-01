@@ -17,6 +17,7 @@ export default function AdminLeads() {
   const [enquiries, setEnquiries] = useState([]);
   const [contacts, setContacts] = useState([]);
   const [customers, setCustomers] = useState([]);
+  const [rateDrafts, setRateDrafts] = useState({}); // { [customerId]: '10' } — draft commission rate before granting
 
   function load() {
     api.admin.getEnquiries(token).then((d) => setEnquiries(d.enquiries)).catch(() => {});
@@ -32,6 +33,21 @@ export default function AdminLeads() {
 
   async function toggleWholesale(c) {
     await api.admin.setCustomerWholesale(token, c.id, !c.isWholesale).catch(() => {});
+    load();
+  }
+
+  async function grantAffiliate(c) {
+    const rate = Number(rateDrafts[c.id] ?? c.commissionRate ?? 10);
+    if (!(rate > 0) || rate > 100) {
+      window.alert('Enter a commission rate between 0 and 100.');
+      return;
+    }
+    await api.admin.setCustomerAffiliate(token, c.id, { isAffiliate: true, commissionRate: rate }).catch(() => {});
+    load();
+  }
+
+  async function revokeAffiliate(c) {
+    await api.admin.setCustomerAffiliate(token, c.id, { isAffiliate: false }).catch(() => {});
     load();
   }
 
@@ -129,7 +145,7 @@ export default function AdminLeads() {
           {customers.length === 0 ? <p className="muted">No customers yet.</p> : (
             <table className="admin-table">
               <thead>
-                <tr><th>Name</th><th>Phone</th><th>Email</th><th>Joined</th><th>Wholesale</th><th>Actions</th></tr>
+                <tr><th>Name</th><th>Phone</th><th>Email</th><th>Joined</th><th>Wholesale</th><th>Affiliate</th><th>Actions</th></tr>
               </thead>
               <tbody>
                 {customers.map((c) => (
@@ -142,9 +158,35 @@ export default function AdminLeads() {
                       {c.isWholesale ? <span className="pill status-placed">Wholesale</span> : <span className="muted">Retail</span>}
                     </td>
                     <td>
+                      {c.isAffiliate ? (
+                        <span className="pill status-placed">{c.affiliateCode} · {c.commissionRate}%</span>
+                      ) : c.affiliateCode ? (
+                        <span className="muted">Revoked ({c.affiliateCode})</span>
+                      ) : (
+                        <span className="muted">—</span>
+                      )}
+                    </td>
+                    <td>
                       <button className="link-btn" onClick={() => toggleWholesale(c)}>
                         {c.isWholesale ? 'revoke wholesale' : 'grant wholesale'}
                       </button>
+                      <br />
+                      {c.isAffiliate ? (
+                        <button className="link-btn danger" onClick={() => revokeAffiliate(c)}>revoke affiliate</button>
+                      ) : (
+                        <span className="flex gap-1" style={{ alignItems: 'center', marginTop: 4 }}>
+                          <input
+                            type="number"
+                            min="0"
+                            max="100"
+                            placeholder="Rate %"
+                            value={rateDrafts[c.id] ?? ''}
+                            onChange={(e) => setRateDrafts((d) => ({ ...d, [c.id]: e.target.value }))}
+                            style={{ width: 64 }}
+                          />
+                          <button className="link-btn" onClick={() => grantAffiliate(c)}>grant affiliate</button>
+                        </span>
+                      )}
                     </td>
                   </tr>
                 ))}

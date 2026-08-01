@@ -7,6 +7,7 @@ const { sendWhatsApp } = require('./whatsapp');
 const { getPointsBalance, redeemPointsForOrder, getTierInfo, REDEEM_VALUE_INR_PER_POINT } = require('./loyalty');
 const { getShippingSettings } = require('./shippingSettings');
 const { findValidGiftCard, redeemGiftCardForOrder } = require('./giftCards');
+const { findAffiliateByCode } = require('./affiliates');
 
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || process.env.CONTACT_NOTIFY_EMAIL;
 const REFERRAL_REWARD_INR = 100;
@@ -269,11 +270,17 @@ async function issueBottleReturnCredit(userId, quantity) {
   return coupon;
 }
 
-async function createOrderRecord({ userId, orderItems, address, total, discount, couponCode, pointsRedeemed, paymentMethod, payment, subscriptionId, advancePaid, shippingChoice, giftCardCode, giftCardApplied, isGift, giftMessage }) {
+async function createOrderRecord({ userId, orderItems, address, total, discount, couponCode, pointsRedeemed, paymentMethod, payment, subscriptionId, advancePaid, shippingChoice, giftCardCode, giftCardApplied, isGift, giftMessage, affiliateCode }) {
   // Computed before this order is persisted, so it only reflects orders that
   // already existed — used below to detect a customer's genuine first order,
   // whether that's a manual checkout or their first subscription renewal.
   const isFirstOrder = (await db.list('orders')).filter((o) => o.userId === userId).length === 0;
+
+  // Pure attribution, no price effect — commission is credited later, on
+  // delivery (see admin.js), not here at placement. An affiliate can't
+  // attribute their own purchase to themselves for commission.
+  const affiliate = affiliateCode ? await findAffiliateByCode(affiliateCode) : null;
+  const validAffiliate = affiliate && affiliate.id !== userId ? affiliate : null;
 
   const order = {
     id: uuid(),
@@ -292,6 +299,8 @@ async function createOrderRecord({ userId, orderItems, address, total, discount,
     giftCardApplied: giftCardApplied || 0,
     isGift: !!isGift,
     giftMessage: isGift ? (giftMessage || '').slice(0, 500) : '',
+    affiliateCode: validAffiliate ? validAffiliate.affiliateCode : null,
+    affiliateUserId: validAffiliate ? validAffiliate.id : null,
     subscriptionId: subscriptionId || null,
     // "to_pay" only ever meant anything for domestic delivery (see
     // calculateShipping) — re-derive from the address here too, so a

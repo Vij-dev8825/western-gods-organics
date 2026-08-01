@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { Routes, Route, Outlet, useLocation } from 'react-router-dom';
 import { useLang } from './i18n';
 import { CANONICAL_ORIGIN } from './utils/site';
+import { captureAffiliateCode } from './utils/affiliateAttribution';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -45,6 +46,7 @@ import Sourcing from './pages/Sourcing';
 import ImportInfo from './pages/ImportInfo';
 import StoreLocator from './pages/StoreLocator';
 import GiftCards from './pages/GiftCards';
+import Affiliate from './pages/Affiliate';
 
 import AdminLogin from './pages/admin/AdminLogin';
 import AdminLayout from './pages/admin/AdminLayout';
@@ -70,6 +72,7 @@ import AdminCurrency from './pages/admin/AdminCurrency';
 import AdminHomepageReviews from './pages/admin/AdminHomepageReviews';
 import AdminCountries from './pages/admin/AdminCountries';
 import AdminGiftCards from './pages/admin/AdminGiftCards';
+import AdminAffiliates from './pages/admin/AdminAffiliates';
 
 function NotFound() {
   return (
@@ -136,6 +139,9 @@ function CanonicalTag() {
 }
 
 export default function App() {
+  useEffect(() => {
+    captureAffiliateCode();
+  }, []);
   return (
     <>
     <ScrollToTop />
@@ -166,6 +172,7 @@ export default function App() {
         <Route path="homepage-reviews" element={<AdminHomepageReviews />} />
         <Route path="countries" element={<AdminCountries />} />
         <Route path="gift-cards" element={<AdminGiftCards />} />
+        <Route path="affiliates" element={<AdminAffiliates />} />
       </Route>
 
       {/* Customer storefront */}
@@ -220,6 +227,14 @@ export default function App() {
           element={
             <ProtectedRoute>
               <GiftCards />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/affiliate"
+          element={
+            <ProtectedRoute>
+              <Affiliate />
             </ProtectedRoute>
           }
         />

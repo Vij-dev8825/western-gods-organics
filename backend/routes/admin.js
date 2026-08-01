@@ -25,6 +25,7 @@ const whatsappOrdering = require('../utils/whatsappOrdering');
 const { getPaymentMethodsConfig } = require('../utils/paymentMethods');
 const { getShippingSettings } = require('../utils/shippingSettings');
 const { cancelGiftCard } = require('../utils/giftCards');
+const { generateUniqueAffiliateCode, getCommissionSummary, recordPayout, creditCommissionForOrder } = require('../utils/affiliates');
 
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || process.env.CONTACT_NOTIFY_EMAIL;
 const ADMIN_PHONE = process.env.ADMIN_PHONE;
@@ -792,6 +793,7 @@ router.patch('/orders/:id', async (req, res, next) => {
     await db.put('orders', order);
     if (justDelivered) {
       await creditPointsForOrder(order);
+      await creditCommissionForOrder(order);
     }
 
     const user = await db.get('users', order.userId);
@@ -1201,7 +1203,13 @@ router.get('/customers', async (req, res, next) => {
   try {
     const users = (await db.list('users'))
       .filter((u) => u.role !== 'admin')
-      .map(({ id, name, phone, email, createdAt, isWholesale }) => ({ id, name, phone, email, createdAt, isWholesale: !!isWholesale }));
+      .map(({ id, name, phone, email, createdAt, isWholesale, isAffiliate, affiliateCode, commissionRate }) => ({
+        id, name, phone, email, createdAt,
+        isWholesale: !!isWholesale,
+        isAffiliate: !!isAffiliate,
+        affiliateCode: affiliateCode || null,
+        commissionRate: commissionRate || 0,
+      }));
     res.json({ success: true, customers: users });
   } catch (err) {
     next(err);
@@ -1223,6 +1231,85 @@ router.patch('/customers/:id/wholesale', async (req, res, next) => {
     await db.put('users', user);
     res.json({ success: true, customer: { id: user.id, name: user.name, phone: user.phone, email: user.email, createdAt: user.createdAt, isWholesale: user.isWholesale } });
   } catch (err) {
+    next(err);
+  }
+});
+
+// PATCH /api/admin/customers/:id/affiliate  { isAffiliate, commissionRate, code? }
+// Grants or revokes affiliate status and sets their commission rate (%).
+// A code is generated the first time an account is granted affiliate status
+// (or reused if it already has one); `code` lets the admin request a vanity
+// code instead (e.g. "SARAH10") — falls back to a random one if taken.
+router.patch('/customers/:id/affiliate', async (req, res, next) => {
+  try {
+    const user = await db.get('users', req.params.id);
+    if (!user || user.role === 'admin') {
+      return res.status(404).json({ success: false, message: 'Customer not found.' });
+    }
+    const isAffiliate = !!req.body.isAffiliate;
+    if (isAffiliate) {
+      const commissionRate = Number(req.body.commissionRate);
+      if (!(commissionRate > 0) || commissionRate > 100) {
+        return res.status(400).json({ success: false, message: 'Commission rate must be a number between 0 and 100.' });
+      }
+      if (!user.affiliateCode) {
+        user.affiliateCode = await generateUniqueAffiliateCode(req.body.code);
+      }
+      user.commissionRate = commissionRate;
+    }
+    user.isAffiliate = isAffiliate;
+    await db.put('users', user);
+    res.json({
+      success: true,
+      customer: {
+        id: user.id, name: user.name, phone: user.phone, email: user.email, createdAt: user.createdAt,
+        isAffiliate: user.isAffiliate, affiliateCode: user.affiliateCode || null, commissionRate: user.commissionRate || 0,
+      },
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET /api/admin/affiliates — every affiliate (past or present) with their
+// live commission balance/lifetime totals, newest-granted first.
+router.get('/affiliates', async (req, res, next) => {
+  try {
+    const affiliates = (await db.list('users')).filter((u) => u.affiliateCode);
+    const withSummary = await Promise.all(
+      affiliates.map(async (u) => ({
+        id: u.id,
+        name: u.name,
+        phone: u.phone,
+        email: u.email,
+        isAffiliate: !!u.isAffiliate,
+        affiliateCode: u.affiliateCode,
+        commissionRate: u.commissionRate || 0,
+        ...(await getCommissionSummary(u.id)),
+      }))
+    );
+    res.json({ success: true, affiliates: withSummary });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /api/admin/affiliates/:id/payout  { amount, note? } — records a
+// payout the admin already made externally (bank transfer/UPI) against the
+// affiliate's ledger; rejected if it exceeds their current balance.
+router.post('/affiliates/:id/payout', async (req, res, next) => {
+  try {
+    const user = await db.get('users', req.params.id);
+    if (!user?.isAffiliate) {
+      return res.status(404).json({ success: false, message: 'Affiliate not found.' });
+    }
+    await recordPayout(req.params.id, Number(req.body.amount), req.body.note);
+    const summary = await getCommissionSummary(req.params.id);
+    res.json({ success: true, ...summary });
+  } catch (err) {
+    if (err.message.includes('Payout amount')) {
+      return res.status(400).json({ success: false, message: err.message });
+    }
     next(err);
   }
 });

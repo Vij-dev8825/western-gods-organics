@@ -47,6 +47,7 @@ const COLLECTIONS = [
   'shipping-settings',
   'gift-cards',
   'gift-card-ledger',
+  'affiliate-ledger',
 ];
 
 let mode = 'json';

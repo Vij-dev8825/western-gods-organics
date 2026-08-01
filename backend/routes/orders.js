@@ -96,7 +96,7 @@ router.post('/verify-cod-phone', async (req, res, next) => {
 // address's phone number doubles as the guest's identity.
 router.post('/', optionalAuth, async (req, res, next) => {
   try {
-    const { items, address, paymentMethod, couponCode, pointsToRedeem, guestInfo, giftCardCode, isGift, giftMessage } = req.body;
+    const { items, address, paymentMethod, couponCode, pointsToRedeem, guestInfo, giftCardCode, isGift, giftMessage, affiliateCode } = req.body;
     const effectivePaymentMethod = paymentMethod || 'cod';
     const shippingChoice = req.body.shippingChoice === 'to_pay' ? 'to_pay' : 'shipping';
 
@@ -156,6 +156,7 @@ router.post('/', optionalAuth, async (req, res, next) => {
       giftCardApplied,
       isGift,
       giftMessage,
+      affiliateCode,
     });
 
     const response = { success: true, message: 'Order placed successfully.', order };
@@ -227,7 +228,7 @@ router.post('/razorpay/create', optionalAuth, async (req, res, next) => {
 // { items, address, guestInfo?, razorpay_order_id, razorpay_payment_id, razorpay_signature }
 router.post('/razorpay/verify', optionalAuth, async (req, res, next) => {
   try {
-    const { items, address, couponCode, pointsToRedeem, guestInfo, giftCardCode, isGift, giftMessage, razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
+    const { items, address, couponCode, pointsToRedeem, guestInfo, giftCardCode, isGift, giftMessage, affiliateCode, razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
     // Must match whatever /razorpay/create computed the charged amount from —
     // the client is expected to send the same choice to both, same as it
     // already does for items/address/couponCode.
@@ -280,6 +281,7 @@ router.post('/razorpay/verify', optionalAuth, async (req, res, next) => {
       giftCardApplied,
       isGift,
       giftMessage,
+      affiliateCode,
     });
 
     const response = { success: true, message: 'Payment verified and order placed.', order };
@@ -360,7 +362,7 @@ router.post('/cod-advance/create', optionalAuth, async (req, res, next) => {
 // { items, address, guestInfo?, razorpay_order_id, razorpay_payment_id, razorpay_signature }
 router.post('/cod-advance/verify', optionalAuth, async (req, res, next) => {
   try {
-    const { items, address, couponCode, pointsToRedeem, guestInfo, giftCardCode, isGift, giftMessage, razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
+    const { items, address, couponCode, pointsToRedeem, guestInfo, giftCardCode, isGift, giftMessage, affiliateCode, razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
     // Must match whatever /cod-advance/create computed orderTotal from — the
     // client is expected to send the same choice to both.
     const shippingChoice = req.body.shippingChoice === 'to_pay' ? 'to_pay' : 'shipping';
@@ -405,6 +407,7 @@ router.post('/cod-advance/verify', optionalAuth, async (req, res, next) => {
       giftCardApplied,
       isGift,
       giftMessage,
+      affiliateCode,
     });
 
     const response = { success: true, message: 'Advance payment verified and order placed.', order };

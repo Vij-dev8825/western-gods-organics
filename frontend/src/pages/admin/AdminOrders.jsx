@@ -70,6 +70,11 @@ export default function AdminOrders() {
                         Gift card {o.giftCardCode} applied: −₹{o.giftCardApplied}
                       </div>
                     )}
+                    {o.affiliateCode && (
+                      <div className="muted" style={{ fontSize: '0.75rem', marginTop: 4 }}>
+                        🤝 Affiliate: {o.affiliateCode}
+                      </div>
+                    )}
                   </td>
                   <td>
                     ₹{o.total}

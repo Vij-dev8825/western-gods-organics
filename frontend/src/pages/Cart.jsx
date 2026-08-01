@@ -10,6 +10,7 @@ import { loadRazorpay } from '../utils/loadRazorpay';
 import { validateAddress, isValidEmail } from '../utils/validators';
 import { normalizeAddresses } from '../utils/addresses';
 import { getEffectivePrice } from '../utils/pricing';
+import { getAttributedAffiliateCode } from '../utils/affiliateAttribution';
 import ChakkiWheel from '../components/ChakkiWheel';
 import AddressForm from '../components/AddressForm';
 import CodPhoneVerify from '../components/CodPhoneVerify';
@@ -62,6 +63,10 @@ export default function Cart() {
   const [applyingGiftCard, setApplyingGiftCard] = useState(false);
   const [isGift, setIsGift] = useState(false);
   const [giftMessage, setGiftMessage] = useState('');
+  const [affiliateInput, setAffiliateInput] = useState('');
+  const [appliedAffiliateCode, setAppliedAffiliateCode] = useState(null);
+  const [affiliateError, setAffiliateError] = useState('');
+  const [applyingAffiliate, setApplyingAffiliate] = useState(false);
 
   const [codAdvanceInr, setCodAdvanceInr] = useState(0);
   const [enabledMethods, setEnabledMethods] = useState({ cod: true, razorpay: true, codAdvance: true });
@@ -80,6 +85,16 @@ export default function Cart() {
         }
       }
     }).catch(() => {});
+  }, []);
+
+  // Silently pre-fills and validates whatever affiliate code was captured
+  // from a `?aff=` link earlier in this visit (see utils/affiliateAttribution)
+  // — the customer doesn't have to remember or retype anything themselves.
+  useEffect(() => {
+    const captured = getAttributedAffiliateCode();
+    if (!captured) return;
+    setAffiliateInput(captured);
+    api.validateAffiliateCode(token, captured).then((res) => setAppliedAffiliateCode(res.code)).catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -219,6 +234,28 @@ export default function Cart() {
     setGiftCardError('');
   }
 
+  async function handleApplyAffiliate() {
+    const code = affiliateInput.trim();
+    if (!code) return;
+    setApplyingAffiliate(true);
+    setAffiliateError('');
+    try {
+      const res = await api.validateAffiliateCode(token, code);
+      setAppliedAffiliateCode(res.code);
+    } catch (err) {
+      setAppliedAffiliateCode(null);
+      setAffiliateError(err.message);
+    } finally {
+      setApplyingAffiliate(false);
+    }
+  }
+
+  function removeAffiliateCode() {
+    setAppliedAffiliateCode(null);
+    setAffiliateInput('');
+    setAffiliateError('');
+  }
+
   // A guest's phone number matched an existing account (backend/routes/
   // orders.js) — send them straight to login instead of leaving them to find
   // it themselves; `from: '/cart'` brings them right back to checkout after.
@@ -257,13 +294,14 @@ export default function Cart() {
     const giftCardCode = appliedGiftCard ? appliedGiftCard.code : undefined;
     const guestInfo = isLoggedIn ? undefined : { name: guestName.trim(), email: guestEmail.trim() };
     const giftFields = { isGift, giftMessage: isGift ? giftMessage.trim() : undefined };
+    const affiliateCode = appliedAffiliateCode || undefined;
     try {
       if (paymentMethod === 'razorpay') {
-        await payWithRazorpay(orderItems, couponCode, guestInfo, giftCardCode, giftFields);
+        await payWithRazorpay(orderItems, couponCode, guestInfo, giftCardCode, giftFields, affiliateCode);
       } else if (paymentMethod === 'cod_advance') {
-        await payCodAdvance(orderItems, couponCode, guestInfo, giftCardCode, giftFields);
+        await payCodAdvance(orderItems, couponCode, guestInfo, giftCardCode, giftFields, affiliateCode);
       } else {
-        const data = await api.placeOrder(token, { items: orderItems, address, paymentMethod: 'cod', couponCode, pointsToRedeem, guestInfo, shippingChoice: effectiveShippingChoice, giftCardCode, ...giftFields });
+        const data = await api.placeOrder(token, { items: orderItems, address, paymentMethod: 'cod', couponCode, pointsToRedeem, guestInfo, shippingChoice: effectiveShippingChoice, giftCardCode, ...giftFields, affiliateCode });
         finishOrder(data, address);
       }
     } catch (err) {
@@ -298,7 +336,7 @@ export default function Cart() {
     navigate(`/order-success/${data.order.id}`);
   }
 
-  async function payWithRazorpay(orderItems, couponCode, guestInfo, giftCardCode, giftFields = {}) {
+  async function payWithRazorpay(orderItems, couponCode, guestInfo, giftCardCode, giftFields = {}, affiliateCode) {
     const rzpOrder = await api.createRazorpayOrder(token, { items: orderItems, couponCode, pointsToRedeem, address, guestInfo, shippingChoice: effectiveShippingChoice, giftCardCode });
     await loadRazorpay();
 
@@ -323,7 +361,7 @@ export default function Cart() {
         },
         handler: async (response) => {
           try {
-            const data = await api.verifyRazorpayPayment(token, { items: orderItems, address, couponCode, pointsToRedeem, guestInfo, shippingChoice: effectiveShippingChoice, giftCardCode, ...giftFields, ...response });
+            const data = await api.verifyRazorpayPayment(token, { items: orderItems, address, couponCode, pointsToRedeem, guestInfo, shippingChoice: effectiveShippingChoice, giftCardCode, ...giftFields, affiliateCode, ...response });
             finishOrder(data, address);
             resolve();
           } catch (err) {
@@ -342,7 +380,7 @@ export default function Cart() {
 
   // Same flow as payWithRazorpay, but only the small COD_ADVANCE_INR advance
   // is charged — the order itself still records the rest as due on delivery.
-  async function payCodAdvance(orderItems, couponCode, guestInfo, giftCardCode, giftFields = {}) {
+  async function payCodAdvance(orderItems, couponCode, guestInfo, giftCardCode, giftFields = {}, affiliateCode) {
     const rzpOrder = await api.createCodAdvanceOrder(token, { items: orderItems, couponCode, pointsToRedeem, address, guestInfo, shippingChoice: effectiveShippingChoice, giftCardCode });
     await loadRazorpay();
 
@@ -367,7 +405,7 @@ export default function Cart() {
         },
         handler: async (response) => {
           try {
-            const data = await api.verifyCodAdvancePayment(token, { items: orderItems, address, couponCode, pointsToRedeem, guestInfo, shippingChoice: effectiveShippingChoice, giftCardCode, ...giftFields, ...response });
+            const data = await api.verifyCodAdvancePayment(token, { items: orderItems, address, couponCode, pointsToRedeem, guestInfo, shippingChoice: effectiveShippingChoice, giftCardCode, ...giftFields, affiliateCode, ...response });
             finishOrder(data, address);
             resolve();
           } catch (err) {
@@ -660,6 +698,39 @@ export default function Cart() {
                     style={{ marginTop: 8 }}
                   />
                 )}
+              </div>
+
+              <div className="field">
+                <label>Affiliate code (optional)</label>
+                {appliedAffiliateCode ? (
+                  <div className="coupon-applied">
+                    <span>✓ Code <b>{appliedAffiliateCode}</b> applied</span>
+                    <button type="button" className="link-btn" onClick={removeAffiliateCode}>Remove</button>
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex gap-1">
+                      <input
+                        placeholder="e.g. SARAH10"
+                        value={affiliateInput}
+                        onChange={(e) => setAffiliateInput(e.target.value.toUpperCase())}
+                        style={{ flex: 1 }}
+                      />
+                      <button
+                        type="button"
+                        className="btn btn-outline btn-sm"
+                        disabled={!affiliateInput.trim() || applyingAffiliate}
+                        onClick={handleApplyAffiliate}
+                      >
+                        {applyingAffiliate ? 'Applying…' : 'Apply'}
+                      </button>
+                    </div>
+                    {affiliateError && <div className="field-error">{affiliateError}</div>}
+                  </>
+                )}
+                <p className="muted" style={{ fontSize: '0.8rem', marginTop: 6 }}>
+                  Credits whoever referred you to our affiliate program — doesn't change your total.
+                </p>
               </div>
 
               {isDomesticAddress && (
