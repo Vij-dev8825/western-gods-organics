@@ -11,6 +11,7 @@ import AiAssistant from './components/AiAssistant';
 import PromoPopup from './components/PromoPopup';
 import CookieConsent from './components/CookieConsent';
 import PushOptIn from './components/PushOptIn';
+import InstallPrompt from './components/InstallPrompt';
 import SaleCountdown from './components/SaleCountdown';
 import WelcomeSelector from './components/WelcomeSelector';
 import SeoMeta from './components/SeoMeta';
@@ -101,6 +102,7 @@ function StoreLayout() {
       <PromoPopup />
       <CookieConsent />
       <PushOptIn />
+      <InstallPrompt />
     </div>
   );
 }

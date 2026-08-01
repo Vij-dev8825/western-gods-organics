@@ -1,0 +1,24 @@
+{
+  "name": "Western Gods Organics",
+  "short_name": "West. Gods Organics",
+  "description": "Traditional wood-pressed cold-pressed oils, handmade herbal soaps and herbal powders — shop directly from the mill.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#fffdf8",
+  "theme_color": "#6fae4f",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/favicon-96x96.png",
+      "sizes": "96x96",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

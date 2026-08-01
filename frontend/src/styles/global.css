@@ -3350,6 +3350,7 @@ body.has-cookie-bar .push-optin { bottom: calc(var(--cookie-bar-height, 0px) + 8
 body.has-cookie-bar .whatsapp-fab { bottom: calc(var(--cookie-bar-height, 0px) + 16px); }
 body.has-cookie-bar .ai-assistant-fab { bottom: calc(var(--cookie-bar-height, 0px) + 82px); }
 body.has-cookie-bar .back-to-top { bottom: calc(var(--cookie-bar-height, 0px) + 148px); }
+body.has-cookie-bar .install-prompt { bottom: calc(var(--cookie-bar-height, 0px) + 270px); }
 
 .push-optin {
   position: fixed;
@@ -3380,6 +3381,38 @@ body.has-cookie-bar .back-to-top { bottom: calc(var(--cookie-bar-height, 0px) + 
 }
 @media (max-width: 640px) {
   .push-optin { left: 12px; right: 12px; max-width: none; bottom: 88px; }
+}
+
+.install-prompt {
+  position: fixed;
+  left: 20px;
+  /* Stacked above push-optin (90px + its measured ~166px card + 14px gap)
+     so the two dismissible "ask" banners never overlap when both happen to
+     be eligible for the same visitor. */
+  bottom: 270px;
+  z-index: 170;
+  max-width: 300px;
+  background: var(--paper);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lift);
+  padding: 18px 20px 18px 18px;
+}
+.install-prompt-icon { font-size: 1.3rem; display: block; margin-bottom: 6px; }
+.install-prompt p { font-size: 0.88rem; color: var(--forest); margin: 0 0 12px; }
+.install-prompt-actions { display: flex; gap: 8px; }
+.install-prompt-close {
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  background: none;
+  border: none;
+  font-size: 1.1rem;
+  line-height: 1;
+  color: var(--forest-light);
+  cursor: pointer;
+}
+@media (max-width: 640px) {
+  .install-prompt { left: 12px; right: 12px; max-width: none; bottom: 268px; }
 }
 
 @media (max-width: 640px) {
