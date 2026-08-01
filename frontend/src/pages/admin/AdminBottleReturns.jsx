@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { api } from '../../api';
 import { useAuth } from '../../context/AuthContext';
 
@@ -6,6 +7,9 @@ const STATUSES = ['requested', 'approved', 'rejected'];
 
 export default function AdminBottleReturns() {
   const { token } = useAuth();
+  const [searchParams] = useSearchParams();
+  const highlightId = searchParams.get('order');
+  const highlightRef = useRef(null);
   const [orders, setOrders] = useState([]);
   const [message, setMessage] = useState(null);
 
@@ -13,6 +17,14 @@ export default function AdminBottleReturns() {
     api.admin.getOrders(token).then((d) => setOrders(d.orders)).catch(() => {});
   }
   useEffect(load, [token]);
+
+  // Scanning a customer's bottle-return QR label lands here with ?order=,
+  // so jump straight to it instead of making admin hunt through the list.
+  useEffect(() => {
+    if (highlightId && highlightRef.current) {
+      highlightRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, [highlightId, orders]);
 
   async function setStatus(o, status) {
     setMessage(null);
@@ -56,7 +68,7 @@ export default function AdminBottleReturns() {
                 .slice()
                 .sort((a, b) => new Date(b.bottleReturn.createdAt) - new Date(a.bottleReturn.createdAt))
                 .map((o) => (
-                  <tr key={o.id}>
+                  <tr key={o.id} ref={o.id === highlightId ? highlightRef : null} style={o.id === highlightId ? { outline: '2px solid #d4a017', outlineOffset: -2 } : undefined}>
                     <td>
                       <b>{o.orderNumber}</b>
                       <div className="muted" style={{ fontSize: '0.75rem' }}>₹{o.total}</div>

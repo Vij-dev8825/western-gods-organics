@@ -630,4 +630,28 @@ router.post('/:id/bottle-return', requireAuth, async (req, res, next) => {
   }
 });
 
+// GET /api/orders/:id/bottle-return/qr — a QR code the customer can attach to
+// the physical package, encoding a link straight to this request in Admin →
+// Bottle Returns (opens to admin login if the scanning device isn't already
+// signed in) so approving on receipt doesn't mean hunting through the list.
+router.get('/:id/bottle-return/qr', requireAuth, async (req, res, next) => {
+  try {
+    const order = await db.get('orders', req.params.id);
+    if (!order || order.userId !== req.user.id) {
+      return res.status(404).json({ success: false, message: 'Order not found.' });
+    }
+    if (!order.bottleReturn) {
+      return res.status(400).json({ success: false, message: 'No bottle return request found for this order.' });
+    }
+
+    const { default: QRCode } = await import('qrcode');
+    const siteUrl = process.env.SITE_URL || 'https://www.westerngodsorganic.com';
+    const targetUrl = `${siteUrl.replace(/\/$/, '')}/admin/bottle-returns?order=${order.id}`;
+    const qr = await QRCode.toDataURL(targetUrl);
+    res.json({ success: true, qr, orderNumber: order.orderNumber });
+  } catch (err) {
+    next(err);
+  }
+});
+
 module.exports = router;

@@ -71,6 +71,9 @@ export default function Orders() {
   const [bottleFormId, setBottleFormId] = useState(null);
   const [bottleQty, setBottleQty] = useState(1);
   const [submittingBottle, setSubmittingBottle] = useState(false);
+  const [qrOrderId, setQrOrderId] = useState(null);
+  const [qrDataUrl, setQrDataUrl] = useState(null);
+  const [loadingQr, setLoadingQr] = useState(false);
 
   useEffect(() => {
     api.getOrders(token).then((d) => setOrders(d.orders)).catch(() => setOrders([]));
@@ -190,6 +193,26 @@ export default function Orders() {
       showToast(err.message, 'error');
     } finally {
       setSubmittingBottle(false);
+    }
+  }
+
+  // A QR label the customer can attach to the physical package — scanning it
+  // takes admin straight to this specific request in Admin → Bottle Returns
+  // instead of hunting through the list on receipt.
+  async function toggleQr(order) {
+    if (qrOrderId === order.id) {
+      setQrOrderId(null);
+      return;
+    }
+    setLoadingQr(true);
+    try {
+      const d = await api.getBottleReturnQr(token, order.id);
+      setQrDataUrl(d.qr);
+      setQrOrderId(order.id);
+    } catch (err) {
+      showToast(err.message, 'error');
+    } finally {
+      setLoadingQr(false);
     }
   }
 
@@ -318,7 +341,21 @@ export default function Orders() {
                       {BOTTLE_RETURN_STATUS_LABELS[o.bottleReturn.status] || o.bottleReturn.status}
                     </span>
                   )}
+                  {o.bottleReturn?.status === 'requested' && (
+                    <button className="btn btn-outline btn-sm" disabled={loadingQr} onClick={() => toggleQr(o)}>
+                      {qrOrderId === o.id ? 'Hide return label' : '📦 Show return label'}
+                    </button>
+                  )}
                 </div>
+
+                {qrOrderId === o.id && qrDataUrl && (
+                  <div className="return-request-form center">
+                    <p className="muted" style={{ marginTop: 0 }}>
+                      Attach this to your package — scanning it takes us straight to your return on receipt.
+                    </p>
+                    <img src={qrDataUrl} alt="Bottle return QR code" style={{ width: 180, height: 180 }} />
+                  </div>
+                )}
 
                 {returnFormId === o.id && (
                   <div className="return-request-form">
