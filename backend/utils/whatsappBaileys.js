@@ -15,7 +15,6 @@
  */
 const path = require('path');
 const fs = require('fs');
-const whatsappOrdering = require('./whatsappOrdering');
 
 const AUTH_DIR = path.join(__dirname, '..', 'whatsapp-auth');
 
@@ -40,6 +39,13 @@ function extractText(message) {
 
 async function handleIncomingMessages({ messages, type }) {
   if (type !== 'notify') return; // 'append' etc. is historical sync, not a new message
+  // Required lazily (not at module top-level): whatsappOrdering.js requires
+  // orderBuilder.js, which itself requires this file's own module (whatsapp.js
+  // -> whatsappBaileys.js) — an eager top-level require here would resolve
+  // mid-cycle and leave OTHER modules (notify.js, orderBuilder.js) holding a
+  // permanently-undefined sendWhatsApp. By startup's end every module has
+  // finished loading, so a require() here just hits Node's module cache.
+  const whatsappOrdering = require('./whatsappOrdering');
   for (const msg of messages) {
     try {
       const jid = msg.key?.remoteJid;
