@@ -934,7 +934,7 @@ router.get('/shipping-settings', async (req, res, next) => {
   }
 });
 
-// PUT /api/admin/shipping-settings  { domesticFee, domesticFreeThreshold }
+// PUT /api/admin/shipping-settings  { domesticFee, domesticFreeThreshold, domesticShippingEnabled }
 router.put('/shipping-settings', async (req, res, next) => {
   try {
     const domesticFee = Number(req.body.domesticFee);
@@ -945,7 +945,12 @@ router.put('/shipping-settings', async (req, res, next) => {
         message: 'Shipping fee and free-shipping threshold must be non-negative numbers.',
       });
     }
-    const shippingSettings = { id: 'main', domesticFee, domesticFreeThreshold };
+    const shippingSettings = {
+      id: 'main',
+      domesticFee,
+      domesticFreeThreshold,
+      domesticShippingEnabled: !!req.body.domesticShippingEnabled,
+    };
     await db.put('shipping-settings', shippingSettings);
     res.json({ success: true, shippingSettings });
   } catch (err) {

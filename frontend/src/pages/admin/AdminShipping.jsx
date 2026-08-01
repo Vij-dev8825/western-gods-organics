@@ -4,7 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 
 export default function AdminShipping() {
   const { token } = useAuth();
-  const [settings, setSettings] = useState({ domesticFee: '', domesticFreeThreshold: '' });
+  const [settings, setSettings] = useState({ domesticFee: '', domesticFreeThreshold: '', domesticShippingEnabled: true });
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState(null);
 
@@ -12,6 +12,7 @@ export default function AdminShipping() {
     api.admin.getShippingSettings(token).then((d) => setSettings({
       domesticFee: String(d.shippingSettings.domesticFee),
       domesticFreeThreshold: String(d.shippingSettings.domesticFreeThreshold),
+      domesticShippingEnabled: d.shippingSettings.domesticShippingEnabled,
     })).catch(() => {});
   }, [token]);
 
@@ -25,10 +26,15 @@ export default function AdminShipping() {
     setSaving(true);
     setMessage(null);
     try {
-      const d = await api.admin.updateShippingSettings(token, { domesticFee, domesticFreeThreshold });
+      const d = await api.admin.updateShippingSettings(token, {
+        domesticFee,
+        domesticFreeThreshold,
+        domesticShippingEnabled: settings.domesticShippingEnabled,
+      });
       setSettings({
         domesticFee: String(d.shippingSettings.domesticFee),
         domesticFreeThreshold: String(d.shippingSettings.domesticFreeThreshold),
+        domesticShippingEnabled: d.shippingSettings.domesticShippingEnabled,
       });
       setMessage({ type: 'success', text: 'Shipping settings updated.' });
     } catch (err) {
@@ -53,6 +59,18 @@ export default function AdminShipping() {
       {message && <div className={`alert alert-${message.type}`}>{message.text}</div>}
 
       <div className="admin-card">
+        <label className="check-row">
+          <input
+            type="checkbox"
+            checked={settings.domesticShippingEnabled}
+            onChange={(e) => setSettings((s) => ({ ...s, domesticShippingEnabled: e.target.checked }))}
+          />
+          Charge shipping on India orders
+        </label>
+        <p className="muted" style={{ fontSize: '0.85rem' }}>
+          Turn this off to make domestic shipping free for everyone, regardless of the fee/threshold below.
+        </p>
+
         <div className="form-grid">
           <div className="field">
             <label>Shipping fee (₹)</label>

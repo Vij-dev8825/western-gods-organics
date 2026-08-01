@@ -119,7 +119,8 @@ const DEFAULT_INTL_SHIPPING = 1500;
 async function calculateShipping(subtotal, destCountry = DOMESTIC_COUNTRY, userId = null) {
   if (subtotal === 0) return 0;
   if (destCountry === DOMESTIC_COUNTRY) {
-    const { domesticFee, domesticFreeThreshold } = await getShippingSettings();
+    const { domesticFee, domesticFreeThreshold, domesticShippingEnabled } = await getShippingSettings();
+    if (!domesticShippingEnabled) return 0;
     // Silver/Gold loyalty tiers lower (or remove) the free-shipping bar
     // relative to this admin-set base — see backend/utils/loyalty.js TIERS.
     // Guests and brand-new (Bronze) customers get the base threshold as-is.

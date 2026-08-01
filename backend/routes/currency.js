@@ -84,6 +84,7 @@ router.get('/rates', async (req, res, next) => {
       shipping: overrides?.shipping || {},
       domesticShippingFee: domesticShipping.domesticFee,
       domesticFreeShippingThreshold: domesticShipping.domesticFreeThreshold,
+      domesticShippingEnabled: domesticShipping.domesticShippingEnabled,
     });
   } catch (err) {
     // Serve a stale cache rather than failing the whole storefront if the

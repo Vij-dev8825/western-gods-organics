@@ -35,6 +35,7 @@ export function CurrencyProvider({ children }) {
   // real settings load.
   const [domesticShippingFee, setDomesticShippingFee] = useState(60);
   const [domesticFreeShippingThreshold, setDomesticFreeShippingThreshold] = useState(999);
+  const [domesticShippingEnabled, setDomesticShippingEnabled] = useState(true);
 
   useEffect(() => {
     api.getCurrencyRates().then((d) => {
@@ -44,6 +45,7 @@ export function CurrencyProvider({ children }) {
       if (d.countries?.length) setCountries(d.countries);
       if (typeof d.domesticShippingFee === 'number') setDomesticShippingFee(d.domesticShippingFee);
       if (typeof d.domesticFreeShippingThreshold === 'number') setDomesticFreeShippingThreshold(d.domesticFreeShippingThreshold);
+      if (typeof d.domesticShippingEnabled === 'boolean') setDomesticShippingEnabled(d.domesticShippingEnabled);
     }).catch(() => {});
   }, []);
 
@@ -114,7 +116,10 @@ export function CurrencyProvider({ children }) {
   // default (domesticFreeShippingThreshold, from /currency/rates).
   function getShippingFee(destCountryCode, inrSubtotal, freeShippingThreshold = domesticFreeShippingThreshold) {
     if (inrSubtotal === 0) return 0;
-    if (!destCountryCode || destCountryCode === 'IN') return inrSubtotal > freeShippingThreshold ? 0 : domesticShippingFee;
+    if (!destCountryCode || destCountryCode === 'IN') {
+      if (!domesticShippingEnabled) return 0;
+      return inrSubtotal > freeShippingThreshold ? 0 : domesticShippingFee;
+    }
     return shipping[destCountryCode] || DEFAULT_INTL_SHIPPING;
   }
 
