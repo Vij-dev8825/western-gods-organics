@@ -6,20 +6,51 @@ const MIN_INTERVAL_DAYS = 7; // guards against noise from same-week re-orders
 const DUE_FRACTION = 0.9; // nudge slightly before the average interval elapses — delivery itself takes a few days
 const DAY_MS = 24 * 60 * 60 * 1000;
 
+// Cold-start fallback only — used for a customer's very first purchase of an
+// item, before there's a second order to derive their own real cadence from.
+// A rough household-average consumption rate for oils/powders sold by
+// volume/weight; replaced by the empirical per-customer average (above) the
+// moment a second order of that exact item exists, so this only ever affects
+// the single nudge that gets someone to reorder for the first time.
+const ASSUMED_ML_PER_DAY = 10;
+const ASSUMED_G_PER_DAY = 10;
+
 function itemKey(item) {
   return `${item.productId}|${item.size}`;
 }
 
-/** Per-item order timestamps for one user, oldest first — non-cancelled
- * orders only, since a cancelled order was never actually consumed. */
+function parseSizeLabel(label) {
+  const match = String(label || '').trim().match(/^([\d.]+)\s*(ml|l|g|kg)\b/i);
+  if (!match) return null;
+  const value = parseFloat(match[1]);
+  const unit = match[2].toLowerCase();
+  if (unit === 'l') return { quantity: value * 1000, unit: 'ml' };
+  if (unit === 'kg') return { quantity: value * 1000, unit: 'g' };
+  return { quantity: value, unit };
+}
+
+/** Estimated days a purchased quantity of this size should last, at the
+ * assumed household rate — null for sizes that aren't a recognizable
+ * volume/weight (e.g. "Combo Pack"), which just never get a cold-start nudge. */
+function estimatedDaysForSize(size, quantity) {
+  const parsed = parseSizeLabel(size);
+  if (!parsed) return null;
+  const perDay = parsed.unit === 'ml' ? ASSUMED_ML_PER_DAY : ASSUMED_G_PER_DAY;
+  return (parsed.quantity * quantity) / perDay;
+}
+
+/** Per-item order history for one user, oldest first — non-cancelled orders
+ * only, since a cancelled order was never actually consumed. */
 function buildItemHistory(userOrders) {
   const byItem = new Map();
   const sorted = userOrders.filter((o) => o.status !== 'cancelled').sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
   for (const order of sorted) {
     for (const item of order.items) {
       const key = itemKey(item);
-      if (!byItem.has(key)) byItem.set(key, { name: item.name, size: item.size, timestamps: [] });
-      byItem.get(key).timestamps.push(new Date(order.createdAt).getTime());
+      if (!byItem.has(key)) byItem.set(key, { name: item.name, size: item.size, timestamps: [], lastQuantity: 0 });
+      const entry = byItem.get(key);
+      entry.timestamps.push(new Date(order.createdAt).getTime());
+      entry.lastQuantity = item.quantity;
     }
   }
   return byItem;
@@ -39,7 +70,23 @@ function assessDueness(timestamps, now) {
   const dueThresholdDays = avgIntervalDays * DUE_FRACTION;
   if (daysSinceLast < dueThresholdDays) return null;
 
-  return { avgIntervalDays, daysSinceLast, overdueRatio: daysSinceLast / avgIntervalDays };
+  return { avgIntervalDays, daysSinceLast, overdueRatio: daysSinceLast / avgIntervalDays, isEstimate: false };
+}
+
+/** Cold-start version of assessDueness — only for an item bought exactly
+ * once, where there's no second order yet to derive a real interval from.
+ * Uses the assumed household consumption rate instead, so a first-time
+ * buyer can still get one nudge prompting them to reorder at all. */
+function assessDuenessFallback(entry, now) {
+  if (entry.timestamps.length !== 1) return null; // 2+ orders use the empirical estimate above instead
+  const estimatedDays = estimatedDaysForSize(entry.size, entry.lastQuantity);
+  if (!estimatedDays || estimatedDays < MIN_INTERVAL_DAYS) return null;
+
+  const daysSinceLast = (now - entry.timestamps[0]) / DAY_MS;
+  const dueThresholdDays = estimatedDays * DUE_FRACTION;
+  if (daysSinceLast < dueThresholdDays) return null;
+
+  return { avgIntervalDays: estimatedDays, daysSinceLast, overdueRatio: daysSinceLast / estimatedDays, isEstimate: true };
 }
 
 /** Predicts, per customer, which past-purchased item they're likely running
@@ -61,13 +108,15 @@ async function processReorderNudges() {
 
   for (const user of users) {
     const userOrders = ordersByUser.get(user.id) || [];
-    if (userOrders.length < MIN_ORDERS_FOR_PREDICTION) continue;
+    if (userOrders.length < 1) continue;
 
     const history = buildItemHistory(userOrders);
     let best = null; // the single most-overdue item for this user, if any
 
     for (const [key, entry] of history) {
-      const assessment = assessDueness(entry.timestamps, now);
+      // Empirical (2+ orders of this exact item) takes priority over the
+      // cold-start size-based estimate whenever both would apply.
+      const assessment = assessDueness(entry.timestamps, now) || assessDuenessFallback(entry, now);
       if (!assessment) continue;
 
       const lastNudgedAt = user.reorderNudgeLog?.[key];
@@ -82,9 +131,12 @@ async function processReorderNudges() {
 
     try {
       const roundedDays = Math.round(best.assessment.avgIntervalDays);
+      const message = best.assessment.isEstimate
+        ? `Based on typical usage, you might be running low on ${best.entry.name} (${best.entry.size}) — want to reorder?`
+        : `You usually reorder ${best.entry.name} (${best.entry.size}) every ~${roundedDays} days — looks like you're due. Reorder before you run out?`;
       await notifyUser(user, {
         title: `Running low on ${best.entry.name}?`,
-        message: `You usually reorder ${best.entry.name} (${best.entry.size}) every ~${roundedDays} days — looks like you're due. Reorder before you run out?`,
+        message,
         meta: { productId: best.key.split('|')[0] },
         channels: { inapp: true, email: true, whatsapp: true },
       });
