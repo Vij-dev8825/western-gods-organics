@@ -109,6 +109,9 @@ export default function Footer() {
             <p style={{ fontSize: '0.85rem', margin: 0 }}>
               Shri Gopal Flour &amp; Oil Mills,<br />Udumalpet, Tiruppur District,<br />Tamil Nadu – 642126
             </p>
+            <ul style={{ marginTop: 10 }}>
+              <li><Link to="/impact">Our Sustainability Impact</Link></li>
+            </ul>
           </FooterAccordion>
 
           <FooterAccordion title={t('footerProducts')} isOpen={openSection === 'products'} onToggle={() => toggle('products')}>
@@ -148,6 +151,7 @@ export default function Footer() {
               <li><Link to="/bulk-enquiry">{t('footerBulk')}</Link></li>
               <li><Link to="/contact">{t('navContact')}</Link></li>
               <li><Link to="/store-locator">{t('footerVisitUs')}</Link></li>
+              <li><Link to="/impact">Our Sustainability Impact</Link></li>
               <li><Link to="/cart">{t('footerCart')}</Link></li>
               <li><Link to="/orders">{t('footerOrders')}</Link></li>
               <li><Link to="/wishlist">{t('footerWishlist')}</Link></li>
