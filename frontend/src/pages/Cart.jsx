@@ -24,7 +24,7 @@ export default function Cart() {
   const { items, updateQuantity, removeItem, clearCart } = useCart();
   const { isLoggedIn, token, user, login } = useAuth();
   const { showToast } = useToast();
-  const { isForeign, checkMinOrder, getShippingFee, country } = useCurrency();
+  const { isForeign, checkMinOrder, getShippingFee, domesticShippingEnabled, country } = useCurrency();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -127,6 +127,13 @@ export default function Cart() {
 
   const subtotal = lines.reduce((sum, l) => sum + l.sizeInfo.price * l.quantity, 0);
   const shipping = getShippingFee(address.country, subtotal, loyaltyTier?.freeShippingMinOrder);
+  // When an admin switches domestic shipping off entirely, drop the row
+  // instead of showing "Free" — that label is reserved for actually crossing
+  // the free-shipping threshold, not for the charge being disabled outright.
+  // Matches CurrencyContext.getShippingFee's own domestic check (by delivery
+  // address, not the currency-selector country, which can differ).
+  const isDomesticAddress = !address.country || address.country === 'IN';
+  const showShippingRow = !(isDomesticAddress && !domesticShippingEnabled);
   const couponStale = appliedCoupon && appliedCoupon.subtotalAtApply !== subtotal;
   const discount = appliedCoupon && !couponStale ? appliedCoupon.discount : 0;
   const pointsToRedeem = usePoints ? Math.min(pointsBalance, Math.max(0, subtotal + shipping - discount)) : 0;
@@ -415,9 +422,11 @@ export default function Cart() {
         <div className="summary-card">
           <h3>Order Summary</h3>
           <div className="summary-row"><span>Subtotal</span><span>₹{subtotal}</span></div>
-          <div className="summary-row">
-            <span>Shipping</span><span>{shipping === 0 ? 'Free' : `₹${shipping}`}</span>
-          </div>
+          {showShippingRow && (
+            <div className="summary-row">
+              <span>Shipping</span><span>{shipping === 0 ? 'Free' : `₹${shipping}`}</span>
+            </div>
+          )}
           {discount > 0 && (
             <div className="summary-row" style={{ color: '#1e6b34' }}>
               <span>Coupon ({appliedCoupon.code})</span><span>−₹{discount}</span>

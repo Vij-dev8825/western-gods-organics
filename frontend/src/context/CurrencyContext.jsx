@@ -134,6 +134,7 @@ export function CurrencyProvider({ children }) {
         getCountryPrice,
         checkMinOrder,
         getShippingFee,
+        domesticShippingEnabled,
         isForeign: country.currency !== 'INR',
       }}
     >
