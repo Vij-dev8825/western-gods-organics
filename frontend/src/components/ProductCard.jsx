@@ -10,13 +10,15 @@ import { useAuth } from '../context/AuthContext';
 import { IconHeart } from './Icons';
 import { useLang } from '../i18n';
 import { localizeProductText } from '../utils/productLocale';
+import { getEffectivePrice, isWholesalePriceApplied } from '../utils/pricing';
 
 export default function ProductCard({ product }) {
   const { productIds, toggleWishlist } = useWishlist();
   const { addItem } = useCart();
   const { showToast } = useToast();
   const { formatPrice, formatProductPrice } = useCurrency();
-  const { isLoggedIn, token } = useAuth();
+  const { isLoggedIn, token, user } = useAuth();
+  const isWholesale = !!user?.isWholesale;
   const { lang } = useLang();
   const navigate = useNavigate();
   const [size, setSize] = useState(product.sizes[1]?.label || product.sizes[0].label);
@@ -176,9 +178,10 @@ export default function ProductCard({ product }) {
         </select>
 
         <div className="price-row">
-          <span className="price">{formatProductPrice(activeSize.price, product, activeSize.label)}</span>
+          <span className="price">{formatProductPrice(getEffectivePrice(activeSize, isWholesale), product, activeSize.label)}</span>
           {activeSize.mrp > activeSize.price && <span className="mrp">{formatPrice(activeSize.mrp)}</span>}
           {discount > 0 && <span className="off">{discount}% off</span>}
+          {isWholesalePriceApplied(activeSize, isWholesale) && <span className="off wholesale-badge">Wholesale price</span>}
         </div>
 
         {outOfStock ? (

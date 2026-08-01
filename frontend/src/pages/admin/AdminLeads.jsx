@@ -30,6 +30,11 @@ export default function AdminLeads() {
     load();
   }
 
+  async function toggleWholesale(c) {
+    await api.admin.setCustomerWholesale(token, c.id, !c.isWholesale).catch(() => {});
+    load();
+  }
+
   return (
     <>
       <div className="admin-head">
@@ -124,7 +129,7 @@ export default function AdminLeads() {
           {customers.length === 0 ? <p className="muted">No customers yet.</p> : (
             <table className="admin-table">
               <thead>
-                <tr><th>Name</th><th>Phone</th><th>Email</th><th>Joined</th></tr>
+                <tr><th>Name</th><th>Phone</th><th>Email</th><th>Joined</th><th>Wholesale</th><th>Actions</th></tr>
               </thead>
               <tbody>
                 {customers.map((c) => (
@@ -133,6 +138,14 @@ export default function AdminLeads() {
                     <td>{c.phone}</td>
                     <td>{c.email || '—'}</td>
                     <td className="muted">{new Date(c.createdAt).toLocaleDateString('en-IN')}</td>
+                    <td>
+                      {c.isWholesale ? <span className="pill status-placed">Wholesale</span> : <span className="muted">Retail</span>}
+                    </td>
+                    <td>
+                      <button className="link-btn" onClick={() => toggleWholesale(c)}>
+                        {c.isWholesale ? 'revoke wholesale' : 'grant wholesale'}
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>

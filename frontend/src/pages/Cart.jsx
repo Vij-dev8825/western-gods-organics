@@ -9,6 +9,7 @@ import { getProductImage } from '../utils/productImages';
 import { loadRazorpay } from '../utils/loadRazorpay';
 import { validateAddress, isValidEmail } from '../utils/validators';
 import { normalizeAddresses } from '../utils/addresses';
+import { getEffectivePrice } from '../utils/pricing';
 import ChakkiWheel from '../components/ChakkiWheel';
 import AddressForm from '../components/AddressForm';
 import CodPhoneVerify from '../components/CodPhoneVerify';
@@ -132,7 +133,8 @@ export default function Cart() {
       .filter(Boolean);
   }, [items, products, isBuyNow, buyNowItem, buyNowQty]);
 
-  const subtotal = lines.reduce((sum, l) => sum + l.sizeInfo.price * l.quantity, 0);
+  const isWholesale = !!user?.isWholesale;
+  const subtotal = lines.reduce((sum, l) => sum + getEffectivePrice(l.sizeInfo, isWholesale) * l.quantity, 0);
   // "To Pay" (courier collects on delivery, at their own rate) only makes
   // sense for domestic delivery — force back to the store's own "Shipping"
   // fee for international, where it isn't offered as a choice.
@@ -452,7 +454,7 @@ export default function Cart() {
                   </div>
                 )}
                 <div className="price" style={{ fontFamily: 'var(--font-mono)' }}>
-                  ₹{l.sizeInfo.price * l.quantity}
+                  ₹{getEffectivePrice(l.sizeInfo, isWholesale) * l.quantity}
                 </div>
               </div>
             );

@@ -218,6 +218,7 @@ export const api = {
     setWhatsAppOrdering: (token, enabled) => request('/admin/whatsapp/ordering', { method: 'POST', body: { enabled }, token }),
 
     getCustomers: (token) => request('/admin/customers', { token }),
+    setCustomerWholesale: (token, id, isWholesale) => request(`/admin/customers/${id}/wholesale`, { method: 'PATCH', body: { isWholesale }, token }),
     getEnquiries: (token) => request('/admin/enquiries', { token }),
     updateEnquiry: (token, id, status) =>
       request(`/admin/enquiries/${id}`, { method: 'PATCH', body: { status }, token }),

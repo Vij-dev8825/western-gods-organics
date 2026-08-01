@@ -139,12 +139,18 @@ async function calculateShipping(subtotal, destCountry = DOMESTIC_COUNTRY, userI
 
 async function buildOrderItems(items, couponCode, destCountry, userId, pointsToRedeem = 0, shippingChoice = 'shipping', giftCardCode = null) {
   const products = await db.list('products');
+  // Re-fetched fresh here rather than trusting anything from the JWT, so an
+  // account an admin just flagged wholesale (see PATCH /admin/customers/:id/
+  // wholesale) gets the new price immediately, without needing to log out
+  // and back in for a new token.
+  const user = userId ? await db.get('users', userId) : null;
+  const isWholesale = !!user?.isWholesale;
   let subtotal = 0;
   let stockError = null;
   const orderItems = items.map((item) => {
     const product = products.find((p) => p.id === item.productId);
     const sizeInfo = product?.sizes.find((s) => s.label === item.size);
-    const price = sizeInfo ? sizeInfo.price : 0;
+    const price = sizeInfo ? (isWholesale && sizeInfo.wholesalePrice > 0 ? sizeInfo.wholesalePrice : sizeInfo.price) : 0;
     subtotal += price * item.quantity;
     if (!stockError) {
       if (!sizeInfo) stockError = `"${item.size}" is no longer available for this product.`;

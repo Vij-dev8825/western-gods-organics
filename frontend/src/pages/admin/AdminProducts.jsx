@@ -17,7 +17,7 @@ const EMPTY = {
   descriptions: {},
   image: '',
   extraImages: [],
-  sizes: [{ label: '500 ml', price: '', mrp: '', stock: '' }],
+  sizes: [{ label: '500 ml', price: '', mrp: '', stock: '', wholesalePrice: '' }],
   tags: '',
   comboItems: '',
   isNew: false,
@@ -73,6 +73,7 @@ function fromForm(f) {
       price: Number(s.price),
       mrp: Number(s.mrp || s.price),
       stock: Number(s.stock || 0),
+      wholesalePrice: s.wholesalePrice !== '' && s.wholesalePrice != null ? Number(s.wholesalePrice) : null,
     })),
     tags: f.tags.split(',').map((t) => t.trim()).filter(Boolean),
     comboItems: f.comboItems.split(',').map((t) => t.trim()).filter(Boolean),
@@ -379,7 +380,7 @@ export default function AdminProducts() {
           <label style={{ fontWeight: 600, fontSize: '0.85rem' }}>Sizes, rates & stock</label>
           <table className="admin-table sizes-editor">
             <thead>
-              <tr><th>Size label</th><th>Price ₹</th><th>MRP ₹</th><th>Stock</th><th /></tr>
+              <tr><th>Size label</th><th>Price ₹</th><th>MRP ₹</th><th>Stock</th><th>Wholesale ₹ (optional)</th><th /></tr>
             </thead>
             <tbody>
               {form.sizes.map((s, i) => (
@@ -388,6 +389,7 @@ export default function AdminProducts() {
                   <td><input type="number" min="0" value={s.price} onChange={(e) => setSize(i, 'price', e.target.value)} required /></td>
                   <td><input type="number" min="0" value={s.mrp} onChange={(e) => setSize(i, 'mrp', e.target.value)} /></td>
                   <td><input type="number" min="0" value={s.stock} onChange={(e) => setSize(i, 'stock', e.target.value)} /></td>
+                  <td><input type="number" min="0" value={s.wholesalePrice || ''} onChange={(e) => setSize(i, 'wholesalePrice', e.target.value)} placeholder="Same as price" /></td>
                   <td>
                     {form.sizes.length > 1 && (
                       <button type="button" className="link-btn danger" onClick={() => setForm((f) => ({ ...f, sizes: f.sizes.filter((_, idx) => idx !== i) }))}>
@@ -399,10 +401,14 @@ export default function AdminProducts() {
               ))}
             </tbody>
           </table>
+          <p className="muted" style={{ fontSize: '0.82rem', marginTop: -4 }}>
+            Wholesale ₹ only applies to accounts flagged wholesale (Admin → Enquiries &amp; Leads → Customers) — leave
+            blank to charge them the same price as everyone else.
+          </p>
           <button
             type="button"
             className="link-btn"
-            onClick={() => setForm((f) => ({ ...f, sizes: [...f.sizes, { label: '', price: '', mrp: '', stock: '' }] }))}
+            onClick={() => setForm((f) => ({ ...f, sizes: [...f.sizes, { label: '', price: '', mrp: '', stock: '', wholesalePrice: '' }] }))}
           >
             + add size
           </button>
@@ -553,7 +559,7 @@ export default function AdminProducts() {
                 <td>
                   {p.sizes.map((s) => (
                     <span className="pill" key={s.label}>
-                      {s.label} · ₹{s.price} · {s.stock} left
+                      {s.label} · ₹{s.price}{s.wholesalePrice > 0 ? ` (₹${s.wholesalePrice} wholesale)` : ''} · {s.stock} left
                     </span>
                   ))}
                 </td>

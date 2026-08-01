@@ -11,6 +11,7 @@ import { recordProductView } from '../utils/recentlyViewed';
 import { validateAddress } from '../utils/validators';
 import { normalizeAddresses } from '../utils/addresses';
 import { pricePer100, parseSizeLabel } from '../utils/sizeParsing';
+import { getEffectivePrice, isWholesalePriceApplied } from '../utils/pricing';
 import ChakkiWheel from '../components/ChakkiWheel';
 import ProductCard from '../components/ProductCard';
 import ImageLightbox from '../components/ImageLightbox';
@@ -141,6 +142,7 @@ export default function ProductDetail() {
   const { isLoggedIn, token, user } = useAuth();
   const { showToast } = useToast();
   const { lang } = useLang();
+  const isWholesale = !!user?.isWholesale;
 
   useEffect(() => {
     setProduct(null);
@@ -445,9 +447,10 @@ export default function ProductDetail() {
           </div>
 
           <div className="price-row" style={{ margin: '18px 0' }}>
-            <span className="price" style={{ fontSize: '1.6rem' }}>{formatProductPrice(activeSize.price, product, activeSize.label)}</span>
+            <span className="price" style={{ fontSize: '1.6rem' }}>{formatProductPrice(getEffectivePrice(activeSize, isWholesale), product, activeSize.label)}</span>
             {activeSize.mrp > activeSize.price && <span className="mrp">{formatPrice(activeSize.mrp)}</span>}
             {discount > 0 && <span className="off">{discount}% off</span>}
+            {isWholesalePriceApplied(activeSize, isWholesale) && <span className="off wholesale-badge">Wholesale price</span>}
           </div>
           {isForeign && (
             <p className="muted" style={{ marginTop: -12, marginBottom: 18, fontSize: '0.8rem' }}>

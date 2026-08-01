@@ -193,6 +193,7 @@ router.post('/products', async (req, res, next) => {
         price: Number(s.price),
         mrp: Number(s.mrp || s.price),
         stock: Number(s.stock || 0),
+        wholesalePrice: s.wholesalePrice !== '' && s.wholesalePrice != null ? Number(s.wholesalePrice) : null,
       })),
       rating: Number(req.body.rating || 0),
       reviewsCount: Number(req.body.reviewsCount || 0),
@@ -235,6 +236,7 @@ router.put('/products/:id', async (req, res, next) => {
         price: Number(s.price),
         mrp: Number(s.mrp || s.price),
         stock: Number(s.stock || 0),
+        wholesalePrice: s.wholesalePrice !== '' && s.wholesalePrice != null ? Number(s.wholesalePrice) : null,
       })),
       countryPrices: normalizeCountryPrices(req.body.countryPrices ?? existing.countryPrices),
       shortDescriptions: sanitizeLangMap(req.body.shortDescriptions ?? existing.shortDescriptions),
@@ -1199,8 +1201,27 @@ router.get('/customers', async (req, res, next) => {
   try {
     const users = (await db.list('users'))
       .filter((u) => u.role !== 'admin')
-      .map(({ id, name, phone, email, createdAt }) => ({ id, name, phone, email, createdAt }));
+      .map(({ id, name, phone, email, createdAt, isWholesale }) => ({ id, name, phone, email, createdAt, isWholesale: !!isWholesale }));
     res.json({ success: true, customers: users });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// PATCH /api/admin/customers/:id/wholesale  { isWholesale } — grants or
+// revokes wholesale pricing for one account. Deliberately a manual, human
+// decision (see a bulk enquiry from that customer in the Enquiries tab
+// first) rather than any automated qualification — this is the account-
+// level gate for wholesale pricing, there's no separate per-order minimum.
+router.patch('/customers/:id/wholesale', async (req, res, next) => {
+  try {
+    const user = await db.get('users', req.params.id);
+    if (!user || user.role === 'admin') {
+      return res.status(404).json({ success: false, message: 'Customer not found.' });
+    }
+    user.isWholesale = !!req.body.isWholesale;
+    await db.put('users', user);
+    res.json({ success: true, customer: { id: user.id, name: user.name, phone: user.phone, email: user.email, createdAt: user.createdAt, isWholesale: user.isWholesale } });
   } catch (err) {
     next(err);
   }
