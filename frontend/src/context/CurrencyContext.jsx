@@ -36,7 +36,6 @@ export function CurrencyProvider({ children }) {
   const [domesticShippingFee, setDomesticShippingFee] = useState(60);
   const [domesticFreeShippingThreshold, setDomesticFreeShippingThreshold] = useState(999);
   const [domesticShippingEnabled, setDomesticShippingEnabled] = useState(true);
-  const [domesticShippingLabel, setDomesticShippingLabel] = useState('To Pay');
 
   useEffect(() => {
     api.getCurrencyRates().then((d) => {
@@ -47,7 +46,6 @@ export function CurrencyProvider({ children }) {
       if (typeof d.domesticShippingFee === 'number') setDomesticShippingFee(d.domesticShippingFee);
       if (typeof d.domesticFreeShippingThreshold === 'number') setDomesticFreeShippingThreshold(d.domesticFreeShippingThreshold);
       if (typeof d.domesticShippingEnabled === 'boolean') setDomesticShippingEnabled(d.domesticShippingEnabled);
-      if (typeof d.domesticShippingLabel === 'string') setDomesticShippingLabel(d.domesticShippingLabel);
     }).catch(() => {});
   }, []);
 
@@ -116,9 +114,13 @@ export function CurrencyProvider({ children }) {
   // Gold — see backend/utils/loyalty.js TIERS) lower or remove the admin's
   // base bar; guests and Bronze members fall back to that admin-configured
   // default (domesticFreeShippingThreshold, from /currency/rates).
-  function getShippingFee(destCountryCode, inrSubtotal, freeShippingThreshold = domesticFreeShippingThreshold) {
+  // shippingChoice ('shipping' | 'to_pay') mirrors the backend: "to_pay"
+  // hands delivery to a courier who collects their own rate directly from
+  // the customer, so the store charges (and can preview) nothing for it.
+  function getShippingFee(destCountryCode, inrSubtotal, freeShippingThreshold = domesticFreeShippingThreshold, shippingChoice = 'shipping') {
     if (inrSubtotal === 0) return 0;
     if (!destCountryCode || destCountryCode === 'IN') {
+      if (shippingChoice === 'to_pay') return 0;
       if (!domesticShippingEnabled) return 0;
       return inrSubtotal > freeShippingThreshold ? 0 : domesticShippingFee;
     }
@@ -137,7 +139,6 @@ export function CurrencyProvider({ children }) {
         checkMinOrder,
         getShippingFee,
         domesticShippingEnabled,
-        domesticShippingLabel,
         isForeign: country.currency !== 'INR',
       }}
     >

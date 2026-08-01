@@ -23,7 +23,7 @@ const { issueBottleReturnCredit } = require('../utils/orderBuilder');
 const whatsappBaileys = require('../utils/whatsappBaileys');
 const whatsappOrdering = require('../utils/whatsappOrdering');
 const { getPaymentMethodsConfig } = require('../utils/paymentMethods');
-const { getShippingSettings, CHARGE_LABELS } = require('../utils/shippingSettings');
+const { getShippingSettings } = require('../utils/shippingSettings');
 
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || process.env.CONTACT_NOTIFY_EMAIL;
 const ADMIN_PHONE = process.env.ADMIN_PHONE;
@@ -934,7 +934,7 @@ router.get('/shipping-settings', async (req, res, next) => {
   }
 });
 
-// PUT /api/admin/shipping-settings  { domesticFee, domesticFreeThreshold, domesticShippingEnabled, chargeLabel }
+// PUT /api/admin/shipping-settings  { domesticFee, domesticFreeThreshold, domesticShippingEnabled }
 router.put('/shipping-settings', async (req, res, next) => {
   try {
     const domesticFee = Number(req.body.domesticFee);
@@ -945,15 +945,11 @@ router.put('/shipping-settings', async (req, res, next) => {
         message: 'Shipping fee and free-shipping threshold must be non-negative numbers.',
       });
     }
-    if (!CHARGE_LABELS.includes(req.body.chargeLabel)) {
-      return res.status(400).json({ success: false, message: 'Invalid charge label.' });
-    }
     const shippingSettings = {
       id: 'main',
       domesticFee,
       domesticFreeThreshold,
       domesticShippingEnabled: !!req.body.domesticShippingEnabled,
-      chargeLabel: req.body.chargeLabel,
     };
     await db.put('shipping-settings', shippingSettings);
     res.json({ success: true, shippingSettings });

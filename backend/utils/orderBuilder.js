@@ -116,9 +116,14 @@ const DEFAULT_INTL_SHIPPING = 1500;
 // destination concept, unlike the currency-keyed rate/minOrder overrides),
 // falling back to DEFAULT_INTL_SHIPPING when the admin hasn't set one. India
 // keeps the existing tiered domestic rate untouched.
-async function calculateShipping(subtotal, destCountry = DOMESTIC_COUNTRY, userId = null) {
+// shippingChoice ('shipping' | 'to_pay') is the customer's pick between the
+// store's own known, fixed fee vs handing delivery to a courier who collects
+// their own rate directly from the customer — a rate the store has no way to
+// know in advance, so "to_pay" always charges nothing here.
+async function calculateShipping(subtotal, destCountry = DOMESTIC_COUNTRY, userId = null, shippingChoice = 'shipping') {
   if (subtotal === 0) return 0;
   if (destCountry === DOMESTIC_COUNTRY) {
+    if (shippingChoice === 'to_pay') return 0;
     const { domesticFee, domesticFreeThreshold, domesticShippingEnabled } = await getShippingSettings();
     if (!domesticShippingEnabled) return 0;
     // Silver/Gold loyalty tiers lower (or remove) the free-shipping bar
@@ -131,7 +136,7 @@ async function calculateShipping(subtotal, destCountry = DOMESTIC_COUNTRY, userI
   return overrides?.shipping?.[destCountry] || DEFAULT_INTL_SHIPPING;
 }
 
-async function buildOrderItems(items, couponCode, destCountry, userId, pointsToRedeem = 0) {
+async function buildOrderItems(items, couponCode, destCountry, userId, pointsToRedeem = 0, shippingChoice = 'shipping') {
   const products = await db.list('products');
   let subtotal = 0;
   let stockError = null;
@@ -153,7 +158,7 @@ async function buildOrderItems(items, couponCode, destCountry, userId, pointsToR
       price,
     };
   });
-  const shipping = await calculateShipping(subtotal, destCountry, userId);
+  const shipping = await calculateShipping(subtotal, destCountry, userId, shippingChoice);
 
   const coupon = await findValidCoupon(couponCode, userId);
   const discount = computeDiscount(coupon, subtotal);
@@ -242,7 +247,7 @@ async function issueBottleReturnCredit(userId, quantity) {
   return coupon;
 }
 
-async function createOrderRecord({ userId, orderItems, address, total, discount, couponCode, pointsRedeemed, paymentMethod, payment, subscriptionId, advancePaid }) {
+async function createOrderRecord({ userId, orderItems, address, total, discount, couponCode, pointsRedeemed, paymentMethod, payment, subscriptionId, advancePaid, shippingChoice }) {
   // Computed before this order is persisted, so it only reflects orders that
   // already existed — used below to detect a customer's genuine first order,
   // whether that's a manual checkout or their first subscription renewal.
@@ -262,6 +267,12 @@ async function createOrderRecord({ userId, orderItems, address, total, discount,
     couponCode: couponCode || null,
     pointsRedeemed: pointsRedeemed || 0,
     subscriptionId: subscriptionId || null,
+    // "to_pay" only ever meant anything for domestic delivery (see
+    // calculateShipping) — re-derive from the address here too, so a
+    // request that sent it for an international order (which was actually
+    // charged the flat international fee) doesn't get persisted as
+    // "collected by courier, nothing charged" and mislead the invoice.
+    shippingChoice: (!address.country || address.country === 'IN') && shippingChoice === 'to_pay' ? 'to_pay' : 'shipping',
     total,
     status: 'placed',
     createdAt: new Date().toISOString(),

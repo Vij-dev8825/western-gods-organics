@@ -4,12 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 
 export default function AdminShipping() {
   const { token } = useAuth();
-  const [settings, setSettings] = useState({
-    domesticFee: '',
-    domesticFreeThreshold: '',
-    domesticShippingEnabled: true,
-    chargeLabel: 'To Pay',
-  });
+  const [settings, setSettings] = useState({ domesticFee: '', domesticFreeThreshold: '', domesticShippingEnabled: true });
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState(null);
 
@@ -18,7 +13,6 @@ export default function AdminShipping() {
       domesticFee: String(d.shippingSettings.domesticFee),
       domesticFreeThreshold: String(d.shippingSettings.domesticFreeThreshold),
       domesticShippingEnabled: d.shippingSettings.domesticShippingEnabled,
-      chargeLabel: d.shippingSettings.chargeLabel,
     })).catch(() => {});
   }, [token]);
 
@@ -32,17 +26,11 @@ export default function AdminShipping() {
     setSaving(true);
     setMessage(null);
     try {
-      const d = await api.admin.updateShippingSettings(token, {
-        domesticFee,
-        domesticFreeThreshold,
-        domesticShippingEnabled: settings.domesticShippingEnabled,
-        chargeLabel: settings.chargeLabel,
-      });
+      const d = await api.admin.updateShippingSettings(token, { domesticFee, domesticFreeThreshold, domesticShippingEnabled: settings.domesticShippingEnabled });
       setSettings({
         domesticFee: String(d.shippingSettings.domesticFee),
         domesticFreeThreshold: String(d.shippingSettings.domesticFreeThreshold),
         domesticShippingEnabled: d.shippingSettings.domesticShippingEnabled,
-        chargeLabel: d.shippingSettings.chargeLabel,
       });
       setMessage({ type: 'success', text: 'Shipping settings updated.' });
     } catch (err) {
@@ -58,9 +46,11 @@ export default function AdminShipping() {
         <h1>Domestic Shipping</h1>
       </div>
       <p className="muted">
-        The flat shipping fee charged on India orders below the free-shipping threshold. Silver and Gold loyalty
-        members keep their own better-than-base free-shipping perks (₹699 / any order) regardless of what's set here
-        — this only affects guests and Bronze-tier customers. International shipping fees are set separately, on
+        The flat fee charged when a customer chooses "Shipping" at checkout, on India orders below the
+        free-shipping threshold. Customers can instead choose "To Pay" — a courier-collected charge with no
+        fee set here, since the courier's own rate isn't known in advance. Silver and Gold loyalty members
+        keep their own better-than-base free-shipping perks (₹699 / any order) regardless of what's set here —
+        this only affects guests and Bronze-tier customers. International shipping fees are set separately, on
         the Currency Rates page.
       </p>
 
@@ -76,7 +66,8 @@ export default function AdminShipping() {
           Charge shipping on India orders
         </label>
         <p className="muted" style={{ fontSize: '0.85rem' }}>
-          Turn this off to make domestic shipping free for everyone, regardless of the fee/threshold below.
+          Turn this off to make the "Shipping" option free for everyone, regardless of the fee/threshold below.
+          "To Pay" is unaffected either way, since it was never a store-collected charge.
         </p>
 
         <div className="form-grid">
@@ -101,32 +92,6 @@ export default function AdminShipping() {
               onChange={(e) => setSettings((s) => ({ ...s, domesticFreeThreshold: e.target.value }))}
               placeholder="e.g. 999"
             />
-          </div>
-        </div>
-
-        <div className="field" style={{ marginTop: 16 }}>
-          <label>Customer-facing label</label>
-          <p className="muted" style={{ fontSize: '0.85rem', marginTop: 0 }}>
-            What this charge is called on the cart and invoice — "To Pay" matches courier terminology for a
-            fee collected from the customer; "Shipping" is the more familiar storefront term.
-          </p>
-          <div className="flex gap-2">
-            <label
-              className={`payment-option ${settings.chargeLabel === 'Shipping' ? 'active' : ''}`}
-              style={{ flex: 1, justifyContent: 'center' }}
-              onClick={() => setSettings((s) => ({ ...s, chargeLabel: 'Shipping' }))}
-            >
-              <input type="radio" name="chargeLabel" readOnly checked={settings.chargeLabel === 'Shipping'} />
-              Shipping
-            </label>
-            <label
-              className={`payment-option ${settings.chargeLabel === 'To Pay' ? 'active' : ''}`}
-              style={{ flex: 1, justifyContent: 'center' }}
-              onClick={() => setSettings((s) => ({ ...s, chargeLabel: 'To Pay' }))}
-            >
-              <input type="radio" name="chargeLabel" readOnly checked={settings.chargeLabel === 'To Pay'} />
-              To Pay
-            </label>
           </div>
         </div>
 

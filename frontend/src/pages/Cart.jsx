@@ -24,7 +24,7 @@ export default function Cart() {
   const { items, updateQuantity, removeItem, clearCart } = useCart();
   const { isLoggedIn, token, user, login } = useAuth();
   const { showToast } = useToast();
-  const { isForeign, checkMinOrder, getShippingFee, domesticShippingLabel, country } = useCurrency();
+  const { isForeign, checkMinOrder, getShippingFee, country } = useCurrency();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -44,6 +44,7 @@ export default function Cart() {
   const [guestEmail, setGuestEmail] = useState('');
   const [guestErrors, setGuestErrors] = useState({});
   const [paymentMethod, setPaymentMethod] = useState('cod'); // 'cod' | 'razorpay' | 'cod_advance'
+  const [shippingChoice, setShippingChoice] = useState('shipping'); // 'shipping' | 'to_pay'
   const [razorpayEnabled, setRazorpayEnabled] = useState(false);
   const [codVerifiedPhone, setCodVerifiedPhone] = useState(null);
   const [buyNowQty, setBuyNowQty] = useState(buyNowItem?.quantity || 1);
@@ -126,17 +127,21 @@ export default function Cart() {
   }, [items, products, isBuyNow, buyNowItem, buyNowQty]);
 
   const subtotal = lines.reduce((sum, l) => sum + l.sizeInfo.price * l.quantity, 0);
-  const shipping = getShippingFee(address.country, subtotal, loyaltyTier?.freeShippingMinOrder);
-  // Omit the row entirely whenever there's nothing to pay — whether that's
-  // because an admin switched domestic shipping off, the order crossed the
-  // free-shipping threshold, or a loyalty perk waived it — rather than
-  // showing a "To Pay: Free" line.
-  const showShippingRow = shipping > 0;
-  // The admin-configurable label (see AdminShipping.jsx) only applies to the
-  // domestic courier charge it actually describes; international shipping
-  // keeps its own generic "Shipping" label.
+  // "To Pay" (courier collects on delivery, at their own rate) only makes
+  // sense for domestic delivery — force back to the store's own "Shipping"
+  // fee for international, where it isn't offered as a choice.
   const isDomesticAddress = !address.country || address.country === 'IN';
-  const shippingLabel = isDomesticAddress ? domesticShippingLabel : 'Shipping';
+  const effectiveShippingChoice = isDomesticAddress ? shippingChoice : 'shipping';
+  const shipping = getShippingFee(address.country, subtotal, loyaltyTier?.freeShippingMinOrder, effectiveShippingChoice);
+  // "To Pay" always shows (there's a real choice to reflect back, even
+  // though the store isn't charging for it); "Shipping" only shows when
+  // there's an actual charge — omit it entirely rather than show "Free".
+  const showShippingRow = effectiveShippingChoice === 'to_pay' ? true : shipping > 0;
+  const shippingLabel = effectiveShippingChoice === 'to_pay' ? 'To Pay' : 'Shipping';
+  // What "Shipping" would cost regardless of which option is currently
+  // selected — shown on that option itself so switching to "To Pay" doesn't
+  // hide what the alternative is.
+  const shippingOptionFee = getShippingFee(address.country, subtotal, loyaltyTier?.freeShippingMinOrder, 'shipping');
   const couponStale = appliedCoupon && appliedCoupon.subtotalAtApply !== subtotal;
   const discount = appliedCoupon && !couponStale ? appliedCoupon.discount : 0;
   const pointsToRedeem = usePoints ? Math.min(pointsBalance, Math.max(0, subtotal + shipping - discount)) : 0;
@@ -219,7 +224,7 @@ export default function Cart() {
       } else if (paymentMethod === 'cod_advance') {
         await payCodAdvance(orderItems, couponCode, guestInfo);
       } else {
-        const data = await api.placeOrder(token, { items: orderItems, address, paymentMethod: 'cod', couponCode, pointsToRedeem, guestInfo });
+        const data = await api.placeOrder(token, { items: orderItems, address, paymentMethod: 'cod', couponCode, pointsToRedeem, guestInfo, shippingChoice: effectiveShippingChoice });
         finishOrder(data, address);
       }
     } catch (err) {
@@ -255,7 +260,7 @@ export default function Cart() {
   }
 
   async function payWithRazorpay(orderItems, couponCode, guestInfo) {
-    const rzpOrder = await api.createRazorpayOrder(token, { items: orderItems, couponCode, pointsToRedeem, address, guestInfo });
+    const rzpOrder = await api.createRazorpayOrder(token, { items: orderItems, couponCode, pointsToRedeem, address, guestInfo, shippingChoice: effectiveShippingChoice });
     await loadRazorpay();
 
     return new Promise((resolve, reject) => {
@@ -279,7 +284,7 @@ export default function Cart() {
         },
         handler: async (response) => {
           try {
-            const data = await api.verifyRazorpayPayment(token, { items: orderItems, address, couponCode, pointsToRedeem, guestInfo, ...response });
+            const data = await api.verifyRazorpayPayment(token, { items: orderItems, address, couponCode, pointsToRedeem, guestInfo, shippingChoice: effectiveShippingChoice, ...response });
             finishOrder(data, address);
             resolve();
           } catch (err) {
@@ -299,7 +304,7 @@ export default function Cart() {
   // Same flow as payWithRazorpay, but only the small COD_ADVANCE_INR advance
   // is charged — the order itself still records the rest as due on delivery.
   async function payCodAdvance(orderItems, couponCode, guestInfo) {
-    const rzpOrder = await api.createCodAdvanceOrder(token, { items: orderItems, couponCode, pointsToRedeem, address, guestInfo });
+    const rzpOrder = await api.createCodAdvanceOrder(token, { items: orderItems, couponCode, pointsToRedeem, address, guestInfo, shippingChoice: effectiveShippingChoice });
     await loadRazorpay();
 
     return new Promise((resolve, reject) => {
@@ -323,7 +328,7 @@ export default function Cart() {
         },
         handler: async (response) => {
           try {
-            const data = await api.verifyCodAdvancePayment(token, { items: orderItems, address, couponCode, pointsToRedeem, guestInfo, ...response });
+            const data = await api.verifyCodAdvancePayment(token, { items: orderItems, address, couponCode, pointsToRedeem, guestInfo, shippingChoice: effectiveShippingChoice, ...response });
             finishOrder(data, address);
             resolve();
           } catch (err) {
@@ -427,7 +432,7 @@ export default function Cart() {
           <div className="summary-row"><span>Subtotal</span><span>₹{subtotal}</span></div>
           {showShippingRow && (
             <div className="summary-row">
-              <span>{shippingLabel}</span><span>₹{shipping}</span>
+              <span>{shippingLabel}</span><span>{effectiveShippingChoice === 'to_pay' ? 'At delivery' : `₹${shipping}`}</span>
             </div>
           )}
           {discount > 0 && (
@@ -565,8 +570,35 @@ export default function Cart() {
                 <AddressForm address={address} onChange={updateAddress} errors={addressErrors} showCustomsNote />
               )}
 
+              {isDomesticAddress && (
+                <>
+                  <div className="checkout-step" style={{ marginTop: 22 }}>
+                    <span className="checkout-step-num">{isLoggedIn ? 2 : 3}</span>
+                    <h4>Delivery Method</h4>
+                  </div>
+                  <div className="payment-options">
+                    <label className={`payment-option ${shippingChoice === 'shipping' ? 'active' : ''}`}>
+                      <input type="radio" name="shippingChoice" checked={shippingChoice === 'shipping'} onChange={() => setShippingChoice('shipping')} />
+                      <span className="filter-radio" aria-hidden="true" />
+                      <span className="payment-option-body">
+                        <b>Shipping</b>
+                        <span className="muted">{shippingOptionFee === 0 ? 'Free' : `₹${shippingOptionFee}`} — included in your order total</span>
+                      </span>
+                    </label>
+                    <label className={`payment-option ${shippingChoice === 'to_pay' ? 'active' : ''}`}>
+                      <input type="radio" name="shippingChoice" checked={shippingChoice === 'to_pay'} onChange={() => setShippingChoice('to_pay')} />
+                      <span className="filter-radio" aria-hidden="true" />
+                      <span className="payment-option-body">
+                        <b>To Pay</b>
+                        <span className="muted">Courier collects their own delivery charge directly from you — not included here</span>
+                      </span>
+                    </label>
+                  </div>
+                </>
+              )}
+
               <div className="checkout-step" style={{ marginTop: 22 }}>
-                <span className="checkout-step-num">{isLoggedIn ? 2 : 3}</span>
+                <span className="checkout-step-num">{(isLoggedIn ? 2 : 3) + (isDomesticAddress ? 1 : 0)}</span>
                 <h4>Payment Method</h4>
               </div>
               <div className="payment-options">
