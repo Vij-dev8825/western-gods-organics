@@ -17,6 +17,7 @@ const STATIC_PATHS = [
   { path: '/import', priority: '0.4', changefreq: 'monthly' },
   { path: '/store-locator', priority: '0.4', changefreq: 'monthly' },
   { path: '/impact', priority: '0.5', changefreq: 'weekly' },
+  { path: '/sourcing', priority: '0.5', changefreq: 'monthly' },
   { path: '/policy', priority: '0.2', changefreq: 'yearly' },
   { path: '/refund-policy', priority: '0.2', changefreq: 'yearly' },
   { path: '/terms', priority: '0.2', changefreq: 'yearly' },

@@ -40,6 +40,7 @@ import PrivacyPolicy from './pages/PrivacyPolicy';
 import RefundPolicy from './pages/RefundPolicy';
 import TermsAndConditions from './pages/TermsAndConditions';
 import SustainabilityImpact from './pages/SustainabilityImpact';
+import Sourcing from './pages/Sourcing';
 import ImportInfo from './pages/ImportInfo';
 import StoreLocator from './pages/StoreLocator';
 
@@ -239,6 +240,7 @@ export default function App() {
         <Route path="/refund-policy" element={<RefundPolicy />} />
         <Route path="/terms" element={<TermsAndConditions />} />
         <Route path="/impact" element={<SustainabilityImpact />} />
+        <Route path="/sourcing" element={<Sourcing />} />
         <Route path="/import" element={<ImportInfo />} />
         <Route path="/store-locator" element={<StoreLocator />} />
         <Route path="*" element={<NotFound />} />
