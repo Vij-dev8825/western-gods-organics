@@ -424,7 +424,7 @@ export default function Cart() {
           <div className="summary-row"><span>Subtotal</span><span>₹{subtotal}</span></div>
           {showShippingRow && (
             <div className="summary-row">
-              <span>Shipping</span><span>{shipping === 0 ? 'Free' : `₹${shipping}`}</span>
+              <span>To Pay</span><span>{shipping === 0 ? 'Free' : `₹${shipping}`}</span>
             </div>
           )}
           {discount > 0 && (

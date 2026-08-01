@@ -101,7 +101,7 @@ export default function Invoice() {
 
         <div className="invoice-totals">
           <div><span>Subtotal</span><span>₹{subtotal}</span></div>
-          <div><span>Shipping</span><span>{shipping === 0 ? 'Free' : `₹${shipping}`}</span></div>
+          <div><span>To Pay</span><span>{shipping === 0 ? 'Free' : `₹${shipping}`}</span></div>
           {discount > 0 && (
             <div><span>Coupon {order.couponCode ? `(${order.couponCode})` : ''}</span><span>−₹{discount}</span></div>
           )}
