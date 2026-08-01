@@ -6,6 +6,7 @@ const { sendMail } = require('./mailer');
 const { sendWhatsApp } = require('./whatsapp');
 const { getPointsBalance, redeemPointsForOrder, getTierInfo, REDEEM_VALUE_INR_PER_POINT } = require('./loyalty');
 const { getShippingSettings } = require('./shippingSettings');
+const { findValidGiftCard, redeemGiftCardForOrder } = require('./giftCards');
 
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || process.env.CONTACT_NOTIFY_EMAIL;
 const REFERRAL_REWARD_INR = 100;
@@ -136,7 +137,7 @@ async function calculateShipping(subtotal, destCountry = DOMESTIC_COUNTRY, userI
   return overrides?.shipping?.[destCountry] || DEFAULT_INTL_SHIPPING;
 }
 
-async function buildOrderItems(items, couponCode, destCountry, userId, pointsToRedeem = 0, shippingChoice = 'shipping') {
+async function buildOrderItems(items, couponCode, destCountry, userId, pointsToRedeem = 0, shippingChoice = 'shipping', giftCardCode = null) {
   const products = await db.list('products');
   let subtotal = 0;
   let stockError = null;
@@ -174,6 +175,19 @@ async function buildOrderItems(items, couponCode, destCountry, userId, pointsToR
   }
   const pointsDiscount = pointsRedeemed * REDEEM_VALUE_INR_PER_POINT;
 
+  // Applied after the coupon and points, on whatever's left — never trust
+  // the requested code/amount, and never let it push the total below zero.
+  let giftCardApplied = 0;
+  let appliedGiftCardCode = null;
+  if (giftCardCode) {
+    const giftCard = await findValidGiftCard(giftCardCode);
+    if (giftCard) {
+      const remaining = Math.max(0, subtotal + shipping - discount - pointsDiscount);
+      giftCardApplied = Math.min(giftCard.balance, remaining);
+      appliedGiftCardCode = giftCard.id;
+    }
+  }
+
   return {
     orderItems,
     subtotal,
@@ -181,7 +195,9 @@ async function buildOrderItems(items, couponCode, destCountry, userId, pointsToR
     discount,
     couponCode: discount > 0 ? coupon.code : null,
     pointsRedeemed,
-    total: subtotal + shipping - discount - pointsDiscount,
+    giftCardCode: giftCardApplied > 0 ? appliedGiftCardCode : null,
+    giftCardApplied,
+    total: subtotal + shipping - discount - pointsDiscount - giftCardApplied,
     stockError,
   };
 }
@@ -247,7 +263,7 @@ async function issueBottleReturnCredit(userId, quantity) {
   return coupon;
 }
 
-async function createOrderRecord({ userId, orderItems, address, total, discount, couponCode, pointsRedeemed, paymentMethod, payment, subscriptionId, advancePaid, shippingChoice }) {
+async function createOrderRecord({ userId, orderItems, address, total, discount, couponCode, pointsRedeemed, paymentMethod, payment, subscriptionId, advancePaid, shippingChoice, giftCardCode, giftCardApplied, isGift, giftMessage }) {
   // Computed before this order is persisted, so it only reflects orders that
   // already existed — used below to detect a customer's genuine first order,
   // whether that's a manual checkout or their first subscription renewal.
@@ -266,6 +282,10 @@ async function createOrderRecord({ userId, orderItems, address, total, discount,
     discount: discount || 0,
     couponCode: couponCode || null,
     pointsRedeemed: pointsRedeemed || 0,
+    giftCardCode: giftCardCode || null,
+    giftCardApplied: giftCardApplied || 0,
+    isGift: !!isGift,
+    giftMessage: isGift ? (giftMessage || '').slice(0, 500) : '',
     subscriptionId: subscriptionId || null,
     // "to_pay" only ever meant anything for domestic delivery (see
     // calculateShipping) — re-derive from the address here too, so a
@@ -284,6 +304,9 @@ async function createOrderRecord({ userId, orderItems, address, total, discount,
   }
   if (pointsRedeemed > 0) {
     await redeemPointsForOrder(userId, order, pointsRedeemed);
+  }
+  if (giftCardApplied > 0) {
+    await redeemGiftCardForOrder(giftCardCode, giftCardApplied, order);
   }
 
   // A personal single-use coupon (welcome/referral reward) is spent the

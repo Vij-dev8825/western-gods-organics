@@ -101,6 +101,12 @@ export const api = {
   validateCoupon: (token, payload) => request('/coupons/validate', { method: 'POST', body: payload, token }),
   getFeaturedCoupon: () => request('/coupons/featured'),
 
+  // gift cards
+  getGiftCardConfig: () => request('/gift-cards/config'),
+  validateGiftCard: (token, code) => request('/gift-cards/validate', { method: 'POST', body: { code }, token }),
+  createGiftCardPurchase: (token, payload) => request('/gift-cards/purchase/create', { method: 'POST', body: payload, token }),
+  verifyGiftCardPurchase: (token, payload) => request('/gift-cards/purchase/verify', { method: 'POST', body: payload, token }),
+
   // subscriptions (Subscribe & Save)
   getSubscriptions: (token) => request('/subscriptions', { token }),
   createSubscription: (token, payload) => request('/subscriptions', { method: 'POST', body: payload, token }),
@@ -187,6 +193,8 @@ export const api = {
     updatePaymentMethods: (token, methods) => request('/admin/payment-methods', { method: 'PUT', body: methods, token }),
     getShippingSettings: (token) => request('/admin/shipping-settings', { token }),
     updateShippingSettings: (token, settings) => request('/admin/shipping-settings', { method: 'PUT', body: settings, token }),
+    getGiftCards: (token) => request('/admin/gift-cards', { token }),
+    cancelGiftCard: (token, code) => request(`/admin/gift-cards/${code}/cancel`, { method: 'PATCH', token }),
     getHomepageReviews: (token) => request('/admin/homepage-reviews', { token }),
     updateHomepageReviews: (token, settings) => request('/admin/homepage-reviews', { method: 'PUT', body: settings, token }),
     getCountryCatalog: (token) => request('/admin/country-catalog', { token }),

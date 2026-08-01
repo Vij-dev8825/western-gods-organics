@@ -24,6 +24,7 @@ const whatsappBaileys = require('../utils/whatsappBaileys');
 const whatsappOrdering = require('../utils/whatsappOrdering');
 const { getPaymentMethodsConfig } = require('../utils/paymentMethods');
 const { getShippingSettings } = require('../utils/shippingSettings');
+const { cancelGiftCard } = require('../utils/giftCards');
 
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || process.env.CONTACT_NOTIFY_EMAIL;
 const ADMIN_PHONE = process.env.ADMIN_PHONE;
@@ -953,6 +954,37 @@ router.put('/shipping-settings', async (req, res, next) => {
     };
     await db.put('shipping-settings', shippingSettings);
     res.json({ success: true, shippingSettings });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/* --------------------------------- Gift cards ------------------------------ */
+
+// GET /api/admin/gift-cards — every issued card with its live balance
+// (derived from the ledger — see utils/giftCards.js), newest first.
+router.get('/gift-cards', async (req, res, next) => {
+  try {
+    const [cards, ledger] = await Promise.all([db.list('gift-cards'), db.list('gift-card-ledger')]);
+    const withBalance = cards
+      .map((c) => ({
+        ...c,
+        balance: ledger.filter((e) => e.code === c.id).reduce((sum, e) => sum + e.amount, 0),
+      }))
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    res.json({ success: true, giftCards: withBalance });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// PATCH /api/admin/gift-cards/:code/cancel — deactivate a card (fraud/mistake).
+// Redemption history already recorded against it is untouched.
+router.patch('/gift-cards/:code/cancel', async (req, res, next) => {
+  try {
+    const giftCard = await cancelGiftCard(req.params.code);
+    if (!giftCard) return res.status(404).json({ success: false, message: 'Gift card not found.' });
+    res.json({ success: true, giftCard });
   } catch (err) {
     next(err);
   }

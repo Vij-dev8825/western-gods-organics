@@ -55,6 +55,12 @@ export default function Cart() {
   const [pointsBalance, setPointsBalance] = useState(0);
   const [usePoints, setUsePoints] = useState(false);
   const [loyaltyTier, setLoyaltyTier] = useState(null);
+  const [giftCardInput, setGiftCardInput] = useState('');
+  const [appliedGiftCard, setAppliedGiftCard] = useState(null); // { code, balance }
+  const [giftCardError, setGiftCardError] = useState('');
+  const [applyingGiftCard, setApplyingGiftCard] = useState(false);
+  const [isGift, setIsGift] = useState(false);
+  const [giftMessage, setGiftMessage] = useState('');
 
   const [codAdvanceInr, setCodAdvanceInr] = useState(0);
   const [enabledMethods, setEnabledMethods] = useState({ cod: true, razorpay: true, codAdvance: true });
@@ -145,7 +151,13 @@ export default function Cart() {
   const couponStale = appliedCoupon && appliedCoupon.subtotalAtApply !== subtotal;
   const discount = appliedCoupon && !couponStale ? appliedCoupon.discount : 0;
   const pointsToRedeem = usePoints ? Math.min(pointsBalance, Math.max(0, subtotal + shipping - discount)) : 0;
-  const total = subtotal + shipping - discount - pointsToRedeem;
+  // Always recomputed against the card's own fixed balance and whatever's
+  // left after coupon/points — unlike a coupon, a gift card never goes
+  // "stale" as the cart changes, it just covers more or less of it.
+  const giftCardApplied = appliedGiftCard
+    ? Math.min(appliedGiftCard.balance, Math.max(0, subtotal + shipping - discount - pointsToRedeem))
+    : 0;
+  const total = subtotal + shipping - discount - pointsToRedeem - giftCardApplied;
   const minOrderCheck = checkMinOrder(subtotal);
   const hasOutOfStock = lines.some((l) => l.sizeInfo.stock <= 0);
   // Guests placing a Cash-on-Delivery order must verify the delivery phone
@@ -180,6 +192,29 @@ export default function Cart() {
     setAppliedCoupon(null);
     setCouponInput('');
     setCouponError('');
+  }
+
+  async function handleApplyGiftCard() {
+    const code = giftCardInput.trim();
+    if (!code) return;
+    setApplyingGiftCard(true);
+    setGiftCardError('');
+    try {
+      const res = await api.validateGiftCard(token, code);
+      setAppliedGiftCard({ code: res.code, balance: res.balance });
+      showToast(`Gift card applied — ₹${res.balance} available.`);
+    } catch (err) {
+      setAppliedGiftCard(null);
+      setGiftCardError(err.message);
+    } finally {
+      setApplyingGiftCard(false);
+    }
+  }
+
+  function removeGiftCard() {
+    setAppliedGiftCard(null);
+    setGiftCardInput('');
+    setGiftCardError('');
   }
 
   // A guest's phone number matched an existing account (backend/routes/
@@ -217,14 +252,16 @@ export default function Cart() {
     setPlacing(true);
     const orderItems = lines.map((l) => ({ productId: l.productId, size: l.size, quantity: l.quantity }));
     const couponCode = !couponStale && appliedCoupon ? appliedCoupon.code : undefined;
+    const giftCardCode = appliedGiftCard ? appliedGiftCard.code : undefined;
     const guestInfo = isLoggedIn ? undefined : { name: guestName.trim(), email: guestEmail.trim() };
+    const giftFields = { isGift, giftMessage: isGift ? giftMessage.trim() : undefined };
     try {
       if (paymentMethod === 'razorpay') {
-        await payWithRazorpay(orderItems, couponCode, guestInfo);
+        await payWithRazorpay(orderItems, couponCode, guestInfo, giftCardCode, giftFields);
       } else if (paymentMethod === 'cod_advance') {
-        await payCodAdvance(orderItems, couponCode, guestInfo);
+        await payCodAdvance(orderItems, couponCode, guestInfo, giftCardCode, giftFields);
       } else {
-        const data = await api.placeOrder(token, { items: orderItems, address, paymentMethod: 'cod', couponCode, pointsToRedeem, guestInfo, shippingChoice: effectiveShippingChoice });
+        const data = await api.placeOrder(token, { items: orderItems, address, paymentMethod: 'cod', couponCode, pointsToRedeem, guestInfo, shippingChoice: effectiveShippingChoice, giftCardCode, ...giftFields });
         finishOrder(data, address);
       }
     } catch (err) {
@@ -259,8 +296,8 @@ export default function Cart() {
     navigate(`/order-success/${data.order.id}`);
   }
 
-  async function payWithRazorpay(orderItems, couponCode, guestInfo) {
-    const rzpOrder = await api.createRazorpayOrder(token, { items: orderItems, couponCode, pointsToRedeem, address, guestInfo, shippingChoice: effectiveShippingChoice });
+  async function payWithRazorpay(orderItems, couponCode, guestInfo, giftCardCode, giftFields = {}) {
+    const rzpOrder = await api.createRazorpayOrder(token, { items: orderItems, couponCode, pointsToRedeem, address, guestInfo, shippingChoice: effectiveShippingChoice, giftCardCode });
     await loadRazorpay();
 
     return new Promise((resolve, reject) => {
@@ -284,7 +321,7 @@ export default function Cart() {
         },
         handler: async (response) => {
           try {
-            const data = await api.verifyRazorpayPayment(token, { items: orderItems, address, couponCode, pointsToRedeem, guestInfo, shippingChoice: effectiveShippingChoice, ...response });
+            const data = await api.verifyRazorpayPayment(token, { items: orderItems, address, couponCode, pointsToRedeem, guestInfo, shippingChoice: effectiveShippingChoice, giftCardCode, ...giftFields, ...response });
             finishOrder(data, address);
             resolve();
           } catch (err) {
@@ -303,8 +340,8 @@ export default function Cart() {
 
   // Same flow as payWithRazorpay, but only the small COD_ADVANCE_INR advance
   // is charged — the order itself still records the rest as due on delivery.
-  async function payCodAdvance(orderItems, couponCode, guestInfo) {
-    const rzpOrder = await api.createCodAdvanceOrder(token, { items: orderItems, couponCode, pointsToRedeem, address, guestInfo, shippingChoice: effectiveShippingChoice });
+  async function payCodAdvance(orderItems, couponCode, guestInfo, giftCardCode, giftFields = {}) {
+    const rzpOrder = await api.createCodAdvanceOrder(token, { items: orderItems, couponCode, pointsToRedeem, address, guestInfo, shippingChoice: effectiveShippingChoice, giftCardCode });
     await loadRazorpay();
 
     return new Promise((resolve, reject) => {
@@ -328,7 +365,7 @@ export default function Cart() {
         },
         handler: async (response) => {
           try {
-            const data = await api.verifyCodAdvancePayment(token, { items: orderItems, address, couponCode, pointsToRedeem, guestInfo, shippingChoice: effectiveShippingChoice, ...response });
+            const data = await api.verifyCodAdvancePayment(token, { items: orderItems, address, couponCode, pointsToRedeem, guestInfo, shippingChoice: effectiveShippingChoice, giftCardCode, ...giftFields, ...response });
             finishOrder(data, address);
             resolve();
           } catch (err) {
@@ -445,6 +482,11 @@ export default function Cart() {
               <span>Reward points</span><span>−₹{pointsToRedeem}</span>
             </div>
           )}
+          {giftCardApplied > 0 && (
+            <div className="summary-row" style={{ color: '#1e6b34' }}>
+              <span>Gift card ({appliedGiftCard.code})</span><span>−₹{giftCardApplied}</span>
+            </div>
+          )}
           <div className="summary-row total"><span>Total</span><span>₹{total}</span></div>
 
           <div className="coupon-field">
@@ -475,6 +517,37 @@ export default function Cart() {
                 </div>
                 {couponStale && <div className="field-error">Your cart changed — apply the code again.</div>}
                 {couponError && <div className="field-error">{couponError}</div>}
+              </>
+            )}
+          </div>
+
+          <div className="coupon-field">
+            {appliedGiftCard ? (
+              <div className="coupon-applied">
+                <span>
+                  🎁 <b>{appliedGiftCard.code}</b> applied — ₹{appliedGiftCard.balance} available
+                </span>
+                <button type="button" className="link-btn" onClick={removeGiftCard}>Remove</button>
+              </div>
+            ) : (
+              <>
+                <div className="flex gap-1">
+                  <input
+                    placeholder="Gift card code"
+                    value={giftCardInput}
+                    onChange={(e) => setGiftCardInput(e.target.value.toUpperCase())}
+                    style={{ flex: 1 }}
+                  />
+                  <button
+                    type="button"
+                    className="btn btn-outline btn-sm"
+                    disabled={!giftCardInput.trim() || applyingGiftCard}
+                    onClick={handleApplyGiftCard}
+                  >
+                    {applyingGiftCard ? 'Applying…' : 'Apply'}
+                  </button>
+                </div>
+                {giftCardError && <div className="field-error">{giftCardError}</div>}
               </>
             )}
           </div>
@@ -569,6 +642,23 @@ export default function Cart() {
               {(!isLoggedIn || !user?.addresses?.length || selectedAddressId === 'new') && (
                 <AddressForm address={address} onChange={updateAddress} errors={addressErrors} showCustomsNote />
               )}
+
+              <div className="field" style={{ marginTop: 14 }}>
+                <label className="flex gap-2" style={{ alignItems: 'center', cursor: 'pointer', fontWeight: 400 }}>
+                  <input type="checkbox" checked={isGift} onChange={(e) => setIsGift(e.target.checked)} />
+                  🎁 This is a gift — add a note for the recipient
+                </label>
+                {isGift && (
+                  <textarea
+                    rows={2}
+                    maxLength={500}
+                    value={giftMessage}
+                    onChange={(e) => setGiftMessage(e.target.value)}
+                    placeholder="e.g. Happy birthday! Enjoy some cold-pressed goodness."
+                    style={{ marginTop: 8 }}
+                  />
+                )}
+              </div>
 
               {isDomesticAddress && (
                 <>

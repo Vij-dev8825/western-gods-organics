@@ -36,7 +36,12 @@ export default function Invoice() {
 
   const subtotal = order.items.reduce((sum, it) => sum + it.price * it.quantity, 0);
   const discount = order.discount || 0;
-  const shipping = order.total - subtotal + discount;
+  const pointsDiscount = order.pointsRedeemed || 0; // 1 point = ₹1, see backend/utils/loyalty.js
+  const giftCardApplied = order.giftCardApplied || 0;
+  // Isolates shipping as whatever's left after every other known deduction —
+  // has to account for all of them or a points/gift-card order would show
+  // the wrong shipping fee here (the residual would silently absorb them).
+  const shipping = order.total - subtotal + discount + pointsDiscount + giftCardApplied;
   // Orders placed before this existed have no shippingChoice — treat as the
   // default "shipping" (store-charged) path, same as they were charged.
   const isToPay = order.shippingChoice === 'to_pay';
@@ -111,6 +116,12 @@ export default function Invoice() {
           )}
           {discount > 0 && (
             <div><span>Coupon {order.couponCode ? `(${order.couponCode})` : ''}</span><span>−₹{discount}</span></div>
+          )}
+          {pointsDiscount > 0 && (
+            <div><span>Reward points</span><span>−₹{pointsDiscount}</span></div>
+          )}
+          {giftCardApplied > 0 && (
+            <div><span>Gift card {order.giftCardCode ? `(${order.giftCardCode})` : ''}</span><span>−₹{giftCardApplied}</span></div>
           )}
           <div className="invoice-total-grand"><span>Total</span><span>₹{order.total}</span></div>
         </div>

@@ -96,7 +96,7 @@ router.post('/verify-cod-phone', async (req, res, next) => {
 // address's phone number doubles as the guest's identity.
 router.post('/', optionalAuth, async (req, res, next) => {
   try {
-    const { items, address, paymentMethod, couponCode, pointsToRedeem, guestInfo } = req.body;
+    const { items, address, paymentMethod, couponCode, pointsToRedeem, guestInfo, giftCardCode, isGift, giftMessage } = req.body;
     const effectivePaymentMethod = paymentMethod || 'cod';
     const shippingChoice = req.body.shippingChoice === 'to_pay' ? 'to_pay' : 'shipping';
 
@@ -139,8 +139,8 @@ router.post('/', optionalAuth, async (req, res, next) => {
       if (effectivePaymentMethod === 'cod') consumePhoneVerification(address.phone);
     }
 
-    const { orderItems, total, discount, couponCode: appliedCode, pointsRedeemed, stockError } =
-      await buildOrderItems(items, couponCode, address.country, userId, pointsToRedeem, shippingChoice);
+    const { orderItems, total, discount, couponCode: appliedCode, pointsRedeemed, giftCardCode: appliedGiftCardCode, giftCardApplied, stockError } =
+      await buildOrderItems(items, couponCode, address.country, userId, pointsToRedeem, shippingChoice, giftCardCode);
     if (stockError) return res.status(400).json({ success: false, message: stockError });
     const order = await createOrderRecord({
       userId,
@@ -152,6 +152,10 @@ router.post('/', optionalAuth, async (req, res, next) => {
       pointsRedeemed,
       paymentMethod: effectivePaymentMethod,
       shippingChoice,
+      giftCardCode: appliedGiftCardCode,
+      giftCardApplied,
+      isGift,
+      giftMessage,
     });
 
     const response = { success: true, message: 'Order placed successfully.', order };
@@ -174,7 +178,7 @@ router.post('/razorpay/create', optionalAuth, async (req, res, next) => {
         message: 'Online payment isn’t set up yet — please choose Cash on Delivery instead.',
       });
     }
-    const { items, couponCode, pointsToRedeem, address, guestInfo } = req.body;
+    const { items, couponCode, pointsToRedeem, address, guestInfo, giftCardCode } = req.body;
     const shippingChoice = req.body.shippingChoice === 'to_pay' ? 'to_pay' : 'shipping';
     if (!items || !items.length) {
       return res.status(400).json({ success: false, message: 'Your cart is empty.' });
@@ -197,7 +201,11 @@ router.post('/razorpay/create', optionalAuth, async (req, res, next) => {
       if (resolved.error) return res.status(resolved.error.status).json({ success: false, message: resolved.error.message });
     }
 
-    const { total, stockError } = await buildOrderItems(items, couponCode, address?.country, req.user?.id, pointsToRedeem, shippingChoice);
+    // Must thread giftCardCode the same way as /razorpay/verify below — this
+    // is the amount Razorpay actually charges, so it has to already reflect
+    // whatever the gift card knocks off, or verify's independently recomputed
+    // total (which does) would end up mismatched against what was captured.
+    const { total, stockError } = await buildOrderItems(items, couponCode, address?.country, req.user?.id, pointsToRedeem, shippingChoice, giftCardCode);
     if (stockError) return res.status(400).json({ success: false, message: stockError });
     if (total <= 0) {
       return res.status(400).json({ success: false, message: 'Order total must be greater than zero.' });
@@ -219,7 +227,7 @@ router.post('/razorpay/create', optionalAuth, async (req, res, next) => {
 // { items, address, guestInfo?, razorpay_order_id, razorpay_payment_id, razorpay_signature }
 router.post('/razorpay/verify', optionalAuth, async (req, res, next) => {
   try {
-    const { items, address, couponCode, pointsToRedeem, guestInfo, razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
+    const { items, address, couponCode, pointsToRedeem, guestInfo, giftCardCode, isGift, giftMessage, razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
     // Must match whatever /razorpay/create computed the charged amount from —
     // the client is expected to send the same choice to both, same as it
     // already does for items/address/couponCode.
@@ -255,8 +263,8 @@ router.post('/razorpay/verify', optionalAuth, async (req, res, next) => {
     // /razorpay/create check is the real gate; any oversell that still slips
     // through this narrow window is visible to the admin in Orders same as
     // a COD one and can be handled manually, same as any other refund case.
-    const { orderItems, total, discount, couponCode: appliedCode, pointsRedeemed } =
-      await buildOrderItems(items, couponCode, address.country, userId, pointsToRedeem, shippingChoice);
+    const { orderItems, total, discount, couponCode: appliedCode, pointsRedeemed, giftCardCode: appliedGiftCardCode, giftCardApplied } =
+      await buildOrderItems(items, couponCode, address.country, userId, pointsToRedeem, shippingChoice, giftCardCode);
     const order = await createOrderRecord({
       userId,
       orderItems,
@@ -268,6 +276,10 @@ router.post('/razorpay/verify', optionalAuth, async (req, res, next) => {
       paymentMethod: 'razorpay',
       payment: { razorpay_order_id, razorpay_payment_id },
       shippingChoice,
+      giftCardCode: appliedGiftCardCode,
+      giftCardApplied,
+      isGift,
+      giftMessage,
     });
 
     const response = { success: true, message: 'Payment verified and order placed.', order };
@@ -303,7 +315,7 @@ router.post('/cod-advance/create', optionalAuth, async (req, res, next) => {
         message: 'This payment option isn’t available right now — please choose another one.',
       });
     }
-    const { items, couponCode, pointsToRedeem, address, guestInfo } = req.body;
+    const { items, couponCode, pointsToRedeem, address, guestInfo, giftCardCode } = req.body;
     const shippingChoice = req.body.shippingChoice === 'to_pay' ? 'to_pay' : 'shipping';
     if (!items || !items.length) {
       return res.status(400).json({ success: false, message: 'Your cart is empty.' });
@@ -323,7 +335,7 @@ router.post('/cod-advance/create', optionalAuth, async (req, res, next) => {
       if (resolved.error) return res.status(resolved.error.status).json({ success: false, message: resolved.error.message });
     }
 
-    const { total, stockError } = await buildOrderItems(items, couponCode, address.country, req.user?.id, pointsToRedeem, shippingChoice);
+    const { total, stockError } = await buildOrderItems(items, couponCode, address.country, req.user?.id, pointsToRedeem, shippingChoice, giftCardCode);
     if (stockError) return res.status(400).json({ success: false, message: stockError });
     if (total <= COD_ADVANCE_INR) {
       return res.status(400).json({ success: false, message: `Order total must be greater than the ₹${COD_ADVANCE_INR} advance.` });
@@ -348,7 +360,7 @@ router.post('/cod-advance/create', optionalAuth, async (req, res, next) => {
 // { items, address, guestInfo?, razorpay_order_id, razorpay_payment_id, razorpay_signature }
 router.post('/cod-advance/verify', optionalAuth, async (req, res, next) => {
   try {
-    const { items, address, couponCode, pointsToRedeem, guestInfo, razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
+    const { items, address, couponCode, pointsToRedeem, guestInfo, giftCardCode, isGift, giftMessage, razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
     // Must match whatever /cod-advance/create computed orderTotal from — the
     // client is expected to send the same choice to both.
     const shippingChoice = req.body.shippingChoice === 'to_pay' ? 'to_pay' : 'shipping';
@@ -375,8 +387,8 @@ router.post('/cod-advance/verify', optionalAuth, async (req, res, next) => {
 
     // No stock re-check here, same reasoning as /razorpay/verify — the
     // advance has already been captured by this point.
-    const { orderItems, total, discount, couponCode: appliedCode, pointsRedeemed } =
-      await buildOrderItems(items, couponCode, address.country, userId, pointsToRedeem, shippingChoice);
+    const { orderItems, total, discount, couponCode: appliedCode, pointsRedeemed, giftCardCode: appliedGiftCardCode, giftCardApplied } =
+      await buildOrderItems(items, couponCode, address.country, userId, pointsToRedeem, shippingChoice, giftCardCode);
     const order = await createOrderRecord({
       userId,
       orderItems,
@@ -389,6 +401,10 @@ router.post('/cod-advance/verify', optionalAuth, async (req, res, next) => {
       payment: { razorpay_order_id, razorpay_payment_id },
       advancePaid: COD_ADVANCE_INR,
       shippingChoice,
+      giftCardCode: appliedGiftCardCode,
+      giftCardApplied,
+      isGift,
+      giftMessage,
     });
 
     const response = { success: true, message: 'Advance payment verified and order placed.', order };

@@ -40,6 +40,7 @@ const stockNotifyRoutes = require('./routes/stockNotify');
 const homepageReviewsRoutes = require('./routes/homepageReviews');
 const aiAssistantRoutes = require('./routes/aiAssistant');
 const webhookRoutes = require('./routes/webhooks');
+const giftCardRoutes = require('./routes/giftCards');
 
 const app = express();
 
@@ -87,6 +88,7 @@ app.use('/api/stock-notify', stockNotifyRoutes);
 app.use('/api/homepage-reviews', homepageReviewsRoutes);
 app.use('/api/ai-assistant', aiAssistantRoutes);
 app.use('/api/webhooks', webhookRoutes);
+app.use('/api/gift-cards', giftCardRoutes);
 
 // Uploaded banner videos/images
 app.use('/uploads', express.static(UPLOADS_DIR, { maxAge: '7d' }));

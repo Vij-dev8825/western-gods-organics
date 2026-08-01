@@ -45,6 +45,8 @@ const COLLECTIONS = [
   'whatsapp-ordering',
   'payment-methods',
   'shipping-settings',
+  'gift-cards',
+  'gift-card-ledger',
 ];
 
 let mode = 'json';

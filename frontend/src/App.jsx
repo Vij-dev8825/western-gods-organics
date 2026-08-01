@@ -44,6 +44,7 @@ import SustainabilityImpact from './pages/SustainabilityImpact';
 import Sourcing from './pages/Sourcing';
 import ImportInfo from './pages/ImportInfo';
 import StoreLocator from './pages/StoreLocator';
+import GiftCards from './pages/GiftCards';
 
 import AdminLogin from './pages/admin/AdminLogin';
 import AdminLayout from './pages/admin/AdminLayout';
@@ -68,6 +69,7 @@ import AdminShipping from './pages/admin/AdminShipping';
 import AdminCurrency from './pages/admin/AdminCurrency';
 import AdminHomepageReviews from './pages/admin/AdminHomepageReviews';
 import AdminCountries from './pages/admin/AdminCountries';
+import AdminGiftCards from './pages/admin/AdminGiftCards';
 
 function NotFound() {
   return (
@@ -163,6 +165,7 @@ export default function App() {
         <Route path="currency" element={<AdminCurrency />} />
         <Route path="homepage-reviews" element={<AdminHomepageReviews />} />
         <Route path="countries" element={<AdminCountries />} />
+        <Route path="gift-cards" element={<AdminGiftCards />} />
       </Route>
 
       {/* Customer storefront */}
@@ -209,6 +212,14 @@ export default function App() {
           element={
             <ProtectedRoute>
               <Rewards />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/gift-cards"
+          element={
+            <ProtectedRoute>
+              <GiftCards />
             </ProtectedRoute>
           }
         />

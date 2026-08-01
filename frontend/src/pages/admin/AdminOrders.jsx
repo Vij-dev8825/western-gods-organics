@@ -60,6 +60,16 @@ export default function AdminOrders() {
                         {i.quantity}× {i.name} ({i.size})
                       </div>
                     ))}
+                    {o.isGift && (
+                      <div className="muted" style={{ fontSize: '0.75rem', marginTop: 4 }}>
+                        🎁 Gift{o.giftMessage ? `: "${o.giftMessage}"` : ''}
+                      </div>
+                    )}
+                    {o.giftCardApplied > 0 && (
+                      <div className="muted" style={{ fontSize: '0.75rem', marginTop: 4 }}>
+                        Gift card {o.giftCardCode} applied: −₹{o.giftCardApplied}
+                      </div>
+                    )}
                   </td>
                   <td>
                     ₹{o.total}
