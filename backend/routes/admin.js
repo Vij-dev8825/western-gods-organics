@@ -26,6 +26,12 @@ const { getPaymentMethodsConfig } = require('../utils/paymentMethods');
 const { getShippingSettings } = require('../utils/shippingSettings');
 const { cancelGiftCard } = require('../utils/giftCards');
 const { generateUniqueAffiliateCode, getCommissionSummary, recordPayout, creditCommissionForOrder } = require('../utils/affiliates');
+const {
+  getEligibleRecipients,
+  sendBroadcast: sendWhatsAppBroadcast,
+  getBroadcastLog,
+  WINDOW_MS: WHATSAPP_BROADCAST_WINDOW_MS,
+} = require('../utils/whatsappBroadcast');
 
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || process.env.CONTACT_NOTIFY_EMAIL;
 const ADMIN_PHONE = process.env.ADMIN_PHONE;
@@ -1486,6 +1492,48 @@ router.post('/whatsapp/reset', async (req, res, next) => {
   try {
     await whatsappBaileys.resetSession();
     res.json({ success: true });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET /api/admin/whatsapp/eligible-recipients — everyone who's messaged us
+// in the last 24 hours (see utils/whatsappBroadcast.js) — the only pool a
+// broadcast can be sent to.
+router.get('/whatsapp/eligible-recipients', async (req, res, next) => {
+  try {
+    const recipients = await getEligibleRecipients();
+    res.json({ success: true, recipients, windowHours: WHATSAPP_BROADCAST_WINDOW_MS / (60 * 60 * 1000) });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /api/admin/whatsapp/broadcast  { phones: [...], message } — sends to
+// the given phones one at a time with a pause between each, but only those
+// still within the reply window at send time; always logs the campaign.
+router.post('/whatsapp/broadcast', async (req, res, next) => {
+  try {
+    const phones = Array.isArray(req.body.phones) ? req.body.phones.filter(Boolean) : [];
+    const message = (req.body.message || '').trim();
+    if (!phones.length) {
+      return res.status(400).json({ success: false, message: 'Select at least one recipient.' });
+    }
+    if (!message) {
+      return res.status(400).json({ success: false, message: 'Enter a message to send.' });
+    }
+    const log = await sendWhatsAppBroadcast(phones, message);
+    res.json({ success: true, log });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET /api/admin/whatsapp/broadcast-log — past campaigns, for accountability.
+router.get('/whatsapp/broadcast-log', async (req, res, next) => {
+  try {
+    const log = await getBroadcastLog();
+    res.json({ success: true, log });
   } catch (err) {
     next(err);
   }

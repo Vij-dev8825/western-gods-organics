@@ -223,6 +223,9 @@ export const api = {
     getWhatsAppStatus: (token) => request('/admin/whatsapp', { token }),
     resetWhatsApp: (token) => request('/admin/whatsapp/reset', { method: 'POST', token }),
     setWhatsAppOrdering: (token, enabled) => request('/admin/whatsapp/ordering', { method: 'POST', body: { enabled }, token }),
+    getWhatsAppEligibleRecipients: (token) => request('/admin/whatsapp/eligible-recipients', { token }),
+    sendWhatsAppBroadcast: (token, payload) => request('/admin/whatsapp/broadcast', { method: 'POST', body: payload, token }),
+    getWhatsAppBroadcastLog: (token) => request('/admin/whatsapp/broadcast-log', { token }),
 
     getCustomers: (token) => request('/admin/customers', { token }),
     setCustomerWholesale: (token, id, isWholesale) => request(`/admin/customers/${id}/wholesale`, { method: 'PATCH', body: { isWholesale }, token }),

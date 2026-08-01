@@ -48,6 +48,8 @@ const COLLECTIONS = [
   'gift-cards',
   'gift-card-ledger',
   'affiliate-ledger',
+  'whatsapp-inbox',
+  'whatsapp-broadcast-log',
 ];
 
 let mode = 'json';

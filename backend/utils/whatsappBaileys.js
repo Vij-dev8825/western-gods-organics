@@ -15,6 +15,7 @@
  */
 const path = require('path');
 const fs = require('fs');
+const db = require('../data/db');
 
 const AUTH_DIR = path.join(__dirname, '..', 'whatsapp-auth');
 
@@ -37,6 +38,25 @@ function extractText(message) {
   return message?.conversation || message?.extendedTextMessage?.text || '';
 }
 
+// Tracks the last time each phone number messaged us, keyed by phone (one
+// upsert per number, not an append-only log — only the recency matters).
+// This is what utils/whatsappBroadcast.js's 24-hour reply window reads to
+// decide who's safe to message: mirrors the official WhatsApp Business
+// API's own "24-hour customer service window" rule, so a marketing send
+// looks like organic reply traffic even though this runs on Baileys (an
+// unofficial client) rather than the real Business API.
+async function recordInboundMessage(phone, text) {
+  const user = (await db.list('users')).find((u) => u.phone === phone);
+  await db.put('whatsapp-inbox', {
+    id: phone,
+    phone,
+    userId: user?.id || null,
+    name: user?.name || null,
+    lastMessage: text.slice(0, 300),
+    lastInboundAt: new Date().toISOString(),
+  });
+}
+
 async function handleIncomingMessages({ messages, type }) {
   if (type !== 'notify') return; // 'append' etc. is historical sync, not a new message
   // Required lazily (not at module top-level): whatsappOrdering.js requires
@@ -53,7 +73,9 @@ async function handleIncomingMessages({ messages, type }) {
       const text = extractText(msg.message);
       if (!text) continue;
 
-      const reply = await whatsappOrdering.handleIncomingMessage(jidToPhone(jid), text);
+      const phone = jidToPhone(jid);
+      await recordInboundMessage(phone, text);
+      const reply = await whatsappOrdering.handleIncomingMessage(phone, text);
       if (reply) await sock.sendMessage(jid, { text: reply });
     } catch (err) {
       console.error('[whatsapp:ordering] error handling message', err.message);
