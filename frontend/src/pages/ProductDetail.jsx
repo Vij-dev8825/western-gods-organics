@@ -24,6 +24,7 @@ import { CANONICAL_ORIGIN } from '../utils/site';
 import { useLang } from '../i18n';
 import { localizeProductText } from '../utils/productLocale';
 import { buildBreadcrumbSchema } from '../utils/breadcrumbSchema';
+import { GUIDE_CATEGORY } from './Blog';
 
 const SUBSCRIPTION_DISCOUNT_PERCENT = 10;
 const MIN_FREQUENCY_DAYS = 7;
@@ -113,6 +114,7 @@ export default function ProductDetail() {
   const navigate = useNavigate();
   const [product, setProduct] = useState(null);
   const [related, setRelated] = useState([]);
+  const [guides, setGuides] = useState([]);
   const [reviews, setReviews] = useState([]);
   const [size, setSize] = useState(null);
   const [qty, setQty] = useState(1);
@@ -156,6 +158,20 @@ export default function ProductDetail() {
       api
         .getProducts({ category: d.product.category })
         .then((r) => setRelated(r.products.filter((p) => p.id !== d.product.id).slice(0, 4)))
+        .catch(() => {});
+
+      // Simple keyword match on guide titles (e.g. a product named "Cold-
+      // Pressed Castor Oil" matches a guide titled "5 Ways to Use Castor Oil
+      // for Hair") — no separate product-linking field needed.
+      const nameWords = d.product.name.toLowerCase().split(/\s+/).filter((w) => w.length > 3);
+      api
+        .getBlogPosts()
+        .then((r) => {
+          const matches = r.posts.filter(
+            (p) => p.category === GUIDE_CATEGORY && nameWords.some((w) => p.title.toLowerCase().includes(w))
+          );
+          setGuides(matches.slice(0, 3));
+        })
         .catch(() => {});
     });
     api.getReviews(id).then((d) => setReviews(d.reviews)).catch(() => {});
@@ -717,6 +733,27 @@ export default function ProductDetail() {
           onIndexChange={(i) => setReviewLightbox((s) => ({ ...s, index: i }))}
           onClose={() => setReviewLightbox(null)}
         />
+      )}
+
+      {/* ---------- Usage guides ---------- */}
+      {guides.length > 0 && (
+        <div className="related-section">
+          <h2>Usage Guides</h2>
+          <div className="blog-grid">
+            {guides.map((g) => (
+              <Link key={g.id} to={`/blog/${g.id}`} className="blog-card">
+                <div className="blog-card-media">
+                  <img src={getProductImage(g.image)} alt={g.title} loading="lazy" />
+                </div>
+                <div className="blog-card-body">
+                  <span className="blog-card-tag">{GUIDE_CATEGORY}</span>
+                  <h3>{g.title}</h3>
+                  <p className="muted">{g.excerpt}</p>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
       )}
 
       {/* ---------- Related products ---------- */}

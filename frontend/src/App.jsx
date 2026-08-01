@@ -170,6 +170,7 @@ export default function App() {
         <Route path="/combos" element={<Combos />} />
         <Route path="/blog" element={<Blog />} />
         <Route path="/blog/:slug" element={<BlogPost />} />
+        <Route path="/guides" element={<Blog />} />
         <Route path="/product/:id" element={<ProductDetail />} />
         <Route path="/batch/:batchNumber" element={<BatchPassport />} />
         <Route path="/finder" element={<Finder />} />

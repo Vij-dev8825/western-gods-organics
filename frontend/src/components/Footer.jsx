@@ -120,6 +120,7 @@ export default function Footer() {
               <li><Link to="/categories">{t('footerCategories')}</Link></li>
               <li><Link to="/subscriptions">{t('footerSubscriptions')}</Link></li>
               <li><Link to="/wishlist">{t('footerWishlist')}</Link></li>
+              <li><Link to="/guides">Usage Guides</Link></li>
             </ul>
           </FooterAccordion>
 
@@ -148,6 +149,7 @@ export default function Footer() {
               <li><Link to="/categories">{t('navCategories')}</Link></li>
               <li><Link to="/combos">{t('navCombos')}</Link></li>
               <li><Link to="/blog">{t('navBlog')}</Link></li>
+              <li><Link to="/guides">Usage Guides</Link></li>
               <li><Link to="/bulk-enquiry">{t('footerBulk')}</Link></li>
               <li><Link to="/contact">{t('navContact')}</Link></li>
               <li><Link to="/store-locator">{t('footerVisitUs')}</Link></li>

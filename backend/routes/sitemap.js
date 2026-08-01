@@ -11,6 +11,7 @@ const STATIC_PATHS = [
   { path: '/categories', priority: '0.8', changefreq: 'weekly' },
   { path: '/combos', priority: '0.8', changefreq: 'weekly' },
   { path: '/blog', priority: '0.7', changefreq: 'weekly' },
+  { path: '/guides', priority: '0.7', changefreq: 'weekly' },
   { path: '/bulk-enquiry', priority: '0.5', changefreq: 'monthly' },
   { path: '/contact', priority: '0.5', changefreq: 'monthly' },
   { path: '/import', priority: '0.4', changefreq: 'monthly' },
