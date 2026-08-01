@@ -45,8 +45,11 @@ function tierForLifetimePoints(lifetimePoints) {
   return TIERS.find((t) => lifetimePoints >= t.minLifetimePoints);
 }
 
-/** Full tier snapshot for a user: current tier, perks, and progress to the next one. */
-async function getTierInfo(userId) {
+/** Full tier snapshot for a user: current tier, perks, and progress to the next one.
+ * baseFreeShippingThreshold is the admin-configured domestic threshold
+ * (see utils/shippingSettings.js) — Bronze uses it as-is, while Silver/Gold
+ * keep their own fixed, better-than-base perks regardless of that setting. */
+async function getTierInfo(userId, baseFreeShippingThreshold = 999) {
   const lifetimePoints = await getLifetimeEarnedPoints(userId);
   const tier = tierForLifetimePoints(lifetimePoints);
   const idx = TIERS.indexOf(tier);
@@ -56,7 +59,7 @@ async function getTierInfo(userId) {
     label: tier.label,
     lifetimePoints,
     earnMultiplier: tier.earnMultiplier,
-    freeShippingMinOrder: tier.freeShippingMinOrder,
+    freeShippingMinOrder: tier.key === 'bronze' ? baseFreeShippingThreshold : tier.freeShippingMinOrder,
     nextTier: next ? { key: next.key, label: next.label, pointsNeeded: next.minLifetimePoints - lifetimePoints } : null,
   };
 }

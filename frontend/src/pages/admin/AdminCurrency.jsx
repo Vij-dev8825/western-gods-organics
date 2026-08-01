@@ -122,9 +122,9 @@ export default function AdminCurrency() {
       <div className="admin-card">
         <h3 style={{ marginTop: 0 }}>International Shipping</h3>
         <p className="muted" style={{ fontSize: '0.85rem' }}>
-          Flat shipping fee (in ₹) charged on orders shipping to each country, since the free-over-₹999 /
-          ₹60 domestic rate doesn't cover real international shipping costs. Leave empty to use the default
-          (₹1500).
+          Flat shipping fee (in ₹) charged on orders shipping to each country, since the domestic rate
+          (set on the Domestic Shipping page) doesn't cover real international shipping costs. Leave empty
+          to use the default (₹1500).
         </p>
         <table className="admin-table">
           <thead>

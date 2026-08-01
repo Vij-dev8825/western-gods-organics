@@ -5,6 +5,7 @@ const { findValidCoupon, computeDiscount } = require('./coupons');
 const { sendMail } = require('./mailer');
 const { sendWhatsApp } = require('./whatsapp');
 const { getPointsBalance, redeemPointsForOrder, getTierInfo, REDEEM_VALUE_INR_PER_POINT } = require('./loyalty');
+const { getShippingSettings } = require('./shippingSettings');
 
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || process.env.CONTACT_NOTIFY_EMAIL;
 const REFERRAL_REWARD_INR = 100;
@@ -118,11 +119,12 @@ const DEFAULT_INTL_SHIPPING = 1500;
 async function calculateShipping(subtotal, destCountry = DOMESTIC_COUNTRY, userId = null) {
   if (subtotal === 0) return 0;
   if (destCountry === DOMESTIC_COUNTRY) {
-    // Silver/Gold loyalty tiers lower (or remove) the free-shipping bar —
-    // see backend/utils/loyalty.js TIERS. Guests and brand-new customers
-    // fall back to the standard Bronze/no-tier threshold.
-    const threshold = userId ? (await getTierInfo(userId)).freeShippingMinOrder : 999;
-    return subtotal > threshold ? 0 : 60;
+    const { domesticFee, domesticFreeThreshold } = await getShippingSettings();
+    // Silver/Gold loyalty tiers lower (or remove) the free-shipping bar
+    // relative to this admin-set base — see backend/utils/loyalty.js TIERS.
+    // Guests and brand-new (Bronze) customers get the base threshold as-is.
+    const threshold = userId ? (await getTierInfo(userId, domesticFreeThreshold)).freeShippingMinOrder : domesticFreeThreshold;
+    return subtotal > threshold ? 0 : domesticFee;
   }
   const overrides = await db.get('currency-overrides', 'main');
   return overrides?.shipping?.[destCountry] || DEFAULT_INTL_SHIPPING;

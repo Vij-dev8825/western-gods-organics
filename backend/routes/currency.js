@@ -1,5 +1,6 @@
 const express = require('express');
 const db = require('../data/db');
+const { getShippingSettings } = require('../utils/shippingSettings');
 
 const router = express.Router();
 
@@ -68,7 +69,11 @@ async function getEffectiveRates(countries, fullLive) {
 router.get('/rates', async (req, res, next) => {
   const countries = await getCountries().catch(() => DEFAULT_COUNTRIES);
   try {
-    const [fullLive, overrides] = await Promise.all([getFullLiveRates(), db.get('currency-overrides', 'main')]);
+    const [fullLive, overrides, domesticShipping] = await Promise.all([
+      getFullLiveRates(),
+      db.get('currency-overrides', 'main'),
+      getShippingSettings(),
+    ]);
     const rates = await getEffectiveRates(countries, fullLive);
     res.json({
       success: true,
@@ -77,6 +82,8 @@ router.get('/rates', async (req, res, next) => {
       rates,
       minOrder: overrides?.minOrder || {},
       shipping: overrides?.shipping || {},
+      domesticShippingFee: domesticShipping.domesticFee,
+      domesticFreeShippingThreshold: domesticShipping.domesticFreeThreshold,
     });
   } catch (err) {
     // Serve a stale cache rather than failing the whole storefront if the

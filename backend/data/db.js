@@ -44,6 +44,7 @@ const COLLECTIONS = [
   'loyalty-ledger',
   'whatsapp-ordering',
   'payment-methods',
+  'shipping-settings',
 ];
 
 let mode = 'json';

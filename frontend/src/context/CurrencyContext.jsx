@@ -30,6 +30,11 @@ export function CurrencyProvider({ children }) {
   const [rates, setRates] = useState(null);
   const [minOrder, setMinOrder] = useState({});
   const [shipping, setShipping] = useState({});
+  // Admin-configurable (see AdminShipping.jsx) — these defaults match
+  // backend/utils/shippingSettings.js's DEFAULTS and only matter until the
+  // real settings load.
+  const [domesticShippingFee, setDomesticShippingFee] = useState(60);
+  const [domesticFreeShippingThreshold, setDomesticFreeShippingThreshold] = useState(999);
 
   useEffect(() => {
     api.getCurrencyRates().then((d) => {
@@ -37,6 +42,8 @@ export function CurrencyProvider({ children }) {
       setMinOrder(d.minOrder || {});
       setShipping(d.shipping || {});
       if (d.countries?.length) setCountries(d.countries);
+      if (typeof d.domesticShippingFee === 'number') setDomesticShippingFee(d.domesticShippingFee);
+      if (typeof d.domesticFreeShippingThreshold === 'number') setDomesticFreeShippingThreshold(d.domesticFreeShippingThreshold);
     }).catch(() => {});
   }, []);
 
@@ -102,11 +109,12 @@ export function CurrencyProvider({ children }) {
   // country gets a flat admin-set fee, defaulting to ₹1500 if unset).
   const DEFAULT_INTL_SHIPPING = 1500;
   // freeShippingThreshold lets a logged-in customer's loyalty tier (Silver/
-  // Gold — see backend/utils/loyalty.js TIERS) lower or remove the ₹999 bar;
-  // guests and Bronze members get the standard default.
-  function getShippingFee(destCountryCode, inrSubtotal, freeShippingThreshold = 999) {
+  // Gold — see backend/utils/loyalty.js TIERS) lower or remove the admin's
+  // base bar; guests and Bronze members fall back to that admin-configured
+  // default (domesticFreeShippingThreshold, from /currency/rates).
+  function getShippingFee(destCountryCode, inrSubtotal, freeShippingThreshold = domesticFreeShippingThreshold) {
     if (inrSubtotal === 0) return 0;
-    if (!destCountryCode || destCountryCode === 'IN') return inrSubtotal > freeShippingThreshold ? 0 : 60;
+    if (!destCountryCode || destCountryCode === 'IN') return inrSubtotal > freeShippingThreshold ? 0 : domesticShippingFee;
     return shipping[destCountryCode] || DEFAULT_INTL_SHIPPING;
   }
 

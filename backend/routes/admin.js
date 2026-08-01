@@ -23,6 +23,7 @@ const { issueBottleReturnCredit } = require('../utils/orderBuilder');
 const whatsappBaileys = require('../utils/whatsappBaileys');
 const whatsappOrdering = require('../utils/whatsappOrdering');
 const { getPaymentMethodsConfig } = require('../utils/paymentMethods');
+const { getShippingSettings } = require('../utils/shippingSettings');
 
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || process.env.CONTACT_NOTIFY_EMAIL;
 const ADMIN_PHONE = process.env.ADMIN_PHONE;
@@ -914,6 +915,39 @@ router.put('/payment-methods', async (req, res, next) => {
     };
     await db.put('payment-methods', paymentMethods);
     res.json({ success: true, paymentMethods });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/* ----------------------------- Shipping settings ---------------------------- */
+
+// GET /api/admin/shipping-settings — domestic shipping fee + free-shipping
+// threshold (the baseline used for guests/Bronze — Silver/Gold keep their
+// own fixed, better-than-base thresholds regardless of this setting).
+router.get('/shipping-settings', async (req, res, next) => {
+  try {
+    const shippingSettings = await getShippingSettings();
+    res.json({ success: true, shippingSettings });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// PUT /api/admin/shipping-settings  { domesticFee, domesticFreeThreshold }
+router.put('/shipping-settings', async (req, res, next) => {
+  try {
+    const domesticFee = Number(req.body.domesticFee);
+    const domesticFreeThreshold = Number(req.body.domesticFreeThreshold);
+    if (!(domesticFee >= 0) || !(domesticFreeThreshold >= 0)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Shipping fee and free-shipping threshold must be non-negative numbers.',
+      });
+    }
+    const shippingSettings = { id: 'main', domesticFee, domesticFreeThreshold };
+    await db.put('shipping-settings', shippingSettings);
+    res.json({ success: true, shippingSettings });
   } catch (err) {
     next(err);
   }
