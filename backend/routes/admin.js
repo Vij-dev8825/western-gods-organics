@@ -22,6 +22,7 @@ const { creditPointsForOrder } = require('../utils/loyalty');
 const { issueBottleReturnCredit } = require('../utils/orderBuilder');
 const whatsappBaileys = require('../utils/whatsappBaileys');
 const whatsappOrdering = require('../utils/whatsappOrdering');
+const { getPaymentMethodsConfig } = require('../utils/paymentMethods');
 
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || process.env.CONTACT_NOTIFY_EMAIL;
 const ADMIN_PHONE = process.env.ADMIN_PHONE;
@@ -884,6 +885,35 @@ router.patch('/orders/:id/bottle-return', async (req, res, next) => {
     }
 
     res.json({ success: true, order, creditIssued });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/* ----------------------------- Payment methods ------------------------------ */
+
+// GET /api/admin/payment-methods — which checkout payment options are
+// currently turned on (independent of whether Razorpay is configured at all).
+router.get('/payment-methods', async (req, res, next) => {
+  try {
+    const paymentMethods = await getPaymentMethodsConfig();
+    res.json({ success: true, paymentMethods });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// PUT /api/admin/payment-methods  { cod, razorpay, codAdvance }
+router.put('/payment-methods', async (req, res, next) => {
+  try {
+    const paymentMethods = {
+      id: 'main',
+      cod: !!req.body.cod,
+      razorpay: !!req.body.razorpay,
+      codAdvance: !!req.body.codAdvance,
+    };
+    await db.put('payment-methods', paymentMethods);
+    res.json({ success: true, paymentMethods });
   } catch (err) {
     next(err);
   }

@@ -14,6 +14,7 @@ const {
 const { notifyUser } = require('../utils/notify');
 const { otpStore } = require('../utils/otpStore');
 const { markPhoneVerified, isPhoneVerified, consumePhoneVerification } = require('../utils/phoneVerification');
+const { getPaymentMethodsConfig } = require('../utils/paymentMethods');
 
 const CANCELLABLE_STATUSES = ['placed', 'confirmed'];
 const RETURN_WINDOW_DAYS = 7;
@@ -98,6 +99,9 @@ router.post('/', optionalAuth, async (req, res, next) => {
     const { items, address, paymentMethod, couponCode, pointsToRedeem, guestInfo } = req.body;
     const effectivePaymentMethod = paymentMethod || 'cod';
 
+    if (effectivePaymentMethod === 'cod' && !(await getPaymentMethodsConfig()).cod) {
+      return res.status(400).json({ success: false, message: 'Cash on Delivery is currently unavailable — please choose another payment method.' });
+    }
     if (!items || !items.length) {
       return res.status(400).json({ success: false, message: 'Your cart is empty.' });
     }
@@ -162,7 +166,7 @@ router.post('/', optionalAuth, async (req, res, next) => {
 // POST /api/orders/razorpay/create  { items, guestInfo? } → { razorpayOrderId, amount, currency, keyId }
 router.post('/razorpay/create', optionalAuth, async (req, res, next) => {
   try {
-    if (!razorpay.isConfigured()) {
+    if (!razorpay.isConfigured() || !(await getPaymentMethodsConfig()).razorpay) {
       return res.status(503).json({
         success: false,
         message: 'Online payment isn’t set up yet — please choose Cash on Delivery instead.',
@@ -279,6 +283,16 @@ router.post('/cod-advance/create', optionalAuth, async (req, res, next) => {
       return res.status(503).json({
         success: false,
         message: 'Online payment isn’t set up yet — please choose Cash on Delivery instead.',
+      });
+    }
+    // Rides on the same Razorpay rail as "Pay Online", so it needs that
+    // method enabled too, not just its own flag — mirrors the frontend's
+    // own gating (razorpayEnabled && enabledMethods.razorpay && codAdvance).
+    const methods = await getPaymentMethodsConfig();
+    if (!methods.razorpay || !methods.codAdvance) {
+      return res.status(503).json({
+        success: false,
+        message: 'This payment option isn’t available right now — please choose another one.',
       });
     }
     const { items, couponCode, pointsToRedeem, address, guestInfo } = req.body;

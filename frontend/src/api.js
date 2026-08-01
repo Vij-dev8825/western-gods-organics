@@ -182,6 +182,8 @@ export const api = {
 
     getSaleBanner: (token) => request('/admin/sale-banner', { token }),
     updateSaleBanner: (token, settings) => request('/admin/sale-banner', { method: 'PUT', body: settings, token }),
+    getPaymentMethods: (token) => request('/admin/payment-methods', { token }),
+    updatePaymentMethods: (token, methods) => request('/admin/payment-methods', { method: 'PUT', body: methods, token }),
     getHomepageReviews: (token) => request('/admin/homepage-reviews', { token }),
     updateHomepageReviews: (token, settings) => request('/admin/homepage-reviews', { method: 'PUT', body: settings, token }),
     getCountryCatalog: (token) => request('/admin/country-catalog', { token }),

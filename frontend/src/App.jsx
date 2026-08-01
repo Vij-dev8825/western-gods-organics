@@ -60,6 +60,7 @@ import AdminChat from './pages/admin/AdminChat';
 import AdminBlog from './pages/admin/AdminBlog';
 import AdminPageBanners from './pages/admin/AdminPageBanners';
 import AdminSaleBanner from './pages/admin/AdminSaleBanner';
+import AdminPaymentMethods from './pages/admin/AdminPaymentMethods';
 import AdminCurrency from './pages/admin/AdminCurrency';
 import AdminHomepageReviews from './pages/admin/AdminHomepageReviews';
 import AdminCountries from './pages/admin/AdminCountries';
@@ -152,6 +153,7 @@ export default function App() {
         <Route path="blog" element={<AdminBlog />} />
         <Route path="page-banners" element={<AdminPageBanners />} />
         <Route path="sale-banner" element={<AdminSaleBanner />} />
+        <Route path="payment-methods" element={<AdminPaymentMethods />} />
         <Route path="currency" element={<AdminCurrency />} />
         <Route path="homepage-reviews" element={<AdminHomepageReviews />} />
         <Route path="countries" element={<AdminCountries />} />

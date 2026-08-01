@@ -56,10 +56,22 @@ export default function Cart() {
   const [loyaltyTier, setLoyaltyTier] = useState(null);
 
   const [codAdvanceInr, setCodAdvanceInr] = useState(0);
+  const [enabledMethods, setEnabledMethods] = useState({ cod: true, razorpay: true, codAdvance: true });
 
   useEffect(() => {
     api.getProducts().then((d) => setProducts(d.products));
-    api.getConfig().then((d) => { setRazorpayEnabled(!!d.razorpayEnabled); setCodAdvanceInr(d.codAdvanceInr || 0); }).catch(() => {});
+    api.getConfig().then((d) => {
+      setRazorpayEnabled(!!d.razorpayEnabled);
+      setCodAdvanceInr(d.codAdvanceInr || 0);
+      if (d.paymentMethods) {
+        setEnabledMethods(d.paymentMethods);
+        // Falls back off the default 'cod' selection if an admin has turned
+        // it off, so the form never submits a method that isn't offered.
+        if (!d.paymentMethods.cod) {
+          setPaymentMethod((pm) => (pm === 'cod' && d.paymentMethods.razorpay ? 'razorpay' : pm));
+        }
+      }
+    }).catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -546,33 +558,37 @@ export default function Cart() {
                 <h4>Payment Method</h4>
               </div>
               <div className="payment-options">
-                <label className={`payment-option ${paymentMethod === 'cod' ? 'active' : ''}`}>
-                  <input type="radio" name="paymentMethod" checked={paymentMethod === 'cod'} onChange={() => setPaymentMethod('cod')} />
-                  <span className="filter-radio" aria-hidden="true" />
-                  <span className="payment-option-body">
-                    <b>Cash on Delivery</b>
-                    <span className="muted">Pay in cash when your order arrives</span>
-                  </span>
-                </label>
-                <label className={`payment-option ${paymentMethod === 'razorpay' ? 'active' : ''} ${!razorpayEnabled ? 'disabled' : ''}`}>
-                  <input
-                    type="radio"
-                    name="paymentMethod"
-                    checked={paymentMethod === 'razorpay'}
-                    disabled={!razorpayEnabled}
-                    onChange={() => setPaymentMethod('razorpay')}
-                  />
-                  <span className="filter-radio" aria-hidden="true" />
-                  <span className="payment-option-body">
-                    <b>Pay Online</b>
-                    <span className="muted">
-                      {razorpayEnabled
-                        ? 'Cards, UPI, NetBanking & wallets — secured by Razorpay'
-                        : 'Currently unavailable — please use Cash on Delivery'}
+                {enabledMethods.cod && (
+                  <label className={`payment-option ${paymentMethod === 'cod' ? 'active' : ''}`}>
+                    <input type="radio" name="paymentMethod" checked={paymentMethod === 'cod'} onChange={() => setPaymentMethod('cod')} />
+                    <span className="filter-radio" aria-hidden="true" />
+                    <span className="payment-option-body">
+                      <b>Cash on Delivery</b>
+                      <span className="muted">Pay in cash when your order arrives</span>
                     </span>
-                  </span>
-                </label>
-                {razorpayEnabled && codAdvanceInr > 0 && (
+                  </label>
+                )}
+                {enabledMethods.razorpay && (
+                  <label className={`payment-option ${paymentMethod === 'razorpay' ? 'active' : ''} ${!razorpayEnabled ? 'disabled' : ''}`}>
+                    <input
+                      type="radio"
+                      name="paymentMethod"
+                      checked={paymentMethod === 'razorpay'}
+                      disabled={!razorpayEnabled}
+                      onChange={() => setPaymentMethod('razorpay')}
+                    />
+                    <span className="filter-radio" aria-hidden="true" />
+                    <span className="payment-option-body">
+                      <b>Pay Online</b>
+                      <span className="muted">
+                        {razorpayEnabled
+                          ? 'Cards, UPI, NetBanking & wallets — secured by Razorpay'
+                          : 'Currently unavailable — please use Cash on Delivery'}
+                      </span>
+                    </span>
+                  </label>
+                )}
+                {razorpayEnabled && enabledMethods.razorpay && enabledMethods.codAdvance && codAdvanceInr > 0 && (
                   <label className={`payment-option ${paymentMethod === 'cod_advance' ? 'active' : ''}`}>
                     <input
                       type="radio"

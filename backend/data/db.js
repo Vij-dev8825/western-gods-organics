@@ -43,6 +43,7 @@ const COLLECTIONS = [
   'country-catalog',
   'loyalty-ledger',
   'whatsapp-ordering',
+  'payment-methods',
 ];
 
 let mode = 'json';
