@@ -260,6 +260,10 @@ router.post('/products', async (req, res, next) => {
       reviewsCount: Number(req.body.reviewsCount || 0),
       tags: req.body.tags || [],
       comboItems: Array.isArray(req.body.comboItems) ? req.body.comboItems.filter(Boolean) : [],
+      // Real product ids this combo bundles — unlike comboItems (free-text,
+      // display only), this is a structured link used to cross-sell the kit
+      // from each of its component products' own pages (see ProductDetail.jsx).
+      comboProductIds: Array.isArray(req.body.comboProductIds) ? req.body.comboProductIds.filter(Boolean) : [],
       isNew: Boolean(req.body.isNew),
       countryPrices: normalizeCountryPrices(req.body.countryPrices),
       batchNumber: req.body.batchNumber || '',
@@ -302,6 +306,9 @@ router.put('/products/:id', async (req, res, next) => {
       countryPrices: normalizeCountryPrices(req.body.countryPrices ?? existing.countryPrices),
       shortDescriptions: sanitizeLangMap(req.body.shortDescriptions ?? existing.shortDescriptions),
       descriptions: sanitizeLangMap(req.body.descriptions ?? existing.descriptions),
+      comboProductIds: Array.isArray(req.body.comboProductIds ?? existing.comboProductIds)
+        ? (req.body.comboProductIds ?? existing.comboProductIds).filter(Boolean)
+        : [],
       updatedAt: new Date().toISOString(),
     };
     delete updated.notifyCustomers;

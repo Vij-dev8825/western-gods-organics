@@ -128,6 +128,7 @@ export default function ProductDetail() {
   const [submittingReview, setSubmittingReview] = useState(false);
   const [reviewLightbox, setReviewLightbox] = useState(null); // { images, index } | null
   const [questions, setQuestions] = useState([]);
+  const [kits, setKits] = useState([]);
   const [myQuestion, setMyQuestion] = useState('');
   const [submittingQuestion, setSubmittingQuestion] = useState(false);
   const [subFrequency, setSubFrequency] = useState(28);
@@ -151,6 +152,7 @@ export default function ProductDetail() {
     setProduct(null);
     setReviews([]);
     setQuestions([]);
+    setKits([]);
     setMyQuestion('');
     setMyRating(0);
     setMyText('');
@@ -179,6 +181,14 @@ export default function ProductDetail() {
           );
           setGuides(matches.slice(0, 3));
         })
+        .catch(() => {});
+
+      // comboProductIds is a structured link (unlike the free-text
+      // comboItems) — find any kit that lists this product as a component
+      // so its own page can point back to the kit.
+      api
+        .getProducts({ combo: true })
+        .then((r) => setKits(r.products.filter((p) => p.comboProductIds?.includes(d.product.id))))
         .catch(() => {});
     });
     api.getReviews(id).then((d) => setReviews(d.reviews)).catch(() => {});
@@ -450,6 +460,19 @@ export default function ProductDetail() {
               <ul>
                 {product.comboItems.map((item, i) => (
                   <li key={i}>{item}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {kits.length > 0 && (
+            <div className="combo-includes">
+              <span className="eyebrow">Part of a kit</span>
+              <ul>
+                {kits.map((k) => (
+                  <li key={k.id}>
+                    <Link to={`/product/${k.id}`}>{k.name}</Link> — save by buying the full kit
+                  </li>
                 ))}
               </ul>
             </div>

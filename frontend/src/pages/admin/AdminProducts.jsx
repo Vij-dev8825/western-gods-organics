@@ -20,6 +20,7 @@ const EMPTY = {
   sizes: [{ label: '500 ml', price: '', mrp: '', stock: '', wholesalePrice: '' }],
   tags: '',
   comboItems: '',
+  comboProductIds: [],
   isNew: false,
   countryPrices: {},
   batchNumber: '',
@@ -37,6 +38,7 @@ function toForm(p) {
     extraImages: (p.images || []).filter((img) => img && img !== p.image),
     tags: (p.tags || []).join(', '),
     comboItems: (p.comboItems || []).join(', '),
+    comboProductIds: p.comboProductIds || [],
     countryPrices: p.countryPrices || {},
     shortDescriptions: p.shortDescriptions || {},
     descriptions: p.descriptions || {},
@@ -327,6 +329,32 @@ export default function AdminProducts() {
               Fill this in to sell this product as a combo/bundle — it'll show a "Combo" badge,
               list what's included, and appear on the dedicated Combos page.
             </p>
+          </div>
+
+          <div className="field" style={{ marginTop: 16 }}>
+            <label>Kit contains these real products (optional)</label>
+            <p className="muted" style={{ fontSize: '0.78rem', marginTop: -4, marginBottom: 8 }}>
+              Tick the actual catalog products bundled in this kit — each ticked product's own
+              page will then show a "part of this kit" link back to this combo.
+            </p>
+            <div style={{ maxHeight: 220, overflowY: 'auto', border: '1px solid rgba(31,61,43,0.15)', borderRadius: 8, padding: 10 }}>
+              {products.filter((p) => p.id !== editing).map((p) => (
+                <label key={p.id} className="flex gap-1" style={{ alignItems: 'center', fontWeight: 400, padding: '3px 0' }}>
+                  <input
+                    type="checkbox"
+                    checked={form.comboProductIds.includes(p.id)}
+                    onChange={(e) => setForm((f) => ({
+                      ...f,
+                      comboProductIds: e.target.checked
+                        ? [...f.comboProductIds, p.id]
+                        : f.comboProductIds.filter((id) => id !== p.id),
+                    }))}
+                  />
+                  {' '}{p.name}
+                </label>
+              ))}
+              {products.length === 0 && <p className="muted">No other products yet.</p>}
+            </div>
           </div>
 
           <div className="field">
