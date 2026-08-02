@@ -15,7 +15,8 @@ export default function Dashboard() {
   if (error) return <div className="alert alert-error">{error}</div>;
   if (!data) return <p className="muted">Loading…</p>;
 
-  const { stats, lowStock, recentOrders, recentEnquiries, recentContacts, recentComments } = data;
+  const { stats, lowStock, salesTrend, bestSellers, recentOrders, recentEnquiries, recentContacts, recentComments } = data;
+  const maxTrendRevenue = Math.max(...salesTrend.map((d) => d.revenue), 1);
   const tiles = [
     ['Customers', stats.customers, '/admin/leads', false],
     ['Products', stats.products, '/admin/products', false],
@@ -74,6 +75,47 @@ export default function Dashboard() {
           </table>
         </div>
       )}
+
+      <div className="admin-two-col">
+        <div className="admin-card">
+          <h3>Sales trend (last 14 days)</h3>
+          <div className="trend-chart">
+            {salesTrend.map((d) => (
+              <div className="trend-row" key={d.date}>
+                <span className="trend-date muted">
+                  {new Date(d.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}
+                </span>
+                <div className="trend-bar-track">
+                  <div className="trend-bar" style={{ width: `${(d.revenue / maxTrendRevenue) * 100}%` }} />
+                </div>
+                <span className="trend-value">₹{d.revenue.toLocaleString('en-IN')}</span>
+                <span className="muted trend-orders">{d.orders} order{d.orders === 1 ? '' : 's'}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="admin-card">
+          <h3>Best sellers (last 30 days)</h3>
+          {bestSellers.length === 0 ? (
+            <p className="muted">No sales in the last 30 days yet.</p>
+          ) : (
+            <table className="admin-table">
+              <thead>
+                <tr><th>Product</th><th>Units sold</th><th>Revenue</th></tr>
+              </thead>
+              <tbody>
+                {bestSellers.map((b) => (
+                  <tr key={b.productId}>
+                    <td>{b.name}</td>
+                    <td>{b.unitsSold}</td>
+                    <td>₹{b.revenue.toLocaleString('en-IN')}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      </div>
 
       <div className="admin-two-col">
         <div className="admin-card">

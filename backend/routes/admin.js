@@ -105,6 +105,39 @@ router.get('/stats', async (req, res, next) => {
     const todayOrders = orders.filter((o) => o.createdAt?.slice(0, 10) === today);
     const postTitleById = Object.fromEntries(posts.map((p) => [p.id, p.title]));
 
+    // Daily orders/revenue for the last 14 days — not filtered by status,
+    // matching the same unfiltered convention the revenue/todayRevenue tiles
+    // above already use, so this never appears to disagree with them for the
+    // same day.
+    const TREND_DAYS = 14;
+    const salesTrend = [];
+    for (let i = TREND_DAYS - 1; i >= 0; i--) {
+      const dateStr = new Date(Date.now() - i * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+      const dayOrders = orders.filter((o) => o.createdAt?.slice(0, 10) === dateStr);
+      salesTrend.push({
+        date: dateStr,
+        orders: dayOrders.length,
+        revenue: dayOrders.reduce((sum, o) => sum + (o.total || 0), 0),
+      });
+    }
+
+    // Best-selling products (units + revenue) over the same trailing window
+    // and cancelled-excluded item list already computed above for the
+    // low-stock forecast — aggregated per product (across all its sizes)
+    // for a "what's actually driving sales" view the point-in-time tiles
+    // above don't show.
+    const salesByProduct = {};
+    for (const it of recentItems) {
+      const agg = (salesByProduct[it.productId] ||= { unitsSold: 0, revenue: 0 });
+      agg.unitsSold += it.quantity;
+      agg.revenue += it.quantity * it.price;
+    }
+    const productNameById = Object.fromEntries(products.map((p) => [p.id, p.name]));
+    const bestSellers = Object.entries(salesByProduct)
+      .map(([productId, agg]) => ({ productId, name: productNameById[productId] || 'Unknown product', ...agg }))
+      .sort((a, b) => b.unitsSold - a.unitsSold)
+      .slice(0, 10);
+
     res.json({
       success: true,
       dbMode: db.getMode(),
@@ -121,6 +154,8 @@ router.get('/stats', async (req, res, next) => {
         unreadChats: chats.filter((m) => m.from === 'user' && !m.readByAdmin).length,
       },
       lowStock,
+      salesTrend,
+      bestSellers,
       recentOrders: orders.slice(-8).reverse(),
       recentEnquiries: enquiries.slice(-5).reverse(),
       recentContacts: contacts.slice(-5).reverse(),
