@@ -55,7 +55,7 @@ export default function Dashboard() {
           <h3>⚠ Low stock (≤ 10 units)</h3>
           <table className="admin-table">
             <thead>
-              <tr><th>Product</th><th>Size</th><th>Stock</th></tr>
+              <tr><th>Product</th><th>Size</th><th>Stock</th><th>Est. days left</th></tr>
             </thead>
             <tbody>
               {lowStock.map((l) => (
@@ -63,6 +63,11 @@ export default function Dashboard() {
                   <td>{l.name}</td>
                   <td>{l.size}</td>
                   <td><span className="pill warn">{l.stock}</span></td>
+                  <td>
+                    {l.daysLeft == null
+                      ? <span className="muted">— no recent sales</span>
+                      : <span className={l.daysLeft <= 7 ? 'pill warn' : 'muted'}>~{l.daysLeft}d</span>}
+                  </td>
                 </tr>
               ))}
             </tbody>

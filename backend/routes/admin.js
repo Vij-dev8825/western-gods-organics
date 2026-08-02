@@ -75,10 +75,29 @@ router.get('/stats', async (req, res, next) => {
     ]);
 
     const revenue = orders.reduce((sum, o) => sum + (o.total || 0), 0);
+
+    // Recent sales velocity (units/day, aggregated across all customers) for
+    // each product+size, over a trailing window — used below to turn "stock
+    // is low right now" into "here's roughly how long that'll last", so a
+    // restock can be timed instead of reacting after the fact. Cancelled
+    // orders are excluded since they were never actually fulfilled demand.
+    const FORECAST_WINDOW_DAYS = 30;
+    const forecastCutoff = Date.now() - FORECAST_WINDOW_DAYS * 24 * 60 * 60 * 1000;
+    const recentItems = orders
+      .filter((o) => o.status !== 'cancelled' && new Date(o.createdAt).getTime() >= forecastCutoff)
+      .flatMap((o) => o.items);
+
     const lowStock = [];
     for (const p of products) {
       for (const s of p.sizes || []) {
-        if (s.stock <= 10) lowStock.push({ productId: p.id, name: p.name, size: s.label, stock: s.stock });
+        if (s.stock <= 10) {
+          const unitsSoldRecently = recentItems
+            .filter((it) => it.productId === p.id && it.size === s.label)
+            .reduce((sum, it) => sum + it.quantity, 0);
+          const perDay = unitsSoldRecently / FORECAST_WINDOW_DAYS;
+          const daysLeft = perDay > 0 ? Math.round(s.stock / perDay) : null;
+          lowStock.push({ productId: p.id, name: p.name, size: s.label, stock: s.stock, daysLeft });
+        }
       }
     }
 
@@ -268,6 +287,26 @@ router.put('/products/:id', async (req, res, next) => {
         channels: { inapp: true, email: true },
         meta: { productId: updated.id },
       });
+    }
+
+    // Automatically tells anyone who's wishlisted this product about a price
+    // drop, independent of the "notify everyone" checkbox above — targeted
+    // at people who actually wanted this item, not a broadcast, so it works
+    // even when the admin doesn't remember (or want) to notify everyone.
+    if (drops.length) {
+      const wishlists = await db.list('wishlists');
+      const wishlisterIds = wishlists.filter((w) => (w.items || []).includes(updated.id)).map((w) => w.id);
+      for (const userId of wishlisterIds) {
+        const user = await db.get('users', userId);
+        if (user) {
+          await notifyUser(user, {
+            title: `Price drop on your wishlist: ${updated.name}`,
+            message: `${updated.name} just got cheaper — ${drops.join(', ')}. It's on your wishlist!`,
+            meta: { productId: updated.id },
+            channels: { inapp: true, email: true },
+          });
+        }
+      }
     }
 
     // Notify anyone who asked to be told when a now-restocked size returns,
