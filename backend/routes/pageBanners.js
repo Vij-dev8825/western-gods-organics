@@ -3,7 +3,7 @@ const db = require('../data/db');
 
 const router = express.Router();
 
-const PAGES = ['shop', 'categories', 'combos', 'contact', 'bulk-enquiry', 'store-locator'];
+const PAGES = ['shop', 'categories', 'combos', 'gifting', 'contact', 'bulk-enquiry', 'store-locator'];
 
 // GET /api/page-banners/:page — banner image/title/subtitle override for a static page
 router.get('/:page', async (req, res, next) => {

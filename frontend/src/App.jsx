@@ -21,6 +21,7 @@ import Home from './pages/Home';
 import Shop from './pages/Shop';
 import Categories from './pages/Categories';
 import Combos from './pages/Combos';
+import Gifting from './pages/Gifting';
 import Blog from './pages/Blog';
 import BlogPost from './pages/BlogPost';
 import ProductDetail from './pages/ProductDetail';
@@ -181,6 +182,7 @@ export default function App() {
         <Route path="/shop" element={<Shop />} />
         <Route path="/categories" element={<Categories />} />
         <Route path="/combos" element={<Combos />} />
+        <Route path="/gifting" element={<Gifting />} />
         <Route path="/blog" element={<Blog />} />
         <Route path="/blog/:slug" element={<BlogPost />} />
         <Route path="/guides" element={<Blog />} />

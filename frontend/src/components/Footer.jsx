@@ -123,6 +123,7 @@ export default function Footer() {
               <li><Link to="/wishlist">{t('footerWishlist')}</Link></li>
               <li><Link to="/guides">Usage Guides</Link></li>
               <li><Link to="/gift-cards">Gift Cards</Link></li>
+              <li><Link to="/gifting">Corporate & Festival Gifting</Link></li>
               <li><Link to="/affiliate">Affiliate Program</Link></li>
             </ul>
           </FooterAccordion>
@@ -154,6 +155,7 @@ export default function Footer() {
               <li><Link to="/blog">{t('navBlog')}</Link></li>
               <li><Link to="/guides">Usage Guides</Link></li>
               <li><Link to="/gift-cards">Gift Cards</Link></li>
+              <li><Link to="/gifting">Corporate & Festival Gifting</Link></li>
               <li><Link to="/bulk-enquiry">{t('footerBulk')}</Link></li>
               <li><Link to="/contact">{t('navContact')}</Link></li>
               <li><Link to="/store-locator">{t('footerVisitUs')}</Link></li>
