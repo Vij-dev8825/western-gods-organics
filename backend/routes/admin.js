@@ -1392,6 +1392,58 @@ router.get('/contacts', async (req, res, next) => {
   }
 });
 
+// GET /api/admin/product-questions — every question asked, newest first,
+// with the product name resolved for display; unanswered ones sort first
+// so the admin sees what's waiting without hunting through answered ones.
+router.get('/product-questions', async (req, res, next) => {
+  try {
+    const [questions, products] = await Promise.all([db.list('product-questions'), db.list('products')]);
+    const productNameById = Object.fromEntries(products.map((p) => [p.id, p.name]));
+    const withProductName = questions
+      .map((q) => ({ ...q, productName: productNameById[q.productId] || 'Unknown product' }))
+      .sort((a, b) => {
+        if (!a.answer !== !b.answer) return a.answer ? 1 : -1;
+        return b.createdAt.localeCompare(a.createdAt);
+      });
+    res.json({ success: true, questions: withProductName });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// PATCH /api/admin/product-questions/:id  { answer }
+router.patch('/product-questions/:id', async (req, res, next) => {
+  try {
+    const question = await db.get('product-questions', req.params.id);
+    if (!question) return res.status(404).json({ success: false, message: 'Question not found.' });
+
+    const answer = (req.body.answer || '').trim().slice(0, 1000);
+    if (answer.length < 2) {
+      return res.status(400).json({ success: false, message: 'Enter an answer.' });
+    }
+    question.answer = answer;
+    question.answeredAt = new Date().toISOString();
+    await db.put('product-questions', question);
+
+    if (question.userId) {
+      const asker = await db.get('users', question.userId);
+      const product = await db.get('products', question.productId);
+      if (asker && product) {
+        await notifyUser(asker, {
+          title: `Your question was answered: ${product.name}`,
+          message: `Q: ${question.question}\nA: ${answer}`,
+          meta: { productId: product.id },
+          channels: { inapp: true, email: true },
+        });
+      }
+    }
+
+    res.json({ success: true, question });
+  } catch (err) {
+    next(err);
+  }
+});
+
 /* ------------------------------ Notifications ------------------------------ */
 
 // POST /api/admin/notify  { title, message, image?, channels: { inapp, email, sms, push } }

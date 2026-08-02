@@ -18,11 +18,14 @@ export default function AdminLeads() {
   const [contacts, setContacts] = useState([]);
   const [customers, setCustomers] = useState([]);
   const [rateDrafts, setRateDrafts] = useState({}); // { [customerId]: '10' } — draft commission rate before granting
+  const [questions, setQuestions] = useState([]);
+  const [answerDrafts, setAnswerDrafts] = useState({}); // { [questionId]: 'draft answer text' }
 
   function load() {
     api.admin.getEnquiries(token).then((d) => setEnquiries(d.enquiries)).catch(() => {});
     api.admin.getContacts(token).then((d) => setContacts(d.contacts)).catch(() => {});
     api.admin.getCustomers(token).then((d) => setCustomers(d.customers)).catch(() => {});
+    api.admin.getProductQuestions(token).then((d) => setQuestions(d.questions)).catch(() => {});
   }
   useEffect(load, [token]);
 
@@ -51,6 +54,17 @@ export default function AdminLeads() {
     load();
   }
 
+  async function submitAnswer(q) {
+    const answer = (answerDrafts[q.id] || '').trim();
+    if (answer.length < 2) {
+      window.alert('Enter an answer.');
+      return;
+    }
+    await api.admin.answerProductQuestion(token, q.id, answer).catch(() => {});
+    setAnswerDrafts((d) => ({ ...d, [q.id]: '' }));
+    load();
+  }
+
   return (
     <>
       <div className="admin-head">
@@ -62,6 +76,7 @@ export default function AdminLeads() {
           ['enquiries', `Bulk enquiries (${enquiries.length})`],
           ['contacts', `Contact messages (${contacts.length})`],
           ['customers', `Customers (${customers.length})`],
+          ['questions', `Product questions (${questions.filter((q) => !q.answer).length})`],
         ].map(([key, label]) => (
           <button key={key} className={`tab ${tab === key ? 'active' : ''}`} onClick={() => setTab(key)}>
             {label}
@@ -186,6 +201,48 @@ export default function AdminLeads() {
                           />
                           <button className="link-btn" onClick={() => grantAffiliate(c)}>grant affiliate</button>
                         </span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      )}
+
+      {tab === 'questions' && (
+        <div className="admin-card">
+          {questions.length === 0 ? <p className="muted">No product questions yet.</p> : (
+            <table className="admin-table">
+              <thead>
+                <tr><th>Product</th><th>Question</th><th>Asked</th><th>Answer</th></tr>
+              </thead>
+              <tbody>
+                {questions.map((q) => (
+                  <tr key={q.id}>
+                    <td><b>{q.productName}</b></td>
+                    <td style={{ maxWidth: 220 }}>{q.question}</td>
+                    <td className="muted">{new Date(q.createdAt).toLocaleDateString('en-IN')}</td>
+                    <td style={{ minWidth: 260 }}>
+                      {q.answer ? (
+                        <>
+                          <p style={{ margin: '0 0 4px' }}>{q.answer}</p>
+                          <span className="muted" style={{ fontSize: '0.75rem' }}>
+                            Answered {new Date(q.answeredAt).toLocaleDateString('en-IN')}
+                          </span>
+                        </>
+                      ) : (
+                        <div className="flex gap-1" style={{ alignItems: 'flex-start' }}>
+                          <textarea
+                            rows={2}
+                            placeholder="Write an answer…"
+                            value={answerDrafts[q.id] ?? ''}
+                            onChange={(e) => setAnswerDrafts((d) => ({ ...d, [q.id]: e.target.value }))}
+                            style={{ flex: 1 }}
+                          />
+                          <button className="link-btn" onClick={() => submitAnswer(q)}>Answer</button>
+                        </div>
                       )}
                     </td>
                   </tr>

@@ -3,6 +3,9 @@ const { v4: uuid } = require('uuid');
 const db = require('../data/db');
 const { requireAuth } = require('../middleware/auth');
 const { imageUpload, storeUploadedFile } = require('../utils/imageUploadHandler');
+const { sendMail } = require('../utils/mailer');
+
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL || process.env.CONTACT_NOTIFY_EMAIL;
 
 const router = express.Router();
 
@@ -258,6 +261,58 @@ router.post('/:id/reviews', requireAuth, async (req, res, next) => {
     await recomputeRating(req.params.id);
 
     res.status(existing ? 200 : 201).json({ success: true, review });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET /api/products/:id/questions — public, answered questions only (an
+// unanswered one sitting on a product page with no reply looks worse than
+// just not showing it yet; admin sees pending ones in Admin → Leads).
+router.get('/:id/questions', async (req, res, next) => {
+  try {
+    const questions = (await db.list('product-questions'))
+      .filter((q) => q.productId === req.params.id && q.answer)
+      .sort((a, b) => b.answeredAt.localeCompare(a.answeredAt));
+    res.json({ success: true, questions });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /api/products/:id/questions  { question }
+router.post('/:id/questions', requireAuth, async (req, res, next) => {
+  try {
+    const product = await db.get('products', req.params.id);
+    if (!product) return res.status(404).json({ success: false, message: 'Product not found.' });
+
+    const question = (req.body.question || '').trim().slice(0, 500);
+    if (question.length < 5) {
+      return res.status(400).json({ success: false, message: 'Please enter a question (at least 5 characters).' });
+    }
+
+    const author = await db.get('users', req.user.id);
+    const record = {
+      id: uuid(),
+      productId: req.params.id,
+      userId: req.user.id,
+      userName: author?.name || 'Customer',
+      question,
+      answer: null,
+      answeredAt: null,
+      createdAt: new Date().toISOString(),
+    };
+    await db.put('product-questions', record);
+
+    if (ADMIN_EMAIL) {
+      sendMail({
+        to: ADMIN_EMAIL,
+        subject: `New product question: ${product.name}`,
+        text: `${record.userName} asked about ${product.name}:\n\n"${question}"\n\nAnswer it in Admin → Enquiries & Leads → Product Questions.`,
+      }).catch(() => {});
+    }
+
+    res.status(201).json({ success: true, question: record });
   } catch (err) {
     next(err);
   }

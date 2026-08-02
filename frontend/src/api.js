@@ -38,6 +38,8 @@ export const api = {
   getBatch: (batchNumber) => request(`/products/batch/${encodeURIComponent(batchNumber)}`),
   getReviews: (id) => request(`/products/${id}/reviews`),
   submitReview: (token, id, payload) => request(`/products/${id}/reviews`, { method: 'POST', body: payload, token }),
+  getProductQuestions: (id) => request(`/products/${id}/questions`),
+  askProductQuestion: (token, id, question) => request(`/products/${id}/questions`, { method: 'POST', body: { question }, token }),
   uploadReviewPhoto: (token, formData) => request('/products/reviews/photo', { method: 'POST', formData, token }),
   getReviewGallery: (limit) => request(`/products/reviews/gallery${limit ? `?limit=${limit}` : ''}`),
 
@@ -233,6 +235,8 @@ export const api = {
     updateEnquiry: (token, id, status) =>
       request(`/admin/enquiries/${id}`, { method: 'PATCH', body: { status }, token }),
     getContacts: (token) => request('/admin/contacts', { token }),
+    getProductQuestions: (token) => request('/admin/product-questions', { token }),
+    answerProductQuestion: (token, id, answer) => request(`/admin/product-questions/${id}`, { method: 'PATCH', body: { answer }, token }),
 
     notify: (token, payload) => request('/admin/notify', { method: 'POST', body: payload, token }),
     notifyLogs: (token) => request('/admin/notify/logs', { token }),

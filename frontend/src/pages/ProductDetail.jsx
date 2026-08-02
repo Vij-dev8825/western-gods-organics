@@ -127,6 +127,9 @@ export default function ProductDetail() {
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [submittingReview, setSubmittingReview] = useState(false);
   const [reviewLightbox, setReviewLightbox] = useState(null); // { images, index } | null
+  const [questions, setQuestions] = useState([]);
+  const [myQuestion, setMyQuestion] = useState('');
+  const [submittingQuestion, setSubmittingQuestion] = useState(false);
   const [subFrequency, setSubFrequency] = useState(28);
   const [subCustom, setSubCustom] = useState(false);
   const [subCustomDays, setSubCustomDays] = useState('');
@@ -147,6 +150,8 @@ export default function ProductDetail() {
   useEffect(() => {
     setProduct(null);
     setReviews([]);
+    setQuestions([]);
+    setMyQuestion('');
     setMyRating(0);
     setMyText('');
     setMyImages([]);
@@ -177,6 +182,7 @@ export default function ProductDetail() {
         .catch(() => {});
     });
     api.getReviews(id).then((d) => setReviews(d.reviews)).catch(() => {});
+    api.getProductQuestions(id).then((d) => setQuestions(d.questions)).catch(() => {});
   }, [id]);
 
   useEffect(() => {
@@ -327,6 +333,24 @@ export default function ProductDetail() {
       showToast(err.message, 'error');
     } finally {
       setSubmittingReview(false);
+    }
+  }
+
+  async function handleSubmitQuestion(e) {
+    e.preventDefault();
+    if (myQuestion.trim().length < 5) {
+      showToast('Please enter a question (at least 5 characters).', 'error');
+      return;
+    }
+    setSubmittingQuestion(true);
+    try {
+      await api.askProductQuestion(token, product.id, myQuestion.trim());
+      setMyQuestion('');
+      showToast("Thanks — we'll answer it soon and email you.");
+    } catch (err) {
+      showToast(err.message, 'error');
+    } finally {
+      setSubmittingQuestion(false);
     }
   }
 
@@ -722,6 +746,46 @@ export default function ProductDetail() {
                 )}
                 <span className="review-item-date muted">
                   {new Date(r.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+
+      {/* ---------- Questions & Answers ---------- */}
+      <div className="reviews-section">
+        <h2>Questions &amp; Answers</h2>
+
+        {isLoggedIn ? (
+          <form className="review-form" onSubmit={handleSubmitQuestion}>
+            <label className="muted" style={{ fontSize: '0.85rem' }}>Ask a question about this product</label>
+            <textarea
+              placeholder="e.g. Is this suitable for oily skin?"
+              value={myQuestion}
+              onChange={(e) => setMyQuestion(e.target.value)}
+              maxLength={500}
+            />
+            <button type="submit" className="btn btn-gold btn-sm" disabled={submittingQuestion}>
+              {submittingQuestion ? 'Submitting…' : 'Ask'}
+            </button>
+          </form>
+        ) : (
+          <p className="muted">
+            <Link to="/login" state={{ from: `/product/${id}` }} className="link-btn">Log in</Link> to ask a question.
+          </p>
+        )}
+
+        {questions.length === 0 ? (
+          <p className="muted" style={{ marginTop: 18 }}>No questions yet — be the first to ask.</p>
+        ) : (
+          <ul className="review-list">
+            {questions.map((q) => (
+              <li key={q.id} className="review-item">
+                <p><b>Q:</b> {q.question}</p>
+                <p><b>A:</b> {q.answer}</p>
+                <span className="review-item-date muted">
+                  {new Date(q.answeredAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
                 </span>
               </li>
             ))}

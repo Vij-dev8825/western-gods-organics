@@ -50,6 +50,7 @@ const COLLECTIONS = [
   'affiliate-ledger',
   'whatsapp-inbox',
   'whatsapp-broadcast-log',
+  'product-questions',
 ];
 
 let mode = 'json';
