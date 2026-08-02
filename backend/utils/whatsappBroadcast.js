@@ -23,6 +23,17 @@ function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+/** Whether this phone number messaged us within the reply window right now
+ * — the same check the broadcast tool uses, exposed for other automated
+ * WhatsApp nudges (e.g. utils/abandonedCarts.js) that need to gate a single
+ * customer rather than pick from a list. */
+async function isWithinReplyWindow(phone) {
+  if (!phone) return false;
+  const entry = await db.get('whatsapp-inbox', phone);
+  if (!entry) return false;
+  return Date.now() - new Date(entry.lastInboundAt).getTime() < WINDOW_MS;
+}
+
 /** Everyone who's messaged us in the last 24 hours — the pool an admin can
  * pick a broadcast's recipients from, newest contact first. */
 async function getEligibleRecipients() {
@@ -74,6 +85,7 @@ async function getBroadcastLog() {
 module.exports = {
   WINDOW_MS,
   MAX_RECIPIENTS_PER_CAMPAIGN,
+  isWithinReplyWindow,
   getEligibleRecipients,
   sendBroadcast,
   getBroadcastLog,
