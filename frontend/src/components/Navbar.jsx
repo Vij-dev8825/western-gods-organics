@@ -7,6 +7,7 @@ import { useWishlist } from '../context/WishlistContext';
 import { useAuth } from '../context/AuthContext';
 import { useLang } from '../i18n';
 import { useCurrency } from '../context/CurrencyContext';
+import { countryFlagEmoji } from '../utils/countryFlag';
 import { IconHeart, IconBag, IconUser, IconBell, IconMenu, IconBox, IconSearch } from './Icons';
 
 export default function Navbar() {
@@ -95,7 +96,7 @@ export default function Navbar() {
             onChange={(e) => setCountry(e.target.value)}
           >
             {countries.map((c) => (
-              <option key={c.code} value={c.code} title={`${c.label} — ${c.currency}`}>{c.label}</option>
+              <option key={c.code} value={c.code} title={`${c.label} — ${c.currency}`}>{countryFlagEmoji(c.code)} {c.label}</option>
             ))}
           </select>
           {isLoggedIn && (

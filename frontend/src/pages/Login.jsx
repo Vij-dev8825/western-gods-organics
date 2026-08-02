@@ -4,6 +4,7 @@ import { api } from '../api';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { useCurrency } from '../context/CurrencyContext';
+import { countryFlagEmoji } from '../utils/countryFlag';
 import { useResendCooldown } from '../hooks/useResendCooldown';
 import logo from '../assets/logo.svg';
 
@@ -166,7 +167,7 @@ export default function Login() {
               <label>Country</label>
               <select value={phoneCountry} onChange={(e) => setPhoneCountry(e.target.value)}>
                 {countries.map((c) => (
-                  <option key={c.code} value={c.code}>{c.label}</option>
+                  <option key={c.code} value={c.code}>{countryFlagEmoji(c.code)} {c.label}</option>
                 ))}
               </select>
             </div>

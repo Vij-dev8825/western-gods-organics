@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useLang, LANGS } from '../i18n';
 import { useCurrency } from '../context/CurrencyContext';
+import { countryFlagEmoji } from '../utils/countryFlag';
 import logo from '../assets/logo.svg';
 
 const SEEN_KEY = 'yo_welcome_seen';
@@ -51,7 +52,7 @@ export default function WelcomeSelector() {
           <label>{t('welcomeSelectorRegionLabel')}</label>
           <select className="select" value={selectedCountry} onChange={(e) => setSelectedCountry(e.target.value)}>
             {countries.map((c) => (
-              <option key={c.code} value={c.code}>{c.label}</option>
+              <option key={c.code} value={c.code}>{countryFlagEmoji(c.code)} {c.label}</option>
             ))}
           </select>
         </div>

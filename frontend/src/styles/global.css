@@ -52,6 +52,43 @@
   --container: 1200px;
 }
 
+/* Subtle per-country accent variants — a soft nod to each market's flag,
+   set on <html data-country="XX"> by CurrencyContext.jsx whenever the
+   browsing country changes. Each one is the site's own green family with
+   just its hue rotated a modest, consistent amount (saturation/lightness
+   kept close to the original for every step) — never a different palette,
+   just a gentle tint. India has no override here — it's the site's default,
+   unchanged. Any country without a block below (including ones an admin
+   adds later via AdminCountries.jsx) simply keeps that same default. */
+:root[data-country="US"] {
+  --gold-1: #428f63; --gold-2: #4fb062; --gold-3: #9be8c3; --gold-4: #dffce3;
+  --leaf-1: #69c387; --leaf-2: #8bdfa1; --leaf-3: #bff2cb; --leaf-4: #effbf1;
+}
+:root[data-country="GB"] {
+  --gold-1: #428f70; --gold-2: #4fb073; --gold-3: #9be8d0; --gold-4: #dffce8;
+  --leaf-1: #69c396; --leaf-2: #8bdfaf; --leaf-3: #bff2d4; --leaf-4: #effbf3;
+}
+:root[data-country="CA"] {
+  --gold-1: #6e9140; --gold-2: #9eb24d; --gold-3: #c0ea99; --gold-4: #f7fdde;
+  --leaf-1: #a6c667; --leaf-2: #cae189; --leaf-3: #e7f4be; --leaf-4: #f9fbee;
+}
+:root[data-country="AU"] {
+  --gold-1: #448d69; --gold-2: #51ae6a; --gold-3: #9de6c8; --gold-4: #dffbe6;
+  --leaf-1: #6cc18e; --leaf-2: #8ddda8; --leaf-3: #c0f1cf; --leaf-4: #effbf2;
+}
+:root[data-country="SG"] {
+  --gold-1: #769140; --gold-2: #a8b24d; --gold-3: #c9ea99; --gold-4: #fafdde;
+  --leaf-1: #b0c667; --leaf-2: #d3e189; --leaf-3: #ecf4be; --leaf-4: #fafbee;
+}
+:root[data-country="MY"] {
+  --gold-1: #66933e; --gold-2: #95b54a; --gold-3: #b8ec97; --gold-4: #f5fddd;
+  --leaf-1: #9dc865; --leaf-2: #c1e387; --leaf-3: #e2f5bd; --leaf-4: #f7fcee;
+}
+:root[data-country="AE"] {
+  --gold-1: #3e9349; --gold-2: #55b54a; --gold-3: #97ecaa; --gold-4: #e1fddd;
+  --leaf-1: #65c868; --leaf-2: #8ae387; --leaf-3: #c0f5bd; --leaf-4: #effcee;
+}
+
 * { box-sizing: border-box; }
 
 html {

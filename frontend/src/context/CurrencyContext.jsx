@@ -55,6 +55,14 @@ export function CurrencyProvider({ children }) {
     setCountryState((current) => countries.find((c) => c.code === current.code) || countries[0]);
   }, [countries]);
 
+  // Drives the subtle per-country accent-color variants in global.css (see
+  // the [data-country="XX"] rules there) — a soft nod to each market, never
+  // touching layout/logo/photography. Any country without its own override
+  // there just keeps the site's default green.
+  useEffect(() => {
+    document.documentElement.setAttribute('data-country', country.code);
+  }, [country.code]);
+
   function setCountry(code) {
     const found = countries.find((c) => c.code === code);
     if (!found) return;

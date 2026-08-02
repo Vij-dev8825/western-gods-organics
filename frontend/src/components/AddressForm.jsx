@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useCurrency } from '../context/CurrencyContext';
+import { countryFlagEmoji } from '../utils/countryFlag';
 import { api } from '../api';
 
 /** Shared delivery-address field set — country, address line, pincode (with
@@ -58,7 +59,7 @@ export default function AddressForm({ address, onChange, errors, showLabel = fal
         <label>Country</label>
         <select value={address.country} onChange={(e) => onChange('country', e.target.value)}>
           {countries.map((c) => (
-            <option key={c.code} value={c.code}>{c.label}</option>
+            <option key={c.code} value={c.code}>{countryFlagEmoji(c.code)} {c.label}</option>
           ))}
         </select>
       </div>
