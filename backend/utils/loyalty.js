@@ -45,6 +45,15 @@ function tierForLifetimePoints(lifetimePoints) {
   return TIERS.find((t) => lifetimePoints >= t.minLifetimePoints);
 }
 
+// Silver/Gold perk beyond shipping — early access to products still inside
+// their earlyAccessUntil window (see routes/products.js and orderBuilder.js).
+const EARLY_ACCESS_TIER_KEYS = ['silver', 'gold'];
+async function hasEarlyAccessPerk(userId) {
+  if (!userId) return false;
+  const lifetimePoints = await getLifetimeEarnedPoints(userId);
+  return EARLY_ACCESS_TIER_KEYS.includes(tierForLifetimePoints(lifetimePoints).key);
+}
+
 /** Full tier snapshot for a user: current tier, perks, and progress to the next one.
  * baseFreeShippingThreshold is the admin-configured domestic threshold
  * (see utils/shippingSettings.js) — Bronze uses it as-is, while Silver/Gold
@@ -120,5 +129,6 @@ module.exports = {
   pointsForOrderTotal,
   creditPointsForOrder,
   redeemPointsForOrder,
+  hasEarlyAccessPerk,
   REDEEM_VALUE_INR_PER_POINT,
 };

@@ -87,7 +87,7 @@ export default function Home() {
   const timerRef = useRef(null);
 
   useEffect(() => {
-    api.getProducts().then((d) => setProducts(d.products)).catch(() => {});
+    api.getProducts({}, token).then((d) => setProducts(d.products)).catch(() => {});
     api.getCategories().then((d) => setCategories(d.categories)).catch(() => {});
     api.getBanners().then((d) => setBanners(d.banners)).catch(() => {});
   }, []);

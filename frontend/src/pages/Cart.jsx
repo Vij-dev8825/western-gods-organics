@@ -72,7 +72,7 @@ export default function Cart() {
   const [enabledMethods, setEnabledMethods] = useState({ cod: true, razorpay: true, codAdvance: true });
 
   useEffect(() => {
-    api.getProducts().then((d) => setProducts(d.products));
+    api.getProducts({}, token).then((d) => setProducts(d.products));
     api.getConfig().then((d) => {
       setRazorpayEnabled(!!d.razorpayEnabled);
       setCodAdvanceInr(d.codAdvanceInr || 0);

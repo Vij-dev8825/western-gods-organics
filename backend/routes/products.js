@@ -1,9 +1,10 @@
 const express = require('express');
 const { v4: uuid } = require('uuid');
 const db = require('../data/db');
-const { requireAuth } = require('../middleware/auth');
+const { requireAuth, optionalAuth } = require('../middleware/auth');
 const { imageUpload, storeUploadedFile } = require('../utils/imageUploadHandler');
 const { sendMail } = require('../utils/mailer');
+const { hasEarlyAccessPerk } = require('../utils/loyalty');
 
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || process.env.CONTACT_NOTIFY_EMAIL;
 
@@ -35,8 +36,20 @@ function displayPrice(p) {
   return (p.sizes[1] || p.sizes[0]).price;
 }
 
+function isEarlyAccessLocked(product) {
+  return !!product.earlyAccessUntil && new Date(product.earlyAccessUntil).getTime() > Date.now();
+}
+
+// Silver/Gold reward members (see utils/loyalty.js) get to shop a product
+// before its earlyAccessUntil date — admins can always preview it too.
+async function userHasEarlyAccess(req) {
+  if (!req.user) return false;
+  if (req.user.role === 'admin') return true;
+  return hasEarlyAccessPerk(req.user.id);
+}
+
 // GET /api/products?category=&search=&sort=&combo=true&price=&isNew=true
-router.get('/', async (req, res, next) => {
+router.get('/', optionalAuth, async (req, res, next) => {
   try {
     let products = await db.list('products');
     const { category, search, sort, combo, price, isNew } = req.query;
@@ -77,6 +90,12 @@ router.get('/', async (req, res, next) => {
       products = [...products].sort((a, b) => displayPrice(b) - displayPrice(a));
     } else if (sort === 'rating') {
       products = [...products].sort((a, b) => b.rating - a.rating);
+    }
+
+    // Only pay the tier-lookup cost when an early-access item is actually in
+    // play — the common case (no active early-access campaign) stays free.
+    if (products.some(isEarlyAccessLocked) && !(await userHasEarlyAccess(req))) {
+      products = products.filter((p) => !isEarlyAccessLocked(p));
     }
 
     res.json({ success: true, count: products.length, products });
@@ -188,11 +207,24 @@ async function getRecentOrderCount(productId) {
 }
 
 // GET /api/products/:id
-router.get('/:id', async (req, res, next) => {
+router.get('/:id', optionalAuth, async (req, res, next) => {
   try {
     const product = await db.get('products', req.params.id);
     if (!product) {
       return res.status(404).json({ success: false, message: 'Product not found.' });
+    }
+    if (isEarlyAccessLocked(product) && !(await userHasEarlyAccess(req))) {
+      return res.json({
+        success: true,
+        earlyAccess: true,
+        product: {
+          id: product.id,
+          name: product.name,
+          image: product.image,
+          shortDescription: product.shortDescription,
+          earlyAccessUntil: product.earlyAccessUntil,
+        },
+      });
     }
     product.recentOrderCount = await getRecentOrderCount(product.id);
     res.json({ success: true, product });

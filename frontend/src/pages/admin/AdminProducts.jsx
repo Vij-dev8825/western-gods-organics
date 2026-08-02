@@ -22,6 +22,7 @@ const EMPTY = {
   comboItems: '',
   comboProductIds: [],
   isNew: false,
+  earlyAccessUntil: '',
   countryPrices: {},
   batchNumber: '',
   productionDate: '',
@@ -39,6 +40,7 @@ function toForm(p) {
     tags: (p.tags || []).join(', '),
     comboItems: (p.comboItems || []).join(', '),
     comboProductIds: p.comboProductIds || [],
+    earlyAccessUntil: p.earlyAccessUntil ? p.earlyAccessUntil.slice(0, 10) : '',
     countryPrices: p.countryPrices || {},
     shortDescriptions: p.shortDescriptions || {},
     descriptions: p.descriptions || {},
@@ -101,7 +103,7 @@ export default function AdminProducts() {
   const formRef = useRef(null);
 
   function load() {
-    api.getProducts().then((d) => setProducts(d.products)).catch(() => {});
+    api.getProducts({}, token).then((d) => setProducts(d.products)).catch(() => {});
     api.admin.getCategories(token).then((d) => setCategories(d.categories)).catch(() => {});
   }
   useEffect(load, [token]);
@@ -558,6 +560,20 @@ export default function AdminProducts() {
             <input type="checkbox" checked={form.isNew} onChange={(e) => setForm({ ...form, isNew: e.target.checked })} />
             Mark as New Arrival (shows a "New" badge and appears in the New Arrivals filter)
           </label>
+
+          <div className="field" style={{ marginTop: 16, maxWidth: 260 }}>
+            <label>Public launch date (optional)</label>
+            <input
+              type="date"
+              value={form.earlyAccessUntil}
+              onChange={(e) => setForm({ ...form, earlyAccessUntil: e.target.value })}
+            />
+            <p className="muted" style={{ fontSize: '0.78rem', marginTop: 4 }}>
+              Leave blank to make this visible to everyone right away. Set a future date to hide
+              it from Bronze customers and guests until then — Silver & Gold reward members can
+              already see and buy it, as an early-access perk.
+            </p>
+          </div>
 
           {editing !== 'new' && (
             <label className="check-row">

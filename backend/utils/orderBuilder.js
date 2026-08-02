@@ -4,7 +4,7 @@ const { notifyUser } = require('./notify');
 const { findValidCoupon, computeDiscount } = require('./coupons');
 const { sendMail } = require('./mailer');
 const { sendWhatsApp } = require('./whatsapp');
-const { getPointsBalance, redeemPointsForOrder, getTierInfo, REDEEM_VALUE_INR_PER_POINT } = require('./loyalty');
+const { getPointsBalance, redeemPointsForOrder, getTierInfo, hasEarlyAccessPerk, REDEEM_VALUE_INR_PER_POINT } = require('./loyalty');
 const { getShippingSettings } = require('./shippingSettings');
 const { findValidGiftCard, redeemGiftCardForOrder } = require('./giftCards');
 const { findAffiliateByCode } = require('./affiliates');
@@ -146,6 +146,9 @@ async function buildOrderItems(items, couponCode, destCountry, userId, pointsToR
   // and back in for a new token.
   const user = userId ? await db.get('users', userId) : null;
   const isWholesale = !!user?.isWholesale;
+  // Computed once (not per item) since it's the same lookup regardless of
+  // which/how many early-access products are in the cart.
+  const qualifiesEarlyAccess = userId ? await hasEarlyAccessPerk(userId) : false;
   let subtotal = 0;
   let stockError = null;
   const orderItems = items.map((item) => {
@@ -153,8 +156,10 @@ async function buildOrderItems(items, couponCode, destCountry, userId, pointsToR
     const sizeInfo = product?.sizes.find((s) => s.label === item.size);
     const price = sizeInfo ? (isWholesale && sizeInfo.wholesalePrice > 0 ? sizeInfo.wholesalePrice : sizeInfo.price) : 0;
     subtotal += price * item.quantity;
+    const earlyAccessLocked = product?.earlyAccessUntil && new Date(product.earlyAccessUntil).getTime() > Date.now() && !qualifiesEarlyAccess;
     if (!stockError) {
       if (!sizeInfo) stockError = `"${item.size}" is no longer available for this product.`;
+      else if (earlyAccessLocked) stockError = `"${product.name}" launches on ${new Date(product.earlyAccessUntil).toLocaleDateString('en-IN')} — Silver & Gold reward members get early access.`;
       else if (sizeInfo.stock <= 0) stockError = `"${product.name} (${item.size})" is currently out of stock.`;
       else if (item.quantity > sizeInfo.stock) stockError = `Only ${sizeInfo.stock} unit(s) of "${product.name} (${item.size})" left in stock.`;
     }

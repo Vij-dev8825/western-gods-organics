@@ -2,16 +2,18 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api';
 import { useWishlist } from '../context/WishlistContext';
+import { useAuth } from '../context/AuthContext';
 import ProductCard from '../components/ProductCard';
 import ChakkiWheel from '../components/ChakkiWheel';
 
 export default function Wishlist() {
   const { productIds } = useWishlist();
+  const { token } = useAuth();
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    api.getProducts().then((d) => {
+    api.getProducts({}, token).then((d) => {
       setProducts(d.products);
       setLoading(false);
     });

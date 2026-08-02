@@ -265,6 +265,9 @@ router.post('/products', async (req, res, next) => {
       // from each of its component products' own pages (see ProductDetail.jsx).
       comboProductIds: Array.isArray(req.body.comboProductIds) ? req.body.comboProductIds.filter(Boolean) : [],
       isNew: Boolean(req.body.isNew),
+      // Silver/Gold reward members can shop this product before this date —
+      // see utils/loyalty.js hasEarlyAccessPerk and routes/products.js.
+      earlyAccessUntil: req.body.earlyAccessUntil || null,
       countryPrices: normalizeCountryPrices(req.body.countryPrices),
       batchNumber: req.body.batchNumber || '',
       productionDate: req.body.productionDate || '',

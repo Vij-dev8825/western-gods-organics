@@ -29,12 +29,15 @@ export const api = {
   updateProfile: (token, updates) => request('/auth/me', { method: 'PUT', body: updates, token }),
 
   // products
-  getProducts: (params = {}) => {
+  // token is optional — passed by callers that should see early-access
+  // products they qualify for (see backend routes/products.js); omitted
+  // callers get the public/guest view, same as before this parameter existed.
+  getProducts: (params = {}, token) => {
     const qs = new URLSearchParams(params).toString();
-    return request(`/products${qs ? `?${qs}` : ''}`);
+    return request(`/products${qs ? `?${qs}` : ''}`, { token });
   },
   getCategories: () => request('/products/categories'),
-  getProduct: (id) => request(`/products/${id}`),
+  getProduct: (id, token) => request(`/products/${id}`, { token }),
   getBatch: (batchNumber) => request(`/products/batch/${encodeURIComponent(batchNumber)}`),
   getReviews: (id) => request(`/products/${id}/reviews`),
   submitReview: (token, id, payload) => request(`/products/${id}/reviews`, { method: 'POST', body: payload, token }),

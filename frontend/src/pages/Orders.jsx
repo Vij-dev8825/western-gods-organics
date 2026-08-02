@@ -77,7 +77,7 @@ export default function Orders() {
 
   useEffect(() => {
     api.getOrders(token).then((d) => setOrders(d.orders)).catch(() => setOrders([]));
-    api.getProducts().then((d) => setProducts(d.products)).catch(() => {});
+    api.getProducts({}, token).then((d) => setProducts(d.products)).catch(() => {});
   }, [token]);
 
   function imageFor(productId) {

@@ -129,6 +129,7 @@ export default function ProductDetail() {
   const [reviewLightbox, setReviewLightbox] = useState(null); // { images, index } | null
   const [questions, setQuestions] = useState([]);
   const [kits, setKits] = useState([]);
+  const [earlyAccessTeaser, setEarlyAccessTeaser] = useState(null);
   const [myQuestion, setMyQuestion] = useState('');
   const [submittingQuestion, setSubmittingQuestion] = useState(false);
   const [subFrequency, setSubFrequency] = useState(28);
@@ -153,11 +154,16 @@ export default function ProductDetail() {
     setReviews([]);
     setQuestions([]);
     setKits([]);
+    setEarlyAccessTeaser(null);
     setMyQuestion('');
     setMyRating(0);
     setMyText('');
     setMyImages([]);
-    api.getProduct(id).then((d) => {
+    api.getProduct(id, token).then((d) => {
+      if (d.earlyAccess) {
+        setEarlyAccessTeaser(d.product);
+        return;
+      }
       setProduct(d.product);
       setSize(d.product.sizes[1]?.label || d.product.sizes[0].label);
       setQty(1);
@@ -165,7 +171,7 @@ export default function ProductDetail() {
       recordProductView(d.product.id);
 
       api
-        .getProducts({ category: d.product.category })
+        .getProducts({ category: d.product.category }, token)
         .then((r) => setRelated(r.products.filter((p) => p.id !== d.product.id).slice(0, 4)))
         .catch(() => {});
 
@@ -187,7 +193,7 @@ export default function ProductDetail() {
       // comboItems) — find any kit that lists this product as a component
       // so its own page can point back to the kit.
       api
-        .getProducts({ combo: true })
+        .getProducts({ combo: true }, token)
         .then((r) => setKits(r.products.filter((p) => p.comboProductIds?.includes(d.product.id))))
         .catch(() => {});
     });
@@ -220,6 +226,33 @@ export default function ProductDetail() {
     setNotifyState('idle');
     setNotifyEmail('');
   }, [size]);
+
+  if (earlyAccessTeaser) {
+    const launchDate = new Date(earlyAccessTeaser.earlyAccessUntil).toLocaleDateString('en-IN', {
+      day: '2-digit', month: 'long', year: 'numeric',
+    });
+    return (
+      <div className="container section">
+        <div className="empty-state">
+          {earlyAccessTeaser.image && (
+            <img
+              src={getProductImage(earlyAccessTeaser.image)}
+              alt={earlyAccessTeaser.name}
+              style={{ width: 140, height: 140, objectFit: 'cover', borderRadius: 'var(--radius-md)', marginBottom: 16 }}
+            />
+          )}
+          <span className="eyebrow">Coming soon</span>
+          <h2>{earlyAccessTeaser.name}</h2>
+          {earlyAccessTeaser.shortDescription && <p className="muted">{earlyAccessTeaser.shortDescription}</p>}
+          <p className="muted">Launches for everyone on {launchDate}.</p>
+          <p className="muted">
+            Silver &amp; Gold reward members get early access and can shop it right now.{' '}
+            <Link to="/profile">Check your tier →</Link>
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   if (!product) {
     return (
@@ -336,7 +369,7 @@ export default function ProductDetail() {
       await api.submitReview(token, product.id, { rating: myRating, text: myText, images: myImages });
       const d = await api.getReviews(id);
       setReviews(d.reviews);
-      const p = await api.getProduct(id);
+      const p = await api.getProduct(id, token);
       setProduct(p.product);
       showToast('Thanks for your review!');
     } catch (err) {
@@ -448,6 +481,13 @@ export default function ProductDetail() {
 
         <div>
           <span className="eyebrow">{product.tags?.[0]?.replace('-', ' ')}</span>
+          {new Date(product.earlyAccessUntil || 0).getTime() > Date.now() && (
+            <p className="muted" style={{ fontSize: '0.8rem', margin: '4px 0' }}>
+              ⭐ Early access — this launches for everyone on{' '}
+              {new Date(product.earlyAccessUntil).toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' })}.
+              You're seeing it early as a Silver/Gold reward member.
+            </p>
+          )}
           <h1>{product.name}</h1>
           <div className="rating-row" style={{ marginBottom: 16 }}>
             ★ {product.rating} <span className="count">({product.reviewsCount} reviews)</span>

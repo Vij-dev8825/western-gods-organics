@@ -66,6 +66,7 @@ export default function Rewards() {
             {tier.freeShippingMinOrder > 0
               ? <>Free shipping over ₹{tier.freeShippingMinOrder}. </>
               : <>Free shipping on every order. </>}
+            {(tier.key === 'silver' || tier.key === 'gold') && <>Early access to new product launches. </>}
             {tier.nextTier && (
               <>Earn {tier.nextTier.pointsNeeded} more lifetime point(s) to reach {tier.nextTier.label}.</>
             )}

@@ -7,11 +7,13 @@ import PageBanner from '../components/PageBanner';
 import SeoMeta from '../components/SeoMeta';
 import StructuredData from '../components/StructuredData';
 import { useLang } from '../i18n';
+import { useAuth } from '../context/AuthContext';
 import { buildBreadcrumbSchema } from '../utils/breadcrumbSchema';
 import { CANONICAL_ORIGIN } from '../utils/site';
 
 export default function Shop() {
   const { t } = useLang();
+  const { token } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
@@ -38,7 +40,7 @@ export default function Shop() {
   useEffect(() => {
     setLoading(true);
     api
-      .getProducts({ category, sort, search, price, isNew: isNewOnly ? 'true' : '' })
+      .getProducts({ category, sort, search, price, isNew: isNewOnly ? 'true' : '' }, token)
       .then((d) => setProducts(d.products))
       .finally(() => setLoading(false));
   }, [category, sort, search, price, isNewOnly]);
