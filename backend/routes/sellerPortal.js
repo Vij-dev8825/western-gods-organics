@@ -175,35 +175,70 @@ router.get('/storefront/:id', async (req, res, next) => {
   }
 });
 
-// POST /api/seller/support  { subject, message } — a seller's question to the
-// store team; queued for the admin in Admin → Sellers → Support.
-router.post('/support', requireAuth, requireSeller, async (req, res, next) => {
-  try {
-    const subject = (req.body.subject || '').trim().slice(0, 160);
-    const message = (req.body.message || '').trim().slice(0, 2000);
-    if (subject.length < 2) return res.status(400).json({ success: false, message: 'Enter a subject.' });
-    if (message.length < 5) return res.status(400).json({ success: false, message: 'Enter your message.' });
+/* -------------------------- Seller <-> admin chat -------------------------- */
+// Deliberately its OWN collection, not the `chat-messages` one used by
+// customer support: a seller is also a customer, so reusing that collection
+// would splice their business conversation into the same thread as any
+// shopper support they've ever raised. Same message shape either way.
 
-    const enquiry = {
+// GET /api/seller/chat/unread — count of admin replies not yet opened.
+router.get('/chat/unread', requireAuth, requireSeller, async (req, res, next) => {
+  try {
+    const unread = (await db.list('seller-messages')).filter(
+      (m) => m.sellerId === req.sellerUser.id && m.from === 'admin' && !m.readBySeller
+    ).length;
+    res.json({ success: true, unread });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET /api/seller/chat — my thread with the store team (marks admin replies read).
+router.get('/chat', requireAuth, requireSeller, async (req, res, next) => {
+  try {
+    const messages = (await db.list('seller-messages'))
+      .filter((m) => m.sellerId === req.sellerUser.id)
+      .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+    for (const m of messages) {
+      if (m.from === 'admin' && !m.readBySeller) {
+        m.readBySeller = true;
+        await db.put('seller-messages', m);
+      }
+    }
+    res.json({ success: true, messages });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /api/seller/chat  { text }
+router.post('/chat', requireAuth, requireSeller, async (req, res, next) => {
+  try {
+    const text = (req.body.text || '').trim();
+    if (!text) return res.status(400).json({ success: false, message: 'Message cannot be empty.' });
+    if (text.length > 2000) return res.status(400).json({ success: false, message: 'Message is too long.' });
+
+    const message = {
       id: uuid(),
       sellerId: req.sellerUser.id,
-      sellerName: req.sellerUser.sellerBusinessName,
-      sellerPhone: req.sellerUser.phone,
-      subject,
-      message,
-      status: 'open',
+      from: 'seller',
+      text,
+      readByAdmin: false,
+      readBySeller: true,
       createdAt: new Date().toISOString(),
     };
-    await db.put('seller-support', enquiry);
+    await db.put('seller-messages', message);
+    res.status(201).json({ success: true, message });
 
+    // Best-effort, detached from the response — the in-app unread badge only
+    // helps while the admin panel is actually open. Mirrors routes/chat.js.
     if (ADMIN_EMAIL) {
       sendMail({
         to: ADMIN_EMAIL,
-        subject: `Seller support: ${subject}`,
-        text: `${enquiry.sellerName} (${enquiry.sellerPhone}) wrote:\n\n${message}\n\nReply in Admin → Sellers → Support.`,
+        subject: `Seller message from ${req.sellerUser.sellerBusinessName}`,
+        text: `${req.sellerUser.sellerBusinessName} (${req.sellerUser.phone}) wrote:\n\n${text}\n\nReply in Admin → Sellers → Chat.`,
       }).catch(() => {});
     }
-    res.status(201).json({ success: true, enquiry });
   } catch (err) {
     next(err);
   }

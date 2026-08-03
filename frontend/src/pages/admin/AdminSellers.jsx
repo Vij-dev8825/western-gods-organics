@@ -9,7 +9,11 @@ export default function AdminSellers() {
   const [applications, setApplications] = useState([]);
   const [sellers, setSellers] = useState([]);
   const [pendingProducts, setPendingProducts] = useState([]);
-  const [support, setSupport] = useState([]);
+  const [conversations, setConversations] = useState([]);
+  const [activeSellerId, setActiveSellerId] = useState(null);
+  const [thread, setThread] = useState({ seller: null, messages: [] });
+  const [replyText, setReplyText] = useState('');
+  const [sending, setSending] = useState(false);
   const [rateDrafts, setRateDrafts] = useState({}); // { [applicationId]: '10' }
   const [noteDrafts, setNoteDrafts] = useState({}); // { [applicationId]: 'note' }
   const [payoutDrafts, setPayoutDrafts] = useState({}); // { [sellerId]: { amount, note } }
@@ -19,13 +23,38 @@ export default function AdminSellers() {
     api.admin.getSellerApplications(token).then((d) => setApplications(d.applications)).catch(() => {});
     api.admin.getSellers(token).then((d) => setSellers(d.sellers)).catch(() => {});
     api.admin.getPendingSellerProducts(token).then((d) => setPendingProducts(d.products)).catch(() => {});
-    api.admin.getSellerSupport(token).then((d) => setSupport(d.enquiries)).catch(() => {});
+    api.admin.getSellerConversations(token).then((d) => setConversations(d.conversations)).catch(() => {});
   }
   useEffect(load, [token]);
 
-  async function setSupportStatus(enquiry, status) {
-    await api.admin.updateSellerSupport(token, enquiry.id, status).catch(() => {});
-    load();
+  // Opening a thread marks its seller messages read server-side, so refresh
+  // the conversation list afterwards to clear that row's unread badge.
+  useEffect(() => {
+    if (!activeSellerId) return;
+    api.admin
+      .getSellerThread(token, activeSellerId)
+      .then((d) => {
+        setThread({ seller: d.seller, messages: d.messages });
+        api.admin.getSellerConversations(token).then((c) => setConversations(c.conversations)).catch(() => {});
+      })
+      .catch(() => {});
+  }, [activeSellerId, token]);
+
+  async function sendReply(e) {
+    e.preventDefault();
+    const text = replyText.trim();
+    if (!text) return;
+    setSending(true);
+    try {
+      const res = await api.admin.sendSellerMessage(token, activeSellerId, text);
+      setThread((t) => ({ ...t, messages: [...t.messages, res.message] }));
+      setReplyText('');
+      load();
+    } catch (err) {
+      setMessage({ type: 'error', text: err.message });
+    } finally {
+      setSending(false);
+    }
   }
 
   async function decide(app, status) {
@@ -87,7 +116,7 @@ export default function AdminSellers() {
           ['applications', `Applications (${pendingApplicationsCount})`],
           ['sellers', `Sellers (${sellers.length})`],
           ['pending-products', `Pending products (${pendingProducts.length})`],
-          ['support', `Support (${support.filter((s) => s.status === 'open').length})`],
+          ['chat', `Chat (${conversations.reduce((sum, c) => sum + c.unread, 0)})`],
         ].map(([key, label]) => (
           <button key={key} className={`tab ${tab === key ? 'active' : ''}`} onClick={() => setTab(key)}>
             {label}
@@ -238,38 +267,89 @@ export default function AdminSellers() {
         </div>
       )}
 
-      {tab === 'support' && (
-        <div className="admin-card">
-          {support.length === 0 ? <p className="muted">No support messages from sellers.</p> : (
-            <table className="admin-table">
-              <thead>
-                <tr><th>Seller</th><th>Subject</th><th>Message</th><th>When</th><th>Status</th></tr>
-              </thead>
-              <tbody>
-                {support.map((s) => (
-                  <tr key={s.id}>
-                    <td>
-                      <b>{s.sellerName}</b>
-                      <div className="muted" style={{ fontSize: '0.75rem' }}>{s.sellerPhone}</div>
-                    </td>
-                    <td>{s.subject}</td>
-                    <td style={{ maxWidth: 280 }}>{s.message}</td>
-                    <td className="muted">{new Date(s.createdAt).toLocaleDateString('en-IN')}</td>
-                    <td>
-                      {s.status === 'open' ? (
-                        <button className="link-btn" onClick={() => setSupportStatus(s, 'resolved')}>mark resolved</button>
-                      ) : (
-                        <>
-                          <span className="pill status-placed">resolved</span>{' '}
-                          <button className="link-btn" onClick={() => setSupportStatus(s, 'open')}>reopen</button>
-                        </>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
+      {tab === 'chat' && (
+        <div className="admin-two-col">
+          <div className="admin-card">
+            <h3 style={{ marginTop: 0 }}>Conversations</h3>
+            {conversations.length === 0 ? (
+              <p className="muted">No seller messages yet.</p>
+            ) : (
+              conversations.map((c) => (
+                <button
+                  key={c.sellerId}
+                  type="button"
+                  className={`chat-conv ${activeSellerId === c.sellerId ? 'active' : ''}`}
+                  onClick={() => setActiveSellerId(c.sellerId)}
+                >
+                  <span className="flex-between">
+                    <b>{c.sellerName}</b>
+                    {c.unread > 0 && <span className="badge-count static">{c.unread}</span>}
+                  </span>
+                  <span className="muted" style={{ fontSize: '0.78rem', display: 'block' }}>{c.lastMessage}</span>
+                  <span className="muted" style={{ fontSize: '0.7rem' }}>
+                    {new Date(c.lastAt).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: 'numeric', minute: '2-digit' })}
+                  </span>
+                </button>
+              ))
+            )}
+          </div>
+
+          <div className="admin-card">
+            {!activeSellerId ? (
+              <p className="muted">Pick a conversation to read and reply.</p>
+            ) : (
+              <>
+                <h3 style={{ marginTop: 0 }}>{thread.seller?.name || 'Seller'}</h3>
+                <div style={{ maxHeight: 420, overflowY: 'auto', marginBottom: 14 }}>
+                  {thread.messages.length === 0 ? (
+                    <p className="muted">No messages in this thread.</p>
+                  ) : (
+                    thread.messages.map((m) => (
+                      <div
+                        key={m.id}
+                        style={{
+                          display: 'flex',
+                          justifyContent: m.from === 'admin' ? 'flex-end' : 'flex-start',
+                          marginBottom: 10,
+                        }}
+                      >
+                        <div
+                          style={{
+                            maxWidth: '75%',
+                            padding: '9px 13px',
+                            borderRadius: 14,
+                            background: m.from === 'admin' ? 'var(--forest)' : 'var(--cream-deep)',
+                            color: m.from === 'admin' ? 'var(--paper)' : 'var(--ink)',
+                            fontSize: '0.88rem',
+                            lineHeight: 1.5,
+                          }}
+                        >
+                          <div style={{ whiteSpace: 'pre-wrap' }}>{m.text}</div>
+                          <div style={{ fontSize: '0.68rem', opacity: 0.7, marginTop: 4 }}>
+                            {new Date(m.createdAt).toLocaleString('en-IN', {
+                              day: '2-digit', month: 'short', hour: 'numeric', minute: '2-digit',
+                            })}
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+                <form onSubmit={sendReply} className="flex gap-1" style={{ alignItems: 'flex-start' }}>
+                  <textarea
+                    rows={2}
+                    placeholder="Type your reply…"
+                    value={replyText}
+                    onChange={(e) => setReplyText(e.target.value)}
+                    style={{ flex: 1 }}
+                  />
+                  <button className="btn btn-gold btn-sm" disabled={sending || !replyText.trim()}>
+                    {sending ? 'Sending…' : 'Send'}
+                  </button>
+                </form>
+              </>
+            )}
+          </div>
         </div>
       )}
     </>

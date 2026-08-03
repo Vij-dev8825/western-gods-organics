@@ -50,6 +50,12 @@ import GiftCards from './pages/GiftCards';
 import Affiliate from './pages/Affiliate';
 import Seller from './pages/Seller';
 import SellerLogin from './pages/SellerLogin';
+import SellerLayout from './pages/seller/SellerLayout';
+import SellerDashboard from './pages/seller/SellerDashboard';
+import SellerProducts from './pages/seller/SellerProducts';
+import SellerQuestions from './pages/seller/SellerQuestions';
+import SellerProfile from './pages/seller/SellerProfile';
+import SellerChat from './pages/seller/SellerChat';
 import SellerStorefront from './pages/SellerStorefront';
 
 import AdminLogin from './pages/admin/AdminLogin';
@@ -157,6 +163,16 @@ export default function App() {
 
       {/* Seller sign-in: same OTP auth as customers, its own branded entry point */}
       <Route path="/seller/login" element={<SellerLogin />} />
+
+      {/* Seller portal — its own shell, separate from the customer storefront.
+          SellerLayout guards it and bounces non-sellers to /sell-with-us. */}
+      <Route path="/seller" element={<SellerLayout />}>
+        <Route index element={<SellerDashboard />} />
+        <Route path="products" element={<SellerProducts />} />
+        <Route path="questions" element={<SellerQuestions />} />
+        <Route path="profile" element={<SellerProfile />} />
+        <Route path="chat" element={<SellerChat />} />
+      </Route>
       <Route path="/admin" element={<AdminLayout />}>
         <Route index element={<Dashboard />} />
         <Route path="products" element={<AdminProducts />} />

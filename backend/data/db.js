@@ -53,7 +53,7 @@ const COLLECTIONS = [
   'product-questions',
   'seller-applications',
   'seller-ledger',
-  'seller-support',
+  'seller-messages',
 ];
 
 let mode = 'json';

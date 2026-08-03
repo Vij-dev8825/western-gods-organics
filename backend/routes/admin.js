@@ -1523,33 +1523,84 @@ router.post('/sellers/:id/payout', async (req, res, next) => {
   }
 });
 
-// GET /api/admin/seller-support — support enquiries raised by sellers,
-// unresolved first.
-router.get('/seller-support', async (req, res, next) => {
+// GET /api/admin/seller-chat — one row per seller who has a thread, most
+// recently active first, with unread counts. Mirrors GET /admin/chat.
+router.get('/seller-chat', async (req, res, next) => {
   try {
-    const enquiries = (await db.list('seller-support')).slice().sort((a, b) => {
-      if ((a.status === 'open') !== (b.status === 'open')) return a.status === 'open' ? -1 : 1;
-      return b.createdAt.localeCompare(a.createdAt);
-    });
-    res.json({ success: true, enquiries });
+    const [messages, users] = await Promise.all([db.list('seller-messages'), db.list('users')]);
+    const nameById = Object.fromEntries(users.map((u) => [u.id, u]));
+    const bySeller = new Map();
+    for (const m of messages) {
+      if (!bySeller.has(m.sellerId)) bySeller.set(m.sellerId, []);
+      bySeller.get(m.sellerId).push(m);
+    }
+    const conversations = [...bySeller.entries()]
+      .map(([sellerId, thread]) => {
+        thread.sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+        const last = thread[thread.length - 1];
+        return {
+          sellerId,
+          sellerName: nameById[sellerId]?.sellerBusinessName || 'Unknown seller',
+          phone: nameById[sellerId]?.phone || '',
+          lastMessage: last.text,
+          lastAt: last.createdAt,
+          unread: thread.filter((m) => m.from === 'seller' && !m.readByAdmin).length,
+        };
+      })
+      .sort((a, b) => b.lastAt.localeCompare(a.lastAt));
+    res.json({ success: true, conversations });
   } catch (err) {
     next(err);
   }
 });
 
-// PATCH /api/admin/seller-support/:id  { status } — mark an enquiry resolved
-// (or reopen it).
-router.patch('/seller-support/:id', async (req, res, next) => {
+// GET /api/admin/seller-chat/:sellerId — full thread (marks seller messages read).
+router.get('/seller-chat/:sellerId', async (req, res, next) => {
   try {
-    const enquiry = await db.get('seller-support', req.params.id);
-    if (!enquiry) return res.status(404).json({ success: false, message: 'Enquiry not found.' });
-    if (!['open', 'resolved'].includes(req.body.status)) {
-      return res.status(400).json({ success: false, message: 'Status must be open or resolved.' });
+    const messages = (await db.list('seller-messages'))
+      .filter((m) => m.sellerId === req.params.sellerId)
+      .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+    for (const m of messages) {
+      if (m.from === 'seller' && !m.readByAdmin) {
+        m.readByAdmin = true;
+        await db.put('seller-messages', m);
+      }
     }
-    enquiry.status = req.body.status;
-    enquiry.updatedAt = new Date().toISOString();
-    await db.put('seller-support', enquiry);
-    res.json({ success: true, enquiry });
+    const seller = await db.get('users', req.params.sellerId);
+    res.json({
+      success: true,
+      seller: seller ? { id: seller.id, name: seller.sellerBusinessName, phone: seller.phone } : null,
+      messages,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /api/admin/seller-chat/:sellerId  { text }
+router.post('/seller-chat/:sellerId', async (req, res, next) => {
+  try {
+    const text = (req.body.text || '').trim();
+    if (!text) return res.status(400).json({ success: false, message: 'Message cannot be empty.' });
+    const seller = await db.get('users', req.params.sellerId);
+    if (!seller?.isSeller) return res.status(404).json({ success: false, message: 'Seller not found.' });
+
+    const message = {
+      id: uuid(),
+      sellerId: req.params.sellerId,
+      from: 'admin',
+      text,
+      readByAdmin: true,
+      readBySeller: false,
+      createdAt: new Date().toISOString(),
+    };
+    await db.put('seller-messages', message);
+    await notifyUser(seller, {
+      title: 'New message from Western Gods Organics',
+      message: text,
+      channels: { inapp: true, email: true },
+    });
+    res.status(201).json({ success: true, message });
   } catch (err) {
     next(err);
   }
