@@ -6,11 +6,11 @@ import ChakkiWheel from '../../components/ChakkiWheel';
 import { IconMenu } from '../../components/Icons';
 
 const links = [
-  { to: '/seller', label: 'Dashboard', end: true },
-  { to: '/seller/products', label: 'My Products' },
-  { to: '/seller/questions', label: 'Customer Questions' },
-  { to: '/seller/profile', label: 'Storefront Profile' },
-  { to: '/seller/chat', label: 'Chat with Us' },
+  { to: '/seller/dashboard', label: 'Dashboard', end: true },
+  { to: '/seller/dashboard/products', label: 'My Products' },
+  { to: '/seller/dashboard/questions', label: 'Customer Questions' },
+  { to: '/seller/dashboard/profile', label: 'Storefront Profile' },
+  { to: '/seller/dashboard/chat', label: 'Chat with Us' },
 ];
 
 /** Child pages read the shared seller record (business name, balances,
@@ -57,7 +57,7 @@ export default function SellerLayout() {
   if (!isLoggedIn) return <Navigate to="/seller/login" replace />;
   // Logged in but not an approved seller — send them to the public apply
   // page rather than showing an empty portal.
-  if (me?.status !== 'approved') return <Navigate to="/sell-with-us" replace />;
+  if (me?.status !== 'approved') return <Navigate to="/seller/register" replace />;
 
   return (
     <div className="admin-shell">
@@ -90,7 +90,7 @@ export default function SellerLayout() {
             >
               <span className="admin-nav-label">
                 {l.label}
-                {l.to === '/seller/chat' && unread > 0 && <span className="badge-count static">{unread}</span>}
+                {l.to === '/seller/dashboard/chat' && unread > 0 && <span className="badge-count static">{unread}</span>}
               </span>
             </NavLink>
           ))}

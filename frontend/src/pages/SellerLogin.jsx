@@ -28,7 +28,7 @@ export default function SellerLogin() {
   const { login, isLoggedIn } = useAuth();
   const navigate = useNavigate();
 
-  if (isLoggedIn) return <Navigate to="/sell-with-us" replace />;
+  if (isLoggedIn) return <Navigate to="/seller/dashboard" replace />;
 
   async function handleSendOtp() {
     if (loading) return;
@@ -67,7 +67,7 @@ export default function SellerLogin() {
     try {
       const data = await api.verifyOtp(phone, code, name);
       login(data.token, data.user);
-      navigate('/sell-with-us', { replace: true });
+      navigate('/seller/dashboard', { replace: true });
     } catch (err) {
       setError(err.message);
     } finally {
@@ -226,7 +226,10 @@ export default function SellerLogin() {
           </div>
         )}
 
-        <Link to="/" className="admin-login-back">← Back to store</Link>
+        <p className="center" style={{ marginTop: 18, fontSize: '0.85rem', color: 'rgba(250,246,236,0.7)' }}>
+          Don't have a seller account? <Link to="/seller/register" style={{ color: 'var(--gold-2)' }}>Apply to sell</Link>
+        </p>
+        <Link to="/seller" className="admin-login-back">← Back to Seller Central</Link>
       </div>
     </div>
   );

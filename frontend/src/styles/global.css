@@ -2768,6 +2768,124 @@ input:focus-visible + .filter-radio { outline: 2px solid var(--gold-2); outline-
 .admin-card h3 { margin-bottom: 14px; }
 .admin-two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
 
+/* ---------- Seller Central (standalone seller site) ---------- */
+.seller-site { min-height: 100vh; display: flex; flex-direction: column; background: var(--paper); }
+.seller-site-main { flex: 1; }
+
+.seller-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 26px;
+  background: var(--forest-deep);
+  border-bottom: 1px solid rgba(250,246,236,0.12);
+  position: sticky;
+  top: 0;
+  z-index: 40;
+}
+.seller-topbar-brand { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+.seller-topbar-brand b { display: block; color: var(--cream); font-size: 0.92rem; line-height: 1.2; }
+.seller-topbar-brand small { display: block; color: var(--gold-2); font-size: 0.72rem; letter-spacing: 0.09em; text-transform: uppercase; }
+.seller-topbar-nav { display: flex; align-items: center; gap: 14px; }
+.seller-topbar-nav a:not(.btn) { color: rgba(250,246,236,0.8); font-size: 0.85rem; text-decoration: none; }
+.seller-topbar-nav a:not(.btn):hover, .seller-topbar-nav a.active { color: var(--gold-2); }
+
+.btn-outline-light {
+  border: 1px solid rgba(250,246,236,0.5);
+  color: var(--cream);
+  background: transparent;
+}
+.btn-outline-light:hover { border-color: var(--cream); background: rgba(250,246,236,0.08); }
+
+.seller-hero {
+  background: linear-gradient(160deg, var(--forest-deep) 0%, var(--forest) 100%);
+  color: var(--cream);
+  padding: 76px 26px 84px;
+}
+.seller-hero-inner { max-width: 780px; margin: 0 auto; text-align: center; }
+.seller-hero h1 { color: var(--cream); font-size: clamp(1.9rem, 4.4vw, 3rem); margin: 10px 0 16px; }
+.seller-hero p { color: rgba(250,246,236,0.82); font-size: 1.02rem; max-width: 620px; margin: 0 auto; }
+.seller-hero-actions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-top: 28px; }
+.seller-hero-note { font-size: 0.82rem !important; color: rgba(250,246,236,0.6) !important; margin-top: 18px !important; }
+
+.seller-benefit-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 22px;
+  margin-top: 26px;
+}
+.seller-benefit {
+  background: var(--paper);
+  border: 1px solid rgba(31,61,43,0.1);
+  border-radius: var(--radius-md);
+  padding: 22px;
+  box-shadow: var(--shadow-card);
+}
+.seller-benefit-icon { font-size: 1.7rem; display: block; margin-bottom: 8px; }
+.seller-benefit h3 { font-family: var(--font-body); font-size: 0.98rem; margin-bottom: 6px; }
+.seller-benefit p { font-size: 0.86rem; margin: 0; }
+
+.seller-steps-band { background: var(--cream-deep); padding: 58px 0; }
+.seller-steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 22px; margin-top: 26px; }
+.seller-step-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--forest);
+  color: var(--cream);
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+.seller-step h3 { font-family: var(--font-body); font-size: 0.95rem; margin-bottom: 5px; }
+.seller-step p { font-size: 0.85rem; margin: 0; }
+
+.seller-faq { max-width: 760px; margin-top: 20px; }
+.seller-faq details {
+  border: 1px solid rgba(31,61,43,0.12);
+  border-radius: var(--radius-sm);
+  padding: 14px 16px;
+  margin-bottom: 10px;
+  background: var(--paper);
+}
+.seller-faq summary { cursor: pointer; font-weight: 600; font-size: 0.92rem; }
+.seller-faq details[open] summary { color: var(--gold-1); margin-bottom: 8px; }
+.seller-faq p { font-size: 0.88rem; margin: 0; }
+
+.seller-cta-band { background: var(--cream-deep); padding: 58px 0; }
+
+.seller-form-page { max-width: 560px; margin: 0 auto; padding: 48px 22px 72px; }
+.seller-form-head { margin-bottom: 22px; }
+.seller-form-head h1 { font-size: clamp(1.5rem, 3.6vw, 2.1rem); margin: 6px 0 14px; }
+.seller-progress { display: flex; gap: 18px; flex-wrap: wrap; list-style: none; padding: 0; margin: 0; }
+.seller-progress li { font-size: 0.82rem; color: var(--forest-light); opacity: 0.6; }
+.seller-progress li.active { opacity: 1; font-weight: 600; color: var(--gold-1); }
+.seller-progress li.done { opacity: 1; }
+
+.seller-site-footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  flex-wrap: wrap;
+  padding: 30px 26px;
+  background: var(--forest-deep);
+  color: rgba(250,246,236,0.75);
+}
+.seller-site-footer b { color: var(--cream); }
+.seller-site-footer p { font-size: 0.8rem; margin: 6px 0 0; color: rgba(250,246,236,0.55) !important; }
+.seller-site-footer-links { display: flex; flex-direction: column; gap: 6px; }
+.seller-site-footer-links a { color: rgba(250,246,236,0.8); font-size: 0.85rem; text-decoration: none; }
+.seller-site-footer-links a:hover { color: var(--gold-2); }
+
+@media (max-width: 640px) {
+  .seller-topbar { flex-direction: column; align-items: stretch; gap: 10px; }
+  .seller-topbar-nav { justify-content: space-between; }
+  .seller-hero { padding: 52px 20px 58px; }
+}
+
 /* Seller chat conversation list (Admin -> Sellers -> Chat) */
 .chat-conv {
   display: block;

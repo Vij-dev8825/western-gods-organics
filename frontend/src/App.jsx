@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { Routes, Route, Outlet, useLocation } from 'react-router-dom';
+import { Routes, Route, Outlet, Navigate, useLocation } from 'react-router-dom';
 import { useLang } from './i18n';
 import { CANONICAL_ORIGIN } from './utils/site';
 import { captureAffiliateCode } from './utils/affiliateAttribution';
@@ -48,8 +48,10 @@ import ImportInfo from './pages/ImportInfo';
 import StoreLocator from './pages/StoreLocator';
 import GiftCards from './pages/GiftCards';
 import Affiliate from './pages/Affiliate';
-import Seller from './pages/Seller';
 import SellerLogin from './pages/SellerLogin';
+import SellerPublicLayout from './pages/seller/SellerPublicLayout';
+import SellerHome from './pages/seller/SellerHome';
+import SellerRegister from './pages/seller/SellerRegister';
 import SellerLayout from './pages/seller/SellerLayout';
 import SellerDashboard from './pages/seller/SellerDashboard';
 import SellerProducts from './pages/seller/SellerProducts';
@@ -164,15 +166,24 @@ export default function App() {
       {/* Seller sign-in: same OTP auth as customers, its own branded entry point */}
       <Route path="/seller/login" element={<SellerLogin />} />
 
-      {/* Seller portal — its own shell, separate from the customer storefront.
-          SellerLayout guards it and bounces non-sellers to /sell-with-us. */}
-      <Route path="/seller" element={<SellerLayout />}>
+      {/* Public seller site — standalone marketing + signup, its own chrome,
+          nothing shared with the customer storefront. */}
+      <Route element={<SellerPublicLayout />}>
+        <Route path="/seller" element={<SellerHome />} />
+        <Route path="/seller/register" element={<SellerRegister />} />
+      </Route>
+
+      {/* Seller portal — guarded; SellerLayout bounces non-sellers to signup. */}
+      <Route path="/seller/dashboard" element={<SellerLayout />}>
         <Route index element={<SellerDashboard />} />
         <Route path="products" element={<SellerProducts />} />
         <Route path="questions" element={<SellerQuestions />} />
         <Route path="profile" element={<SellerProfile />} />
         <Route path="chat" element={<SellerChat />} />
       </Route>
+
+      {/* Old customer-site entry point — now just forwards to the seller site. */}
+      <Route path="/sell-with-us" element={<Navigate to="/seller" replace />} />
       <Route path="/admin" element={<AdminLayout />}>
         <Route index element={<Dashboard />} />
         <Route path="products" element={<AdminProducts />} />
@@ -262,14 +273,6 @@ export default function App() {
           element={
             <ProtectedRoute>
               <Affiliate />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/sell-with-us"
-          element={
-            <ProtectedRoute>
-              <Seller />
             </ProtectedRoute>
           }
         />
