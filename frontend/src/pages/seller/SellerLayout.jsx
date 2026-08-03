@@ -20,7 +20,7 @@ export function useSeller() {
 }
 
 export default function SellerLayout() {
-  const { user, loading, isLoggedIn, token, logout } = useAuth();
+  const { loading, isLoggedIn, token, logout } = useAuth();
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
   const [me, setMe] = useState(null);
@@ -95,12 +95,6 @@ export default function SellerLayout() {
               </span>
             </NavLink>
           ))}
-          <NavLink to={`/sellers/${user?.id}`} className="admin-back" onClick={() => setMenuOpen(false)}>
-            View my public page →
-          </NavLink>
-          <NavLink to="/" className="admin-back" onClick={() => setMenuOpen(false)}>
-            ← Back to store
-          </NavLink>
           <button
             type="button"
             className="admin-back seller-logout"

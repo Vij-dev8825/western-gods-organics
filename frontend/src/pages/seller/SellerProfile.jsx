@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
 import { api } from '../../api';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
@@ -60,7 +59,6 @@ export default function SellerProfile() {
     <>
       <div className="admin-head">
         <h1>Storefront Profile</h1>
-        <Link to={`/sellers/${user?.id}`} className="btn btn-outline btn-sm">View my public page →</Link>
       </div>
 
       <form onSubmit={save}>
