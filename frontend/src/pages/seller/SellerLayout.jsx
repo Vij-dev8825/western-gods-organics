@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { NavLink, Outlet, Navigate, useOutletContext } from 'react-router-dom';
+import { NavLink, Outlet, Navigate, useNavigate, useOutletContext } from 'react-router-dom';
 import { api } from '../../api';
 import { useAuth } from '../../context/AuthContext';
 import ChakkiWheel from '../../components/ChakkiWheel';
@@ -20,7 +20,8 @@ export function useSeller() {
 }
 
 export default function SellerLayout() {
-  const { user, loading, isLoggedIn, token } = useAuth();
+  const { user, loading, isLoggedIn, token, logout } = useAuth();
+  const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
   const [me, setMe] = useState(null);
   const [meLoaded, setMeLoaded] = useState(false);
@@ -100,6 +101,17 @@ export default function SellerLayout() {
           <NavLink to="/" className="admin-back" onClick={() => setMenuOpen(false)}>
             ← Back to store
           </NavLink>
+          <button
+            type="button"
+            className="admin-back seller-logout"
+            onClick={() => {
+              setMenuOpen(false);
+              logout();
+              navigate('/seller/login', { replace: true });
+            }}
+          >
+            Log out
+          </button>
         </nav>
       </aside>
       <main className="admin-content">

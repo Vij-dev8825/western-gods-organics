@@ -119,10 +119,7 @@ router.get('/me', requireAuth, async (req, res, next) => {
       return res.json({
         success: true,
         status: 'approved',
-        businessName: user.sellerBusinessName,
-        bio: user.sellerBio || '',
-        location: user.sellerLocation || '',
-        logo: user.sellerLogo || '',
+        ...readProfile(user),
         platformFeeRate: user.sellerPlatformFeeRate || 0,
         probationRemaining: user.sellerProbationRemaining || 0,
         ...summary,
@@ -139,10 +136,42 @@ router.get('/me', requireAuth, async (req, res, next) => {
   }
 });
 
-// PUT /api/seller/profile  { businessName, bio, location } — a seller edits
-// their own public-facing details (shown on their storefront page). The
-// platform fee rate and probation counter are deliberately NOT editable here
-// — those stay admin-only.
+// Two groups of seller-editable detail. PUBLIC_* is shown to shoppers on the
+// storefront page; BUSINESS_* is contact/compliance/payout information only
+// the seller and the store team ever see (it is never returned by the public
+// /storefront/:id route below). The platform fee rate and probation counter
+// are in neither list — those stay admin-only.
+const PUBLIC_PROFILE_FIELDS = {
+  bio: { key: 'sellerBio', max: 1000 },
+  location: { key: 'sellerLocation', max: 120 },
+  website: { key: 'sellerWebsite', max: 200 },
+  instagram: { key: 'sellerInstagram', max: 100 },
+};
+
+const BUSINESS_PROFILE_FIELDS = {
+  contactEmail: { key: 'sellerContactEmail', max: 160 },
+  contactPhone: { key: 'sellerContactPhone', max: 20 },
+  address: { key: 'sellerAddress', max: 400 },
+  gstin: { key: 'sellerGstin', max: 20 },
+  fssai: { key: 'sellerFssai', max: 30 },
+  upiId: { key: 'sellerUpiId', max: 80 },
+  bankAccountName: { key: 'sellerBankAccountName', max: 120 },
+  bankAccountNumber: { key: 'sellerBankAccountNumber', max: 30 },
+  bankIfsc: { key: 'sellerBankIfsc', max: 15 },
+};
+
+function readProfile(user) {
+  const out = { businessName: user.sellerBusinessName || '', logo: user.sellerLogo || '' };
+  for (const [field, { key }] of Object.entries({ ...PUBLIC_PROFILE_FIELDS, ...BUSINESS_PROFILE_FIELDS })) {
+    out[field] = user[key] || '';
+  }
+  return out;
+}
+
+// PUT /api/seller/profile — a seller edits their own storefront and business
+// details. Every field is optional except the business name; anything the
+// request omits is left untouched rather than blanked, so a partial save from
+// one section can't wipe the other.
 router.put('/profile', requireAuth, requireSeller, async (req, res, next) => {
   try {
     const user = req.sellerUser;
@@ -150,20 +179,16 @@ router.put('/profile', requireAuth, requireSeller, async (req, res, next) => {
     if (businessName.length < 2) {
       return res.status(400).json({ success: false, message: 'Enter your business name.' });
     }
+    if (req.body.contactEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(req.body.contactEmail.trim())) {
+      return res.status(400).json({ success: false, message: 'Enter a valid contact email address.' });
+    }
     user.sellerBusinessName = businessName;
-    user.sellerBio = (req.body.bio || '').trim().slice(0, 1000);
-    user.sellerLocation = (req.body.location || '').trim().slice(0, 120);
+    for (const [field, { key, max }] of Object.entries({ ...PUBLIC_PROFILE_FIELDS, ...BUSINESS_PROFILE_FIELDS })) {
+      if (req.body[field] !== undefined) user[key] = String(req.body[field]).trim().slice(0, max);
+    }
     if (req.body.logo !== undefined) user.sellerLogo = req.body.logo || '';
     await db.put('users', user);
-    res.json({
-      success: true,
-      profile: {
-        businessName: user.sellerBusinessName,
-        bio: user.sellerBio,
-        location: user.sellerLocation,
-        logo: user.sellerLogo || '',
-      },
-    });
+    res.json({ success: true, profile: readProfile(user) });
   } catch (err) {
     next(err);
   }
@@ -183,12 +208,16 @@ router.get('/storefront/:id', async (req, res, next) => {
     );
     res.json({
       success: true,
+      // Public fields only — contact/compliance/payout detail from
+      // BUSINESS_PROFILE_FIELDS is deliberately never exposed here.
       seller: {
         id: seller.id,
         businessName: seller.sellerBusinessName,
         bio: seller.sellerBio || '',
         location: seller.sellerLocation || '',
         logo: seller.sellerLogo || '',
+        website: seller.sellerWebsite || '',
+        instagram: seller.sellerInstagram || '',
       },
       products: products.map((p) => ({ ...p, sellerName: seller.sellerBusinessName })),
     });

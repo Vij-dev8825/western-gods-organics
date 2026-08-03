@@ -2886,6 +2886,18 @@ input:focus-visible + .filter-radio { outline: 2px solid var(--gold-2); outline-
   .seller-hero { padding: 52px 20px 58px; }
 }
 
+/* Logout sits in the seller sidebar's nav flow but is a button, not a link */
+.seller-logout {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: var(--font-body);
+  font-size: inherit;
+}
+
 /* Seller chat conversation list (Admin -> Sellers -> Chat) */
 .chat-conv {
   display: block;

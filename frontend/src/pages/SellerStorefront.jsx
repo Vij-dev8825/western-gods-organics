@@ -67,6 +67,22 @@ export default function SellerStorefront() {
           </div>
         </div>
         {seller.bio && <p className="muted" style={{ marginTop: 14, marginBottom: 0, maxWidth: 640 }}>{seller.bio}</p>}
+        {(seller.website || seller.instagram) && (
+          <p className="flex gap-2" style={{ marginTop: 12, marginBottom: 0, fontSize: '0.85rem' }}>
+            {seller.website && (
+              <a href={seller.website} target="_blank" rel="noreferrer noopener nofollow">Website ↗</a>
+            )}
+            {seller.instagram && (
+              <a
+                href={`https://instagram.com/${seller.instagram.replace(/^@/, '')}`}
+                target="_blank"
+                rel="noreferrer noopener nofollow"
+              >
+                Instagram ↗
+              </a>
+            )}
+          </p>
+        )}
       </div>
 
       <h2 style={{ marginBottom: 14 }}>

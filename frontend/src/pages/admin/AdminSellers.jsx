@@ -192,7 +192,23 @@ export default function AdminSellers() {
                   <tr key={s.id}>
                     <td>
                       <b>{s.sellerBusinessName}</b>
-                      <div className="muted" style={{ fontSize: '0.75rem' }}>{s.phone}</div>
+                      <div className="muted" style={{ fontSize: '0.75rem' }}>{s.contactPhone || s.phone}</div>
+                      {s.contactEmail && <div className="muted" style={{ fontSize: '0.72rem' }}>{s.contactEmail}</div>}
+                      <details style={{ marginTop: 4 }}>
+                        <summary className="link-btn" style={{ fontSize: '0.72rem' }}>details</summary>
+                        <div className="muted" style={{ fontSize: '0.72rem', lineHeight: 1.6, marginTop: 4 }}>
+                          {s.address && <div>📍 {s.address}</div>}
+                          {s.gstin && <div>GSTIN: {s.gstin}</div>}
+                          {s.fssai && <div>FSSAI: {s.fssai}</div>}
+                          {s.upiId && <div><b>UPI:</b> {s.upiId}</div>}
+                          {s.bankAccountNumber && (
+                            <div><b>Bank:</b> {s.bankAccountName} · {s.bankAccountNumber} · {s.bankIfsc}</div>
+                          )}
+                          {!s.upiId && !s.bankAccountNumber && (
+                            <div className="pill warn" style={{ fontSize: '0.68rem' }}>No payout details yet</div>
+                          )}
+                        </div>
+                      </details>
                     </td>
                     <td>{s.sellerPlatformFeeRate}%</td>
                     <td>

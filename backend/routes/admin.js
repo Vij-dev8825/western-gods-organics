@@ -1494,6 +1494,17 @@ router.get('/sellers', async (req, res, next) => {
         sellerBusinessName: u.sellerBusinessName,
         sellerPlatformFeeRate: u.sellerPlatformFeeRate || 0,
         sellerProbationRemaining: u.sellerProbationRemaining || 0,
+        // Contact/compliance/payout detail the seller filled in — the admin
+        // needs this to actually send a payout and to check compliance.
+        contactEmail: u.sellerContactEmail || '',
+        contactPhone: u.sellerContactPhone || '',
+        address: u.sellerAddress || '',
+        gstin: u.sellerGstin || '',
+        fssai: u.sellerFssai || '',
+        upiId: u.sellerUpiId || '',
+        bankAccountName: u.sellerBankAccountName || '',
+        bankAccountNumber: u.sellerBankAccountNumber || '',
+        bankIfsc: u.sellerBankIfsc || '',
         ...(await getSellerSummary(u.id)),
       }))
     );
