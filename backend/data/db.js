@@ -51,6 +51,8 @@ const COLLECTIONS = [
   'whatsapp-inbox',
   'whatsapp-broadcast-log',
   'product-questions',
+  'seller-applications',
+  'seller-ledger',
 ];
 
 let mode = 'json';

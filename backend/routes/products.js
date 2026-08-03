@@ -48,6 +48,30 @@ async function userHasEarlyAccess(req) {
   return hasEarlyAccessPerk(req.user.id);
 }
 
+// A seller's own soft-hidden listing, or a still-on-probation listing (see
+// routes/sellerPortal.js/admin.js), is invisible to everyone except an admin
+// or the seller who owns it — store products (no sellerId) are never
+// affected by either check.
+function isHiddenFromViewer(product, req) {
+  if (product.active === false) return true;
+  if (product.sellerModerationStatus === 'pending') {
+    const isOwner = req.user?.id === product.sellerId;
+    const isAdmin = req.user?.role === 'admin';
+    if (!isOwner && !isAdmin) return true;
+  }
+  return false;
+}
+
+// Batch-resolves each distinct sellerId in one pass rather than one db.get
+// per product.
+async function attachSellerNames(products) {
+  const sellerIds = [...new Set(products.filter((p) => p.sellerId).map((p) => p.sellerId))];
+  if (!sellerIds.length) return products;
+  const sellers = await Promise.all(sellerIds.map((id) => db.get('users', id)));
+  const nameById = Object.fromEntries(sellerIds.map((id, i) => [id, sellers[i]?.sellerBusinessName || null]));
+  return products.map((p) => (p.sellerId ? { ...p, sellerName: nameById[p.sellerId] } : p));
+}
+
 // GET /api/products?category=&search=&sort=&combo=true&price=&isNew=true
 router.get('/', optionalAuth, async (req, res, next) => {
   try {
@@ -97,6 +121,9 @@ router.get('/', optionalAuth, async (req, res, next) => {
     if (products.some(isEarlyAccessLocked) && !(await userHasEarlyAccess(req))) {
       products = products.filter((p) => !isEarlyAccessLocked(p));
     }
+
+    products = products.filter((p) => !isHiddenFromViewer(p, req));
+    products = await attachSellerNames(products);
 
     res.json({ success: true, count: products.length, products });
   } catch (err) {
@@ -225,6 +252,13 @@ router.get('/:id', optionalAuth, async (req, res, next) => {
           earlyAccessUntil: product.earlyAccessUntil,
         },
       });
+    }
+    if (isHiddenFromViewer(product, req)) {
+      return res.status(404).json({ success: false, message: 'Product not found.' });
+    }
+    if (product.sellerId) {
+      const seller = await db.get('users', product.sellerId);
+      product.sellerName = seller?.sellerBusinessName || null;
     }
     product.recentOrderCount = await getRecentOrderCount(product.id);
     res.json({ success: true, product });

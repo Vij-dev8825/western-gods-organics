@@ -116,6 +116,17 @@ export const api = {
   validateAffiliateCode: (token, code) => request('/affiliates/validate', { method: 'POST', body: { code }, token }),
   getMyAffiliate: (token) => request('/affiliates/me', { token }),
 
+  // seller marketplace portal
+  seller: {
+    apply: (token, payload) => request('/seller/apply', { method: 'POST', body: payload, token }),
+    getMe: (token) => request('/seller/me', { token }),
+    uploadImage: (token, formData) => request('/seller/upload-image', { method: 'POST', formData, token }),
+    getProducts: (token) => request('/seller/products', { token }),
+    createProduct: (token, payload) => request('/seller/products', { method: 'POST', body: payload, token }),
+    updateProduct: (token, id, payload) => request(`/seller/products/${id}`, { method: 'PUT', body: payload, token }),
+    setProductActive: (token, id, active) => request(`/seller/products/${id}/deactivate`, { method: 'PATCH', body: { active }, token }),
+  },
+
   // subscriptions (Subscribe & Save)
   getSubscriptions: (token) => request('/subscriptions', { token }),
   createSubscription: (token, payload) => request('/subscriptions', { method: 'POST', body: payload, token }),
@@ -207,6 +218,12 @@ export const api = {
     setCustomerAffiliate: (token, id, payload) => request(`/admin/customers/${id}/affiliate`, { method: 'PATCH', body: payload, token }),
     getAffiliates: (token) => request('/admin/affiliates', { token }),
     recordAffiliatePayout: (token, id, payload) => request(`/admin/affiliates/${id}/payout`, { method: 'POST', body: payload, token }),
+    getSellerApplications: (token, status) => request(`/admin/seller-applications${status ? `?status=${status}` : ''}`, { token }),
+    decideSellerApplication: (token, id, payload) => request(`/admin/seller-applications/${id}`, { method: 'PATCH', body: payload, token }),
+    getSellers: (token) => request('/admin/sellers', { token }),
+    recordSellerPayout: (token, id, payload) => request(`/admin/sellers/${id}/payout`, { method: 'POST', body: payload, token }),
+    getPendingSellerProducts: (token) => request('/admin/seller-products/pending', { token }),
+    moderateSellerProduct: (token, id, approve) => request(`/admin/seller-products/${id}/moderate`, { method: 'PATCH', body: { approve }, token }),
     getHomepageReviews: (token) => request('/admin/homepage-reviews', { token }),
     updateHomepageReviews: (token, settings) => request('/admin/homepage-reviews', { method: 'PUT', body: settings, token }),
     getCountryCatalog: (token) => request('/admin/country-catalog', { token }),

@@ -48,6 +48,7 @@ import ImportInfo from './pages/ImportInfo';
 import StoreLocator from './pages/StoreLocator';
 import GiftCards from './pages/GiftCards';
 import Affiliate from './pages/Affiliate';
+import Seller from './pages/Seller';
 
 import AdminLogin from './pages/admin/AdminLogin';
 import AdminLayout from './pages/admin/AdminLayout';
@@ -74,6 +75,7 @@ import AdminHomepageReviews from './pages/admin/AdminHomepageReviews';
 import AdminCountries from './pages/admin/AdminCountries';
 import AdminGiftCards from './pages/admin/AdminGiftCards';
 import AdminAffiliates from './pages/admin/AdminAffiliates';
+import AdminSellers from './pages/admin/AdminSellers';
 
 function NotFound() {
   return (
@@ -174,6 +176,7 @@ export default function App() {
         <Route path="countries" element={<AdminCountries />} />
         <Route path="gift-cards" element={<AdminGiftCards />} />
         <Route path="affiliates" element={<AdminAffiliates />} />
+        <Route path="sellers" element={<AdminSellers />} />
       </Route>
 
       {/* Customer storefront */}
@@ -237,6 +240,14 @@ export default function App() {
           element={
             <ProtectedRoute>
               <Affiliate />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/sell-with-us"
+          element={
+            <ProtectedRoute>
+              <Seller />
             </ProtectedRoute>
           }
         />

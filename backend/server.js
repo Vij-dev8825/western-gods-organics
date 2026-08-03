@@ -42,6 +42,7 @@ const aiAssistantRoutes = require('./routes/aiAssistant');
 const webhookRoutes = require('./routes/webhooks');
 const giftCardRoutes = require('./routes/giftCards');
 const affiliateRoutes = require('./routes/affiliates');
+const sellerPortalRoutes = require('./routes/sellerPortal');
 
 const app = express();
 
@@ -91,6 +92,7 @@ app.use('/api/ai-assistant', aiAssistantRoutes);
 app.use('/api/webhooks', webhookRoutes);
 app.use('/api/gift-cards', giftCardRoutes);
 app.use('/api/affiliates', affiliateRoutes);
+app.use('/api/seller', sellerPortalRoutes);
 
 // Uploaded banner videos/images
 app.use('/uploads', express.static(UPLOADS_DIR, { maxAge: '7d' }));

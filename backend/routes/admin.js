@@ -27,6 +27,7 @@ const { getPaymentMethodsConfig } = require('../utils/paymentMethods');
 const { getShippingSettings } = require('../utils/shippingSettings');
 const { cancelGiftCard } = require('../utils/giftCards');
 const { generateUniqueAffiliateCode, getCommissionSummary, recordPayout, creditCommissionForOrder } = require('../utils/affiliates');
+const { getSummary: getSellerSummary, recordPayout: recordSellerPayout, creditSellerEarningsForOrder } = require('../utils/sellers');
 const {
   getEligibleRecipients,
   sendBroadcast: sendWhatsAppBroadcast,
@@ -277,6 +278,10 @@ router.post('/products', async (req, res, next) => {
       inciIngredients: req.body.inciIngredients || '',
       labReportUrl: req.body.labReportUrl || '',
       marketPricePer100: req.body.marketPricePer100 ? Number(req.body.marketPricePer100) : null,
+      // Null for every store-created product (this route) — set only by
+      // POST /api/seller/products, which builds its own separate, leaner
+      // product object (see routes/sellerPortal.js).
+      sellerId: null,
       createdAt: new Date().toISOString(),
     };
     await db.put('products', product);
@@ -885,6 +890,7 @@ router.patch('/orders/:id', async (req, res, next) => {
     if (justDelivered) {
       await creditPointsForOrder(order);
       await creditCommissionForOrder(order);
+      await creditSellerEarningsForOrder(order);
     }
 
     const user = await db.get('users', order.userId);
@@ -1401,6 +1407,176 @@ router.post('/affiliates/:id/payout', async (req, res, next) => {
     if (err.message.includes('Payout amount')) {
       return res.status(400).json({ success: false, message: err.message });
     }
+    next(err);
+  }
+});
+
+/* ------------------------------ Sellers ------------------------------ */
+
+// GET /api/admin/seller-applications?status=
+router.get('/seller-applications', async (req, res, next) => {
+  try {
+    let applications = (await db.list('seller-applications')).slice().sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+    if (req.query.status) applications = applications.filter((a) => a.status === req.query.status);
+    res.json({ success: true, applications });
+  } catch (err) {
+    next(err);
+  }
+});
+
+const SELLER_APPLICATION_STATUSES = ['approved', 'rejected'];
+
+// PATCH /api/admin/seller-applications/:id  { status, platformFeeRate?, reviewNote? }
+// Approving grants isSeller + a 3-listing probation window (see
+// routes/sellerPortal.js) — guarded so re-PATCHing an already-approved
+// application can't re-grant/reset probation a second time, same pattern as
+// the bottle-return approval guard above.
+router.patch('/seller-applications/:id', async (req, res, next) => {
+  try {
+    const application = await db.get('seller-applications', req.params.id);
+    if (!application) return res.status(404).json({ success: false, message: 'Application not found.' });
+    if (!SELLER_APPLICATION_STATUSES.includes(req.body.status)) {
+      return res.status(400).json({ success: false, message: `Status must be one of: ${SELLER_APPLICATION_STATUSES.join(', ')}` });
+    }
+
+    const alreadyApproved = application.status === 'approved';
+    if (req.body.status === 'approved' && !alreadyApproved) {
+      const platformFeeRate = req.body.platformFeeRate != null ? Number(req.body.platformFeeRate) : 10;
+      if (!(platformFeeRate >= 0) || platformFeeRate > 100) {
+        return res.status(400).json({ success: false, message: 'Platform fee rate must be a number between 0 and 100.' });
+      }
+      const user = await db.get('users', application.userId);
+      if (!user) return res.status(404).json({ success: false, message: 'Applicant account not found.' });
+      user.isSeller = true;
+      user.sellerBusinessName = application.businessName;
+      user.sellerPlatformFeeRate = platformFeeRate;
+      user.sellerProbationRemaining = 3;
+      await db.put('users', user);
+      await notifyUser(user, {
+        title: 'Your seller application was approved!',
+        message: `Welcome aboard — you can now list products at /sell-with-us. Your first 3 listings will be reviewed before going live; after that they're posted instantly.`,
+        channels: { inapp: true, email: true },
+      });
+    } else if (req.body.status === 'rejected') {
+      const user = await db.get('users', application.userId);
+      if (user) {
+        await notifyUser(user, {
+          title: 'Update on your seller application',
+          message: req.body.reviewNote
+            ? `Your seller application wasn't approved this time: ${req.body.reviewNote}`
+            : "Your seller application wasn't approved this time. Contact us if you'd like to know more.",
+          channels: { inapp: true, email: true },
+        });
+      }
+    }
+
+    application.status = req.body.status;
+    application.reviewNote = req.body.reviewNote || '';
+    application.decidedAt = new Date().toISOString();
+    await db.put('seller-applications', application);
+    res.json({ success: true, application });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET /api/admin/sellers — every approved seller with their live earnings
+// balance/lifetime totals, newest-approved first.
+router.get('/sellers', async (req, res, next) => {
+  try {
+    const sellers = (await db.list('users')).filter((u) => u.isSeller);
+    const withSummary = await Promise.all(
+      sellers.map(async (u) => ({
+        id: u.id,
+        name: u.name,
+        phone: u.phone,
+        email: u.email,
+        sellerBusinessName: u.sellerBusinessName,
+        sellerPlatformFeeRate: u.sellerPlatformFeeRate || 0,
+        sellerProbationRemaining: u.sellerProbationRemaining || 0,
+        ...(await getSellerSummary(u.id)),
+      }))
+    );
+    res.json({ success: true, sellers: withSummary });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /api/admin/sellers/:id/payout  { amount, note? } — records a payout
+// the admin already made externally (bank transfer/UPI) against the
+// seller's ledger; rejected if it exceeds their current balance.
+router.post('/sellers/:id/payout', async (req, res, next) => {
+  try {
+    const user = await db.get('users', req.params.id);
+    if (!user?.isSeller) {
+      return res.status(404).json({ success: false, message: 'Seller not found.' });
+    }
+    await recordSellerPayout(req.params.id, Number(req.body.amount), req.body.note);
+    const summary = await getSellerSummary(req.params.id);
+    res.json({ success: true, ...summary });
+  } catch (err) {
+    if (err.message.includes('Payout amount')) {
+      return res.status(400).json({ success: false, message: err.message });
+    }
+    next(err);
+  }
+});
+
+// GET /api/admin/seller-products/pending — the probation review queue.
+router.get('/seller-products/pending', async (req, res, next) => {
+  try {
+    const [products, users] = await Promise.all([db.list('products'), db.list('users')]);
+    const nameById = Object.fromEntries(users.map((u) => [u.id, u.sellerBusinessName || u.name]));
+    const pending = products
+      .filter((p) => p.sellerModerationStatus === 'pending')
+      .map((p) => ({ ...p, sellerName: nameById[p.sellerId] || 'Unknown seller' }));
+    res.json({ success: true, products: pending });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// PATCH /api/admin/seller-products/:id/moderate  { approve: boolean }
+// Approving makes the listing publicly visible and counts down the
+// seller's probation window (see routes/sellerPortal.js); once it hits 0,
+// that seller's future listings skip the pending state entirely. Rejecting
+// soft-hides the listing (active: false) rather than deleting it, so the
+// seller can see what happened and fix it up as a fresh listing.
+router.patch('/seller-products/:id/moderate', async (req, res, next) => {
+  try {
+    const product = await db.get('products', req.params.id);
+    if (!product || product.sellerModerationStatus !== 'pending') {
+      return res.status(404).json({ success: false, message: 'No pending listing found with this id.' });
+    }
+    const seller = await db.get('users', product.sellerId);
+
+    if (req.body.approve) {
+      product.sellerModerationStatus = 'approved';
+      if (seller) {
+        seller.sellerProbationRemaining = Math.max(0, (seller.sellerProbationRemaining || 0) - 1);
+        await db.put('users', seller);
+        await notifyUser(seller, {
+          title: `Your listing "${product.name}" is live!`,
+          message: seller.sellerProbationRemaining > 0
+            ? `It's now visible to shoppers. ${seller.sellerProbationRemaining} more listing(s) will be reviewed before you're fully auto-approved.`
+            : `It's now visible to shoppers. You're fully auto-approved — your next listings will go live instantly.`,
+          channels: { inapp: true, email: true },
+        });
+      }
+    } else {
+      product.active = false;
+      if (seller) {
+        await notifyUser(seller, {
+          title: `Your listing "${product.name}" wasn't approved`,
+          message: 'Take a look and feel free to re-list it with any needed changes.',
+          channels: { inapp: true, email: true },
+        });
+      }
+    }
+    await db.put('products', product);
+    res.json({ success: true, product });
+  } catch (err) {
     next(err);
   }
 });

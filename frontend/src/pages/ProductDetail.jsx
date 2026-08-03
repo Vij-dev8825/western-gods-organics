@@ -489,6 +489,9 @@ export default function ProductDetail() {
             </p>
           )}
           <h1>{product.name}</h1>
+          {product.sellerName && (
+            <p className="muted" style={{ fontSize: '0.85rem', margin: '2px 0 8px' }}>Sold by {product.sellerName}</p>
+          )}
           <div className="rating-row" style={{ marginBottom: 16 }}>
             ★ {product.rating} <span className="count">({product.reviewsCount} reviews)</span>
           </div>

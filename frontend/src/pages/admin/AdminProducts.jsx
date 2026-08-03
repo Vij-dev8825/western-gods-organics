@@ -598,7 +598,10 @@ export default function AdminProducts() {
             {products.map((p) => (
               <tr key={p.id}>
                 <td><img className="thumb" src={getProductImage(p.image)} alt="" /></td>
-                <td><b>{p.name}</b></td>
+                <td>
+                  <b>{p.name}</b>
+                  {p.sellerId && <span className="pill" style={{ marginLeft: 6, fontSize: '0.7rem' }}>Seller listing</span>}
+                </td>
                 <td>{p.category}</td>
                 <td>
                   {p.sizes.map((s) => (

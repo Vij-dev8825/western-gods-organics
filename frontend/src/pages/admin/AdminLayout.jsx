@@ -12,6 +12,7 @@ const links = [
   { to: '/admin/coupons', label: 'Coupons' },
   { to: '/admin/gift-cards', label: 'Gift Cards' },
   { to: '/admin/affiliates', label: 'Affiliates' },
+  { to: '/admin/sellers', label: 'Sellers' },
   { to: '/admin/subscriptions', label: 'Subscriptions' },
   { to: '/admin/banners', label: 'Home Banners' },
   { to: '/admin/page-banners', label: 'Page Banners' },

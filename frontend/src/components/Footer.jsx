@@ -125,6 +125,7 @@ export default function Footer() {
               <li><Link to="/gift-cards">Gift Cards</Link></li>
               <li><Link to="/gifting">Corporate & Festival Gifting</Link></li>
               <li><Link to="/affiliate">Affiliate Program</Link></li>
+              <li><Link to="/sell-with-us">Sell With Us</Link></li>
             </ul>
           </FooterAccordion>
 
