@@ -20,6 +20,7 @@ export default function AdminLeads() {
   const [rateDrafts, setRateDrafts] = useState({}); // { [customerId]: '10' } — draft commission rate before granting
   const [questions, setQuestions] = useState([]);
   const [answerDrafts, setAnswerDrafts] = useState({}); // { [questionId]: 'draft answer text' }
+  const [suggestingId, setSuggestingId] = useState(null);
 
   function load() {
     api.admin.getEnquiries(token).then((d) => setEnquiries(d.enquiries)).catch(() => {});
@@ -63,6 +64,20 @@ export default function AdminLeads() {
     await api.admin.answerProductQuestion(token, q.id, answer).catch(() => {});
     setAnswerDrafts((d) => ({ ...d, [q.id]: '' }));
     load();
+  }
+
+  // Drafts a suggestion into the textarea only — never posted automatically,
+  // the admin still has to review/edit it and click Answer themselves.
+  async function suggestAnswer(q) {
+    setSuggestingId(q.id);
+    try {
+      const res = await api.admin.suggestProductAnswer(token, q.id);
+      setAnswerDrafts((d) => ({ ...d, [q.id]: res.answer }));
+    } catch (err) {
+      window.alert(err.message);
+    } finally {
+      setSuggestingId(null);
+    }
   }
 
   return (
@@ -233,15 +248,26 @@ export default function AdminLeads() {
                           </span>
                         </>
                       ) : (
-                        <div className="flex gap-1" style={{ alignItems: 'flex-start' }}>
-                          <textarea
-                            rows={2}
-                            placeholder="Write an answer…"
-                            value={answerDrafts[q.id] ?? ''}
-                            onChange={(e) => setAnswerDrafts((d) => ({ ...d, [q.id]: e.target.value }))}
-                            style={{ flex: 1 }}
-                          />
-                          <button className="link-btn" onClick={() => submitAnswer(q)}>Answer</button>
+                        <div>
+                          <button
+                            type="button"
+                            className="link-btn"
+                            disabled={suggestingId === q.id}
+                            onClick={() => suggestAnswer(q)}
+                            style={{ marginBottom: 4 }}
+                          >
+                            {suggestingId === q.id ? 'Thinking…' : '✨ Suggest with AI'}
+                          </button>
+                          <div className="flex gap-1" style={{ alignItems: 'flex-start' }}>
+                            <textarea
+                              rows={2}
+                              placeholder="Write an answer…"
+                              value={answerDrafts[q.id] ?? ''}
+                              onChange={(e) => setAnswerDrafts((d) => ({ ...d, [q.id]: e.target.value }))}
+                              style={{ flex: 1 }}
+                            />
+                            <button className="link-btn" onClick={() => submitAnswer(q)}>Answer</button>
+                          </div>
                         </div>
                       )}
                     </td>

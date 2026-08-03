@@ -240,6 +240,7 @@ export const api = {
     getContacts: (token) => request('/admin/contacts', { token }),
     getProductQuestions: (token) => request('/admin/product-questions', { token }),
     answerProductQuestion: (token, id, answer) => request(`/admin/product-questions/${id}`, { method: 'PATCH', body: { answer }, token }),
+    suggestProductAnswer: (token, id) => request(`/admin/product-questions/${id}/suggest-answer`, { method: 'POST', token }),
 
     notify: (token, payload) => request('/admin/notify', { method: 'POST', body: payload, token }),
     notifyLogs: (token) => request('/admin/notify/logs', { token }),

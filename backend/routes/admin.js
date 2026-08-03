@@ -17,6 +17,7 @@ const { sendMail } = require('../utils/mailer');
 const { sendWhatsApp } = require('../utils/whatsapp');
 const { getCountries, getFullLiveRates } = require('./currency');
 const { translateProductText } = require('../utils/translateProduct');
+const { suggestProductAnswer } = require('../utils/aiAnswerSuggestion');
 const { imageUpload, storeUploadedFile } = require('../utils/imageUploadHandler');
 const { creditPointsForOrder } = require('../utils/loyalty');
 const { issueBottleReturnCredit } = require('../utils/orderBuilder');
@@ -1453,6 +1454,23 @@ router.get('/product-questions', async (req, res, next) => {
     res.json({ success: true, questions: withProductName });
   } catch (err) {
     next(err);
+  }
+});
+
+// POST /api/admin/product-questions/:id/suggest-answer — stateless, drafts a
+// suggested answer for the admin to review/edit before saving via the PATCH
+// route below. Never posted to the customer directly from here.
+router.post('/product-questions/:id/suggest-answer', async (req, res, next) => {
+  try {
+    const question = await db.get('product-questions', req.params.id);
+    if (!question) return res.status(404).json({ success: false, message: 'Question not found.' });
+    const product = await db.get('products', question.productId);
+    if (!product) return res.status(404).json({ success: false, message: 'Product not found.' });
+
+    const answer = await suggestProductAnswer({ product, question: question.question });
+    res.json({ success: true, answer });
+  } catch (err) {
+    res.status(err.status || 500).json({ success: false, message: err.message });
   }
 });
 
