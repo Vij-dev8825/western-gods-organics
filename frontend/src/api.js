@@ -128,6 +128,7 @@ export const api = {
     getQuestions: (token) => request('/seller/questions', { token }),
     answerQuestion: (token, id, answer) => request(`/seller/questions/${id}`, { method: 'PATCH', body: { answer }, token }),
     uploadImage: (token, formData) => request('/seller/upload-image', { method: 'POST', formData, token }),
+    uploadVideo: (token, formData) => request('/seller/upload-video', { method: 'POST', formData, token }),
     getProducts: (token) => request('/seller/products', { token }),
     createProduct: (token, payload) => request('/seller/products', { method: 'POST', body: payload, token }),
     updateProduct: (token, id, payload) => request(`/seller/products/${id}`, { method: 'PUT', body: payload, token }),

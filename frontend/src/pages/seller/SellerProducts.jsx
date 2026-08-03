@@ -10,6 +10,7 @@ const EMPTY_PRODUCT = {
   shortDescription: '',
   description: '',
   image: '',
+  video: '',
   sizes: [{ label: '', price: '', mrp: '', stock: '' }],
 };
 
@@ -22,6 +23,7 @@ export default function SellerProducts() {
   const [editingId, setEditingId] = useState(null); // null | 'new' | product id
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [uploadingVideo, setUploadingVideo] = useState(false);
   const [message, setMessage] = useState(null);
 
   function load() {
@@ -49,6 +51,7 @@ export default function SellerProducts() {
       shortDescription: p.shortDescription,
       description: p.description,
       image: p.image,
+      video: p.video || '',
       sizes: p.sizes.map((s) => ({ label: s.label, price: s.price, mrp: s.mrp, stock: s.stock })),
     });
     setMessage(null);
@@ -68,6 +71,22 @@ export default function SellerProducts() {
       showToast(err.message, 'error');
     } finally {
       setUploading(false);
+    }
+  }
+
+  async function handleVideoUpload(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const fd = new FormData();
+    fd.append('file', file);
+    setUploadingVideo(true);
+    try {
+      const res = await api.seller.uploadVideo(token, fd);
+      setForm((f) => ({ ...f, video: res.url }));
+    } catch (err) {
+      showToast(err.message, 'error');
+    } finally {
+      setUploadingVideo(false);
     }
   }
 
@@ -143,6 +162,31 @@ export default function SellerProducts() {
             )}
             <input type="file" accept="image/*" onChange={handleImageUpload} disabled={uploading} />
             {uploading && <span className="muted" style={{ fontSize: '0.8rem' }}>Uploading…</span>}
+          </div>
+
+          <div className="field">
+            <label>Video (optional)</label>
+            {form.video && (
+              <video
+                src={getProductImage(form.video)}
+                controls
+                playsInline
+                style={{ width: 220, borderRadius: 8, marginBottom: 8, display: 'block', background: '#000' }}
+              />
+            )}
+            <div className="flex gap-1" style={{ alignItems: 'center', flexWrap: 'wrap' }}>
+              <input type="file" accept="video/mp4,video/webm,video/ogg,video/quicktime" onChange={handleVideoUpload} disabled={uploadingVideo} />
+              {form.video && !uploadingVideo && (
+                <button type="button" className="link-btn danger" onClick={() => setForm((f) => ({ ...f, video: '' }))}>
+                  remove video
+                </button>
+              )}
+            </div>
+            <p className="muted" style={{ fontSize: '0.78rem', marginTop: 4 }}>
+              {uploadingVideo
+                ? 'Uploading and compressing — this can take a minute for a large clip…'
+                : 'A short clip showing your product or how you make it. mp4, webm, ogg or mov, up to 60 MB.'}
+            </p>
           </div>
 
           <div className="field">

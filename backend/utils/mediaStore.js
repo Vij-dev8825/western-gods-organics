@@ -48,12 +48,17 @@ async function compressAndStore(buffer) {
  * max, H.264/no-audio since banner videos always autoplay muted) and stores
  * it the same way as images. Throws if the result is still too large for a
  * database row — the fix there is a shorter/lower-res source clip. */
-async function compressVideoAndStore(inputPath) {
+/** keepAudio: home-page banners are silent decoration so they drop the audio
+ * track (smaller file, and autoplay would be muted anyway). A seller's product
+ * clip is the opposite — often someone talking through how they make it — so
+ * that caller opts back in. */
+async function compressVideoAndStore(inputPath, { keepAudio = false } = {}) {
   const outputPath = path.join(os.tmpdir(), `${uuid()}.mp4`);
   await new Promise((resolve, reject) => {
-    ffmpeg(inputPath)
-      .videoCodec('libx264')
-      .noAudio()
+    const command = ffmpeg(inputPath).videoCodec('libx264');
+    if (keepAudio) command.audioCodec('aac').audioBitrate('96k');
+    else command.noAudio();
+    command
       .videoFilters(`scale=-2:'min(${VIDEO_MAX_HEIGHT},ih)'`)
       .videoBitrate(VIDEO_BITRATE)
       .outputOptions(['-preset veryfast', '-movflags +faststart'])

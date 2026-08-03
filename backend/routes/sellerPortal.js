@@ -1,8 +1,13 @@
 const express = require('express');
+const fs = require('fs');
+const multer = require('multer');
 const { v4: uuid } = require('uuid');
 const db = require('../data/db');
 const { requireAuth } = require('../middleware/auth');
 const { imageUpload, storeUploadedFile } = require('../utils/imageUploadHandler');
+const { UPLOADS_DIR } = require('../data/seed');
+const cloudinary = require('../utils/cloudinary');
+const { compressVideoAndStore } = require('../utils/mediaStore');
 const { notifyUser } = require('../utils/notify');
 const { sendMail } = require('../utils/mailer');
 const { getSummary: getSellerSummary } = require('../utils/sellers');
@@ -10,6 +15,23 @@ const { getSummary: getSellerSummary } = require('../utils/sellers');
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || process.env.CONTACT_NOTIFY_EMAIL;
 
 const router = express.Router();
+
+// Video needs disk storage (compressVideoAndStore transcodes from a path) and
+// a much bigger cap than the 10 MB image limit — same setup admin banners use.
+const videoUpload = multer({
+  storage: multer.diskStorage({
+    destination: (req, file, cb) => cb(null, UPLOADS_DIR),
+    filename: (req, file, cb) => {
+      const safe = file.originalname.replace(/[^a-zA-Z0-9._-]/g, '_').slice(-60);
+      cb(null, `${Date.now()}-${safe}`);
+    },
+  }),
+  limits: { fileSize: 60 * 1024 * 1024 }, // 60 MB
+  fileFilter: (req, file, cb) => {
+    const ok = /\.(mp4|webm|ogg|mov)$/i.test(file.originalname);
+    cb(ok ? null : new Error('Only mp4, webm, ogg or mov video files are allowed.'), ok);
+  },
+});
 
 // Re-checks isSeller fresh from the DB on every request (never the JWT's
 // role, which is embedded at login and wouldn't reflect a same-session
@@ -311,6 +333,41 @@ router.post('/upload-image', requireAuth, requireSeller, imageUpload.single('fil
   }
 });
 
+// POST /api/seller/upload-video — a short demo/how-it's-made clip for a
+// listing. Mirrors the admin banner upload: Cloudinary when configured,
+// otherwise transcode to a size-capped MP4 held in the DB so it survives a
+// host that wipes local disk on redeploy.
+// Multer rejects (wrong type, over the size cap) surface as thrown errors —
+// turn them into a readable 400 rather than a generic 500.
+function handleVideoUpload(req, res, next) {
+  videoUpload.single('file')(req, res, (err) => {
+    if (!err) return next();
+    const tooBig = err.code === 'LIMIT_FILE_SIZE';
+    res.status(400).json({
+      success: false,
+      message: tooBig ? 'That video is over the 60 MB limit — please upload a shorter clip.' : err.message,
+    });
+  });
+}
+
+router.post('/upload-video', requireAuth, requireSeller, handleVideoUpload, async (req, res, next) => {
+  try {
+    if (!req.file) return res.status(400).json({ success: false, message: 'A video file is required.' });
+    let url;
+    if (cloudinary.isConfigured()) {
+      const uploaded = await cloudinary.uploadFile(req.file.path, { resourceType: 'video' });
+      url = uploaded.url;
+    } else {
+      url = await compressVideoAndStore(req.file.path, { keepAudio: true });
+    }
+    fs.unlink(req.file.path, () => {});
+    res.status(201).json({ success: true, url });
+  } catch (err) {
+    if (req.file?.path) fs.unlink(req.file.path, () => {});
+    next(err);
+  }
+});
+
 // GET /api/seller/products — the caller's own listings only.
 router.get('/products', requireAuth, requireSeller, async (req, res, next) => {
   try {
@@ -346,6 +403,7 @@ router.post('/products', requireAuth, requireSeller, async (req, res, next) => {
       descriptions: {},
       image: req.body.image || '',
       images: Array.isArray(req.body.images) && req.body.images.length ? req.body.images : (req.body.image ? [req.body.image] : []),
+      video: req.body.video || '',
       sizes: req.body.sizes.map((s) => ({
         label: s.label,
         price: Number(s.price),
@@ -401,6 +459,7 @@ router.put('/products/:id', requireAuth, requireSeller, async (req, res, next) =
       description: req.body.description || '',
       image: req.body.image || '',
       images: Array.isArray(req.body.images) && req.body.images.length ? req.body.images : (req.body.image ? [req.body.image] : []),
+      video: req.body.video ?? existing.video ?? '',
       sizes: req.body.sizes.map((s) => ({
         label: s.label,
         price: Number(s.price),

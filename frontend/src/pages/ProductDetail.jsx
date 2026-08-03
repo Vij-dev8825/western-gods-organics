@@ -477,6 +477,15 @@ export default function ProductDetail() {
               ))}
             </div>
           )}
+          {product.video && (
+            <video
+              src={getProductImage(product.video)}
+              controls
+              playsInline
+              preload="metadata"
+              style={{ width: '100%', marginTop: 12, borderRadius: 'var(--radius-md)', background: '#000' }}
+            />
+          )}
         </div>
 
         <div>
