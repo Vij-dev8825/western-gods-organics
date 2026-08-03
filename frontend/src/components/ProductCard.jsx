@@ -158,7 +158,17 @@ export default function ProductCard({ product }) {
       </div>
       <div className="product-body">
         <h3>{product.name}</h3>
-        {product.sellerName && <span className="muted" style={{ fontSize: '0.75rem' }}>Sold by {product.sellerName}</span>}
+        {/* The whole card is already an <a>, so this can't be a nested Link —
+            navigate programmatically instead of producing invalid markup. */}
+        {product.sellerName && (
+          <span
+            className="muted"
+            style={{ fontSize: '0.75rem', textDecoration: 'underline', cursor: 'pointer' }}
+            onClick={(e) => { e.preventDefault(); e.stopPropagation(); navigate(`/sellers/${product.sellerId}`); }}
+          >
+            Sold by {product.sellerName}
+          </span>
+        )}
         <p className="product-desc">{localizeProductText(product, 'shortDescription', lang)}</p>
         <div className="rating-row">
           ★ {product.rating} <span className="count">({product.reviewsCount})</span>

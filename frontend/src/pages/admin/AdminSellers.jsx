@@ -9,6 +9,7 @@ export default function AdminSellers() {
   const [applications, setApplications] = useState([]);
   const [sellers, setSellers] = useState([]);
   const [pendingProducts, setPendingProducts] = useState([]);
+  const [support, setSupport] = useState([]);
   const [rateDrafts, setRateDrafts] = useState({}); // { [applicationId]: '10' }
   const [noteDrafts, setNoteDrafts] = useState({}); // { [applicationId]: 'note' }
   const [payoutDrafts, setPayoutDrafts] = useState({}); // { [sellerId]: { amount, note } }
@@ -18,8 +19,14 @@ export default function AdminSellers() {
     api.admin.getSellerApplications(token).then((d) => setApplications(d.applications)).catch(() => {});
     api.admin.getSellers(token).then((d) => setSellers(d.sellers)).catch(() => {});
     api.admin.getPendingSellerProducts(token).then((d) => setPendingProducts(d.products)).catch(() => {});
+    api.admin.getSellerSupport(token).then((d) => setSupport(d.enquiries)).catch(() => {});
   }
   useEffect(load, [token]);
+
+  async function setSupportStatus(enquiry, status) {
+    await api.admin.updateSellerSupport(token, enquiry.id, status).catch(() => {});
+    load();
+  }
 
   async function decide(app, status) {
     const payload = { status };
@@ -80,6 +87,7 @@ export default function AdminSellers() {
           ['applications', `Applications (${pendingApplicationsCount})`],
           ['sellers', `Sellers (${sellers.length})`],
           ['pending-products', `Pending products (${pendingProducts.length})`],
+          ['support', `Support (${support.filter((s) => s.status === 'open').length})`],
         ].map(([key, label]) => (
           <button key={key} className={`tab ${tab === key ? 'active' : ''}`} onClick={() => setTab(key)}>
             {label}
@@ -221,6 +229,41 @@ export default function AdminSellers() {
                     <td>
                       <button className="link-btn" onClick={() => moderate(p, true)}>approve</button>{' '}
                       <button className="link-btn danger" onClick={() => moderate(p, false)}>reject</button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      )}
+
+      {tab === 'support' && (
+        <div className="admin-card">
+          {support.length === 0 ? <p className="muted">No support messages from sellers.</p> : (
+            <table className="admin-table">
+              <thead>
+                <tr><th>Seller</th><th>Subject</th><th>Message</th><th>When</th><th>Status</th></tr>
+              </thead>
+              <tbody>
+                {support.map((s) => (
+                  <tr key={s.id}>
+                    <td>
+                      <b>{s.sellerName}</b>
+                      <div className="muted" style={{ fontSize: '0.75rem' }}>{s.sellerPhone}</div>
+                    </td>
+                    <td>{s.subject}</td>
+                    <td style={{ maxWidth: 280 }}>{s.message}</td>
+                    <td className="muted">{new Date(s.createdAt).toLocaleDateString('en-IN')}</td>
+                    <td>
+                      {s.status === 'open' ? (
+                        <button className="link-btn" onClick={() => setSupportStatus(s, 'resolved')}>mark resolved</button>
+                      ) : (
+                        <>
+                          <span className="pill status-placed">resolved</span>{' '}
+                          <button className="link-btn" onClick={() => setSupportStatus(s, 'open')}>reopen</button>
+                        </>
+                      )}
                     </td>
                   </tr>
                 ))}

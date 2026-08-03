@@ -98,6 +98,9 @@ router.get('/me', requireAuth, async (req, res, next) => {
         success: true,
         status: 'approved',
         businessName: user.sellerBusinessName,
+        bio: user.sellerBio || '',
+        location: user.sellerLocation || '',
+        logo: user.sellerLogo || '',
         platformFeeRate: user.sellerPlatformFeeRate || 0,
         probationRemaining: user.sellerProbationRemaining || 0,
         ...summary,
@@ -109,6 +112,152 @@ router.get('/me', requireAuth, async (req, res, next) => {
     const latest = applications[0];
     if (!latest) return res.json({ success: true, status: 'none' });
     res.json({ success: true, status: latest.status, businessName: latest.businessName, reviewNote: latest.reviewNote || '' });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// PUT /api/seller/profile  { businessName, bio, location } — a seller edits
+// their own public-facing details (shown on their storefront page). The
+// platform fee rate and probation counter are deliberately NOT editable here
+// — those stay admin-only.
+router.put('/profile', requireAuth, requireSeller, async (req, res, next) => {
+  try {
+    const user = req.sellerUser;
+    const businessName = (req.body.businessName || '').trim().slice(0, 120);
+    if (businessName.length < 2) {
+      return res.status(400).json({ success: false, message: 'Enter your business name.' });
+    }
+    user.sellerBusinessName = businessName;
+    user.sellerBio = (req.body.bio || '').trim().slice(0, 1000);
+    user.sellerLocation = (req.body.location || '').trim().slice(0, 120);
+    if (req.body.logo !== undefined) user.sellerLogo = req.body.logo || '';
+    await db.put('users', user);
+    res.json({
+      success: true,
+      profile: {
+        businessName: user.sellerBusinessName,
+        bio: user.sellerBio,
+        location: user.sellerLocation,
+        logo: user.sellerLogo || '',
+      },
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET /api/seller/storefront/:id — PUBLIC. A seller's own page: their profile
+// plus their live listings (never their pending/deactivated ones, which stay
+// visible only to themselves via GET /products and to admins).
+router.get('/storefront/:id', async (req, res, next) => {
+  try {
+    const seller = await db.get('users', req.params.id);
+    if (!seller?.isSeller) {
+      return res.status(404).json({ success: false, message: 'Seller not found.' });
+    }
+    const products = (await db.list('products')).filter(
+      (p) => p.sellerId === seller.id && p.active !== false && p.sellerModerationStatus !== 'pending'
+    );
+    res.json({
+      success: true,
+      seller: {
+        id: seller.id,
+        businessName: seller.sellerBusinessName,
+        bio: seller.sellerBio || '',
+        location: seller.sellerLocation || '',
+        logo: seller.sellerLogo || '',
+      },
+      products: products.map((p) => ({ ...p, sellerName: seller.sellerBusinessName })),
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /api/seller/support  { subject, message } — a seller's question to the
+// store team; queued for the admin in Admin → Sellers → Support.
+router.post('/support', requireAuth, requireSeller, async (req, res, next) => {
+  try {
+    const subject = (req.body.subject || '').trim().slice(0, 160);
+    const message = (req.body.message || '').trim().slice(0, 2000);
+    if (subject.length < 2) return res.status(400).json({ success: false, message: 'Enter a subject.' });
+    if (message.length < 5) return res.status(400).json({ success: false, message: 'Enter your message.' });
+
+    const enquiry = {
+      id: uuid(),
+      sellerId: req.sellerUser.id,
+      sellerName: req.sellerUser.sellerBusinessName,
+      sellerPhone: req.sellerUser.phone,
+      subject,
+      message,
+      status: 'open',
+      createdAt: new Date().toISOString(),
+    };
+    await db.put('seller-support', enquiry);
+
+    if (ADMIN_EMAIL) {
+      sendMail({
+        to: ADMIN_EMAIL,
+        subject: `Seller support: ${subject}`,
+        text: `${enquiry.sellerName} (${enquiry.sellerPhone}) wrote:\n\n${message}\n\nReply in Admin → Sellers → Support.`,
+      }).catch(() => {});
+    }
+    res.status(201).json({ success: true, enquiry });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET /api/seller/questions — shopper questions asked on this seller's own
+// products (see routes/products.js POST /:id/questions), so the seller can
+// answer them rather than the store admin having to relay.
+router.get('/questions', requireAuth, requireSeller, async (req, res, next) => {
+  try {
+    const products = (await db.list('products')).filter((p) => p.sellerId === req.sellerUser.id);
+    const nameById = Object.fromEntries(products.map((p) => [p.id, p.name]));
+    const questions = (await db.list('product-questions'))
+      .filter((q) => nameById[q.productId])
+      .map((q) => ({ ...q, productName: nameById[q.productId] }))
+      .sort((a, b) => {
+        if (!a.answer !== !b.answer) return a.answer ? 1 : -1;
+        return b.createdAt.localeCompare(a.createdAt);
+      });
+    res.json({ success: true, questions });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// PATCH /api/seller/questions/:id  { answer } — ownership-checked against the
+// question's product, so a seller can only answer questions on their own.
+router.patch('/questions/:id', requireAuth, requireSeller, async (req, res, next) => {
+  try {
+    const question = await db.get('product-questions', req.params.id);
+    if (!question) return res.status(404).json({ success: false, message: 'Question not found.' });
+    const product = await db.get('products', question.productId);
+    if (!product || product.sellerId !== req.sellerUser.id) {
+      return res.status(404).json({ success: false, message: 'Question not found.' });
+    }
+
+    const answer = (req.body.answer || '').trim().slice(0, 1000);
+    if (answer.length < 2) return res.status(400).json({ success: false, message: 'Enter an answer.' });
+    question.answer = answer;
+    question.answeredAt = new Date().toISOString();
+    await db.put('product-questions', question);
+
+    if (question.userId) {
+      const asker = await db.get('users', question.userId);
+      if (asker) {
+        await notifyUser(asker, {
+          title: `Your question was answered: ${product.name}`,
+          message: `Q: ${question.question}\nA: ${answer}`,
+          meta: { productId: product.id },
+          channels: { inapp: true, email: true },
+        });
+      }
+    }
+    res.json({ success: true, question });
   } catch (err) {
     next(err);
   }

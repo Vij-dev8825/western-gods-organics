@@ -49,6 +49,8 @@ import StoreLocator from './pages/StoreLocator';
 import GiftCards from './pages/GiftCards';
 import Affiliate from './pages/Affiliate';
 import Seller from './pages/Seller';
+import SellerLogin from './pages/SellerLogin';
+import SellerStorefront from './pages/SellerStorefront';
 
 import AdminLogin from './pages/admin/AdminLogin';
 import AdminLayout from './pages/admin/AdminLayout';
@@ -152,6 +154,9 @@ export default function App() {
     <Routes>
       {/* Admin area: its own login page and dashboard shell, no store chrome */}
       <Route path="/admin/login" element={<AdminLogin />} />
+
+      {/* Seller sign-in: same OTP auth as customers, its own branded entry point */}
+      <Route path="/seller/login" element={<SellerLogin />} />
       <Route path="/admin" element={<AdminLayout />}>
         <Route index element={<Dashboard />} />
         <Route path="products" element={<AdminProducts />} />
@@ -186,6 +191,7 @@ export default function App() {
         <Route path="/categories" element={<Categories />} />
         <Route path="/combos" element={<Combos />} />
         <Route path="/gifting" element={<Gifting />} />
+        <Route path="/sellers/:id" element={<SellerStorefront />} />
         <Route path="/blog" element={<Blog />} />
         <Route path="/blog/:slug" element={<BlogPost />} />
         <Route path="/guides" element={<Blog />} />

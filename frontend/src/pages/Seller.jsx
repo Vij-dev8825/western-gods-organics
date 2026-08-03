@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { api } from '../api';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
@@ -30,6 +31,14 @@ export default function Seller() {
   const [uploadingImage, setUploadingImage] = useState(false);
   const [message, setMessage] = useState(null);
 
+  const [profileForm, setProfileForm] = useState(null); // null until loaded from /me
+  const [savingProfile, setSavingProfile] = useState(false);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
+  const [questions, setQuestions] = useState([]);
+  const [answerDrafts, setAnswerDrafts] = useState({});
+  const [supportForm, setSupportForm] = useState({ subject: '', message: '' });
+  const [sendingSupport, setSendingSupport] = useState(false);
+
   function loadMe() {
     api.seller.getMe(token).then(setMe).catch(() => setMe({ status: 'none' })).finally(() => setLoaded(true));
   }
@@ -38,8 +47,14 @@ export default function Seller() {
   function loadProducts() {
     api.seller.getProducts(token).then((d) => setProducts(d.products)).catch(() => {});
   }
+  function loadQuestions() {
+    api.seller.getQuestions(token).then((d) => setQuestions(d.questions)).catch(() => {});
+  }
   useEffect(() => {
-    if (me?.status === 'approved') loadProducts();
+    if (me?.status !== 'approved') return;
+    loadProducts();
+    loadQuestions();
+    setProfileForm({ businessName: me.businessName || '', bio: me.bio || '', location: me.location || '', logo: me.logo || '' });
   }, [me?.status, token]);
 
   useEffect(() => {
@@ -123,6 +138,65 @@ export default function Seller() {
   async function toggleActive(p) {
     await api.seller.setProductActive(token, p.id, p.active === false).catch(() => {});
     loadProducts();
+  }
+
+  async function handleLogoUpload(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const fd = new FormData();
+    fd.append('file', file);
+    setUploadingLogo(true);
+    try {
+      const res = await api.seller.uploadImage(token, fd);
+      setProfileForm((f) => ({ ...f, logo: res.url }));
+    } catch (err) {
+      showToast(err.message, 'error');
+    } finally {
+      setUploadingLogo(false);
+    }
+  }
+
+  async function saveProfile(e) {
+    e.preventDefault();
+    setSavingProfile(true);
+    try {
+      await api.seller.updateProfile(token, profileForm);
+      showToast('Profile updated.');
+      loadMe();
+    } catch (err) {
+      showToast(err.message, 'error');
+    } finally {
+      setSavingProfile(false);
+    }
+  }
+
+  async function submitAnswer(q) {
+    const answer = (answerDrafts[q.id] || '').trim();
+    if (answer.length < 2) {
+      showToast('Enter an answer.', 'error');
+      return;
+    }
+    try {
+      await api.seller.answerQuestion(token, q.id, answer);
+      setAnswerDrafts((d) => ({ ...d, [q.id]: '' }));
+      loadQuestions();
+    } catch (err) {
+      showToast(err.message, 'error');
+    }
+  }
+
+  async function submitSupport(e) {
+    e.preventDefault();
+    setSendingSupport(true);
+    try {
+      await api.seller.submitSupport(token, supportForm);
+      setSupportForm({ subject: '', message: '' });
+      showToast("Message sent — we'll get back to you.");
+    } catch (err) {
+      showToast(err.message, 'error');
+    } finally {
+      setSendingSupport(false);
+    }
   }
 
   if (!loaded) {
@@ -252,6 +326,64 @@ export default function Seller() {
             </table>
           </div>
         </div>
+      )}
+
+      {profileForm && (
+        <form className="form-card" onSubmit={saveProfile} style={{ marginBottom: 22 }}>
+          <div className="flex-between" style={{ marginBottom: 10 }}>
+            <h3 style={{ margin: 0 }}>My Storefront Profile</h3>
+            <Link to={`/sellers/${user?.id}`} className="link-btn">View my public page →</Link>
+          </div>
+          <p className="muted" style={{ fontSize: '0.82rem', marginTop: 0 }}>
+            This is what shoppers see on your seller page and next to your products.
+          </p>
+
+          <div className="form-grid">
+            <div className="field">
+              <label>Business name</label>
+              <input
+                value={profileForm.businessName}
+                onChange={(e) => setProfileForm((f) => ({ ...f, businessName: e.target.value }))}
+                required
+              />
+            </div>
+            <div className="field">
+              <label>Where you're based</label>
+              <input
+                value={profileForm.location}
+                onChange={(e) => setProfileForm((f) => ({ ...f, location: e.target.value }))}
+                placeholder="e.g. Coimbatore, Tamil Nadu"
+              />
+            </div>
+          </div>
+
+          <div className="field">
+            <label>Your story</label>
+            <textarea
+              rows={3}
+              value={profileForm.bio}
+              onChange={(e) => setProfileForm((f) => ({ ...f, bio: e.target.value }))}
+              placeholder="Tell shoppers who you are and how you make what you sell."
+            />
+          </div>
+
+          <div className="field">
+            <label>Logo or photo</label>
+            {profileForm.logo && (
+              <img
+                src={getProductImage(profileForm.logo)}
+                alt=""
+                style={{ width: 72, height: 72, objectFit: 'cover', borderRadius: '50%', marginBottom: 8, display: 'block' }}
+              />
+            )}
+            <input type="file" accept="image/*" onChange={handleLogoUpload} disabled={uploadingLogo} />
+            {uploadingLogo && <span className="muted" style={{ fontSize: '0.8rem' }}>Uploading…</span>}
+          </div>
+
+          <button className="btn btn-gold btn-sm" disabled={savingProfile}>
+            {savingProfile ? 'Saving…' : 'Save profile'}
+          </button>
+        </form>
       )}
 
       <div className="flex-between" style={{ marginBottom: 14 }}>
@@ -392,6 +524,82 @@ export default function Seller() {
           </table>
         )}
       </div>
+
+      <h3 style={{ marginTop: 28, marginBottom: 6 }}>
+        Customer Questions{questions.filter((q) => !q.answer).length > 0 && ` (${questions.filter((q) => !q.answer).length} unanswered)`}
+      </h3>
+      <p className="muted" style={{ fontSize: '0.82rem', marginTop: 0 }}>
+        Shoppers asking about your products. Your answer appears publicly on that product's page.
+      </p>
+      <div className="admin-card">
+        {questions.length === 0 ? (
+          <p className="muted">No questions yet.</p>
+        ) : (
+          <table className="admin-table">
+            <thead>
+              <tr><th>Product</th><th>Question</th><th>Asked</th><th>Answer</th></tr>
+            </thead>
+            <tbody>
+              {questions.map((q) => (
+                <tr key={q.id}>
+                  <td><b>{q.productName}</b></td>
+                  <td style={{ maxWidth: 220 }}>{q.question}</td>
+                  <td className="muted">{new Date(q.createdAt).toLocaleDateString('en-IN')}</td>
+                  <td style={{ minWidth: 260 }}>
+                    {q.answer ? (
+                      <>
+                        <p style={{ margin: '0 0 4px' }}>{q.answer}</p>
+                        <span className="muted" style={{ fontSize: '0.75rem' }}>
+                          Answered {new Date(q.answeredAt).toLocaleDateString('en-IN')}
+                        </span>
+                      </>
+                    ) : (
+                      <div className="flex gap-1" style={{ alignItems: 'flex-start' }}>
+                        <textarea
+                          rows={2}
+                          placeholder="Write an answer…"
+                          value={answerDrafts[q.id] ?? ''}
+                          onChange={(e) => setAnswerDrafts((d) => ({ ...d, [q.id]: e.target.value }))}
+                          style={{ flex: 1 }}
+                        />
+                        <button className="link-btn" onClick={() => submitAnswer(q)}>Answer</button>
+                      </div>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+
+      <form className="form-card" onSubmit={submitSupport} style={{ marginTop: 28 }}>
+        <h3 style={{ marginTop: 0 }}>Need help? Message the team</h3>
+        <p className="muted" style={{ fontSize: '0.82rem', marginTop: 0 }}>
+          Questions about payouts, your fee rate, listings or anything else — we'll get back to you.
+        </p>
+        <div className="field">
+          <label>Subject</label>
+          <input
+            value={supportForm.subject}
+            onChange={(e) => setSupportForm((f) => ({ ...f, subject: e.target.value }))}
+            placeholder="e.g. Question about my payout"
+            required
+          />
+        </div>
+        <div className="field">
+          <label>Message</label>
+          <textarea
+            rows={3}
+            value={supportForm.message}
+            onChange={(e) => setSupportForm((f) => ({ ...f, message: e.target.value }))}
+            required
+          />
+        </div>
+        <button className="btn btn-outline btn-sm" disabled={sendingSupport}>
+          {sendingSupport ? 'Sending…' : 'Send message'}
+        </button>
+      </form>
     </div>
   );
 }

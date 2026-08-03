@@ -1523,6 +1523,38 @@ router.post('/sellers/:id/payout', async (req, res, next) => {
   }
 });
 
+// GET /api/admin/seller-support — support enquiries raised by sellers,
+// unresolved first.
+router.get('/seller-support', async (req, res, next) => {
+  try {
+    const enquiries = (await db.list('seller-support')).slice().sort((a, b) => {
+      if ((a.status === 'open') !== (b.status === 'open')) return a.status === 'open' ? -1 : 1;
+      return b.createdAt.localeCompare(a.createdAt);
+    });
+    res.json({ success: true, enquiries });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// PATCH /api/admin/seller-support/:id  { status } — mark an enquiry resolved
+// (or reopen it).
+router.patch('/seller-support/:id', async (req, res, next) => {
+  try {
+    const enquiry = await db.get('seller-support', req.params.id);
+    if (!enquiry) return res.status(404).json({ success: false, message: 'Enquiry not found.' });
+    if (!['open', 'resolved'].includes(req.body.status)) {
+      return res.status(400).json({ success: false, message: 'Status must be open or resolved.' });
+    }
+    enquiry.status = req.body.status;
+    enquiry.updatedAt = new Date().toISOString();
+    await db.put('seller-support', enquiry);
+    res.json({ success: true, enquiry });
+  } catch (err) {
+    next(err);
+  }
+});
+
 // GET /api/admin/seller-products/pending — the probation review queue.
 router.get('/seller-products/pending', async (req, res, next) => {
   try {

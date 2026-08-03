@@ -5,6 +5,7 @@ const { requireAuth, optionalAuth } = require('../middleware/auth');
 const { imageUpload, storeUploadedFile } = require('../utils/imageUploadHandler');
 const { sendMail } = require('../utils/mailer');
 const { hasEarlyAccessPerk } = require('../utils/loyalty');
+const { notifyUser } = require('../utils/notify');
 
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || process.env.CONTACT_NOTIFY_EMAIL;
 
@@ -370,7 +371,18 @@ router.post('/:id/questions', requireAuth, async (req, res, next) => {
     };
     await db.put('product-questions', record);
 
-    if (ADMIN_EMAIL) {
+    // A question on a seller's own listing goes to that seller to answer
+    // (see routes/sellerPortal.js GET/PATCH /questions) — the store admin
+    // can still see and answer it too, but shouldn't have to relay it.
+    const seller = product.sellerId ? await db.get('users', product.sellerId) : null;
+    if (seller?.isSeller) {
+      await notifyUser(seller, {
+        title: `New question on ${product.name}`,
+        message: `${record.userName} asked: "${question}"\n\nAnswer it from your seller dashboard.`,
+        meta: { productId: product.id },
+        channels: { inapp: true, email: true },
+      });
+    } else if (ADMIN_EMAIL) {
       sendMail({
         to: ADMIN_EMAIL,
         subject: `New product question: ${product.name}`,
