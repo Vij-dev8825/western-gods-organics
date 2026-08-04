@@ -49,6 +49,7 @@ export default function BatchPassport() {
           <div>
             <span className="eyebrow">Batch passport</span>
             <h2 style={{ margin: 0 }}>{batch.productName}</h2>
+            {batch.sellerName && <p className="muted" style={{ margin: 0, fontSize: '0.85rem' }}>by {batch.sellerName}</p>}
           </div>
         </div>
 
@@ -58,7 +59,9 @@ export default function BatchPassport() {
             {batch.productionDate && <tr><td><b>Made on</b></td><td>{formatDate(batch.productionDate)}</td></tr>}
             {batch.bestBeforeDate && <tr><td><b>Best before</b></td><td>{formatDate(batch.bestBeforeDate)}</td></tr>}
             {batch.fssaiLicense && <tr><td><b>FSSAI license</b></td><td>{batch.fssaiLicense}</td></tr>}
-            <tr><td><b>Made at</b></td><td>{mill.address}</td></tr>
+            {/* Our own mill only — saying a marketplace seller's product came
+                out of it would simply be untrue. */}
+            <tr><td><b>Made {batch.sellerName ? 'by' : 'at'}</b></td><td>{batch.sellerName || mill.address}</td></tr>
             {batch.inciIngredients && <tr><td><b>Ingredients</b></td><td>{batch.inciIngredients}</td></tr>}
           </tbody>
         </table>

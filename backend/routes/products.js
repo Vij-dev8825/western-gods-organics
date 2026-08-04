@@ -167,12 +167,16 @@ router.get('/batch/:batchNumber', async (req, res, next) => {
     if (!product) {
       return res.status(404).json({ success: false, message: 'No product found for this batch number.' });
     }
+    // A marketplace seller fills in their own batch details, so the passport
+    // says whose claims these are rather than presenting them as the store's.
+    const seller = product.sellerId ? await db.get('users', product.sellerId) : null;
     res.json({
       success: true,
       batch: {
         productId: product.id,
         productName: product.name,
         image: product.image,
+        sellerName: seller?.sellerBusinessName || null,
         batchNumber: product.batchNumber,
         productionDate: product.productionDate || null,
         bestBeforeDate: product.bestBeforeDate || null,

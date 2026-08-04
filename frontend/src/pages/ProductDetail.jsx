@@ -652,6 +652,11 @@ export default function ProductDetail() {
                 )}
                 {product.inciIngredients && <li><b>Ingredients:</b> {product.inciIngredients}</li>}
               </ul>
+              {product.sellerName && (
+                <p className="muted" style={{ fontSize: '0.78rem', margin: 0 }}>
+                  Provided by {product.sellerName}, who makes this product.
+                </p>
+              )}
             </div>
           )}
 

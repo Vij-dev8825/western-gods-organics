@@ -62,6 +62,37 @@ function validateSellerProduct(body) {
 
 const slugify = (s) => String(s).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 
+/** Seller-supplied links (lab report, storefront website) end up in an href on
+ * a public page. Anything that isn't plain http/https — `javascript:` above
+ * all — is dropped rather than stored, so a seller can't turn their own
+ * listing into a script link. Returns '' for anything rejected. */
+function safeUrl(value) {
+  const raw = String(value || '').trim();
+  if (!raw) return '';
+  const withScheme = /^[a-z][a-z0-9+.-]*:/i.test(raw) ? raw : `https://${raw}`;
+  try {
+    const url = new URL(withScheme);
+    return ['http:', 'https:'].includes(url.protocol) ? url.href : '';
+  } catch {
+    return '';
+  }
+}
+
+// Optional trust markers on a listing, the same ones the store fills in for
+// its own products (see admin.js) — they drive the batch panel on the product
+// page and the public /batch/:number passport. A seller's are their own
+// claims, so the product page credits them by name.
+const COMPLIANCE_FIELDS = ['batchNumber', 'productionDate', 'bestBeforeDate', 'fssaiLicense', 'inciIngredients'];
+
+function readCompliance(body, existing = {}) {
+  const out = {};
+  for (const f of COMPLIANCE_FIELDS) {
+    out[f] = body[f] !== undefined ? String(body[f] || '').trim().slice(0, 300) : (existing[f] || '');
+  }
+  out.labReportUrl = body.labReportUrl !== undefined ? safeUrl(body.labReportUrl) : (existing.labReportUrl || '');
+  return out;
+}
+
 // A seller whose product doesn't fit any existing category can propose a new
 // one (`newCategory`) instead of picking from the list. It's created straight
 // away so the listing has somewhere to live, but flagged `pending` — the
@@ -205,7 +236,9 @@ router.get('/me', requireAuth, async (req, res, next) => {
 const PUBLIC_PROFILE_FIELDS = {
   bio: { key: 'sellerBio', max: 1000 },
   location: { key: 'sellerLocation', max: 120 },
-  website: { key: 'sellerWebsite', max: 200 },
+  // `url: true` — rendered as an href on the public storefront, so it goes
+  // through safeUrl and anything that isn't http/https is discarded.
+  website: { key: 'sellerWebsite', max: 200, url: true },
   instagram: { key: 'sellerInstagram', max: 100 },
 };
 
@@ -244,8 +277,9 @@ router.put('/profile', requireAuth, requireSeller, async (req, res, next) => {
       return res.status(400).json({ success: false, message: 'Enter a valid contact email address.' });
     }
     user.sellerBusinessName = businessName;
-    for (const [field, { key, max }] of Object.entries({ ...PUBLIC_PROFILE_FIELDS, ...BUSINESS_PROFILE_FIELDS })) {
-      if (req.body[field] !== undefined) user[key] = String(req.body[field]).trim().slice(0, max);
+    for (const [field, { key, max, url }] of Object.entries({ ...PUBLIC_PROFILE_FIELDS, ...BUSINESS_PROFILE_FIELDS })) {
+      if (req.body[field] === undefined) continue;
+      user[key] = url ? safeUrl(req.body[field]) : String(req.body[field]).trim().slice(0, max);
     }
     if (req.body.logo !== undefined) user.sellerLogo = req.body.logo || '';
     await db.put('users', user);
@@ -554,12 +588,7 @@ router.post('/products', requireAuth, requireSeller, async (req, res, next) => {
       isNew: false,
       earlyAccessUntil: null,
       countryPrices: {},
-      batchNumber: '',
-      productionDate: '',
-      bestBeforeDate: '',
-      fssaiLicense: '',
-      inciIngredients: '',
-      labReportUrl: '',
+      ...readCompliance(req.body),
       marketPricePer100: null,
       sellerId: req.sellerUser.id,
       sellerModerationStatus: probationActive ? 'pending' : 'approved',
@@ -604,6 +633,7 @@ router.put('/products/:id', requireAuth, requireSeller, async (req, res, next) =
         stock: Number(s.stock || 0),
         wholesalePrice: null,
       })),
+      ...readCompliance(req.body, existing),
       updatedAt: new Date().toISOString(),
     };
     await db.put('products', updated);

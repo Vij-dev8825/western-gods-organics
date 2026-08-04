@@ -4,6 +4,11 @@ import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { getProductImage } from '../../utils/productImages';
 
+// Optional trust markers. The store fills these in for its own products and
+// they drive the batch panel on the product page plus the public /batch
+// passport a QR code points at — a seller's listing gets the same treatment.
+const COMPLIANCE = ['batchNumber', 'productionDate', 'bestBeforeDate', 'fssaiLicense', 'inciIngredients', 'labReportUrl'];
+
 const EMPTY_PRODUCT = {
   name: '',
   category: '',
@@ -13,6 +18,7 @@ const EMPTY_PRODUCT = {
   image: '',
   video: '',
   sizes: [{ label: '', price: '', mrp: '', stock: '' }],
+  ...Object.fromEntries(COMPLIANCE.map((f) => [f, ''])),
 };
 
 // Sentinel <option> value that swaps the dropdown for a free-text box.
@@ -42,6 +48,8 @@ export default function SellerProducts() {
   }
   useEffect(loadCategories, [token]);
 
+  const set = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.value }));
+
   function setSize(i, key, value) {
     setForm((f) => ({ ...f, sizes: f.sizes.map((s, idx) => (idx === i ? { ...s, [key]: value } : s)) }));
   }
@@ -62,6 +70,7 @@ export default function SellerProducts() {
       image: p.image,
       video: p.video || '',
       sizes: p.sizes.map((s) => ({ label: s.label, price: s.price, mrp: s.mrp, stock: s.stock })),
+      ...Object.fromEntries(COMPLIANCE.map((f) => [f, p[f] || ''])),
     });
     setMessage(null);
     setEditingId(p.id);
@@ -277,6 +286,49 @@ export default function SellerProducts() {
           >
             + add size
           </button>
+
+          <details style={{ marginTop: 18 }}>
+            <summary style={{ cursor: 'pointer', fontWeight: 600, fontSize: '0.85rem' }}>
+              Batch &amp; sourcing details (optional)
+            </summary>
+            <p className="muted" style={{ fontSize: '0.8rem', marginTop: 8 }}>
+              Shoppers on this site care a lot about where things come from. Anything you fill in here shows in
+              the "Batch &amp; product info" panel on your listing, credited to you, and a batch number gets its
+              own scannable page you can print a QR code for.
+            </p>
+            <div className="form-grid">
+              <div className="field">
+                <label>Batch number</label>
+                <input value={form.batchNumber} onChange={set('batchNumber')} placeholder="e.g. WG-2026-014" />
+              </div>
+              <div className="field">
+                <label>FSSAI licence on the pack</label>
+                <input value={form.fssaiLicense} onChange={set('fssaiLicense')} placeholder="12345678901234" />
+              </div>
+            </div>
+            <div className="form-grid">
+              <div className="field">
+                <label>Made / pressed on</label>
+                <input type="date" value={form.productionDate} onChange={set('productionDate')} />
+              </div>
+              <div className="field">
+                <label>Best before</label>
+                <input type="date" value={form.bestBeforeDate} onChange={set('bestBeforeDate')} />
+              </div>
+            </div>
+            <div className="field">
+              <label>Ingredients</label>
+              <textarea rows={2} value={form.inciIngredients} onChange={set('inciIngredients')}
+                placeholder="Everything in the pack, in descending order by weight." />
+            </div>
+            <div className="field">
+              <label>Lab report link</label>
+              <input value={form.labReportUrl} onChange={set('labReportUrl')} placeholder="https://…" />
+              <p className="muted" style={{ fontSize: '0.78rem', marginTop: 4 }}>
+                A public link to a purity or test report, if you have one. Must be an http or https address.
+              </p>
+            </div>
+          </details>
 
           <div className="flex gap-2" style={{ marginTop: 16 }}>
             <button className="btn btn-gold btn-sm" disabled={saving}>{saving ? 'Saving…' : 'Save product'}</button>
