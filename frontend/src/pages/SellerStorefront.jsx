@@ -86,10 +86,16 @@ export default function SellerStorefront() {
       </div>
 
       <h2 style={{ marginBottom: 14 }}>
-        {products.length} product{products.length === 1 ? '' : 's'} from {seller.businessName}
+        {data.onVacation
+          ? `${seller.businessName} is taking a break`
+          : `${products.length} product${products.length === 1 ? '' : 's'} from ${seller.businessName}`}
       </h2>
 
-      {products.length === 0 ? (
+      {data.onVacation ? (
+        <p className="muted">
+          {seller.businessName} has paused their shop for now. Their products will be back when they return.
+        </p>
+      ) : products.length === 0 ? (
         <p className="muted">No listings from this seller right now.</p>
       ) : (
         <div className="grid">

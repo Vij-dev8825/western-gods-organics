@@ -208,12 +208,32 @@ router.get('/me', requireAuth, async (req, res, next) => {
     const user = await db.get('users', req.user.id);
     if (user?.isSeller) {
       const summary = await getSellerSummary(user.id);
+      const liveListings = (await db.list('products'))
+        .filter((p) => p.sellerId === user.id && p.active !== false).length;
+      // A new seller is approved into an empty portal with no obvious first
+      // move. These are the things that actually have to be true before they
+      // can sell and be paid, in the order they matter.
+      const checklist = [
+        { key: 'listing', label: 'List your first product', done: liveListings > 0, to: '/seller/dashboard/products' },
+        { key: 'logo', label: 'Add a logo or photo', done: !!user.sellerLogo, to: '/seller/dashboard/profile' },
+        { key: 'story', label: 'Write your story', done: !!user.sellerBio, to: '/seller/dashboard/profile' },
+        { key: 'location', label: 'Say where you are based', done: !!user.sellerLocation, to: '/seller/dashboard/profile' },
+        {
+          key: 'payout',
+          label: 'Add payout details so we can pay you',
+          done: !!(user.sellerUpiId || user.sellerBankAccountNumber),
+          to: '/seller/dashboard/profile',
+        },
+      ];
       return res.json({
         success: true,
         status: 'approved',
         ...readProfile(user),
         platformFeeRate: user.sellerPlatformFeeRate || 0,
         probationRemaining: user.sellerProbationRemaining || 0,
+        onVacation: !!user.sellerOnVacation,
+        liveListings,
+        checklist,
         ...summary,
       });
     }
@@ -298,11 +318,14 @@ router.get('/storefront/:id', async (req, res, next) => {
     if (!seller?.isSeller) {
       return res.status(404).json({ success: false, message: 'Seller not found.' });
     }
-    const products = (await db.list('products')).filter(
+    // A paused shop keeps its page — the story and the name stay up — but
+    // shows nothing buyable, matching what the shop listings now do.
+    const products = seller.sellerOnVacation ? [] : (await db.list('products')).filter(
       (p) => p.sellerId === seller.id && p.active !== false && p.sellerModerationStatus !== 'pending'
     );
     res.json({
       success: true,
+      onVacation: !!seller.sellerOnVacation,
       // Public fields only — contact/compliance/payout detail from
       // BUSINESS_PROFILE_FIELDS is deliberately never exposed here.
       seller: {
@@ -531,6 +554,21 @@ router.get('/orders', requireAuth, requireSeller, async (req, res, next) => {
     }
     mine.sort((a, b) => new Date(b.placedAt) - new Date(a.placedAt));
     res.json({ success: true, orders: mine });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// PATCH /api/seller/vacation  { on } — pause or resume the whole shop in one
+// move. Deliberately a seller-level flag rather than a sweep over each
+// product's `active`: when they come back, every listing returns exactly as
+// they left it, including the ones they'd deactivated on purpose.
+router.patch('/vacation', requireAuth, requireSeller, async (req, res, next) => {
+  try {
+    const user = req.sellerUser;
+    user.sellerOnVacation = !!req.body.on;
+    await db.put('users', user);
+    res.json({ success: true, onVacation: user.sellerOnVacation });
   } catch (err) {
     next(err);
   }

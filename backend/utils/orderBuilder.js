@@ -149,6 +149,12 @@ async function buildOrderItems(items, couponCode, destCountry, userId, pointsToR
   // Computed once (not per item) since it's the same lookup regardless of
   // which/how many early-access products are in the cart.
   const qualifiesEarlyAccess = userId ? await hasEarlyAccessPerk(userId) : false;
+  // A seller on vacation has their listings hidden from the shop, but a cart
+  // filled before they paused would still check out — so the block is
+  // repeated here, where the order is actually built.
+  const pausedSellerIds = new Set(
+    (await db.list('users')).filter((u) => u.isSeller && u.sellerOnVacation).map((u) => u.id)
+  );
   let subtotal = 0;
   let stockError = null;
   const orderItems = items.map((item) => {
@@ -159,6 +165,7 @@ async function buildOrderItems(items, couponCode, destCountry, userId, pointsToR
     const earlyAccessLocked = product?.earlyAccessUntil && new Date(product.earlyAccessUntil).getTime() > Date.now() && !qualifiesEarlyAccess;
     if (!stockError) {
       if (!sizeInfo) stockError = `"${item.size}" is no longer available for this product.`;
+      else if (product?.sellerId && pausedSellerIds.has(product.sellerId)) stockError = `"${product.name}" is unavailable right now — the maker has paused their shop.`;
       else if (earlyAccessLocked) stockError = `"${product.name}" launches on ${new Date(product.earlyAccessUntil).toLocaleDateString('en-IN')} — Silver & Gold reward members get early access.`;
       else if (sizeInfo.stock <= 0) stockError = `"${product.name} (${item.size})" is currently out of stock.`;
       else if (item.quantity > sizeInfo.stock) stockError = `Only ${sizeInfo.stock} unit(s) of "${product.name} (${item.size})" left in stock.`;

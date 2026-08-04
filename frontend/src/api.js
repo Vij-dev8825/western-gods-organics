@@ -132,6 +132,7 @@ export const api = {
     getCategories: (token) => request('/seller/categories', { token }),
     getOrders: (token) => request('/seller/orders', { token }),
     getAnalytics: (token, days = 30) => request(`/seller/analytics?days=${days}`, { token }),
+    setVacation: (token, on) => request('/seller/vacation', { method: 'PATCH', body: { on }, token }),
     getProducts: (token) => request('/seller/products', { token }),
     createProduct: (token, payload) => request('/seller/products', { method: 'POST', body: payload, token }),
     updateProduct: (token, id, payload) => request(`/seller/products/${id}`, { method: 'PUT', body: payload, token }),

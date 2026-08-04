@@ -53,24 +53,31 @@ async function userHasEarlyAccess(req) {
 // routes/sellerPortal.js/admin.js), is invisible to everyone except an admin
 // or the seller who owns it — store products (no sellerId) are never
 // affected by either check.
-function isHiddenFromViewer(product, req) {
+// Resolves each distinct sellerId in one pass rather than one db.get per
+// product. Both the visibility check and the name attachment below read from
+// the result, so a request loads each seller record at most once.
+async function loadSellers(products) {
+  const ids = [...new Set(products.filter((p) => p.sellerId).map((p) => p.sellerId))];
+  if (!ids.length) return {};
+  const rows = await Promise.all(ids.map((id) => db.get('users', id)));
+  return Object.fromEntries(ids.map((id, i) => [id, rows[i]]));
+}
+
+function isHiddenFromViewer(product, req, sellerById = {}) {
   if (product.active === false) return true;
-  if (product.sellerModerationStatus === 'pending') {
-    const isOwner = req.user?.id === product.sellerId;
-    const isAdmin = req.user?.role === 'admin';
-    if (!isOwner && !isAdmin) return true;
-  }
+  const isOwner = req.user?.id === product.sellerId;
+  const isAdmin = req.user?.role === 'admin';
+  if (isOwner || isAdmin) return false;
+  if (product.sellerModerationStatus === 'pending') return true;
+  // Vacation mode — the seller has paused their whole shop, so every listing
+  // of theirs drops out at once without touching each product's own `active`
+  // flag (which they'll want back exactly as it was when they return).
+  if (product.sellerId && sellerById[product.sellerId]?.sellerOnVacation) return true;
   return false;
 }
 
-// Batch-resolves each distinct sellerId in one pass rather than one db.get
-// per product.
-async function attachSellerNames(products) {
-  const sellerIds = [...new Set(products.filter((p) => p.sellerId).map((p) => p.sellerId))];
-  if (!sellerIds.length) return products;
-  const sellers = await Promise.all(sellerIds.map((id) => db.get('users', id)));
-  const nameById = Object.fromEntries(sellerIds.map((id, i) => [id, sellers[i]?.sellerBusinessName || null]));
-  return products.map((p) => (p.sellerId ? { ...p, sellerName: nameById[p.sellerId] } : p));
+function attachSellerNames(products, sellerById) {
+  return products.map((p) => (p.sellerId ? { ...p, sellerName: sellerById[p.sellerId]?.sellerBusinessName || null } : p));
 }
 
 // GET /api/products?category=&search=&sort=&combo=true&price=&isNew=true
@@ -123,8 +130,9 @@ router.get('/', optionalAuth, async (req, res, next) => {
       products = products.filter((p) => !isEarlyAccessLocked(p));
     }
 
-    products = products.filter((p) => !isHiddenFromViewer(p, req));
-    products = await attachSellerNames(products);
+    const sellerById = await loadSellers(products);
+    products = products.filter((p) => !isHiddenFromViewer(p, req, sellerById));
+    products = attachSellerNames(products, sellerById);
 
     res.json({ success: true, count: products.length, products });
   } catch (err) {
@@ -262,12 +270,12 @@ router.get('/:id', optionalAuth, async (req, res, next) => {
         },
       });
     }
-    if (isHiddenFromViewer(product, req)) {
+    const sellerById = await loadSellers([product]);
+    if (isHiddenFromViewer(product, req, sellerById)) {
       return res.status(404).json({ success: false, message: 'Product not found.' });
     }
     if (product.sellerId) {
-      const seller = await db.get('users', product.sellerId);
-      product.sellerName = seller?.sellerBusinessName || null;
+      product.sellerName = sellerById[product.sellerId]?.sellerBusinessName || null;
     }
     product.recentOrderCount = await getRecentOrderCount(product.id);
     res.json({ success: true, product });

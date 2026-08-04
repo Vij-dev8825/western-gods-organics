@@ -1,8 +1,33 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { api } from '../../api';
+import { useAuth } from '../../context/AuthContext';
+import { useToast } from '../../context/ToastContext';
 import { useSeller } from './SellerLayout';
 
 export default function SellerDashboard() {
-  const { me } = useSeller();
+  const { me, reloadMe } = useSeller();
+  const { token } = useAuth();
+  const { showToast } = useToast();
+  const [pausing, setPausing] = useState(false);
+
+  const checklist = me.checklist || [];
+  const remaining = checklist.filter((c) => !c.done);
+
+  async function toggleVacation() {
+    const turningOn = !me.onVacation;
+    if (turningOn && !window.confirm('Pause your shop? Your listings come off the site until you switch this back on.')) return;
+    setPausing(true);
+    try {
+      await api.seller.setVacation(token, turningOn);
+      showToast(turningOn ? 'Your shop is paused.' : 'Your shop is live again.');
+      reloadMe();
+    } catch (err) {
+      showToast(err.message, 'error');
+    } finally {
+      setPausing(false);
+    }
+  }
 
   return (
     <>
@@ -14,10 +39,33 @@ export default function SellerDashboard() {
         order is delivered.
       </p>
 
+      {me.onVacation && (
+        <div className="alert alert-error" style={{ marginBottom: 20 }}>
+          <b>Your shop is paused.</b> None of your listings are on the site right now. Switch it back on below
+          when you're ready to sell again.
+        </div>
+      )}
+
       {me.probationRemaining > 0 && (
         <div className="alert" style={{ marginBottom: 20 }}>
           Your first {me.probationRemaining} listing{me.probationRemaining === 1 ? '' : 's'} will be reviewed
           before going live — after that, your listings post instantly.
+        </div>
+      )}
+
+      {remaining.length > 0 && (
+        <div className="admin-card">
+          <h3 style={{ marginTop: 0 }}>
+            Finish setting up — {checklist.length - remaining.length} of {checklist.length} done
+          </h3>
+          <ul className="seller-checklist">
+            {checklist.map((c) => (
+              <li key={c.key} className={c.done ? 'done' : ''}>
+                <span aria-hidden="true">{c.done ? '✓' : '○'}</span>
+                {c.done ? c.label : <Link to={c.to}>{c.label}</Link>}
+              </li>
+            ))}
+          </ul>
         </div>
       )}
 
@@ -63,6 +111,23 @@ export default function SellerDashboard() {
         <p className="muted" style={{ fontSize: '0.8rem', marginBottom: 0 }}>
           Payouts are made by bank transfer/UPI outside this app — your balance updates here once we've sent it.
         </p>
+      </div>
+
+      <div className="admin-card">
+        <h3 style={{ marginTop: 0 }}>{me.onVacation ? 'Your shop is paused' : 'Going away?'}</h3>
+        <p className="muted" style={{ marginTop: 0 }}>
+          {me.onVacation
+            ? 'Your listings are off the site. Turn this off and every one of them comes back exactly as you left it.'
+            : 'Pausing takes all your listings off the site at once, without changing any of them. Your page, your story and your balance stay put.'}
+        </p>
+        <button
+          type="button"
+          className={me.onVacation ? 'btn btn-gold btn-sm' : 'btn btn-outline btn-sm'}
+          disabled={pausing}
+          onClick={toggleVacation}
+        >
+          {pausing ? 'Saving…' : me.onVacation ? 'Start selling again' : 'Pause my shop'}
+        </button>
       </div>
     </>
   );

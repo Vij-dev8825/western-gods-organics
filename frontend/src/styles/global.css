@@ -2887,6 +2887,20 @@ input:focus-visible + .filter-radio { outline: 2px solid var(--gold-2); outline-
 }
 
 /* Logout sits in the seller sidebar's nav flow but is a button, not a link */
+/* Seller onboarding checklist (Seller portal -> Dashboard) */
+.seller-checklist { list-style: none; padding: 0; margin: 0; }
+.seller-checklist li {
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+  padding: 7px 0;
+  font-size: 0.9rem;
+  border-bottom: 1px solid rgba(31,61,43,0.06);
+}
+.seller-checklist li:last-child { border-bottom: none; }
+.seller-checklist li.done { color: var(--forest); opacity: 0.65; }
+.seller-checklist li span { font-weight: 700; }
+
 .seller-logout {
   display: block;
   width: 100%;
