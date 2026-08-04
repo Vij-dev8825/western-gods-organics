@@ -36,9 +36,16 @@ async function getPointsBalance(userId) {
   return ledger.reduce((sum, e) => sum + e.points, 0);
 }
 
+/** Drives the reward tier, so it counts points from orders the customer
+ * actually kept: a refunded order's `earn` is cancelled out by the matching
+ * `reversal` (see reversePointsForOrder) and stops counting toward tier
+ * progress. Without that, buying big, reaching Gold and returning everything
+ * would leave the tier standing. */
 async function getLifetimeEarnedPoints(userId) {
   const ledger = await getLedger(userId);
-  return ledger.filter((e) => e.type === 'earn').reduce((sum, e) => sum + e.points, 0);
+  return ledger
+    .filter((e) => e.type === 'earn' || e.type === 'reversal')
+    .reduce((sum, e) => sum + e.points, 0);
 }
 
 function tierForLifetimePoints(lifetimePoints) {
@@ -106,6 +113,39 @@ async function creditPointsForOrder(order) {
   }
 }
 
+/** Takes back the points earned on a delivered order that was later refunded
+ * or cancelled. Offsetting entry rather than a delete (append-only ledger),
+ * and idempotent so re-marking a return as refunded can't double-deduct.
+ *
+ * Note this only reverses what the order EARNED. Points the customer spent on
+ * the order are left alone — handing those back on top of a cash refund would
+ * pay them twice for the same return. */
+async function reversePointsForOrder(order, reason = 'refunded') {
+  const forOrder = (await db.list('loyalty-ledger')).filter((e) => e.orderId === order.id);
+  if (forOrder.some((e) => e.type === 'reversal')) return;
+  const earn = forOrder.find((e) => e.type === 'earn');
+  if (!earn) return;
+
+  await db.put('loyalty-ledger', {
+    id: uuid(),
+    userId: earn.userId,
+    orderId: order.id,
+    type: 'reversal',
+    points: -Math.abs(earn.points),
+    note: `Order ${order.orderNumber} ${reason}`,
+    createdAt: new Date().toISOString(),
+  });
+  const user = await db.get('users', earn.userId);
+  if (user) {
+    await notifyUser(user, {
+      title: `${Math.abs(earn.points)} reward points reversed`,
+      message: `Order ${order.orderNumber} was ${reason}, so the ${Math.abs(earn.points)} points earned on it have been removed from your account.`,
+      meta: { orderId: order.id },
+      channels: { inapp: true, email: true },
+    });
+  }
+}
+
 /** Records a points redemption against an order. Assumes the amount was
  * already clamped to the user's balance (see buildOrderItems). */
 async function redeemPointsForOrder(userId, order, points) {
@@ -128,6 +168,7 @@ module.exports = {
   getTierInfo,
   pointsForOrderTotal,
   creditPointsForOrder,
+  reversePointsForOrder,
   redeemPointsForOrder,
   hasEarlyAccessPerk,
   REDEEM_VALUE_INR_PER_POINT,

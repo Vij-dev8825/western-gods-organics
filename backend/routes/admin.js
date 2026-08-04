@@ -19,15 +19,25 @@ const { getCountries, getFullLiveRates } = require('./currency');
 const { translateProductText } = require('../utils/translateProduct');
 const { suggestProductAnswer } = require('../utils/aiAnswerSuggestion');
 const { imageUpload, storeUploadedFile } = require('../utils/imageUploadHandler');
-const { creditPointsForOrder } = require('../utils/loyalty');
+const { creditPointsForOrder, reversePointsForOrder } = require('../utils/loyalty');
 const { issueBottleReturnCredit } = require('../utils/orderBuilder');
 const whatsappBaileys = require('../utils/whatsappBaileys');
 const whatsappOrdering = require('../utils/whatsappOrdering');
 const { getPaymentMethodsConfig } = require('../utils/paymentMethods');
 const { getShippingSettings } = require('../utils/shippingSettings');
 const { cancelGiftCard } = require('../utils/giftCards');
-const { generateUniqueAffiliateCode, getCommissionSummary, recordPayout, creditCommissionForOrder } = require('../utils/affiliates');
-const { getSummary: getSellerSummary, recordPayout: recordSellerPayout, creditSellerEarningsForOrder } = require('../utils/sellers');
+const { generateUniqueAffiliateCode, getCommissionSummary, recordPayout, creditCommissionForOrder, reverseCommissionForOrder } = require('../utils/affiliates');
+const { getSummary: getSellerSummary, recordPayout: recordSellerPayout, creditSellerEarningsForOrder, reverseSellerEarningsForOrder } = require('../utils/sellers');
+
+/** Undoes everything a delivery credited — the customer's points, the
+ * referring affiliate's commission and each seller's share — when that sale
+ * turns out not to have stood. Each of the three is individually idempotent,
+ * so calling this twice on the same order is harmless. */
+async function reverseCreditsForOrder(order, reason) {
+  await reversePointsForOrder(order, reason);
+  await reverseCommissionForOrder(order, reason);
+  await reverseSellerEarningsForOrder(order, reason);
+}
 const {
   getEligibleRecipients,
   sendBroadcast: sendWhatsAppBroadcast,
@@ -883,6 +893,11 @@ router.patch('/orders/:id', async (req, res, next) => {
     }
     order.status = req.body.status;
     const justDelivered = order.status === 'delivered' && !order.deliveredAt;
+    // Cancelling an order that was already marked delivered (and so already
+    // paid out points, commission and seller shares) has to give all of that
+    // back. deliveredAt, not status, is the test — status has already been
+    // overwritten by the line above.
+    const cancelledAfterDelivery = order.status === 'cancelled' && !!order.deliveredAt;
     if (justDelivered) {
       order.deliveredAt = new Date().toISOString();
     }
@@ -892,6 +907,7 @@ router.patch('/orders/:id', async (req, res, next) => {
       await creditCommissionForOrder(order);
       await creditSellerEarningsForOrder(order);
     }
+    if (cancelledAfterDelivery) await reverseCreditsForOrder(order, 'cancelled');
 
     const user = await db.get('users', order.userId);
     if (user) {
@@ -931,6 +947,10 @@ router.patch('/orders/:id/return', async (req, res, next) => {
     order.returnRequest.status = req.body.status;
     order.returnRequest.updatedAt = new Date().toISOString();
     await db.put('orders', order);
+
+    // The customer is getting their money back, so the points, commission and
+    // seller shares that the delivery credited have to come back too.
+    if (req.body.status === 'refunded') await reverseCreditsForOrder(order, 'refunded');
 
     const user = await db.get('users', order.userId);
     const messages = {

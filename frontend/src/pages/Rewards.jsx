@@ -104,7 +104,7 @@ export default function Rewards() {
                 {data.history.map((e) => (
                   <tr key={e.id}>
                     <td>{new Date(e.createdAt).toLocaleDateString()}</td>
-                    <td>{e.type === 'earn' ? 'Earned' : 'Redeemed'}</td>
+                    <td>{{ earn: 'Earned', reversal: 'Reversed' }[e.type] || 'Redeemed'}</td>
                     <td className="muted">{e.note}</td>
                     <td style={{ textAlign: 'right', color: e.points > 0 ? 'var(--forest)' : 'inherit' }}>
                       {e.points > 0 ? `+${e.points}` : e.points}

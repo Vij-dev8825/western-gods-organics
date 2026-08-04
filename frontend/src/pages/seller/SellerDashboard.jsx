@@ -51,7 +51,7 @@ export default function SellerDashboard() {
               {me.history.map((e) => (
                 <tr key={e.id}>
                   <td>{new Date(e.createdAt).toLocaleDateString('en-IN')}</td>
-                  <td>{e.type === 'earn' ? `Sale — ${e.note}` : e.note}</td>
+                  <td>{e.type === 'earn' ? `Sale — ${e.note}` : e.type === 'reversal' ? `Reversed — ${e.note}` : e.note}</td>
                   <td style={{ textAlign: 'right', color: e.amount > 0 ? 'var(--forest)' : 'inherit' }}>
                     {e.amount > 0 ? `+₹${e.amount}` : `−₹${Math.abs(e.amount)}`}
                   </td>

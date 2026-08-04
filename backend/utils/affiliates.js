@@ -58,12 +58,15 @@ async function getCommissionBalance(affiliateUserId) {
 
 async function getCommissionSummary(affiliateUserId) {
   const ledger = await getLedger(affiliateUserId);
-  const totalEarned = ledger.filter((e) => e.type === 'earn').reduce((sum, e) => sum + e.amount, 0);
-  const totalPaid = ledger.filter((e) => e.type === 'payout').reduce((sum, e) => sum + Math.abs(e.amount), 0);
+  const sumOf = (type) => ledger.filter((e) => e.type === type).reduce((sum, e) => sum + Math.abs(e.amount), 0);
   return {
-    totalEarned,
-    totalPaid,
-    balance: totalEarned - totalPaid,
+    totalEarned: sumOf('earn'),
+    totalReversed: sumOf('reversal'),
+    totalPaid: sumOf('payout'),
+    // Plain sum over every entry, exactly as getCommissionBalance does, so a
+    // refund reversal shows up here instead of being silently ignored by an
+    // earned-minus-paid formula.
+    balance: ledger.reduce((sum, e) => sum + e.amount, 0),
     history: ledger.slice().sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)),
   };
 }
@@ -97,6 +100,34 @@ async function creditCommissionForOrder(order) {
   });
 }
 
+/** Takes the commission back when a delivered order is later refunded or
+ * cancelled. Offsetting entry rather than a delete (the ledger is append-only)
+ * and idempotent, so re-marking a return as refunded doesn't double-reverse. */
+async function reverseCommissionForOrder(order, reason = 'refunded') {
+  const forOrder = (await db.list('affiliate-ledger')).filter((e) => e.orderId === order.id);
+  if (forOrder.some((e) => e.type === 'reversal')) return;
+  const earn = forOrder.find((e) => e.type === 'earn');
+  if (!earn) return;
+
+  await db.put('affiliate-ledger', {
+    id: uuid(),
+    affiliateUserId: earn.affiliateUserId,
+    orderId: order.id,
+    type: 'reversal',
+    amount: -Math.abs(earn.amount),
+    note: `Order ${order.orderNumber} ${reason}`,
+    createdAt: new Date().toISOString(),
+  });
+  const affiliate = await db.get('users', earn.affiliateUserId);
+  if (affiliate) {
+    await notifyUser(affiliate, {
+      title: `₹${Math.abs(earn.amount)} commission reversed`,
+      message: `Order ${order.orderNumber} was ${reason}, so the ₹${Math.abs(earn.amount)} commission credited for it has been taken back off your balance.`,
+      channels: { inapp: true, email: true },
+    });
+  }
+}
+
 /** Records a manual payout (bank transfer/UPI, done outside this app) as a
  * negative ledger entry. Rejects an amount beyond the current balance so the
  * ledger can never go negative through normal use. */
@@ -122,5 +153,6 @@ module.exports = {
   getCommissionBalance,
   getCommissionSummary,
   creditCommissionForOrder,
+  reverseCommissionForOrder,
   recordPayout,
 };

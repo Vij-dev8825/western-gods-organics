@@ -30,12 +30,15 @@ async function getBalance(sellerId) {
 
 async function getSummary(sellerId) {
   const ledger = await getLedger(sellerId);
-  const totalEarned = ledger.filter((e) => e.type === 'earn').reduce((sum, e) => sum + e.amount, 0);
-  const totalPaid = ledger.filter((e) => e.type === 'payout').reduce((sum, e) => sum + Math.abs(e.amount), 0);
+  const sumOf = (type) => ledger.filter((e) => e.type === type).reduce((sum, e) => sum + Math.abs(e.amount), 0);
   return {
-    totalEarned,
-    totalPaid,
-    balance: totalEarned - totalPaid,
+    totalEarned: sumOf('earn'),
+    totalReversed: sumOf('reversal'),
+    totalPaid: sumOf('payout'),
+    // Derived the same way getBalance does — a plain sum over every entry —
+    // rather than earned-minus-paid, so any entry type (a refund reversal,
+    // say) is reflected here and the two can't disagree.
+    balance: ledger.reduce((sum, e) => sum + e.amount, 0),
     history: ledger.slice().sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)),
   };
 }
@@ -125,6 +128,44 @@ async function creditSellerEarningsForOrder(order) {
   }
 }
 
+/** Takes back what was credited when a delivered order is later refunded or
+ * cancelled — the sale didn't stand, so the seller's share shouldn't either.
+ *
+ * Offsetting entry rather than deleting the original: the ledger is
+ * append-only by design, and a seller looking at their history should be able
+ * to see that a sale came in and then went away again.
+ *
+ * Idempotent. An admin can flip a return to `refunded` more than once, and a
+ * cancelled-after-delivered order hits this too — a second call finds the
+ * existing reversal and does nothing. */
+async function reverseSellerEarningsForOrder(order, reason = 'refunded') {
+  const ledger = await db.list('seller-ledger');
+  const forOrder = ledger.filter((e) => e.orderId === order.id);
+  const earns = forOrder.filter((e) => e.type === 'earn');
+  const alreadyReversed = new Set(forOrder.filter((e) => e.type === 'reversal').map((e) => e.sellerId));
+
+  for (const earn of earns) {
+    if (alreadyReversed.has(earn.sellerId)) continue;
+    await db.put('seller-ledger', {
+      id: uuid(),
+      sellerId: earn.sellerId,
+      orderId: order.id,
+      type: 'reversal',
+      amount: -Math.abs(earn.amount),
+      note: `Order ${order.orderNumber} ${reason}`,
+      createdAt: new Date().toISOString(),
+    });
+    const seller = await db.get('users', earn.sellerId);
+    if (seller) {
+      await notifyUser(seller, {
+        title: `₹${Math.abs(earn.amount)} reversed from your balance`,
+        message: `Order ${order.orderNumber} was ${reason}, so the ₹${Math.abs(earn.amount)} credited for it has been taken back off your seller balance.`,
+        channels: { inapp: true, email: true },
+      });
+    }
+  }
+}
+
 /** Records a manual payout (bank transfer/UPI, done outside this app) as a
  * negative ledger entry. Rejects an amount beyond the current balance so the
  * ledger can never go negative through normal use. */
@@ -149,5 +190,6 @@ module.exports = {
   getSummary,
   computeSellerShares,
   creditSellerEarningsForOrder,
+  reverseSellerEarningsForOrder,
   recordPayout,
 };
