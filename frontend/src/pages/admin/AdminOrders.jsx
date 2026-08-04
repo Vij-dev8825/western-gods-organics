@@ -1,103 +1,263 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { api } from '../../api';
 import { useAuth } from '../../context/AuthContext';
+import { printPackingSlips } from '../../utils/packingSlip';
 
 const STATUSES = ['placed', 'confirmed', 'shipped', 'delivered', 'cancelled'];
+const PAGE_SIZE = 50;
 
 export default function AdminOrders() {
   const { token } = useAuth();
   const [orders, setOrders] = useState([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
   const [message, setMessage] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const [selected, setSelected] = useState(() => new Set());
 
-  function load() {
-    api.admin.getOrders(token).then((d) => setOrders(d.orders)).catch(() => {});
+  // `search` is what's typed; `query` is what's actually been sent. Kept apart
+  // so a search only fires on submit — otherwise every keystroke is a request.
+  const [search, setSearch] = useState('');
+  const [query, setQuery] = useState('');
+  const [status, setStatus] = useState('');
+  const [from, setFrom] = useState('');
+  const [to, setTo] = useState('');
+
+  const load = useCallback(() => {
+    api.admin.getOrders(token, { search: query, status, from, to, page, limit: PAGE_SIZE })
+      .then((d) => { setOrders(d.orders); setTotal(d.total); })
+      .catch(() => {});
+  }, [token, query, status, from, to, page]);
+  useEffect(load, [load]);
+
+  // Any change to the filters puts us back on page one — staying on page 4 of
+  // a result set that now has two pages just shows an empty table.
+  function applyFilters(e) {
+    e?.preventDefault();
+    setSelected(new Set());
+    setPage(1);
+    setQuery(search);
   }
-  useEffect(load, [token]);
+  function changeFilter(setter) {
+    return (value) => { setSelected(new Set()); setPage(1); setter(value); };
+  }
+  function clearAll() {
+    setSearch(''); setQuery(''); setStatus(''); setFrom(''); setTo('');
+    setSelected(new Set()); setPage(1);
+  }
 
-  async function setStatus(o, status) {
+  async function setStatusFor(o, next) {
     setMessage(null);
     try {
-      await api.admin.updateOrderStatus(token, o.id, status);
-      setMessage({ type: 'success', text: `Order ${o.orderNumber} marked "${status}" — customer notified.` });
+      await api.admin.updateOrderStatus(token, o.id, next);
+      setMessage({ type: 'success', text: `Order ${o.orderNumber} marked "${next}" — customer notified.` });
       load();
     } catch (err) {
       setMessage({ type: 'error', text: err.message });
     }
   }
 
+  function toggle(id) {
+    setSelected((s) => {
+      const next = new Set(s);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  }
+  const allShown = orders.length > 0 && orders.every((o) => selected.has(o.id));
+  function toggleAll() {
+    setSelected(allShown ? new Set() : new Set(orders.map((o) => o.id)));
+  }
+
+  // Sequential, not Promise.all: each one emails and WhatsApps the customer,
+  // and firing fifty of those at once is how you get rate-limited.
+  async function bulkStatus(next) {
+    const ids = orders.filter((o) => selected.has(o.id));
+    if (!ids.length) return;
+    if (!window.confirm(`Mark ${ids.length} order(s) as "${next}"? Each customer gets notified.`)) return;
+    setBusy(true);
+    setMessage(null);
+    let done = 0;
+    const failed = [];
+    for (const o of ids) {
+      try {
+        await api.admin.updateOrderStatus(token, o.id, next);
+        done += 1;
+      } catch {
+        failed.push(o.orderNumber);
+      }
+    }
+    setBusy(false);
+    setSelected(new Set());
+    setMessage(failed.length
+      ? { type: 'error', text: `${done} updated. Failed: ${failed.join(', ')}` }
+      : { type: 'success', text: `${done} order(s) marked "${next}".` });
+    load();
+  }
+
+  const selectedOrders = orders.filter((o) => selected.has(o.id));
+  const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const filtering = !!(query || status || from || to);
+
   return (
     <>
       <div className="admin-head">
         <h1>Orders</h1>
+        <span className="muted" style={{ fontSize: '0.85rem' }}>
+          {total} order{total === 1 ? '' : 's'}{filtering ? ' match' : ''}
+        </span>
       </div>
 
       {message && <div className={`alert alert-${message.type}`}>{message.text}</div>}
 
+      <form className="admin-card order-filters" onSubmit={applyFilters}>
+        <div className="field" style={{ flex: '2 1 220px' }}>
+          <label>Search</label>
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Order number, name, phone or product"
+          />
+        </div>
+        <div className="field" style={{ flex: '1 1 130px' }}>
+          <label>Status</label>
+          <select className="select" value={status} onChange={(e) => changeFilter(setStatus)(e.target.value)}>
+            <option value="">Any</option>
+            {STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
+          </select>
+        </div>
+        <div className="field" style={{ flex: '1 1 130px' }}>
+          <label>From</label>
+          <input type="date" value={from} onChange={(e) => changeFilter(setFrom)(e.target.value)} />
+        </div>
+        <div className="field" style={{ flex: '1 1 130px' }}>
+          <label>To</label>
+          <input type="date" value={to} onChange={(e) => changeFilter(setTo)(e.target.value)} />
+        </div>
+        <div className="flex gap-1">
+          <button className="btn btn-gold btn-sm">Search</button>
+          {filtering && <button type="button" className="btn btn-ghost btn-sm" onClick={clearAll}>Clear</button>}
+        </div>
+      </form>
+
+      {selected.size > 0 && (
+        <div className="admin-card bulk-bar">
+          <b>{selected.size} selected</b>
+          <button type="button" className="btn btn-outline btn-sm" disabled={busy} onClick={() => bulkStatus('confirmed')}>
+            Mark confirmed
+          </button>
+          <button type="button" className="btn btn-outline btn-sm" disabled={busy} onClick={() => bulkStatus('shipped')}>
+            Mark shipped
+          </button>
+          <button type="button" className="btn btn-outline btn-sm" disabled={busy} onClick={() => bulkStatus('delivered')}>
+            Mark delivered
+          </button>
+          <button type="button" className="btn btn-gold btn-sm" onClick={() => printPackingSlips(selectedOrders)}>
+            Print packing slips
+          </button>
+          {busy && <span className="muted">Working…</span>}
+        </div>
+      )}
+
       <div className="admin-card">
         {orders.length === 0 ? (
-          <p className="muted">No orders yet.</p>
+          <p className="muted">{filtering ? 'No orders match those filters.' : 'No orders yet.'}</p>
         ) : (
-          <table className="admin-table">
-            <thead>
-              <tr><th>Order</th><th>Customer</th><th>Items</th><th>Total</th><th>Status → change (notifies customer)</th></tr>
-            </thead>
-            <tbody>
-              {orders.map((o) => (
-                <tr key={o.id}>
-                  <td>
-                    <b>{o.orderNumber}</b>
-                    <div className="muted" style={{ fontSize: '0.75rem' }}>
-                      {new Date(o.createdAt).toLocaleString('en-IN')}
-                    </div>
-                  </td>
-                  <td>
-                    {o.customer?.name || '—'}
-                    <div className="muted" style={{ fontSize: '0.75rem' }}>{o.customer?.phone}</div>
-                  </td>
-                  <td>
-                    {o.items.map((i) => (
-                      <div key={`${i.productId}-${i.size}`} style={{ fontSize: '0.82rem' }}>
-                        {i.quantity}× {i.name} ({i.size})
-                      </div>
-                    ))}
-                    {o.isGift && (
-                      <div className="muted" style={{ fontSize: '0.75rem', marginTop: 4 }}>
-                        🎁 Gift{o.giftMessage ? `: "${o.giftMessage}"` : ''}
-                      </div>
-                    )}
-                    {o.giftCardApplied > 0 && (
-                      <div className="muted" style={{ fontSize: '0.75rem', marginTop: 4 }}>
-                        Gift card {o.giftCardCode} applied: −₹{o.giftCardApplied}
-                      </div>
-                    )}
-                    {o.affiliateCode && (
-                      <div className="muted" style={{ fontSize: '0.75rem', marginTop: 4 }}>
-                        🤝 Affiliate: {o.affiliateCode}
-                      </div>
-                    )}
-                  </td>
-                  <td>
-                    ₹{o.total}
-                    {o.paymentMethod === 'cod_advance' && (
-                      <div className="muted" style={{ fontSize: '0.72rem' }}>
-                        ₹{o.advancePaid} paid · ₹{o.total - o.advancePaid} cash due
-                      </div>
-                    )}
-                    {o.paymentMethod === 'razorpay' && (
-                      <div className="muted" style={{ fontSize: '0.72rem' }}>Paid online</div>
-                    )}
-                  </td>
-                  <td>
-                    <select className="select" value={o.status} onChange={(e) => setStatus(o, e.target.value)}>
-                      {STATUSES.map((s) => (
-                        <option key={s} value={s}>{s}</option>
-                      ))}
-                    </select>
-                  </td>
+          <>
+            <table className="admin-table">
+              <thead>
+                <tr>
+                  <th style={{ width: 32 }}>
+                    <input type="checkbox" checked={allShown} onChange={toggleAll} aria-label="Select all on this page" />
+                  </th>
+                  <th>Order</th><th>Customer</th><th>Items</th><th>Total</th>
+                  <th>Status → change (notifies customer)</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {orders.map((o) => (
+                  <tr key={o.id}>
+                    <td>
+                      <input
+                        type="checkbox"
+                        checked={selected.has(o.id)}
+                        onChange={() => toggle(o.id)}
+                        aria-label={`Select order ${o.orderNumber}`}
+                      />
+                    </td>
+                    <td>
+                      <b>{o.orderNumber}</b>
+                      <div className="muted" style={{ fontSize: '0.75rem' }}>
+                        {new Date(o.createdAt).toLocaleString('en-IN')}
+                      </div>
+                    </td>
+                    <td>
+                      {o.customer?.name || o.address?.name || '—'}
+                      <div className="muted" style={{ fontSize: '0.75rem' }}>{o.customer?.phone || o.address?.phone}</div>
+                    </td>
+                    <td>
+                      {o.items.map((i) => (
+                        <div key={`${i.productId}-${i.size}`} style={{ fontSize: '0.82rem' }}>
+                          {i.quantity}× {i.name} ({i.size})
+                        </div>
+                      ))}
+                      {o.isGift && (
+                        <div className="muted" style={{ fontSize: '0.75rem', marginTop: 4 }}>
+                          🎁 Gift{o.giftMessage ? `: "${o.giftMessage}"` : ''}
+                        </div>
+                      )}
+                      {o.giftCardApplied > 0 && (
+                        <div className="muted" style={{ fontSize: '0.75rem', marginTop: 4 }}>
+                          Gift card {o.giftCardCode} applied: −₹{o.giftCardApplied}
+                        </div>
+                      )}
+                      {o.affiliateCode && (
+                        <div className="muted" style={{ fontSize: '0.75rem', marginTop: 4 }}>
+                          🤝 Affiliate: {o.affiliateCode}
+                        </div>
+                      )}
+                    </td>
+                    <td>
+                      ₹{o.total}
+                      {o.paymentMethod === 'cod_advance' && (
+                        <div className="muted" style={{ fontSize: '0.72rem' }}>
+                          ₹{o.advancePaid} paid · ₹{o.total - o.advancePaid} cash due
+                        </div>
+                      )}
+                      {o.paymentMethod === 'razorpay' && (
+                        <div className="muted" style={{ fontSize: '0.72rem' }}>Paid online</div>
+                      )}
+                    </td>
+                    <td>
+                      <select className="select" value={o.status} onChange={(e) => setStatusFor(o, e.target.value)}>
+                        {STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
+                      </select>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+
+            {pages > 1 && (
+              <div className="flex gap-2" style={{ alignItems: 'center', marginTop: 14, flexWrap: 'wrap' }}>
+                <button
+                  type="button" className="btn btn-outline btn-sm"
+                  disabled={page <= 1}
+                  onClick={() => { setSelected(new Set()); setPage((p) => p - 1); }}
+                >
+                  ← Newer
+                </button>
+                <span className="muted">Page {page} of {pages}</span>
+                <button
+                  type="button" className="btn btn-outline btn-sm"
+                  disabled={page >= pages}
+                  onClick={() => { setSelected(new Set()); setPage((p) => p + 1); }}
+                >
+                  Older →
+                </button>
+              </div>
+            )}
+          </>
         )}
       </div>
     </>

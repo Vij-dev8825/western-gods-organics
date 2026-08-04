@@ -202,7 +202,14 @@ export const api = {
     updateBanner: (token, id, patch) => request(`/admin/banners/${id}`, { method: 'PATCH', body: patch, token }),
     deleteBanner: (token, id) => request(`/admin/banners/${id}`, { method: 'DELETE', token }),
 
-    getOrders: (token) => request('/admin/orders', { token }),
+    // No params returns every order (AdminReturns/AdminBottleReturns rely on
+    // that); pass filters/limit to get a page plus a total.
+    getOrders: (token, params) => {
+      const qs = params ? new URLSearchParams(
+        Object.entries(params).filter(([, v]) => v !== '' && v != null)
+      ).toString() : '';
+      return request(`/admin/orders${qs ? `?${qs}` : ''}`, { token });
+    },
     updateOrderStatus: (token, id, status) =>
       request(`/admin/orders/${id}`, { method: 'PATCH', body: { status }, token }),
     updateReturnStatus: (token, id, status) =>

@@ -2887,6 +2887,22 @@ input:focus-visible + .filter-radio { outline: 2px solid var(--gold-2); outline-
 }
 
 /* Logout sits in the seller sidebar's nav flow but is a button, not a link */
+/* Admin orders: filter bar + bulk action bar */
+.order-filters {
+  display: flex;
+  gap: 12px;
+  align-items: flex-end;
+  flex-wrap: wrap;
+}
+.order-filters .field { margin-bottom: 0; }
+.bulk-bar {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+  border-left: 3px solid var(--gold-3);
+}
+
 /* Public maker directory (/sellers) */
 .maker-grid {
   display: grid;

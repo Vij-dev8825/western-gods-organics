@@ -865,17 +865,60 @@ router.delete('/banners/:id', async (req, res, next) => {
 /* ---------------------------------- Orders --------------------------------- */
 
 // GET /api/admin/orders
+// GET /api/admin/orders?search=&status=&from=&to=&page=&limit=
+//
+// Filtering and paging are opt-in: with no query params this still returns
+// every order, because AdminReturns and AdminBottleReturns both read the whole
+// list and filter it themselves. Pass `limit` and you get a page plus a
+// `total` — which is what the Orders screen does, so it stays usable once
+// there are thousands of orders rather than rendering all of them at once.
 router.get('/orders', async (req, res, next) => {
   try {
     const [orders, users] = await Promise.all([db.list('orders'), db.list('users')]);
-    const withCustomer = orders
+    // Map, not users.find() per order — that was O(orders × users), which at a
+    // few thousand of each is millions of comparisons on every page load.
+    const userById = new Map(users.map((u) => [u.id, u]));
+
+    let list = orders
       .slice()
       .reverse()
       .map((o) => {
-        const u = users.find((x) => x.id === o.userId);
+        const u = userById.get(o.userId);
         return { ...o, customer: u ? { name: u.name, phone: u.phone } : null };
       });
-    res.json({ success: true, orders: withCustomer });
+
+    const { search, status, from, to } = req.query;
+    if (status) list = list.filter((o) => o.status === status);
+    if (from) {
+      const fromTs = new Date(from).getTime();
+      list = list.filter((o) => new Date(o.createdAt).getTime() >= fromTs);
+    }
+    if (to) {
+      // Inclusive of the whole end day, not midnight at its start — picking
+      // the same date for both ends should find that day's orders.
+      const toTs = new Date(to).getTime() + 24 * 60 * 60 * 1000;
+      list = list.filter((o) => new Date(o.createdAt).getTime() < toTs);
+    }
+    if (search) {
+      const q = String(search).trim().toLowerCase();
+      // Both the account and the delivery address are searched: a guest
+      // checkout has no user record at all, so the address is the only place
+      // that customer's name and number exist.
+      list = list.filter((o) =>
+        (o.orderNumber || '').toLowerCase().includes(q)
+        || (o.customer?.name || '').toLowerCase().includes(q)
+        || (o.address?.name || '').toLowerCase().includes(q)
+        || (o.customer?.phone || '').includes(q)
+        || (o.address?.phone || '').includes(q)
+        || (o.items || []).some((i) => (i.name || '').toLowerCase().includes(q)));
+    }
+
+    const total = list.length;
+    const limit = Number(req.query.limit) > 0 ? Math.min(200, Number(req.query.limit)) : null;
+    const page = Math.max(1, Number(req.query.page) || 1);
+    if (limit) list = list.slice((page - 1) * limit, page * limit);
+
+    res.json({ success: true, orders: list, total, page, limit });
   } catch (err) {
     next(err);
   }
