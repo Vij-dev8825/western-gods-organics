@@ -59,6 +59,18 @@ export default function AdminCategories() {
     }
   }
 
+  // Sellers can propose a category while listing a product; it's created
+  // immediately but hidden from the shop's category nav until approved here.
+  async function approve(c) {
+    try {
+      await api.admin.updateCategory(token, c.id, { pending: false });
+      setMessage({ type: 'success', text: `"${c.label}" is now live in the category menu.` });
+      load();
+    } catch (err) {
+      setMessage({ type: 'error', text: err.message });
+    }
+  }
+
   async function del(c) {
     if (!window.confirm(`Delete category "${c.label}"?`)) return;
     try {
@@ -95,9 +107,22 @@ export default function AdminCategories() {
             {categories.map((c) => (
               <tr key={c.id}>
                 <td><img className="thumb" src={getProductImage(c.image)} alt="" /></td>
-                <td><b>{c.label}</b></td>
+                <td>
+                  <b>{c.label}</b>
+                  {c.pending && (
+                    <>
+                      <br />
+                      <span className="pill warn">Proposed by {c.proposedByName || 'a seller'}</span>
+                    </>
+                  )}
+                </td>
                 <td><code>{c.id}</code></td>
                 <td>
+                  {c.pending && (
+                    <>
+                      <button className="link-btn" onClick={() => approve(c)}><b>approve</b></button>{' '}
+                    </>
+                  )}
                   <button className="link-btn" onClick={() => rename(c)}>rename</button>{' '}
                   <button
                     className="link-btn"

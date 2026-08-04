@@ -136,7 +136,11 @@ router.get('/', optionalAuth, async (req, res, next) => {
 router.get('/categories', async (req, res, next) => {
   try {
     const [categories, products] = await Promise.all([db.list('categories'), db.list('products')]);
-    const sorted = categories.slice().sort((a, b) => (a.sort || 0) - (b.sort || 0));
+    // `pending` is set on a category a seller proposed while listing a product
+    // — it stays off the shop's category nav until an admin approves it.
+    const sorted = categories
+      .filter((c) => !c.pending)
+      .sort((a, b) => (a.sort || 0) - (b.sort || 0));
     res.json({
       success: true,
       categories: sorted.map((c) => ({

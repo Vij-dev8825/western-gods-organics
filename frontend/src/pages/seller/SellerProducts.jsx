@@ -7,12 +7,16 @@ import { getProductImage } from '../../utils/productImages';
 const EMPTY_PRODUCT = {
   name: '',
   category: '',
+  newCategory: '',
   shortDescription: '',
   description: '',
   image: '',
   video: '',
   sizes: [{ label: '', price: '', mrp: '', stock: '' }],
 };
+
+// Sentinel <option> value that swaps the dropdown for a free-text box.
+const NEW_CATEGORY = '__new__';
 
 export default function SellerProducts() {
   const { token } = useAuth();
@@ -30,9 +34,13 @@ export default function SellerProducts() {
     api.seller.getProducts(token).then((d) => setProducts(d.products)).catch(() => {});
   }
   useEffect(load, [token]);
-  useEffect(() => {
-    api.getCategories().then((d) => setCategories(d.categories)).catch(() => {});
-  }, []);
+
+  // The seller-scoped list, not the public one — it also includes categories
+  // this seller proposed that are still awaiting review.
+  function loadCategories() {
+    api.seller.getCategories(token).then((d) => setCategories(d.categories)).catch(() => {});
+  }
+  useEffect(loadCategories, [token]);
 
   function setSize(i, key, value) {
     setForm((f) => ({ ...f, sizes: f.sizes.map((s, idx) => (idx === i ? { ...s, [key]: value } : s)) }));
@@ -48,6 +56,7 @@ export default function SellerProducts() {
     setForm({
       name: p.name,
       category: p.category,
+      newCategory: '',
       shortDescription: p.shortDescription,
       description: p.description,
       image: p.image,
@@ -94,16 +103,25 @@ export default function SellerProducts() {
     e.preventDefault();
     setSaving(true);
     setMessage(null);
+    // The sentinel never reaches the server — the typed name goes as
+    // `newCategory` and the backend resolves it to a slug.
+    const addingCategory = form.category === NEW_CATEGORY;
+    const payload = {
+      ...form,
+      category: addingCategory ? '' : form.category,
+      newCategory: addingCategory ? form.newCategory : '',
+    };
     try {
       if (editingId === 'new') {
-        await api.seller.createProduct(token, form);
+        await api.seller.createProduct(token, payload);
         setMessage({ type: 'success', text: 'Product submitted.' });
       } else {
-        await api.seller.updateProduct(token, editingId, form);
+        await api.seller.updateProduct(token, editingId, payload);
         setMessage({ type: 'success', text: 'Product updated.' });
       }
       setEditingId(null);
       load();
+      if (addingCategory) loadCategories();
     } catch (err) {
       setMessage({ type: 'error', text: err.message });
     } finally {
@@ -145,11 +163,31 @@ export default function SellerProducts() {
               >
                 <option value="">Select…</option>
                 {categories.map((c) => (
-                  <option key={c.slug} value={c.slug}>{c.label}</option>
+                  <option key={c.slug} value={c.slug}>
+                    {c.label}{c.pending ? ' (awaiting review)' : ''}
+                  </option>
                 ))}
+                <option value={NEW_CATEGORY}>+ Add a new category…</option>
               </select>
             </div>
           </div>
+
+          {form.category === NEW_CATEGORY && (
+            <div className="field">
+              <label>New category name</label>
+              <input
+                value={form.newCategory}
+                onChange={(e) => setForm((f) => ({ ...f, newCategory: e.target.value }))}
+                placeholder="e.g. Mustard Oil"
+                maxLength={60}
+                required
+              />
+              <p className="muted" style={{ fontSize: '0.78rem', marginTop: 4 }}>
+                Your product goes live as normal. The new category is reviewed before it appears in the
+                shop's category menu — if one already exists under a similar name, we'll use that instead.
+              </p>
+            </div>
+          )}
 
           <div className="field">
             <label>Photo</label>
@@ -260,7 +298,7 @@ export default function SellerProducts() {
                 <tr key={p.id}>
                   <td>{p.image && <img className="thumb" src={getProductImage(p.image)} alt="" />}</td>
                   <td><b>{p.name}</b></td>
-                  <td>{p.category}</td>
+                  <td>{categories.find((c) => c.slug === p.category)?.label || p.category}</td>
                   <td>
                     {p.sizes.map((s) => (
                       <span className="pill" key={s.label}>{s.label} · ₹{s.price} · {s.stock} left</span>

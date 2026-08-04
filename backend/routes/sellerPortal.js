@@ -60,6 +60,67 @@ function validateSellerProduct(body) {
   return null;
 }
 
+const slugify = (s) => String(s).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+
+// A seller whose product doesn't fit any existing category can propose a new
+// one (`newCategory`) instead of picking from the list. It's created straight
+// away so the listing has somewhere to live, but flagged `pending` — the
+// public category list hides pending ones, so nobody can push an unreviewed
+// tile onto the shop's category nav. An admin clears the flag in
+// Admin → Categories. A label or slug that already matches reuses that
+// category rather than minting a near-duplicate ("Cold Pressed Oils" next to
+// the existing "Cold-Pressed Oils").
+async function resolveCategory(body, seller) {
+  const proposed = (body.newCategory || '').trim();
+  if (!proposed) return { slug: body.category || '' };
+  if (proposed.length < 2 || proposed.length > 60) {
+    return { error: 'A category name needs to be between 2 and 60 characters.' };
+  }
+  const slug = slugify(proposed);
+  if (!slug) return { error: 'Use some letters or numbers in the category name.' };
+
+  const categories = await db.list('categories');
+  const existing = categories.find(
+    (c) => c.id === slug || (c.label || '').trim().toLowerCase() === proposed.toLowerCase()
+  );
+  if (existing) return { slug: existing.id };
+
+  await db.put('categories', {
+    id: slug,
+    label: proposed,
+    image: '',
+    sort: categories.length,
+    pending: true,
+    proposedBy: seller.id,
+    proposedByName: seller.sellerBusinessName || '',
+    createdAt: new Date().toISOString(),
+  });
+  if (ADMIN_EMAIL) {
+    sendMail({
+      to: ADMIN_EMAIL,
+      subject: `New category proposed: ${proposed}`,
+      text: `${seller.sellerBusinessName || 'A seller'} listed a product under a new category "${proposed}".\n\n`
+        + 'It stays hidden from the shop\'s category nav until you approve it in Admin → Categories.',
+    }).catch(() => {});
+  }
+  return { slug, created: true };
+}
+
+// GET /api/seller/categories — approved categories plus any this seller has
+// proposed and is still waiting on, so their own pending category is pickable
+// for the next listing instead of having to be typed out again.
+router.get('/categories', requireAuth, requireSeller, async (req, res, next) => {
+  try {
+    const categories = (await db.list('categories'))
+      .filter((c) => !c.pending || c.proposedBy === req.sellerUser.id)
+      .sort((a, b) => (a.sort || 0) - (b.sort || 0))
+      .map((c) => ({ slug: c.id, label: c.label, pending: !!c.pending }));
+    res.json({ success: true, categories });
+  } catch (err) {
+    next(err);
+  }
+});
+
 // POST /api/seller/apply  { businessName, phone?, whatTheySell }
 router.post('/apply', requireAuth, async (req, res, next) => {
   try {
@@ -415,17 +476,18 @@ router.get('/products', requireAuth, requireSeller, async (req, res, next) => {
 // sellerProbationRemaining hits 0 they go live immediately.
 router.post('/products', requireAuth, requireSeller, async (req, res, next) => {
   try {
-    const error = validateSellerProduct(req.body);
+    const category = await resolveCategory(req.body, req.sellerUser);
+    if (category.error) return res.status(400).json({ success: false, message: category.error });
+    const error = validateSellerProduct({ ...req.body, category: category.slug });
     if (error) return res.status(400).json({ success: false, message: error });
 
-    const slug = String(req.body.name).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-    const id = `${slug}-${uuid().slice(0, 8)}`;
+    const id = `${slugify(req.body.name)}-${uuid().slice(0, 8)}`;
     const probationActive = (req.sellerUser.sellerProbationRemaining || 0) > 0;
 
     const product = {
       id,
       name: req.body.name,
-      category: req.body.category,
+      category: category.slug,
       shortDescription: req.body.shortDescription || '',
       description: req.body.description || '',
       shortDescriptions: {},
@@ -477,13 +539,15 @@ router.put('/products/:id', requireAuth, requireSeller, async (req, res, next) =
     if (!existing || existing.sellerId !== req.sellerUser.id) {
       return res.status(404).json({ success: false, message: 'Product not found.' });
     }
-    const error = validateSellerProduct(req.body);
+    const category = await resolveCategory(req.body, req.sellerUser);
+    if (category.error) return res.status(400).json({ success: false, message: category.error });
+    const error = validateSellerProduct({ ...req.body, category: category.slug });
     if (error) return res.status(400).json({ success: false, message: error });
 
     const updated = {
       ...existing,
       name: req.body.name,
-      category: req.body.category,
+      category: category.slug,
       shortDescription: req.body.shortDescription || '',
       description: req.body.description || '',
       image: req.body.image || '',
