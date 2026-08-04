@@ -53,6 +53,7 @@ const COLLECTIONS = [
   'product-questions',
   'seller-applications',
   'seller-ledger',
+  'seller-payout-requests',
   'seller-messages',
 ];
 

@@ -192,6 +192,14 @@ export default function AdminSellers() {
                   <tr key={s.id}>
                     <td>
                       <b>{s.sellerBusinessName}</b>
+                      {s.payoutRequest && (
+                        <div>
+                          <span className="pill warn">
+                            Payout requested ₹{s.payoutRequest.amount} ·{' '}
+                            {new Date(s.payoutRequest.createdAt).toLocaleDateString('en-IN')}
+                          </span>
+                        </div>
+                      )}
                       <div className="muted" style={{ fontSize: '0.75rem' }}>{s.contactPhone || s.phone}</div>
                       {s.contactEmail && <div className="muted" style={{ fontSize: '0.72rem' }}>{s.contactEmail}</div>}
                       <details style={{ marginTop: 4 }}>

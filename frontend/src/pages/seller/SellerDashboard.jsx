@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../../api';
 import { useAuth } from '../../context/AuthContext';
@@ -10,9 +10,46 @@ export default function SellerDashboard() {
   const { token } = useAuth();
   const { showToast } = useToast();
   const [pausing, setPausing] = useState(false);
+  const [payout, setPayout] = useState({ request: null, minPayout: 500 });
+  const [requesting, setRequesting] = useState(false);
 
   const checklist = me.checklist || [];
   const remaining = checklist.filter((c) => !c.done);
+
+  useEffect(() => {
+    if (!token) return;
+    api.seller.getPayoutRequest(token).then(setPayout).catch(() => {});
+  }, [token]);
+
+  // Fetched rather than linked: the API authenticates with a bearer token, so
+  // a plain <a download> would just get a 401 file.
+  async function downloadStatement() {
+    try {
+      const res = await fetch('/api/seller/statement.csv', { headers: { Authorization: `Bearer ${token}` } });
+      if (!res.ok) throw new Error("Couldn't build your statement just now.");
+      const url = URL.createObjectURL(await res.blob());
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `statement-${new Date().toISOString().slice(0, 10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      showToast(err.message, 'error');
+    }
+  }
+
+  async function requestPayout() {
+    setRequesting(true);
+    try {
+      const res = await api.seller.requestPayout(token);
+      setPayout((p) => ({ ...p, request: res.request }));
+      showToast("Payout requested — we'll be in touch.");
+    } catch (err) {
+      showToast(err.message, 'error');
+    } finally {
+      setRequesting(false);
+    }
+  }
 
   async function toggleVacation() {
     const turningOn = !me.onVacation;
@@ -108,8 +145,30 @@ export default function SellerDashboard() {
             </tbody>
           </table>
         )}
-        <p className="muted" style={{ fontSize: '0.8rem', marginBottom: 0 }}>
-          Payouts are made by bank transfer/UPI outside this app — your balance updates here once we've sent it.
+        <div className="flex gap-2" style={{ alignItems: 'center', flexWrap: 'wrap', marginTop: 10 }}>
+          {payout.request ? (
+            <span className="pill warn">
+              Payout of ₹{payout.request.amount} requested on{' '}
+              {new Date(payout.request.createdAt).toLocaleDateString('en-IN')}
+            </span>
+          ) : (
+            <button
+              type="button"
+              className="btn btn-gold btn-sm"
+              disabled={requesting || me.balance < payout.minPayout}
+              onClick={requestPayout}
+              title={me.balance < payout.minPayout ? `Minimum payout is ₹${payout.minPayout}` : ''}
+            >
+              {requesting ? 'Requesting…' : 'Request a payout'}
+            </button>
+          )}
+          <button type="button" className="btn btn-outline btn-sm" onClick={downloadStatement}>
+            Download statement (CSV)
+          </button>
+        </div>
+        <p className="muted" style={{ fontSize: '0.8rem', margin: '10px 0 0' }}>
+          Payouts are made by bank transfer/UPI outside this app — your balance updates here once we've sent
+          it. Minimum payout ₹{payout.minPayout}.
         </p>
       </div>
 

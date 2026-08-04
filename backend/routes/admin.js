@@ -1505,8 +1505,10 @@ router.patch('/seller-applications/:id', async (req, res, next) => {
 router.get('/sellers', async (req, res, next) => {
   try {
     const sellers = (await db.list('users')).filter((u) => u.isSeller);
+    const pendingRequests = (await db.list('seller-payout-requests')).filter((r) => r.status === 'pending');
     const withSummary = await Promise.all(
       sellers.map(async (u) => ({
+        payoutRequest: pendingRequests.find((r) => r.sellerId === u.id) || null,
         id: u.id,
         name: u.name,
         phone: u.phone,
@@ -1544,6 +1546,13 @@ router.post('/sellers/:id/payout', async (req, res, next) => {
       return res.status(404).json({ success: false, message: 'Seller not found.' });
     }
     await recordSellerPayout(req.params.id, Number(req.body.amount), req.body.note);
+    // Recording the transfer is what answers a payout request, so clear it
+    // here rather than making the admin remember a second step.
+    const open = (await db.list('seller-payout-requests'))
+      .find((r) => r.sellerId === req.params.id && r.status === 'pending');
+    if (open) {
+      await db.put('seller-payout-requests', { ...open, status: 'settled', settledAt: new Date().toISOString() });
+    }
     const summary = await getSellerSummary(req.params.id);
     res.json({ success: true, ...summary });
   } catch (err) {
