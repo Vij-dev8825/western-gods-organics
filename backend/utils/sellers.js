@@ -40,44 +40,74 @@ async function getSummary(sellerId) {
   };
 }
 
-/** Re-fetches each line item's CURRENT product record to find its sellerId
+/** What each seller in an order is owed, keyed by sellerId.
+ *
+ * Re-fetches each line item's CURRENT product record to find its sellerId
  * (never trusts anything snapshotted on the order itself) — an order can mix
  * a seller's products with the store's own or with other sellers', so unlike
  * affiliate commission (one affiliate per whole order), each seller's share
  * of order-level discount/points/gift-card is apportioned pro-rata by their
  * share of the pre-discount subtotal, then that seller's own platform-fee
- * rate is applied only to their own net share. */
-async function creditSellerEarningsForOrder(order) {
-  const products = await db.list('products');
-  const productById = Object.fromEntries(products.map((p) => [p.id, p]));
+ * rate is applied only to their own net share.
+ *
+ * Shared by the crediting path below and by the seller's own orders list
+ * (routes/sellerPortal.js), which shows what an order will be worth before
+ * it's delivered — one implementation so the estimate and the eventual
+ * credit can't drift apart.
+ *
+ * When calling this in a loop (the seller's orders list does, once per order),
+ * pass the same `cache` object every time — the product table and each seller
+ * record are then read once for the whole loop instead of once per order. */
+async function computeSellerShares(order, cache = {}) {
+  if (!cache.productById) {
+    cache.productById = Object.fromEntries((await db.list('products')).map((p) => [p.id, p]));
+  }
+  if (!cache.sellerById) cache.sellerById = {};
+  const { productById, sellerById } = cache;
 
-  const sellerSubtotals = {};
+  const sellerItems = {};
   let orderSubtotal = 0;
   for (const item of order.items) {
     const lineTotal = item.price * item.quantity;
     orderSubtotal += lineTotal;
     const sellerId = productById[item.productId]?.sellerId;
-    if (sellerId) sellerSubtotals[sellerId] = (sellerSubtotals[sellerId] || 0) + lineTotal;
+    if (!sellerId) continue;
+    if (!sellerItems[sellerId]) sellerItems[sellerId] = { subtotal: 0, items: [] };
+    sellerItems[sellerId].subtotal += lineTotal;
+    sellerItems[sellerId].items.push(item);
   }
-  if (orderSubtotal <= 0) return;
+  if (orderSubtotal <= 0) return {};
 
-  for (const [sellerId, sellerSubtotal] of Object.entries(sellerSubtotals)) {
-    const seller = await db.get('users', sellerId);
+  const shares = {};
+  for (const [sellerId, { subtotal, items }] of Object.entries(sellerItems)) {
+    if (!(sellerId in sellerById)) sellerById[sellerId] = await db.get('users', sellerId);
+    const seller = sellerById[sellerId];
     if (!seller?.isSeller) continue;
 
-    const shareRatio = sellerSubtotal / orderSubtotal;
+    const shareRatio = subtotal / orderSubtotal;
     const shareOfDiscount = (order.discount || 0) * shareRatio;
     const shareOfPoints = (order.pointsRedeemed || 0) * shareRatio;
     const shareOfGiftCard = (order.giftCardApplied || 0) * shareRatio;
-    const netShare = Math.max(0, sellerSubtotal - shareOfDiscount - shareOfPoints - shareOfGiftCard);
+    const netShare = Math.max(0, subtotal - shareOfDiscount - shareOfPoints - shareOfGiftCard);
 
     // Fail closed if the rate is somehow missing (shouldn't happen — the
     // approval route always sets it) rather than risk crediting the full
     // amount on an unset rate.
     const feeRate = seller.sellerPlatformFeeRate ?? 100;
-    const amount = Math.round(netShare * (1 - feeRate / 100));
-    if (amount <= 0) continue;
+    shares[sellerId] = {
+      seller,
+      items,
+      subtotal,
+      amount: Math.round(netShare * (1 - feeRate / 100)),
+    };
+  }
+  return shares;
+}
 
+async function creditSellerEarningsForOrder(order) {
+  const shares = await computeSellerShares(order);
+  for (const [sellerId, { seller, amount }] of Object.entries(shares)) {
+    if (amount <= 0) continue;
     await db.put('seller-ledger', {
       id: uuid(),
       sellerId,
@@ -117,6 +147,7 @@ module.exports = {
   getLedger,
   getBalance,
   getSummary,
+  computeSellerShares,
   creditSellerEarningsForOrder,
   recordPayout,
 };

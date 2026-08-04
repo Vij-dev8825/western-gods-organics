@@ -22,15 +22,15 @@ export default function SellerDashboard() {
       )}
 
       <div className="stat-tiles">
-        <Link to="/seller/products" className="stat-tile">
+        <Link to="/seller/dashboard/orders" className="stat-tile">
           <b className="gold-text">₹{me.balance}</b>
           <span>Available balance</span>
         </Link>
-        <Link to="/seller/products" className="stat-tile">
+        <Link to="/seller/dashboard/orders" className="stat-tile">
           <b className="gold-text">₹{me.totalEarned}</b>
           <span>Total earned</span>
         </Link>
-        <Link to="/seller/products" className="stat-tile">
+        <Link to="/seller/dashboard/orders" className="stat-tile">
           <b className="gold-text">₹{me.totalPaid}</b>
           <span>Total paid out</span>
         </Link>

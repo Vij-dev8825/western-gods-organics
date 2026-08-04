@@ -10,7 +10,7 @@ const cloudinary = require('../utils/cloudinary');
 const { compressVideoAndStore } = require('../utils/mediaStore');
 const { notifyUser } = require('../utils/notify');
 const { sendMail } = require('../utils/mailer');
-const { getSummary: getSellerSummary } = require('../utils/sellers');
+const { getSummary: getSellerSummary, computeSellerShares } = require('../utils/sellers');
 
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || process.env.CONTACT_NOTIFY_EMAIL;
 
@@ -454,6 +454,50 @@ router.post('/upload-video', requireAuth, requireSeller, handleVideoUpload, asyn
     res.status(201).json({ success: true, url });
   } catch (err) {
     if (req.file?.path) fs.unlink(req.file.path, () => {});
+    next(err);
+  }
+});
+
+// GET /api/seller/orders — every order containing one of this seller's
+// products, newest first.
+//
+// Deliberately withholds the customer's identity: the store fulfils these
+// orders, so a seller has no reason to see a shopper's name, phone, email or
+// street address. They get the city/state for context and nothing more. If
+// sellers ever dispatch directly, this is the one place that has to change.
+//
+// `earned` is the real ledger entry once the order is delivered and credited;
+// before that it's `estimated`, computed by the same function that will do the
+// crediting, so the two can never disagree.
+router.get('/orders', requireAuth, requireSeller, async (req, res, next) => {
+  try {
+    const sellerId = req.sellerUser.id;
+    const [orders, ledger] = await Promise.all([db.list('orders'), db.list('seller-ledger')]);
+    const earnedByOrder = Object.fromEntries(
+      ledger.filter((e) => e.sellerId === sellerId && e.orderId).map((e) => [e.orderId, e.amount])
+    );
+
+    const mine = [];
+    const cache = {}; // one products/users read for the whole loop, not per order
+    for (const order of orders) {
+      const share = (await computeSellerShares(order, cache))[sellerId];
+      if (!share) continue;
+      mine.push({
+        id: order.id,
+        orderNumber: order.orderNumber,
+        status: order.status,
+        placedAt: order.createdAt,
+        items: share.items,
+        subtotal: share.subtotal,
+        estimated: share.amount,
+        earned: earnedByOrder[order.id] ?? null,
+        destination: [order.address?.city, order.address?.state].filter(Boolean).join(', '),
+        returnStatus: order.returnRequest?.status || null,
+      });
+    }
+    mine.sort((a, b) => new Date(b.placedAt) - new Date(a.placedAt));
+    res.json({ success: true, orders: mine });
+  } catch (err) {
     next(err);
   }
 });
