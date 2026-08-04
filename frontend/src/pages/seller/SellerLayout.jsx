@@ -9,6 +9,7 @@ const links = [
   { to: '/seller/dashboard', label: 'Dashboard', end: true },
   { to: '/seller/dashboard/orders', label: 'Orders' },
   { to: '/seller/dashboard/products', label: 'My Products' },
+  { to: '/seller/dashboard/insights', label: 'Insights' },
   { to: '/seller/dashboard/questions', label: 'Customer Questions' },
   { to: '/seller/dashboard/profile', label: 'Storefront Profile' },
   { to: '/seller/dashboard/chat', label: 'Chat with Us' },

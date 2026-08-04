@@ -55,6 +55,7 @@ import SellerRegister from './pages/seller/SellerRegister';
 import SellerLayout from './pages/seller/SellerLayout';
 import SellerDashboard from './pages/seller/SellerDashboard';
 import SellerOrders from './pages/seller/SellerOrders';
+import SellerInsights from './pages/seller/SellerInsights';
 import SellerProducts from './pages/seller/SellerProducts';
 import SellerQuestions from './pages/seller/SellerQuestions';
 import SellerProfile from './pages/seller/SellerProfile';
@@ -178,6 +179,7 @@ export default function App() {
       <Route path="/seller/dashboard" element={<SellerLayout />}>
         <Route index element={<SellerDashboard />} />
         <Route path="orders" element={<SellerOrders />} />
+        <Route path="insights" element={<SellerInsights />} />
         <Route path="products" element={<SellerProducts />} />
         <Route path="questions" element={<SellerQuestions />} />
         <Route path="profile" element={<SellerProfile />} />

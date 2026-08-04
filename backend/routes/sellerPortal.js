@@ -536,6 +536,83 @@ router.get('/orders', requireAuth, requireSeller, async (req, res, next) => {
   }
 });
 
+// GET /api/seller/analytics?days=30 — how this seller's own listings are
+// doing. Same shape as the admin dashboard's sales trend so the frontend can
+// reuse its markup, but scoped to one seller and measured in that seller's
+// share rather than order totals — their share is the number that's actually
+// theirs. Cancelled orders are left out; a sale that didn't happen isn't data.
+router.get('/analytics', requireAuth, requireSeller, async (req, res, next) => {
+  try {
+    const sellerId = req.sellerUser.id;
+    const days = Math.min(365, Math.max(7, Number(req.query.days) || 30));
+    const since = Date.now() - days * 24 * 60 * 60 * 1000;
+
+    const [orders, products] = await Promise.all([db.list('orders'), db.list('products')]);
+    const mine = products.filter((p) => p.sellerId === sellerId);
+
+    const byDay = {};
+    const byProduct = {};
+    let totalUnits = 0;
+    let totalShare = 0;
+    let orderCount = 0;
+
+    const cache = {};
+    for (const order of orders) {
+      if (order.status === 'cancelled') continue;
+      if (new Date(order.createdAt).getTime() < since) continue;
+      const share = (await computeSellerShares(order, cache))[sellerId];
+      if (!share) continue;
+
+      orderCount += 1;
+      totalShare += share.amount;
+      const day = order.createdAt.slice(0, 10);
+      byDay[day] = byDay[day] || { date: day, revenue: 0, orders: 0 };
+      byDay[day].revenue += share.amount;
+      byDay[day].orders += 1;
+
+      for (const item of share.items) {
+        totalUnits += item.quantity;
+        const row = (byProduct[item.productId] = byProduct[item.productId]
+          || { productId: item.productId, name: item.name, units: 0, revenue: 0 });
+        row.units += item.quantity;
+        row.revenue += item.price * item.quantity;
+      }
+    }
+
+    // Every day in the window, including the empty ones — a gap-free bar chart
+    // reads as "quiet week", a compressed one reads as "steady sales".
+    const trend = [];
+    for (let i = days - 1; i >= 0; i--) {
+      const date = new Date(Date.now() - i * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+      trend.push(byDay[date] || { date, revenue: 0, orders: 0 });
+    }
+
+    const lowStock = [];
+    for (const p of mine) {
+      if (p.active === false) continue;
+      for (const s of p.sizes || []) {
+        if ((s.stock ?? 0) <= 5) lowStock.push({ productId: p.id, name: p.name, size: s.label, stock: s.stock ?? 0 });
+      }
+    }
+
+    res.json({
+      success: true,
+      days,
+      totals: { orders: orderCount, units: totalUnits, earnings: totalShare, liveListings: mine.filter((p) => p.active !== false).length },
+      trend,
+      topProducts: Object.values(byProduct).sort((a, b) => b.units - a.units).slice(0, 8),
+      // A listing with no sales in the window is worth surfacing too — it's
+      // the one the seller can actually do something about.
+      idleListings: mine
+        .filter((p) => p.active !== false && !byProduct[p.id])
+        .map((p) => ({ productId: p.id, name: p.name })),
+      lowStock: lowStock.sort((a, b) => a.stock - b.stock),
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
 // GET /api/seller/products — the caller's own listings only.
 router.get('/products', requireAuth, requireSeller, async (req, res, next) => {
   try {

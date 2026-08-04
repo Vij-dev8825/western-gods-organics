@@ -131,6 +131,7 @@ export const api = {
     uploadVideo: (token, formData) => request('/seller/upload-video', { method: 'POST', formData, token }),
     getCategories: (token) => request('/seller/categories', { token }),
     getOrders: (token) => request('/seller/orders', { token }),
+    getAnalytics: (token, days = 30) => request(`/seller/analytics?days=${days}`, { token }),
     getProducts: (token) => request('/seller/products', { token }),
     createProduct: (token, payload) => request('/seller/products', { method: 'POST', body: payload, token }),
     updateProduct: (token, id, payload) => request(`/seller/products/${id}`, { method: 'PUT', body: payload, token }),
