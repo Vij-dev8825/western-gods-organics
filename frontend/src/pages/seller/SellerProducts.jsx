@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { api } from '../../api';
+import { useLang } from '../../i18n';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { getProductImage } from '../../utils/productImages';
@@ -26,6 +27,7 @@ const NEW_CATEGORY = '__new__';
 
 export default function SellerProducts() {
   const { token } = useAuth();
+  const { t } = useLang();
   const { showToast } = useToast();
   const [categories, setCategories] = useState([]);
   const [products, setProducts] = useState([]);
@@ -133,7 +135,7 @@ export default function SellerProducts() {
     try {
       if (editingId === 'new' || editingId === 'quick') {
         await api.seller.createProduct(token, payload);
-        setMessage({ type: 'success', text: 'Added. We\'ll take it from here.' });
+        setMessage({ type: 'success', text: t('sellAdded') });
       } else {
         await api.seller.updateProduct(token, editingId, payload);
         setMessage({ type: 'success', text: 'Product updated.' });
@@ -156,11 +158,11 @@ export default function SellerProducts() {
   return (
     <>
       <div className="admin-head">
-        <h1>My Products</h1>
+        <h1>{t('sellNavProducts')}</h1>
         {editingId === null && (
           <div className="flex gap-1" style={{ flexWrap: 'wrap' }}>
-            <button type="button" className="btn btn-gold btn-sm" onClick={startQuick}>+ Quick add</button>
-            <button type="button" className="btn btn-outline btn-sm" onClick={startNew}>Add with all details</button>
+            <button type="button" className="btn btn-gold btn-sm" onClick={startQuick}>{t('sellQuickAdd')}</button>
+            <button type="button" className="btn btn-outline btn-sm" onClick={startNew}>{t('sellFullAdd')}</button>
           </div>
         )}
       </div>
@@ -169,13 +171,11 @@ export default function SellerProducts() {
 
       {editingId === 'quick' && (
         <form className="admin-card" onSubmit={save}>
-          <h3 style={{ marginTop: 0 }}>Add something to sell</h3>
-          <p className="muted" style={{ fontSize: '0.83rem', marginTop: 0 }}>
-            Just the basics. You can add a longer description, more sizes and a video later by editing it.
-          </p>
+          <h3 style={{ marginTop: 0 }}>{t('sellQuickTitle')}</h3>
+          <p className="muted" style={{ fontSize: '0.83rem', marginTop: 0 }}>{t('sellQuickHelp')}</p>
 
           <div className="field">
-            <label>A photo of it</label>
+            <label>{t('sellQuickPhoto')}</label>
             {form.image && (
               <img
                 src={getProductImage(form.image)}
@@ -189,13 +189,13 @@ export default function SellerProducts() {
 
           <div className="form-grid">
             <div className="field">
-              <label>What is it?</label>
+              <label>{t('sellQuickWhat')}</label>
               <input value={form.name} onChange={set('name')} placeholder="e.g. Groundnut oil" required autoFocus />
             </div>
             <div className="field">
-              <label>What kind of thing is it?</label>
+              <label>{t('sellQuickKind')}</label>
               <select className="select" value={form.category} onChange={set('category')} required>
-                <option value="">Choose…</option>
+                <option value="">{t('sellChoose')}</option>
                 {categories.map((c) => (
                   <option key={c.slug} value={c.slug}>{c.label}{c.pending ? ' (awaiting review)' : ''}</option>
                 ))}
@@ -204,7 +204,7 @@ export default function SellerProducts() {
           </div>
 
           <div className="field">
-            <label>What size?</label>
+            <label>{t('sellQuickSize')}</label>
             <div className="flex gap-1" style={{ flexWrap: 'wrap', marginBottom: 6 }}>
               {['250 ml', '500 ml', '1 L', '5 L', '250 g', '500 g', '1 kg'].map((s) => (
                 <button
@@ -220,14 +220,14 @@ export default function SellerProducts() {
             <input
               value={form.sizes[0].label}
               onChange={(e) => setSize(0, 'label', e.target.value)}
-              placeholder="or type your own"
+              placeholder={t('sellQuickSizeOwn')}
               required
             />
           </div>
 
           <div className="form-grid">
             <div className="field">
-              <label>Price for one (₹)</label>
+              <label>{t('sellQuickPrice')}</label>
               <input
                 type="number" min="0" inputMode="numeric"
                 value={form.sizes[0].price}
@@ -236,7 +236,7 @@ export default function SellerProducts() {
               />
             </div>
             <div className="field">
-              <label>How many do you have?</label>
+              <label>{t('sellQuickStock')}</label>
               <input
                 type="number" min="0" inputMode="numeric"
                 value={form.sizes[0].stock}
@@ -248,9 +248,9 @@ export default function SellerProducts() {
 
           <div className="flex gap-2" style={{ marginTop: 16 }}>
             <button className="btn btn-gold btn-sm" disabled={saving || uploading}>
-              {saving ? 'Adding…' : 'Add it'}
+              {saving ? t('sellQuickSaving') : t('sellQuickSubmit')}
             </button>
-            <button type="button" className="btn btn-ghost btn-sm" onClick={() => setEditingId(null)}>Cancel</button>
+            <button type="button" className="btn btn-ghost btn-sm" onClick={() => setEditingId(null)}>{t('sellCancel')}</button>
           </div>
         </form>
       )}
@@ -260,7 +260,7 @@ export default function SellerProducts() {
           <h3 style={{ marginTop: 0 }}>{editingId === 'new' ? 'Add a product' : 'Edit product'}</h3>
           <div className="form-grid">
             <div className="field">
-              <label>What is it?</label>
+              <label>{t('sellQuickWhat')}</label>
               <input value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} required />
             </div>
             <div className="field">
@@ -437,7 +437,7 @@ export default function SellerProducts() {
 
           <div className="flex gap-2" style={{ marginTop: 16 }}>
             <button className="btn btn-gold btn-sm" disabled={saving}>{saving ? 'Saving…' : 'Save product'}</button>
-            <button type="button" className="btn btn-ghost btn-sm" onClick={() => setEditingId(null)}>Cancel</button>
+            <button type="button" className="btn btn-ghost btn-sm" onClick={() => setEditingId(null)}>{t('sellCancel')}</button>
           </div>
         </form>
       )}

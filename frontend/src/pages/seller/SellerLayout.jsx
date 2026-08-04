@@ -1,18 +1,19 @@
 import { useCallback, useEffect, useState } from 'react';
 import { NavLink, Outlet, Navigate, useNavigate, useOutletContext } from 'react-router-dom';
 import { api } from '../../api';
+import { useLang, LANGS } from '../../i18n';
 import { useAuth } from '../../context/AuthContext';
 import ChakkiWheel from '../../components/ChakkiWheel';
 import { IconMenu } from '../../components/Icons';
 
 const links = [
-  { to: '/seller/dashboard', label: 'Dashboard', end: true },
-  { to: '/seller/dashboard/orders', label: 'Orders' },
-  { to: '/seller/dashboard/products', label: 'My Products' },
-  { to: '/seller/dashboard/insights', label: 'Insights' },
-  { to: '/seller/dashboard/questions', label: 'Customer Questions' },
-  { to: '/seller/dashboard/profile', label: 'Storefront Profile' },
-  { to: '/seller/dashboard/chat', label: 'Chat with Us' },
+  { to: '/seller/dashboard', key: 'sellNavDashboard', end: true },
+  { to: '/seller/dashboard/orders', key: 'sellNavOrders' },
+  { to: '/seller/dashboard/products', key: 'sellNavProducts' },
+  { to: '/seller/dashboard/insights', key: 'sellNavInsights' },
+  { to: '/seller/dashboard/questions', key: 'sellNavQuestions' },
+  { to: '/seller/dashboard/profile', key: 'sellNavProfile' },
+  { to: '/seller/dashboard/chat', key: 'sellNavChat' },
 ];
 
 /** Child pages read the shared seller record (business name, balances,
@@ -23,6 +24,7 @@ export function useSeller() {
 
 export default function SellerLayout() {
   const { loading, isLoggedIn, token, logout } = useAuth();
+  const { t, lang, setLang } = useLang();
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
   const [me, setMe] = useState(null);
@@ -71,7 +73,7 @@ export default function SellerLayout() {
           </span>
           <div>
             <b className="gold-text">{me.businessName}</b>
-            <span>Seller Portal</span>
+            <span>{t('sellPortal')}</span>
           </div>
           <button
             type="button"
@@ -92,11 +94,22 @@ export default function SellerLayout() {
               onClick={() => setMenuOpen(false)}
             >
               <span className="admin-nav-label">
-                {l.label}
+                {t(l.key)}
                 {l.to === '/seller/dashboard/chat' && unread > 0 && <span className="badge-count static">{unread}</span>}
               </span>
             </NavLink>
           ))}
+          {/* Most sellers here are more comfortable in Tamil or Hindi than in
+              English, so the switch sits in the nav rather than buried in a
+              settings page. */}
+          <select
+            className="lang-select seller-lang"
+            aria-label={t('sellLanguage')}
+            value={lang}
+            onChange={(e) => setLang(e.target.value)}
+          >
+            {LANGS.map((l) => <option key={l.code} value={l.code}>{l.label}</option>)}
+          </select>
           <button
             type="button"
             className="admin-back seller-logout"
@@ -106,7 +119,7 @@ export default function SellerLayout() {
               navigate('/seller/login', { replace: true });
             }}
           >
-            Log out
+            {t('sellLogout')}
           </button>
         </nav>
       </aside>

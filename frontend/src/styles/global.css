@@ -2945,6 +2945,12 @@ input:focus-visible + .filter-radio { outline: 2px solid var(--gold-2); outline-
 .seller-checklist li.done { color: var(--forest); opacity: 0.65; }
 .seller-checklist li span { font-weight: 700; }
 
+.seller-lang {
+  margin: 14px 22px 0;
+  width: calc(100% - 44px);
+  font-size: 0.82rem;
+}
+
 .seller-logout {
   display: block;
   width: 100%;
