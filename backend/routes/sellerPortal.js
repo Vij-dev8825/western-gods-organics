@@ -220,7 +220,7 @@ router.get('/me', requireAuth, async (req, res, next) => {
         { key: 'location', label: 'Say where you are based', done: !!user.sellerLocation, to: '/seller/dashboard/profile' },
         {
           key: 'payout',
-          label: 'Add payout details so we can pay you',
+          label: 'Add your UPI ID so we can pay you',
           done: !!(user.sellerUpiId || user.sellerBankAccountNumber),
           to: '/seller/dashboard/profile',
         },

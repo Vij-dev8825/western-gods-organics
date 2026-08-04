@@ -10,7 +10,7 @@ const BENEFITS = [
   {
     icon: '🏪',
     title: 'Your own storefront page',
-    text: 'A public page with your business name, your story and all your listings, linked from every product you sell.',
+    text: 'A public page with your name, your story and everything you sell, linked from every product of yours.',
   },
   {
     icon: '💸',
@@ -35,7 +35,7 @@ const BENEFITS = [
 ];
 
 const STEPS = [
-  { n: 1, title: 'Apply', text: 'Tell us your business name and what you make. Takes about two minutes.' },
+  { n: 1, title: 'Apply', text: 'Tell us your name and what you make. Takes about two minutes — no company or licence needed.' },
   { n: 2, title: 'We review', text: 'We look at every application by hand — usually within a few business days.' },
   { n: 3, title: 'List your products', text: 'Add photos, sizes, prices and stock from your seller dashboard.' },
   { n: 4, title: 'Get paid', text: 'Your share of each delivered order is credited to your balance and paid out by bank transfer or UPI.' },
@@ -65,6 +65,14 @@ const FAQS = [
   {
     q: 'Do I need an existing online store?',
     a: 'No. Plenty of good makers sell only in person or through WhatsApp. If you make something well, that is enough to apply.',
+  },
+  {
+    q: 'Do I need a company, GST or an FSSAI licence?',
+    a: 'Not to apply, and for most people not at all. Farmers and small makers normally join as suppliers: you sell to us, we sell it on through our shop under our own food licence, and your name goes on the product as the maker. If you do hold your own FSSAI registration and would rather sell in your own name, tell us in your application and we will set you up that way.',
+  },
+  {
+    q: 'What if I only have a phone and no computer?',
+    a: 'That is fine — everything here works on a phone, and photos taken on your phone are exactly what we want. If you get stuck, message us and we will help you put your first item up.',
   },
 ];
 

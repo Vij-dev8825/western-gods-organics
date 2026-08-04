@@ -256,17 +256,21 @@ export default function SellerRegister() {
             </div>
           )}
           <p className="muted" style={{ marginTop: 0 }}>
-            Last step — tell us who you are and what you make.
+            Last step — tell us who you are and what you make. No company, GST or licence needed to start.
           </p>
           <div className="field">
-            <label>Business name</label>
+            <label>Your name, or your farm's name</label>
             <input
               value={business.businessName}
               onChange={(e) => setBusiness((b) => ({ ...b, businessName: e.target.value }))}
-              placeholder="e.g. Muthu Family Oil Press"
+              placeholder="e.g. Muthu, or Muthu Family Oil Press"
               required
               autoFocus
             />
+            <p className="muted" style={{ fontSize: '0.78rem', marginTop: 4 }}>
+              This is what shoppers see on your products. Your own name is perfectly fine — you don't need a
+              company.
+            </p>
           </div>
           <div className="field">
             <label>Contact phone</label>

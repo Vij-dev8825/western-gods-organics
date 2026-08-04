@@ -70,22 +70,22 @@ export default function SellerProfile() {
 
           <div className="form-grid">
             <div className="field">
-              <label>Business name</label>
+              <label>Your name, or your farm's name</label>
               <input value={form.businessName} onChange={set('businessName')} required />
             </div>
             <div className="field">
-              <label>Where you're based</label>
+              <label>Which town or village?</label>
               <input value={form.location} onChange={set('location')} placeholder="e.g. Coimbatore, Tamil Nadu" />
             </div>
           </div>
 
           <div className="field">
-            <label>Your story</label>
+            <label>Tell people about yourself</label>
             <textarea
               rows={4}
               value={form.bio}
               onChange={set('bio')}
-              placeholder="Tell shoppers who you are and how you make what you sell."
+              placeholder="Who you are and how you make what you sell. A few honest lines is all it takes."
             />
           </div>
 
@@ -114,65 +114,83 @@ export default function SellerProfile() {
           </div>
         </div>
 
+        {/* Payouts come before the paperwork now: a UPI id is the one thing a
+            farmer must fill in, and burying it under GST fields meant it got
+            skipped. */}
         <div className="admin-card">
-          <h3 style={{ marginTop: 0 }}>Business &amp; contact details</h3>
+          <h3 style={{ marginTop: 0 }}>How you want to be paid</h3>
           <p className="muted" style={{ fontSize: '0.83rem', marginTop: 0 }}>
-            Private — only you and the Western Gods Organics team can see this. Shoppers never do.
+            Only you and our team see this. A UPI ID on its own is enough — that's how we pay most people.
+          </p>
+
+          <div className="field">
+            <label>Your UPI ID</label>
+            <input value={form.upiId} onChange={set('upiId')} placeholder="yourname@upi" />
+            <p className="muted" style={{ fontSize: '0.78rem', marginTop: 4 }}>
+              The same one you use on GPay, PhonePe or Paytm.
+            </p>
+          </div>
+
+          <details>
+            <summary style={{ cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600 }}>
+              Or pay me into my bank account instead
+            </summary>
+            <div className="form-grid" style={{ marginTop: 10 }}>
+              <div className="field">
+                <label>Name on the account</label>
+                <input value={form.bankAccountName} onChange={set('bankAccountName')} />
+              </div>
+              <div className="field">
+                <label>Account number</label>
+                <input value={form.bankAccountNumber} onChange={set('bankAccountNumber')} />
+              </div>
+            </div>
+            <div className="field" style={{ maxWidth: 260 }}>
+              <label>IFSC code</label>
+              <input value={form.bankIfsc} onChange={set('bankIfsc')} placeholder="HDFC0001234" />
+            </div>
+          </details>
+        </div>
+
+        <div className="admin-card">
+          <h3 style={{ marginTop: 0 }}>How we reach you</h3>
+          <p className="muted" style={{ fontSize: '0.83rem', marginTop: 0 }}>
+            Private — shoppers never see any of this.
           </p>
 
           <div className="form-grid">
             <div className="field">
-              <label>Contact email</label>
-              <input type="email" value={form.contactEmail} onChange={set('contactEmail')} placeholder="you@example.com" />
+              <label>Phone we should call</label>
+              <input value={form.contactPhone} onChange={set('contactPhone')} placeholder={user?.phone} />
             </div>
             <div className="field">
-              <label>Contact phone</label>
-              <input value={form.contactPhone} onChange={set('contactPhone')} placeholder={user?.phone} />
+              <label>Email (only if you have one)</label>
+              <input type="email" value={form.contactEmail} onChange={set('contactEmail')} placeholder="you@example.com" />
             </div>
           </div>
 
           <div className="field">
-            <label>Business address</label>
-            <textarea rows={3} value={form.address} onChange={set('address')} placeholder="Where you make or dispatch from." />
-          </div>
-
-          <div className="form-grid">
-            <div className="field">
-              <label>GSTIN (if registered)</label>
-              <input value={form.gstin} onChange={set('gstin')} placeholder="22AAAAA0000A1Z5" />
-            </div>
-            <div className="field">
-              <label>FSSAI licence (for edible products)</label>
-              <input value={form.fssai} onChange={set('fssai')} placeholder="12345678901234" />
-            </div>
+            <label>Where do we collect from?</label>
+            <textarea rows={3} value={form.address} onChange={set('address')} placeholder="The address where you make it or where we'd pick it up." />
           </div>
         </div>
 
         <div className="admin-card">
-          <h3 style={{ marginTop: 0 }}>Where we send your payouts</h3>
+          <h3 style={{ marginTop: 0 }}>Registration numbers</h3>
           <p className="muted" style={{ fontSize: '0.83rem', marginTop: 0 }}>
-            We pay your balance out by UPI or bank transfer. Fill in whichever you prefer — UPI alone is
-            enough. Private to you and our team.
+            {me.sellerMode === 'marketplace'
+              ? 'You sell in your own name, so your FSSAI registration number belongs here.'
+              : "Leave these empty if you don't have them. Most farmers and small makers don't, and you don't need them — we sell your goods under our own licence."}
           </p>
-
-          <div className="field">
-            <label>UPI ID</label>
-            <input value={form.upiId} onChange={set('upiId')} placeholder="yourname@upi" />
-          </div>
-
           <div className="form-grid">
             <div className="field">
-              <label>Bank account name</label>
-              <input value={form.bankAccountName} onChange={set('bankAccountName')} />
+              <label>FSSAI number {me.sellerMode === 'marketplace' ? '' : '(optional)'}</label>
+              <input value={form.fssai} onChange={set('fssai')} placeholder="12345678901234" />
             </div>
             <div className="field">
-              <label>Account number</label>
-              <input value={form.bankAccountNumber} onChange={set('bankAccountNumber')} />
+              <label>GST number (optional)</label>
+              <input value={form.gstin} onChange={set('gstin')} placeholder="22AAAAA0000A1Z5" />
             </div>
-          </div>
-          <div className="field" style={{ maxWidth: 260 }}>
-            <label>IFSC code</label>
-            <input value={form.bankIfsc} onChange={set('bankIfsc')} placeholder="HDFC0001234" />
           </div>
         </div>
 

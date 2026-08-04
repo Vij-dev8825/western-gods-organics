@@ -159,7 +159,7 @@ export default function SellerProducts() {
           <h3 style={{ marginTop: 0 }}>{editingId === 'new' ? 'Add a product' : 'Edit product'}</h3>
           <div className="form-grid">
             <div className="field">
-              <label>Product name</label>
+              <label>What is it?</label>
               <input value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} required />
             </div>
             <div className="field">
@@ -237,14 +237,14 @@ export default function SellerProducts() {
           </div>
 
           <div className="field">
-            <label>Short description</label>
+            <label>One line about it</label>
             <input
               value={form.shortDescription}
               onChange={(e) => setForm((f) => ({ ...f, shortDescription: e.target.value }))}
             />
           </div>
           <div className="field">
-            <label>Full description</label>
+            <label>Tell people more (optional)</label>
             <textarea
               rows={3}
               value={form.description}
@@ -252,10 +252,14 @@ export default function SellerProducts() {
             />
           </div>
 
-          <label style={{ fontWeight: 600, fontSize: '0.85rem' }}>Sizes, rates &amp; stock</label>
+          <label style={{ fontWeight: 600, fontSize: '0.85rem' }}>Sizes and price</label>
+          <p className="muted" style={{ fontSize: '0.78rem', margin: '2px 0 6px' }}>
+            One row per size you sell. "Was ₹" is the old price if you want a crossed-out one shown — leave it
+            empty otherwise.
+          </p>
           <table className="admin-table sizes-editor">
             <thead>
-              <tr><th>Size label</th><th>Price ₹</th><th>MRP ₹</th><th>Stock</th><th /></tr>
+              <tr><th>Size</th><th>Price ₹</th><th>Was ₹</th><th>How many</th><th /></tr>
             </thead>
             <tbody>
               {form.sizes.map((s, i) => (
