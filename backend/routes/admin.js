@@ -1471,10 +1471,19 @@ router.patch('/seller-applications/:id', async (req, res, next) => {
       user.sellerBusinessName = application.businessName;
       user.sellerPlatformFeeRate = platformFeeRate;
       user.sellerProbationRemaining = 3;
+      // Most people applying here are farmers and small dealers with no
+      // company and no food licence of their own. They can't legally be the
+      // seller of record for a packaged food sale, so by default we buy from
+      // them and sell it ourselves under our own FSSAI — they're credited as
+      // the source, not billed as the seller. Someone who does hold their own
+      // registration can be switched to 'marketplace' and sell directly.
+      user.sellerMode = req.body.sellerMode === 'marketplace' ? 'marketplace' : 'supplier';
       await db.put('users', user);
       await notifyUser(user, {
         title: 'Your seller application was approved!',
-        message: `Welcome aboard — you can now list products at /sell-with-us. Your first 3 listings will be reviewed before going live; after that they're posted instantly.`,
+        message: user.sellerMode === 'marketplace'
+          ? 'Welcome aboard — you can list your products now at /seller/dashboard. Your first 3 listings are checked before they go live; after that they post straight away.'
+          : "Welcome aboard — you can add what you have to sell now at /seller/dashboard. We buy it from you and sell it on our shop, with your name on it as the maker. Your first 3 items are checked before they go live.",
         channels: { inapp: true, email: true },
       });
     } else if (req.body.status === 'rejected') {
@@ -1516,6 +1525,7 @@ router.get('/sellers', async (req, res, next) => {
         sellerBusinessName: u.sellerBusinessName,
         sellerPlatformFeeRate: u.sellerPlatformFeeRate || 0,
         sellerProbationRemaining: u.sellerProbationRemaining || 0,
+        sellerMode: u.sellerMode || 'supplier',
         // Contact/compliance/payout detail the seller filled in — the admin
         // needs this to actually send a payout and to check compliance.
         contactEmail: u.sellerContactEmail || '',
@@ -1531,6 +1541,27 @@ router.get('/sellers', async (req, res, next) => {
       }))
     );
     res.json({ success: true, sellers: withSummary });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// PATCH /api/admin/sellers/:id/mode  { mode } — move a seller between the two
+// arrangements. 'supplier' is the default: we buy from them and sell it under
+// our own food licence, crediting them as the maker. 'marketplace' makes them
+// the seller of record, which only suits someone holding their own FSSAI
+// registration — so the switch is deliberate and admin-only.
+router.patch('/sellers/:id/mode', async (req, res, next) => {
+  try {
+    const mode = req.body.mode;
+    if (!['supplier', 'marketplace'].includes(mode)) {
+      return res.status(400).json({ success: false, message: "Mode must be 'supplier' or 'marketplace'." });
+    }
+    const user = await db.get('users', req.params.id);
+    if (!user?.isSeller) return res.status(404).json({ success: false, message: 'Seller not found.' });
+    user.sellerMode = mode;
+    await db.put('users', user);
+    res.json({ success: true, sellerMode: mode });
   } catch (err) {
     next(err);
   }

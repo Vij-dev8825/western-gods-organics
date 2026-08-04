@@ -236,6 +236,7 @@ export const api = {
     getSellerApplications: (token, status) => request(`/admin/seller-applications${status ? `?status=${status}` : ''}`, { token }),
     decideSellerApplication: (token, id, payload) => request(`/admin/seller-applications/${id}`, { method: 'PATCH', body: payload, token }),
     getSellers: (token) => request('/admin/sellers', { token }),
+    setSellerMode: (token, id, mode) => request(`/admin/sellers/${id}/mode`, { method: 'PATCH', body: { mode }, token }),
     recordSellerPayout: (token, id, payload) => request(`/admin/sellers/${id}/payout`, { method: 'POST', body: payload, token }),
     getPendingSellerProducts: (token) => request('/admin/seller-products/pending', { token }),
     moderateSellerProduct: (token, id, approve) => request(`/admin/seller-products/${id}/moderate`, { method: 'PATCH', body: { approve }, token }),

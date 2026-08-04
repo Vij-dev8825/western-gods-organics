@@ -76,8 +76,18 @@ function isHiddenFromViewer(product, req, sellerById = {}) {
   return false;
 }
 
+// sellerMode rides along with the name because it decides what the shopper is
+// told: a 'marketplace' seller is the seller of record ("Sold by"), a
+// 'supplier' sells to us and we sell it on under our own food licence, so they
+// get credit as the maker ("Sourced from") and nothing more.
 function attachSellerNames(products, sellerById) {
-  return products.map((p) => (p.sellerId ? { ...p, sellerName: sellerById[p.sellerId]?.sellerBusinessName || null } : p));
+  return products.map((p) => (p.sellerId
+    ? {
+      ...p,
+      sellerName: sellerById[p.sellerId]?.sellerBusinessName || null,
+      sellerMode: sellerById[p.sellerId]?.sellerMode || 'supplier',
+    }
+    : p));
 }
 
 // GET /api/products?category=&search=&sort=&combo=true&price=&isNew=true
@@ -276,6 +286,7 @@ router.get('/:id', optionalAuth, async (req, res, next) => {
     }
     if (product.sellerId) {
       product.sellerName = sellerById[product.sellerId]?.sellerBusinessName || null;
+      product.sellerMode = sellerById[product.sellerId]?.sellerMode || 'supplier';
     }
     product.recentOrderCount = await getRecentOrderCount(product.id);
     res.json({ success: true, product });

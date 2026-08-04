@@ -15,6 +15,7 @@ export default function AdminSellers() {
   const [replyText, setReplyText] = useState('');
   const [sending, setSending] = useState(false);
   const [rateDrafts, setRateDrafts] = useState({}); // { [applicationId]: '10' }
+  const [modeDrafts, setModeDrafts] = useState({}); // { [applicationId]: 'supplier' | 'marketplace' }
   const [noteDrafts, setNoteDrafts] = useState({}); // { [applicationId]: 'note' }
   const [payoutDrafts, setPayoutDrafts] = useState({}); // { [sellerId]: { amount, note } }
   const [message, setMessage] = useState(null);
@@ -66,6 +67,7 @@ export default function AdminSellers() {
         return;
       }
       payload.platformFeeRate = rate;
+      payload.sellerMode = modeDrafts[app.id] ?? 'supplier';
     } else {
       payload.reviewNote = noteDrafts[app.id] || '';
     }
@@ -156,6 +158,16 @@ export default function AdminSellers() {
                             onChange={(e) => setRateDrafts((d) => ({ ...d, [a.id]: e.target.value }))}
                             style={{ width: 64 }}
                           />
+                          <select
+                            className="select"
+                            value={modeDrafts[a.id] ?? 'supplier'}
+                            onChange={(e) => setModeDrafts((d) => ({ ...d, [a.id]: e.target.value }))}
+                            style={{ width: 150 }}
+                            title="Supplier: we buy and sell it under our licence. Marketplace: they sell directly and need their own FSSAI."
+                          >
+                            <option value="supplier">We buy &amp; resell</option>
+                            <option value="marketplace">They sell directly</option>
+                          </select>
                           <button className="link-btn" onClick={() => decide(a, 'approved')}>approve</button>
                           <input
                             placeholder="Reject note (optional)"
@@ -183,7 +195,7 @@ export default function AdminSellers() {
             <table className="admin-table">
               <thead>
                 <tr>
-                  <th>Business</th><th>Fee rate</th><th>Probation</th><th>Balance owed</th>
+                  <th>Business</th><th>Arrangement</th><th>Fee rate</th><th>Probation</th><th>Balance owed</th>
                   <th>Lifetime earned</th><th>Lifetime paid</th><th>Record payout</th>
                 </tr>
               </thead>
@@ -217,6 +229,20 @@ export default function AdminSellers() {
                           )}
                         </div>
                       </details>
+                    </td>
+                    <td>
+                      <select
+                        className="select"
+                        value={s.sellerMode || 'supplier'}
+                        onChange={async (e) => {
+                          await api.admin.setSellerMode(token, s.id, e.target.value).catch((err) => window.alert(err.message));
+                          load();
+                        }}
+                        title="Marketplace sellers are the seller of record and need their own FSSAI registration."
+                      >
+                        <option value="supplier">We buy &amp; resell</option>
+                        <option value="marketplace">Sells directly</option>
+                      </select>
                     </td>
                     <td>{s.sellerPlatformFeeRate}%</td>
                     <td>

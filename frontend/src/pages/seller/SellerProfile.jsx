@@ -179,7 +179,10 @@ export default function SellerProfile() {
         <div className="admin-card">
           <h3 style={{ marginTop: 0 }}>Your selling terms</h3>
           <p className="muted" style={{ marginBottom: 0 }}>
-            Platform fee: <b>{me.platformFeeRate}%</b> — you keep {100 - me.platformFeeRate}% of each sale.
+            {me.sellerMode === 'marketplace'
+              ? 'You sell directly to the customer — the bill is in your name, so your own FSSAI registration applies. '
+              : 'We buy from you and sell it on our shop under our own food licence, so you need no licence of your own. '}
+            You get <b>{100 - me.platformFeeRate}%</b> of what each item sells for.
             {me.probationRemaining > 0
               ? ` Your next ${me.probationRemaining} listing(s) are reviewed before going live.`
               : ' Your listings go live instantly.'}

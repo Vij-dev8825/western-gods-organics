@@ -72,8 +72,18 @@ export default function SellerDashboard() {
         <h1>Dashboard</h1>
       </div>
       <p className="muted" style={{ marginTop: -10, marginBottom: 20 }}>
-        You keep <b className="gold-text">{100 - me.platformFeeRate}%</b> of every sale, credited once the
-        order is delivered.
+        {me.sellerMode === 'marketplace' ? (
+          <>
+            You keep <b className="gold-text">{100 - me.platformFeeRate}%</b> of every sale, credited once the
+            order is delivered.
+          </>
+        ) : (
+          <>
+            We sell your goods on our shop and pay you{' '}
+            <b className="gold-text">{100 - me.platformFeeRate}%</b> of what each one sells for, once it
+            reaches the customer. Your name goes on it as the maker.
+          </>
+        )}
       </p>
 
       {me.onVacation && (

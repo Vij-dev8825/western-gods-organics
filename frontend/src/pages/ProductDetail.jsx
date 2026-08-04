@@ -500,7 +500,11 @@ export default function ProductDetail() {
           <h1>{product.name}</h1>
           {product.sellerName && (
             <p className="muted" style={{ fontSize: '0.85rem', margin: '2px 0 8px' }}>
-              Sold by <Link to={`/sellers/${product.sellerId}`}>{product.sellerName}</Link>
+              {/* Only a marketplace seller is the seller of record. A supplier
+                  sells to us and we sell it on, so claiming they sold it to the
+                  shopper would be wrong — they're credited as the maker. */}
+              {product.sellerMode === 'marketplace' ? 'Sold by ' : 'Made by '}
+              <Link to={`/sellers/${product.sellerId}`}>{product.sellerName}</Link>
             </p>
           )}
           <div className="rating-row" style={{ marginBottom: 16 }}>
@@ -654,7 +658,9 @@ export default function ProductDetail() {
               </ul>
               {product.sellerName && (
                 <p className="muted" style={{ fontSize: '0.78rem', margin: 0 }}>
-                  Provided by {product.sellerName}, who makes this product.
+                  {product.sellerMode === 'marketplace'
+                    ? `Provided by ${product.sellerName}, who makes this product.`
+                    : `As told to us by ${product.sellerName}, who makes this product. Sold by Western Gods Organics.`}
                 </p>
               )}
             </div>

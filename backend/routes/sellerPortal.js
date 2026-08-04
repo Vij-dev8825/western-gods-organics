@@ -231,6 +231,10 @@ router.get('/me', requireAuth, async (req, res, next) => {
         ...readProfile(user),
         platformFeeRate: user.sellerPlatformFeeRate || 0,
         probationRemaining: user.sellerProbationRemaining || 0,
+        // 'supplier' (we buy from them, sell under our own licence) or
+        // 'marketplace' (they're the seller of record). Drives the wording
+        // right across the portal — see SellerDashboard.
+        sellerMode: user.sellerMode || 'supplier',
         onVacation: !!user.sellerOnVacation,
         liveListings,
         checklist,
@@ -331,6 +335,7 @@ router.get('/storefront/:id', async (req, res, next) => {
       seller: {
         id: seller.id,
         businessName: seller.sellerBusinessName,
+        sellerMode: seller.sellerMode || 'supplier',
         bio: seller.sellerBio || '',
         location: seller.sellerLocation || '',
         logo: seller.sellerLogo || '',

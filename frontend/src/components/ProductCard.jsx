@@ -166,7 +166,7 @@ export default function ProductCard({ product }) {
             style={{ fontSize: '0.75rem', textDecoration: 'underline', cursor: 'pointer' }}
             onClick={(e) => { e.preventDefault(); e.stopPropagation(); navigate(`/sellers/${product.sellerId}`); }}
           >
-            Sold by {product.sellerName}
+            {product.sellerMode === 'marketplace' ? 'Sold by' : 'Made by'} {product.sellerName}
           </span>
         )}
         <p className="product-desc">{localizeProductText(product, 'shortDescription', lang)}</p>
