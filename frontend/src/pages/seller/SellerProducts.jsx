@@ -60,6 +60,16 @@ export default function SellerProducts() {
     setEditingId('new');
   }
 
+  // The short way in. Someone with one thing to sell and a phone in their hand
+  // shouldn't have to read a form with fifteen fields to get started — this
+  // asks only what a product genuinely can't exist without, and everything
+  // else can be filled in later by editing the listing.
+  function startQuick() {
+    setForm({ ...EMPTY_PRODUCT, category: categories[0]?.slug || '' });
+    setMessage(null);
+    setEditingId('quick');
+  }
+
   function startEdit(p) {
     setForm({
       name: p.name,
@@ -121,9 +131,9 @@ export default function SellerProducts() {
       newCategory: addingCategory ? form.newCategory : '',
     };
     try {
-      if (editingId === 'new') {
+      if (editingId === 'new' || editingId === 'quick') {
         await api.seller.createProduct(token, payload);
-        setMessage({ type: 'success', text: 'Product submitted.' });
+        setMessage({ type: 'success', text: 'Added. We\'ll take it from here.' });
       } else {
         await api.seller.updateProduct(token, editingId, payload);
         setMessage({ type: 'success', text: 'Product updated.' });
@@ -148,13 +158,104 @@ export default function SellerProducts() {
       <div className="admin-head">
         <h1>My Products</h1>
         {editingId === null && (
-          <button type="button" className="btn btn-gold btn-sm" onClick={startNew}>+ Add product</button>
+          <div className="flex gap-1" style={{ flexWrap: 'wrap' }}>
+            <button type="button" className="btn btn-gold btn-sm" onClick={startQuick}>+ Quick add</button>
+            <button type="button" className="btn btn-outline btn-sm" onClick={startNew}>Add with all details</button>
+          </div>
         )}
       </div>
 
       {message && <div className={`alert alert-${message.type}`}>{message.text}</div>}
 
-      {editingId !== null && (
+      {editingId === 'quick' && (
+        <form className="admin-card" onSubmit={save}>
+          <h3 style={{ marginTop: 0 }}>Add something to sell</h3>
+          <p className="muted" style={{ fontSize: '0.83rem', marginTop: 0 }}>
+            Just the basics. You can add a longer description, more sizes and a video later by editing it.
+          </p>
+
+          <div className="field">
+            <label>A photo of it</label>
+            {form.image && (
+              <img
+                src={getProductImage(form.image)}
+                alt=""
+                style={{ width: 120, height: 120, objectFit: 'cover', borderRadius: 8, marginBottom: 8, display: 'block' }}
+              />
+            )}
+            <input type="file" accept="image/*" capture="environment" onChange={handleImageUpload} disabled={uploading} />
+            {uploading && <span className="muted" style={{ fontSize: '0.8rem' }}>Uploading…</span>}
+          </div>
+
+          <div className="form-grid">
+            <div className="field">
+              <label>What is it?</label>
+              <input value={form.name} onChange={set('name')} placeholder="e.g. Groundnut oil" required autoFocus />
+            </div>
+            <div className="field">
+              <label>What kind of thing is it?</label>
+              <select className="select" value={form.category} onChange={set('category')} required>
+                <option value="">Choose…</option>
+                {categories.map((c) => (
+                  <option key={c.slug} value={c.slug}>{c.label}{c.pending ? ' (awaiting review)' : ''}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div className="field">
+            <label>What size?</label>
+            <div className="flex gap-1" style={{ flexWrap: 'wrap', marginBottom: 6 }}>
+              {['250 ml', '500 ml', '1 L', '5 L', '250 g', '500 g', '1 kg'].map((s) => (
+                <button
+                  key={s}
+                  type="button"
+                  className={`tab ${form.sizes[0].label === s ? 'active' : ''}`}
+                  onClick={() => setSize(0, 'label', s)}
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
+            <input
+              value={form.sizes[0].label}
+              onChange={(e) => setSize(0, 'label', e.target.value)}
+              placeholder="or type your own"
+              required
+            />
+          </div>
+
+          <div className="form-grid">
+            <div className="field">
+              <label>Price for one (₹)</label>
+              <input
+                type="number" min="0" inputMode="numeric"
+                value={form.sizes[0].price}
+                onChange={(e) => setSize(0, 'price', e.target.value)}
+                required
+              />
+            </div>
+            <div className="field">
+              <label>How many do you have?</label>
+              <input
+                type="number" min="0" inputMode="numeric"
+                value={form.sizes[0].stock}
+                onChange={(e) => setSize(0, 'stock', e.target.value)}
+                placeholder="e.g. 20"
+              />
+            </div>
+          </div>
+
+          <div className="flex gap-2" style={{ marginTop: 16 }}>
+            <button className="btn btn-gold btn-sm" disabled={saving || uploading}>
+              {saving ? 'Adding…' : 'Add it'}
+            </button>
+            <button type="button" className="btn btn-ghost btn-sm" onClick={() => setEditingId(null)}>Cancel</button>
+          </div>
+        </form>
+      )}
+
+      {editingId !== null && editingId !== 'quick' && (
         <form className="admin-card" onSubmit={save}>
           <h3 style={{ marginTop: 0 }}>{editingId === 'new' ? 'Add a product' : 'Edit product'}</h3>
           <div className="form-grid">
