@@ -175,16 +175,20 @@ const en = {
 
   // cookie consent
   cookieMessage:
-    'We use cookies to give you the best possible experience while you browse our website. By continuing to use this site, you agree to our use of cookies.',
+    'We use cookies to keep you signed in and remember your cart. With your permission we also count visits, so we can see which parts of the shop are useful. We never sell your data or use it for advertising.',
   cookieLearnMore: 'Learn more',
-  cookieAcceptAll: 'Accept All',
+  cookieAcceptAll: 'Accept',
+  cookieEssentialOnly: 'Only necessary',
   cookiePreferences: 'Preferences',
   cookiePrefTitle: 'Cookie preferences',
   cookiePrefNecessary: 'Necessary cookies',
   cookiePrefNecessaryDesc:
     'Required to keep you logged in and remember your cart and wishlist between visits. Always active.',
-  cookiePrefNote: "We don't use analytics or advertising cookies — there's nothing else to choose from.",
-  cookiePrefSave: 'Save preferences',
+  cookiePrefAnalytics: 'Visit counting',
+  cookiePrefAnalyticsDesc:
+    'Google Analytics, so we can see how many people visit and which pages help them. Choose "Only necessary" and it is never loaded.',
+  cookiePrefNote: 'We never sell your data, and we do not run advertising cookies.',
+  cookiePrefSave: 'Accept both',
 
   // chat widget
   chatTitle: 'Chat with us',

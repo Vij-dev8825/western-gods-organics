@@ -3,6 +3,7 @@ import { Routes, Route, Outlet, Navigate, useLocation } from 'react-router-dom';
 import { useLang } from './i18n';
 import { CANONICAL_ORIGIN } from './utils/site';
 import { captureAffiliateCode } from './utils/affiliateAttribution';
+import { initAnalytics, trackPageView } from './utils/analytics';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -136,6 +137,20 @@ function ScrollToTop() {
   return null;
 }
 
+// A route change in a single-page app fires no browser navigation, so nothing
+// would ever be counted after the first page without this. initAnalytics is
+// idempotent and refuses to load without both a measurement ID and consent,
+// so calling it on every route is free and means a visitor who accepts
+// mid-session starts being counted immediately.
+function PageViewTracker() {
+  const { pathname } = useLocation();
+  useEffect(() => {
+    initAnalytics();
+    trackPageView(pathname);
+  }, [pathname]);
+  return null;
+}
+
 // This is a client-rendered SPA on a single static index.html, so the
 // canonical tag has to be updated per-route in JS rather than baked into
 // the HTML — otherwise every page would claim the homepage as canonical
@@ -162,6 +177,7 @@ export default function App() {
     <>
     <ScrollToTop />
     <CanonicalTag />
+    <PageViewTracker />
     <Routes>
       {/* Admin area: its own login page and dashboard shell, no store chrome */}
       <Route path="/admin/login" element={<AdminLogin />} />

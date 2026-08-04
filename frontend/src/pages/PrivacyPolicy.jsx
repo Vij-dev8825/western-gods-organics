@@ -42,8 +42,19 @@ export default function PrivacyPolicy() {
 
       <h2>Cookies</h2>
       <p>
-        We use essential cookies/local storage to keep you logged in and remember your cart
-        and wishlist between visits. We don't use third-party advertising cookies.
+        We use essential cookies and local storage to keep you logged in and remember your cart
+        and wishlist between visits. These cannot be switched off, because the shop does not
+        work without them.
+      </p>
+      <p>
+        If you agree in the cookie bar, we also use Google Analytics to count visits and see
+        which pages people find useful. It records things like which pages were viewed and
+        roughly which region you are in — not your name, address or payment details. Choose
+        "Only necessary" and Google's script is never loaded at all. You can change your mind
+        at any time by clearing this site's data in your browser, which brings the choice back.
+      </p>
+      <p>
+        We do not use advertising cookies, and we never sell your data to anyone.
       </p>
 
       <h2>Contact</h2>

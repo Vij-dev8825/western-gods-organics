@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useRef, useState, useCallback } from 'react';
 import { useAuth } from './AuthContext';
 import { api } from '../api';
+import { trackAddToCart } from '../utils/analytics';
 
 const CartContext = createContext(null);
 const GUEST_KEY = 'yo_guest_cart';
@@ -73,6 +74,10 @@ export function CartProvider({ children }) {
   );
 
   function addItem(productId, size, quantity = 1) {
+    // Top of the funnel. Price and name aren't available here — the cart only
+    // stores ids — but GA4 accepts an item on its id alone, and the count is
+    // what matters for "how many people add something and never check out".
+    trackAddToCart({ id: productId, size, quantity });
     const current = itemsRef.current;
     const existing = current.find((i) => i.productId === productId && i.size === size);
     let next;

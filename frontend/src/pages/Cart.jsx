@@ -6,6 +6,7 @@ import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { useCurrency } from '../context/CurrencyContext';
 import { getProductImage } from '../utils/productImages';
+import { trackBeginCheckout, trackPurchase } from '../utils/analytics';
 import { loadRazorpay } from '../utils/loadRazorpay';
 import { validateAddress, isValidEmail } from '../utils/validators';
 import { normalizeAddresses } from '../utils/addresses';
@@ -289,6 +290,9 @@ export default function Cart() {
       return;
     }
     setPlacing(true);
+    // Paired with the purchase event below, this is what shows how many people
+    // start paying and don't finish — the number worth acting on.
+    trackBeginCheckout(lines, total);
     const orderItems = lines.map((l) => ({ productId: l.productId, size: l.size, quantity: l.quantity }));
     const couponCode = !couponStale && appliedCoupon ? appliedCoupon.code : undefined;
     const giftCardCode = appliedGiftCard ? appliedGiftCard.code : undefined;
@@ -333,6 +337,9 @@ export default function Cart() {
       const entry = { ...deliveredTo, id: crypto.randomUUID(), isDefault: existing.length === 0 };
       api.updateProfile(effectiveToken, { addresses: [...existing, entry] }).catch(() => {});
     }
+    // Every payment path (COD, COD-advance, Razorpay) converges here, so this
+    // is the one place a completed order can be counted exactly once.
+    trackPurchase(data.order);
     navigate(`/order-success/${data.order.id}`);
   }
 

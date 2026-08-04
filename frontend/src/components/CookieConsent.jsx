@@ -1,13 +1,20 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useLang } from '../i18n';
+import { initAnalytics } from '../utils/analytics';
 
 const CONSENT_KEY = 'yo_cookie_consent';
 
-/** Bottom cookie-notice bar, shown once until the visitor accepts. The site
- * only sets essential cookies/local storage (login, cart, wishlist) — no
- * analytics or ad tracking — so "Preferences" just explains that rather
- * than offering categories that don't exist. */
+/** Bottom cookie-notice bar, shown once until the visitor answers.
+ *
+ * There are now two real answers, not one. Essential storage (login, cart,
+ * wishlist) is always on and can't be refused because the shop doesn't work
+ * without it. Analytics is genuinely optional: choosing "Only necessary"
+ * stores 'essential' and Google's script is never fetched at all — see
+ * utils/analytics.js, which refuses to load on anything but 'accepted'.
+ *
+ * Offering an "accept" button with no way to decline would make the choice
+ * decorative, which is the thing this banner exists to avoid. */
 export default function CookieConsent() {
   const { t } = useLang();
   const [visible, setVisible] = useState(() => !localStorage.getItem(CONSENT_KEY));
@@ -48,6 +55,15 @@ export default function CookieConsent() {
 
   function accept() {
     localStorage.setItem(CONSENT_KEY, 'accepted');
+    // Start measuring straight away rather than waiting for the next page
+    // load, otherwise the visit where consent was given is never counted.
+    initAnalytics();
+    setShowPrefs(false);
+    setVisible(false);
+  }
+
+  function essentialOnly() {
+    localStorage.setItem(CONSENT_KEY, 'essential');
     setShowPrefs(false);
     setVisible(false);
   }
@@ -66,6 +82,9 @@ export default function CookieConsent() {
         <div className="cookie-consent-actions">
           <button type="button" className="btn btn-outline btn-sm" onClick={() => setShowPrefs(true)}>
             {t('cookiePreferences')}
+          </button>
+          <button type="button" className="btn btn-ghost btn-sm" onClick={essentialOnly}>
+            {t('cookieEssentialOnly')}
           </button>
           <button type="button" className="btn btn-gold btn-sm" onClick={accept}>
             {t('cookieAcceptAll')}
@@ -87,10 +106,21 @@ export default function CookieConsent() {
               </div>
               <span className="cookie-pref-always-on">✓</span>
             </div>
+            <div className="cookie-pref-row">
+              <div>
+                <div className="cookie-pref-row-title">{t('cookiePrefAnalytics')}</div>
+                <p className="muted">{t('cookiePrefAnalyticsDesc')}</p>
+              </div>
+            </div>
             <p className="muted cookie-pref-note">{t('cookiePrefNote')}</p>
-            <button type="button" className="btn btn-gold btn-sm cookie-pref-save" onClick={accept}>
-              {t('cookiePrefSave')}
-            </button>
+            <div className="flex gap-1">
+              <button type="button" className="btn btn-ghost btn-sm" onClick={essentialOnly}>
+                {t('cookieEssentialOnly')}
+              </button>
+              <button type="button" className="btn btn-gold btn-sm cookie-pref-save" onClick={accept}>
+                {t('cookiePrefSave')}
+              </button>
+            </div>
           </div>
         </div>
       )}
