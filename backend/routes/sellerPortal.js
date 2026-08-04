@@ -10,7 +10,7 @@ const cloudinary = require('../utils/cloudinary');
 const { compressVideoAndStore } = require('../utils/mediaStore');
 const { notifyUser } = require('../utils/notify');
 const { sendMail } = require('../utils/mailer');
-const { getSummary: getSellerSummary, computeSellerShares } = require('../utils/sellers');
+const { getSummary: getSellerSummary, getBalance: getSellerBalance, computeSellerShares } = require('../utils/sellers');
 
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || process.env.CONTACT_NOTIFY_EMAIL;
 
@@ -339,6 +339,138 @@ router.get('/storefront/:id', async (req, res, next) => {
       },
       products: products.map((p) => ({ ...p, sellerName: seller.sellerBusinessName })),
     });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/* ------------------------------ Getting paid ------------------------------ */
+
+// Below this a transfer costs more in effort than it's worth to either side;
+// the balance just rolls into the next payout.
+const MIN_PAYOUT = 500;
+
+// POST /api/seller/payout-request — asks the store to send what's owed.
+// Payouts are still made by hand outside the app; this only replaces "email
+// them and hope", so a seller can see they've asked and when.
+router.post('/payout-request', requireAuth, requireSeller, async (req, res, next) => {
+  try {
+    const seller = req.sellerUser;
+    const balance = await getSellerBalance(seller.id);
+    if (balance < MIN_PAYOUT) {
+      return res.status(400).json({
+        success: false,
+        message: `You need at least ₹${MIN_PAYOUT} before requesting a payout — your balance is ₹${balance}.`,
+      });
+    }
+    if (!seller.sellerUpiId && !seller.sellerBankAccountNumber) {
+      return res.status(400).json({
+        success: false,
+        message: 'Add a UPI ID or bank account on your profile first, so we know where to send it.',
+      });
+    }
+    const open = (await db.list('seller-payout-requests'))
+      .find((r) => r.sellerId === seller.id && r.status === 'pending');
+    if (open) {
+      return res.status(400).json({ success: false, message: "You've already got a payout request waiting." });
+    }
+
+    const request = {
+      id: uuid(),
+      sellerId: seller.id,
+      businessName: seller.sellerBusinessName || '',
+      amount: balance,
+      status: 'pending',
+      createdAt: new Date().toISOString(),
+      settledAt: null,
+    };
+    await db.put('seller-payout-requests', request);
+    if (ADMIN_EMAIL) {
+      sendMail({
+        to: ADMIN_EMAIL,
+        subject: `Payout requested: ${request.businessName} — ₹${balance}`,
+        text: `${request.businessName} has asked for a payout of ₹${balance}.\n\n`
+          + `UPI: ${seller.sellerUpiId || '—'}\n`
+          + `Bank: ${seller.sellerBankAccountName || '—'} / ${seller.sellerBankAccountNumber || '—'} / ${seller.sellerBankIfsc || '—'}\n\n`
+          + 'Send the transfer, then record it in Admin → Sellers to clear the request.',
+      }).catch(() => {});
+    }
+    res.status(201).json({ success: true, request });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET /api/seller/payout-request — whatever's currently outstanding, if any.
+router.get('/payout-request', requireAuth, requireSeller, async (req, res, next) => {
+  try {
+    const open = (await db.list('seller-payout-requests'))
+      .find((r) => r.sellerId === req.sellerUser.id && r.status === 'pending');
+    res.json({ success: true, request: open || null, minPayout: MIN_PAYOUT });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET /api/seller/statement.csv — the ledger as a spreadsheet, for a seller's
+// own books and GST filing. CSV rather than PDF because it opens in
+// everything and can be handed straight to an accountant.
+router.get('/statement.csv', requireAuth, requireSeller, async (req, res, next) => {
+  try {
+    const { history } = await getSellerSummary(req.sellerUser.id);
+    const label = { earn: 'Sale', payout: 'Payout received', reversal: 'Reversed (refund)' };
+    // Prefix any field that could be read as a formula — a note beginning with
+    // "=" would otherwise execute when the file is opened in a spreadsheet.
+    // Real numbers are exempt: a payout is a negative amount, and quoting it
+    // as text would stop the column adding up, which is the whole point of
+    // handing this to an accountant.
+    const cell = (v) => {
+      const s = String(v ?? '');
+      const risky = /^[=+\-@\t\r]/.test(s) && !Number.isFinite(Number(s));
+      return `"${(risky ? `'${s}` : s).replace(/"/g, '""')}"`;
+    };
+    const rows = [
+      ['Date', 'Type', 'Detail', 'Amount (INR)'],
+      ...history.map((e) => [new Date(e.createdAt).toISOString().slice(0, 10), label[e.type] || e.type, e.note, e.amount]),
+    ];
+    const filename = `statement-${new Date().toISOString().slice(0, 10)}.csv`;
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.send(rows.map((r) => r.map(cell).join(',')).join('\r\n'));
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET /api/seller/directory — public browse-by-maker list. Until now a
+// storefront was only reachable by finding one of that seller's products
+// first, which made the makers invisible unless you already knew about them.
+//
+// A seller only appears once they have something to sell: no live listings
+// (paused shop, everything deactivated, still in review) means no entry,
+// because a directory of empty shops is worse than no directory.
+router.get('/directory', async (req, res, next) => {
+  try {
+    const [users, products] = await Promise.all([db.list('users'), db.list('products')]);
+    const liveCount = {};
+    for (const p of products) {
+      if (!p.sellerId || p.active === false || p.sellerModerationStatus === 'pending') continue;
+      liveCount[p.sellerId] = (liveCount[p.sellerId] || 0) + 1;
+    }
+
+    const sellers = users
+      .filter((u) => u.isSeller && !u.sellerOnVacation && liveCount[u.id])
+      .map((u) => ({
+        id: u.id,
+        businessName: u.sellerBusinessName || '',
+        bio: u.sellerBio || '',
+        location: u.sellerLocation || '',
+        logo: u.sellerLogo || '',
+        productCount: liveCount[u.id],
+      }))
+      .sort((a, b) => b.productCount - a.productCount || a.businessName.localeCompare(b.businessName));
+
+    res.json({ success: true, sellers });
   } catch (err) {
     next(err);
   }

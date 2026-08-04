@@ -117,6 +117,7 @@ export const api = {
   getMyAffiliate: (token) => request('/affiliates/me', { token }),
 
   // seller marketplace portal
+  getSellerDirectory: () => request('/seller/directory'),
   getSellerStorefront: (id) => request(`/seller/storefront/${id}`),
   seller: {
     apply: (token, payload) => request('/seller/apply', { method: 'POST', body: payload, token }),
@@ -133,6 +134,8 @@ export const api = {
     getOrders: (token) => request('/seller/orders', { token }),
     getAnalytics: (token, days = 30) => request(`/seller/analytics?days=${days}`, { token }),
     setVacation: (token, on) => request('/seller/vacation', { method: 'PATCH', body: { on }, token }),
+    getPayoutRequest: (token) => request('/seller/payout-request', { token }),
+    requestPayout: (token) => request('/seller/payout-request', { method: 'POST', token }),
     getProducts: (token) => request('/seller/products', { token }),
     createProduct: (token, payload) => request('/seller/products', { method: 'POST', body: payload, token }),
     updateProduct: (token, id, payload) => request(`/seller/products/${id}`, { method: 'PUT', body: payload, token }),

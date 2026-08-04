@@ -61,6 +61,7 @@ import SellerQuestions from './pages/seller/SellerQuestions';
 import SellerProfile from './pages/seller/SellerProfile';
 import SellerChat from './pages/seller/SellerChat';
 import SellerStorefront from './pages/SellerStorefront';
+import SellerDirectory from './pages/SellerDirectory';
 
 import AdminLogin from './pages/admin/AdminLogin';
 import AdminLayout from './pages/admin/AdminLayout';
@@ -222,6 +223,7 @@ export default function App() {
         <Route path="/categories" element={<Categories />} />
         <Route path="/combos" element={<Combos />} />
         <Route path="/gifting" element={<Gifting />} />
+        <Route path="/sellers" element={<SellerDirectory />} />
         <Route path="/sellers/:id" element={<SellerStorefront />} />
         <Route path="/blog" element={<Blog />} />
         <Route path="/blog/:slug" element={<BlogPost />} />
