@@ -37,10 +37,36 @@ function urlEntry(loc, { priority = '0.5', changefreq = 'monthly', lastmod } = {
 // crawl links inside the React app.
 router.get('/', async (req, res, next) => {
   try {
-    const [products, posts] = await Promise.all([db.list('products'), db.list('blog-posts')]);
+    const [allProducts, posts, categories, users] = await Promise.all([
+      db.list('products'), db.list('blog-posts'), db.list('categories'), db.list('users'),
+    ]);
+
+    // Only URLs a visitor can actually reach. A sitemap full of pages that
+    // resolve to "not found" is worse than a short one — it teaches the
+    // crawler the file can't be trusted. Deactivated listings, seller items
+    // still in review, and everything belonging to a seller who has paused
+    // their shop are all hidden by routes/products.js, so none of them belong
+    // here either.
+    const pausedSellers = new Set(users.filter((u) => u.sellerOnVacation).map((u) => u.id));
+    const products = allProducts.filter((p) => p.active !== false
+      && p.sellerModerationStatus !== 'pending'
+      && !(p.sellerId && pausedSellers.has(p.sellerId)));
 
     const entries = [
       ...STATIC_PATHS.map((p) => urlEntry(`${SITE_URL}${p.path}`, p)),
+      // One entry per category. These are the pages that stand a chance on a
+      // search like "herbal powders" — the generic /categories index doesn't
+      // target any single term. Proposed-but-unapproved categories are left
+      // out, same as they are on the shop itself.
+      ...categories
+        .filter((c) => !c.pending)
+        .map((c) =>
+          urlEntry(`${SITE_URL}/shop?category=${encodeURIComponent(c.id)}`, {
+            priority: '0.8',
+            changefreq: 'weekly',
+          })
+        ),
+      urlEntry(`${SITE_URL}/sellers`, { priority: '0.6', changefreq: 'weekly' }),
       ...products.map((p) =>
         urlEntry(`${SITE_URL}/product/${p.id}`, {
           priority: '0.8',
