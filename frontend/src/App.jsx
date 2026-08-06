@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { lazy, Suspense, useEffect } from 'react';
 import { Routes, Route, Outlet, Navigate, useLocation } from 'react-router-dom';
 import { useLang } from './i18n';
 import { CANONICAL_ORIGIN } from './utils/site';
@@ -17,79 +17,86 @@ import InstallPrompt from './components/InstallPrompt';
 import SaleCountdown from './components/SaleCountdown';
 import WelcomeSelector from './components/WelcomeSelector';
 import SeoMeta from './components/SeoMeta';
+import ChakkiWheel from './components/ChakkiWheel';
 
+// Home loads eagerly — it's where almost every first-time visitor lands, and
+// there's no point trading a request waterfall for a saving nobody sees.
+// Everything else is lazy: a shopper who only ever looks at the shop and
+// checks out was, before this, also downloading the entire admin panel and
+// the entire seller portal in the same bundle. Splitting per-route means the
+// browser only fetches the one page actually being visited.
 import Home from './pages/Home';
-import Shop from './pages/Shop';
-import Categories from './pages/Categories';
-import Combos from './pages/Combos';
-import Gifting from './pages/Gifting';
-import Blog from './pages/Blog';
-import BlogPost from './pages/BlogPost';
-import ProductDetail from './pages/ProductDetail';
-import Cart from './pages/Cart';
-import Wishlist from './pages/Wishlist';
-import Login from './pages/Login';
-import Profile from './pages/Profile';
-import Orders from './pages/Orders';
-import Subscriptions from './pages/Subscriptions';
-import Rewards from './pages/Rewards';
-import BatchPassport from './pages/BatchPassport';
-import Finder from './pages/Finder';
-import OrderSuccess from './pages/OrderSuccess';
-import Notifications from './pages/Notifications';
-import Invoice from './pages/Invoice';
-import BulkEnquiry from './pages/BulkEnquiry';
-import ContactUs from './pages/ContactUs';
-import PrivacyPolicy from './pages/PrivacyPolicy';
-import RefundPolicy from './pages/RefundPolicy';
-import TermsAndConditions from './pages/TermsAndConditions';
-import SustainabilityImpact from './pages/SustainabilityImpact';
-import Sourcing from './pages/Sourcing';
-import ImportInfo from './pages/ImportInfo';
-import StoreLocator from './pages/StoreLocator';
-import GiftCards from './pages/GiftCards';
-import Affiliate from './pages/Affiliate';
-import SellerLogin from './pages/SellerLogin';
-import SellerPublicLayout from './pages/seller/SellerPublicLayout';
-import SellerHome from './pages/seller/SellerHome';
-import SellerRegister from './pages/seller/SellerRegister';
-import SellerLayout from './pages/seller/SellerLayout';
-import SellerDashboard from './pages/seller/SellerDashboard';
-import SellerOrders from './pages/seller/SellerOrders';
-import SellerInsights from './pages/seller/SellerInsights';
-import SellerProducts from './pages/seller/SellerProducts';
-import SellerQuestions from './pages/seller/SellerQuestions';
-import SellerProfile from './pages/seller/SellerProfile';
-import SellerChat from './pages/seller/SellerChat';
-import SellerStorefront from './pages/SellerStorefront';
-import SellerDirectory from './pages/SellerDirectory';
+const Shop = lazy(() => import('./pages/Shop'));
+const Categories = lazy(() => import('./pages/Categories'));
+const Combos = lazy(() => import('./pages/Combos'));
+const Gifting = lazy(() => import('./pages/Gifting'));
+const Blog = lazy(() => import('./pages/Blog'));
+const BlogPost = lazy(() => import('./pages/BlogPost'));
+const ProductDetail = lazy(() => import('./pages/ProductDetail'));
+const Cart = lazy(() => import('./pages/Cart'));
+const Wishlist = lazy(() => import('./pages/Wishlist'));
+const Login = lazy(() => import('./pages/Login'));
+const Profile = lazy(() => import('./pages/Profile'));
+const Orders = lazy(() => import('./pages/Orders'));
+const Subscriptions = lazy(() => import('./pages/Subscriptions'));
+const Rewards = lazy(() => import('./pages/Rewards'));
+const BatchPassport = lazy(() => import('./pages/BatchPassport'));
+const Finder = lazy(() => import('./pages/Finder'));
+const OrderSuccess = lazy(() => import('./pages/OrderSuccess'));
+const Notifications = lazy(() => import('./pages/Notifications'));
+const Invoice = lazy(() => import('./pages/Invoice'));
+const BulkEnquiry = lazy(() => import('./pages/BulkEnquiry'));
+const ContactUs = lazy(() => import('./pages/ContactUs'));
+const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'));
+const RefundPolicy = lazy(() => import('./pages/RefundPolicy'));
+const TermsAndConditions = lazy(() => import('./pages/TermsAndConditions'));
+const SustainabilityImpact = lazy(() => import('./pages/SustainabilityImpact'));
+const Sourcing = lazy(() => import('./pages/Sourcing'));
+const ImportInfo = lazy(() => import('./pages/ImportInfo'));
+const StoreLocator = lazy(() => import('./pages/StoreLocator'));
+const GiftCards = lazy(() => import('./pages/GiftCards'));
+const Affiliate = lazy(() => import('./pages/Affiliate'));
+const SellerLogin = lazy(() => import('./pages/SellerLogin'));
+const SellerPublicLayout = lazy(() => import('./pages/seller/SellerPublicLayout'));
+const SellerHome = lazy(() => import('./pages/seller/SellerHome'));
+const SellerRegister = lazy(() => import('./pages/seller/SellerRegister'));
+const SellerLayout = lazy(() => import('./pages/seller/SellerLayout'));
+const SellerDashboard = lazy(() => import('./pages/seller/SellerDashboard'));
+const SellerOrders = lazy(() => import('./pages/seller/SellerOrders'));
+const SellerInsights = lazy(() => import('./pages/seller/SellerInsights'));
+const SellerProducts = lazy(() => import('./pages/seller/SellerProducts'));
+const SellerQuestions = lazy(() => import('./pages/seller/SellerQuestions'));
+const SellerProfile = lazy(() => import('./pages/seller/SellerProfile'));
+const SellerChat = lazy(() => import('./pages/seller/SellerChat'));
+const SellerStorefront = lazy(() => import('./pages/SellerStorefront'));
+const SellerDirectory = lazy(() => import('./pages/SellerDirectory'));
 
-import AdminLogin from './pages/admin/AdminLogin';
-import AdminLayout from './pages/admin/AdminLayout';
-import Dashboard from './pages/admin/Dashboard';
-import AdminProducts from './pages/admin/AdminProducts';
-import AdminCategories from './pages/admin/AdminCategories';
-import AdminCoupons from './pages/admin/AdminCoupons';
-import AdminSubscriptions from './pages/admin/AdminSubscriptions';
-import AdminWhatsApp from './pages/admin/AdminWhatsApp';
-import AdminBanners from './pages/admin/AdminBanners';
-import AdminOrders from './pages/admin/AdminOrders';
-import AdminReturns from './pages/admin/AdminReturns';
-import AdminBottleReturns from './pages/admin/AdminBottleReturns';
-import AdminLeads from './pages/admin/AdminLeads';
-import AdminNotify from './pages/admin/AdminNotify';
-import AdminChat from './pages/admin/AdminChat';
-import AdminBlog from './pages/admin/AdminBlog';
-import AdminPageBanners from './pages/admin/AdminPageBanners';
-import AdminSaleBanner from './pages/admin/AdminSaleBanner';
-import AdminPaymentMethods from './pages/admin/AdminPaymentMethods';
-import AdminShipping from './pages/admin/AdminShipping';
-import AdminCurrency from './pages/admin/AdminCurrency';
-import AdminHomepageReviews from './pages/admin/AdminHomepageReviews';
-import AdminCountries from './pages/admin/AdminCountries';
-import AdminGiftCards from './pages/admin/AdminGiftCards';
-import AdminAffiliates from './pages/admin/AdminAffiliates';
-import AdminSellers from './pages/admin/AdminSellers';
+const AdminLogin = lazy(() => import('./pages/admin/AdminLogin'));
+const AdminLayout = lazy(() => import('./pages/admin/AdminLayout'));
+const Dashboard = lazy(() => import('./pages/admin/Dashboard'));
+const AdminProducts = lazy(() => import('./pages/admin/AdminProducts'));
+const AdminCategories = lazy(() => import('./pages/admin/AdminCategories'));
+const AdminCoupons = lazy(() => import('./pages/admin/AdminCoupons'));
+const AdminSubscriptions = lazy(() => import('./pages/admin/AdminSubscriptions'));
+const AdminWhatsApp = lazy(() => import('./pages/admin/AdminWhatsApp'));
+const AdminBanners = lazy(() => import('./pages/admin/AdminBanners'));
+const AdminOrders = lazy(() => import('./pages/admin/AdminOrders'));
+const AdminReturns = lazy(() => import('./pages/admin/AdminReturns'));
+const AdminBottleReturns = lazy(() => import('./pages/admin/AdminBottleReturns'));
+const AdminLeads = lazy(() => import('./pages/admin/AdminLeads'));
+const AdminNotify = lazy(() => import('./pages/admin/AdminNotify'));
+const AdminChat = lazy(() => import('./pages/admin/AdminChat'));
+const AdminBlog = lazy(() => import('./pages/admin/AdminBlog'));
+const AdminPageBanners = lazy(() => import('./pages/admin/AdminPageBanners'));
+const AdminSaleBanner = lazy(() => import('./pages/admin/AdminSaleBanner'));
+const AdminPaymentMethods = lazy(() => import('./pages/admin/AdminPaymentMethods'));
+const AdminShipping = lazy(() => import('./pages/admin/AdminShipping'));
+const AdminCurrency = lazy(() => import('./pages/admin/AdminCurrency'));
+const AdminHomepageReviews = lazy(() => import('./pages/admin/AdminHomepageReviews'));
+const AdminCountries = lazy(() => import('./pages/admin/AdminCountries'));
+const AdminGiftCards = lazy(() => import('./pages/admin/AdminGiftCards'));
+const AdminAffiliates = lazy(() => import('./pages/admin/AdminAffiliates'));
+const AdminSellers = lazy(() => import('./pages/admin/AdminSellers'));
 
 function NotFound() {
   return (
@@ -125,6 +132,18 @@ function StoreLayout() {
       <CookieConsent />
       <PushOptIn />
       <InstallPrompt />
+    </div>
+  );
+}
+
+// Shown while a lazy route's chunk is still downloading. Centered and
+// unobtrusive — this only ever appears for the fraction of a second a chunk
+// takes to fetch on a fast connection, or briefly longer on mobile data,
+// which is the exact case code-splitting is meant to help.
+function RouteFallback() {
+  return (
+    <div className="center" style={{ padding: '120px 0' }}>
+      <ChakkiWheel size={56} />
     </div>
   );
 }
@@ -178,6 +197,7 @@ export default function App() {
     <ScrollToTop />
     <CanonicalTag />
     <PageViewTracker />
+    <Suspense fallback={<RouteFallback />}>
     <Routes>
       {/* Admin area: its own login page and dashboard shell, no store chrome */}
       <Route path="/admin/login" element={<AdminLogin />} />
@@ -334,6 +354,7 @@ export default function App() {
         <Route path="*" element={<NotFound />} />
       </Route>
     </Routes>
+    </Suspense>
     </>
   );
 }

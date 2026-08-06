@@ -232,7 +232,7 @@ export default function Home() {
         <div className="category-trio">
           {categories.map((cat) => (
             <Link key={cat.slug} to={`/shop?category=${cat.slug}`} className="category-tile">
-              <img src={getProductImage(cat.image)} alt={cat.label} />
+              <img src={getProductImage(cat.image)} alt={cat.label} loading="lazy" />
               <div className="overlay" />
               <div className="label">
                 <span>{t('catTag')}</span>
@@ -367,6 +367,7 @@ export default function Home() {
           <img
             src={skincareCertificate}
             alt="Certificate of completion for the Basic Skin & Hair Care Products Making Workshop"
+            loading="lazy"
             draggable={false}
             onContextMenu={(e) => e.preventDefault()}
           />
