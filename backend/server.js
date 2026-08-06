@@ -30,6 +30,7 @@ const { processReorderNudges } = require('./utils/reorderNudges');
 const whatsappBaileys = require('./utils/whatsappBaileys');
 const mediaRoutes = require('./routes/media');
 const catalogRoutes = require('./routes/catalog');
+const botMeta = require('./utils/botMeta');
 const blogRoutes = require('./routes/blog');
 const pageBannerRoutes = require('./routes/pageBanners');
 const sitemapRoutes = require('./routes/sitemap');
@@ -105,8 +106,30 @@ app.use('/catalog-images', express.static(path.join(__dirname, 'public', 'catalo
 const distDir = path.join(__dirname, '..', 'frontend', 'dist');
 if (fs.existsSync(distDir)) {
   app.use(express.static(distDir));
-  app.get(/^\/(?!api|uploads).*/, (req, res) => {
-    res.sendFile(path.join(distDir, 'index.html'));
+  const indexPath = path.join(distDir, 'index.html');
+  // Read once at boot, not per-request — this file never changes between
+  // deploys without a restart, and re-reading it on every crawler hit would
+  // be pointless disk I/O.
+  const indexTemplate = fs.readFileSync(indexPath, 'utf8');
+
+  app.get(/^\/(?!api|uploads).*/, async (req, res) => {
+    // Everyday browser traffic: byte-identical to before this change, same
+    // sendFile call, same fast path. The meta-injection code below only ever
+    // runs for a request whose User-Agent matches a known non-JS crawler.
+    if (!botMeta.isBot(req.get('user-agent'))) {
+      return res.sendFile(indexPath);
+    }
+    try {
+      const meta = await botMeta.getMetaForRoute(req.path);
+      res.set('Content-Type', 'text/html');
+      res.send(meta ? botMeta.injectMeta(indexTemplate, meta) : indexTemplate);
+    } catch (err) {
+      // A lookup failure here must never be worse than doing nothing —
+      // fall back to the exact same page every crawler already gets today.
+      console.error('[botMeta] falling back to default template:', err.message);
+      res.set('Content-Type', 'text/html');
+      res.send(indexTemplate);
+    }
   });
 }
 
