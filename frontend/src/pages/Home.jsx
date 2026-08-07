@@ -265,8 +265,8 @@ export default function Home() {
           <ProductGridSkeleton count={4} />
         ) : (
           <div className="grid">
-            {products.slice(0, 4).map((p) => (
-              <ProductCard key={p.id} product={p} />
+            {products.slice(0, 4).map((p, i) => (
+              <ProductCard key={p.id} product={p} index={i} />
             ))}
           </div>
         )}
@@ -283,8 +283,8 @@ export default function Home() {
             <Link to="/combos" className="btn btn-outline btn-sm">{t('viewAll')}</Link>
           </div>
           <div className="grid">
-            {comboProducts.slice(0, 4).map((p) => (
-              <ProductCard key={p.id} product={p} />
+            {comboProducts.slice(0, 4).map((p, i) => (
+              <ProductCard key={p.id} product={p} index={i} />
             ))}
           </div>
         </Reveal>
@@ -300,8 +300,8 @@ export default function Home() {
             </div>
           </div>
           <div className="grid">
-            {recommendedProducts.map((p) => (
-              <ProductCard key={p.id} product={p} />
+            {recommendedProducts.map((p, i) => (
+              <ProductCard key={p.id} product={p} index={i} />
             ))}
           </div>
         </Reveal>
@@ -317,8 +317,8 @@ export default function Home() {
             </div>
           </div>
           <div className="grid">
-            {recentProducts.map((p) => (
-              <ProductCard key={p.id} product={p} />
+            {recentProducts.map((p, i) => (
+              <ProductCard key={p.id} product={p} index={i} />
             ))}
           </div>
         </Reveal>

@@ -838,6 +838,20 @@ p { margin: 0 0 1em; }
   .reveal { opacity: 1; transform: none; transition: none; }
 }
 
+/* Cards use a separate opacity-only reveal (no translateY) because
+   .product-card already owns `transform` for its own hover-lift — sharing
+   .reveal's transform transition here would fight that: whichever rule's
+   `transition` shorthand wins by source order would silently drop the
+   other's duration, making either the entrance or the hover feel wrong. */
+.product-card.card-reveal {
+  opacity: 0;
+  transition: opacity 0.5s ease, transform 0.2s ease, box-shadow 0.2s ease;
+}
+.product-card.card-reveal.card-reveal-visible { opacity: 1; }
+@media (prefers-reduced-motion: reduce) {
+  .product-card.card-reveal { opacity: 1; transition: transform 0.2s ease, box-shadow 0.2s ease; }
+}
+
 .icon-btn.cart-icon-bounce { animation: cartIconBounce 0.5s ease; }
 @keyframes cartIconBounce {
   0% { transform: scale(1); }
@@ -1991,7 +2005,8 @@ input:focus-visible + .filter-radio { outline: 2px solid var(--gold-2); outline-
   overflow: hidden;
   border-radius: var(--radius-md) var(--radius-md) 0 0;
 }
-.blog-card-media img { width: 100%; height: 100%; object-fit: cover; }
+.blog-card-media img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.4s ease; }
+.blog-card:hover .blog-card-media img { transform: scale(1.06); }
 .blog-card-body { padding: 20px 22px 16px; }
 .blog-card-share {
   display: flex;

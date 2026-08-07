@@ -12,8 +12,16 @@ import { useLang } from '../i18n';
 import { localizeProductText } from '../utils/productLocale';
 import { getEffectivePrice, isWholesalePriceApplied } from '../utils/pricing';
 import { flyToCart } from '../utils/flyToCart';
+import { useReveal } from '../hooks/useReveal';
 
-export default function ProductCard({ product }) {
+// Caps how long a big grid takes to finish cascading in — beyond this many
+// cards, later ones just reveal at the same delay as the last staggered one
+// instead of the user waiting seconds for row 6 to show up.
+const MAX_STAGGER_INDEX = 7;
+const STAGGER_STEP_MS = 60;
+
+export default function ProductCard({ product, index }) {
+  const { ref: revealRef, visible: revealed } = useReveal();
   const { productIds, toggleWishlist } = useWishlist();
   const { addItem } = useCart();
   const { showToast } = useToast();
@@ -102,7 +110,12 @@ export default function ProductCard({ product }) {
   }
 
   return (
-    <Link to={`/product/${product.id}`} className="product-card">
+    <Link
+      to={`/product/${product.id}`}
+      ref={revealRef}
+      className={`product-card card-reveal ${revealed ? 'card-reveal-visible' : ''}`}
+      style={index != null ? { transitionDelay: `${Math.min(index, MAX_STAGGER_INDEX) * STAGGER_STEP_MS}ms` } : undefined}
+    >
       <div
         className="product-media"
         onMouseMove={handleMediaMouseMove}

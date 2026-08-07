@@ -301,8 +301,8 @@ export default function Shop() {
             <ProductGridSkeleton count={dense ? 12 : 8} dense={dense} />
           ) : products.length ? (
             <div className={`grid ${dense ? 'grid-compact' : ''}`}>
-              {products.map((p) => (
-                <ProductCard key={p.id} product={p} />
+              {products.map((p, i) => (
+                <ProductCard key={p.id} product={p} index={i} />
               ))}
             </div>
           ) : (
