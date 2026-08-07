@@ -5,7 +5,7 @@ import { useCart } from '../context/CartContext';
 import { useToast } from '../context/ToastContext';
 import { getProductImage } from '../utils/productImages';
 
-function ProductChatCard({ product }) {
+export function ProductChatCard({ product }) {
   const { addItem } = useCart();
   const { showToast } = useToast();
   if (!product) return null;

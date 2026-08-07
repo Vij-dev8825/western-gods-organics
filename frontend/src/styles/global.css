@@ -828,6 +828,23 @@ p { margin: 0 0 1em; }
 .price-row .price { font-family: var(--font-mono); font-weight: 500; font-size: 1.1rem; color: var(--forest-deep); }
 .price-row .mrp { text-decoration: line-through; color: #a09a89; font-size: 0.85rem; }
 .price-row .off { color: #2f7a45; font-size: 0.78rem; font-weight: 600; }
+.harvest-ribbon {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--gold-1);
+  background: rgba(111, 174, 79, 0.12);
+  border: 1px solid rgba(111, 174, 79, 0.3);
+  border-radius: 999px;
+  padding: 4px 12px;
+  margin: 2px 0 10px;
+  text-decoration: none;
+  transition: background 0.15s ease;
+}
+.harvest-ribbon:hover { background: rgba(111, 174, 79, 0.22); }
+
 .price-row .wholesale-badge {
   color: var(--forest-deep);
   background: rgba(111, 174, 79, 0.16);
@@ -2534,6 +2551,16 @@ input:focus-visible + .filter-radio { outline: 2px solid var(--gold-2); outline-
   background: rgba(111, 174, 79,0.08);
   border-radius: var(--radius-sm);
   padding: 12px 14px;
+}
+.ai-no-results {
+  margin: 20px auto 0;
+  max-width: 480px;
+  text-align: left;
+}
+.ai-no-results-msg {
+  font-size: 0.9rem;
+  color: var(--forest-light);
+  margin-bottom: 10px;
 }
 .ai-product-cards {
   display: flex;

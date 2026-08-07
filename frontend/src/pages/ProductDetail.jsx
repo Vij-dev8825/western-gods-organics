@@ -26,6 +26,7 @@ import { useLang } from '../i18n';
 import { localizeProductText } from '../utils/productLocale';
 import { buildBreadcrumbSchema } from '../utils/breadcrumbSchema';
 import { GUIDE_CATEGORY } from './Blog';
+import { STORE_LOCATIONS } from '../data/storeLocations';
 
 const SUBSCRIPTION_DISCOUNT_PERCENT = 10;
 const MIN_FREQUENCY_DAYS = 7;
@@ -108,6 +109,20 @@ function buildProductSchema(product) {
   }
 
   return schema;
+}
+
+// A ribbon reading "pressed 8 months ago" undercuts freshness instead of
+// signaling it, so only lead with elapsed time for genuinely recent batches —
+// older ones still link through to the batch passport, just without an age
+// callout that would read as stale. Returns null outside that window.
+const RECENT_BATCH_DAYS = 60;
+function recentHarvestLabel(productionDate) {
+  const days = Math.floor((Date.now() - new Date(productionDate).getTime()) / 86400000);
+  if (days < 0 || days > RECENT_BATCH_DAYS) return null;
+  if (days === 0) return 'pressed today';
+  if (days === 1) return 'pressed yesterday';
+  if (days < 14) return `pressed ${days} days ago`;
+  return `pressed ${Math.round(days / 7)} weeks ago`;
 }
 
 export default function ProductDetail() {
@@ -262,6 +277,7 @@ export default function ProductDetail() {
     );
   }
 
+  const freshBatchLabel = product.productionDate ? recentHarvestLabel(product.productionDate) : null;
   const activeSize = product.sizes.find((s) => s.label === size) || product.sizes[0];
   const discount = Math.round(((activeSize.mrp - activeSize.price) / activeSize.mrp) * 100);
   const outOfStock = activeSize.stock <= 0;
@@ -498,6 +514,13 @@ export default function ProductDetail() {
             </p>
           )}
           <h1>{product.name}</h1>
+          {product.batchNumber && (
+            <Link to={`/batch/${encodeURIComponent(product.batchNumber)}`} className="harvest-ribbon">
+              🌿 Batch {product.batchNumber}
+              {freshBatchLabel && ` · ${freshBatchLabel}${!product.sellerName ? ` in ${STORE_LOCATIONS[0].locality}` : ''}`}
+              <span aria-hidden="true"> →</span>
+            </Link>
+          )}
           {product.sellerName && (
             <p className="muted" style={{ fontSize: '0.85rem', margin: '2px 0 8px' }}>
               {/* Only a marketplace seller is the seller of record. A supplier

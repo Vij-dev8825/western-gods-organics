@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { api } from '../api';
 import ProductCard from '../components/ProductCard';
 import ProductGridSkeleton from '../components/ProductCardSkeleton';
+import { ProductChatCard } from '../components/AiAssistant';
 import ChakkiWheel from '../components/ChakkiWheel';
 import PageBanner from '../components/PageBanner';
 import SeoMeta from '../components/SeoMeta';
@@ -22,6 +23,9 @@ export default function Shop() {
   const [loading, setLoading] = useState(true);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [dense, setDense] = useState(false);
+  const [aiFallback, setAiFallback] = useState(null); // { reply, productIds } once a zero-result search resolves
+  const [aiFallbackLoading, setAiFallbackLoading] = useState(false);
+  const [aiFallbackProducts, setAiFallbackProducts] = useState([]);
 
   const category = searchParams.get('category') || 'all';
   const sort = searchParams.get('sort') || '';
@@ -45,6 +49,39 @@ export default function Shop() {
       .then((d) => setProducts(d.products))
       .finally(() => setLoading(false));
   }, [category, sort, search, price, isNewOnly]);
+
+  // Reuses the existing Gemini-backed shopping assistant instead of leaving
+  // a dead "no results" state — Mamaearth's own search (researched worldwide
+  // comparison) does exactly that: a bare "0 results" with no recovery path.
+  useEffect(() => {
+    if (loading || products.length > 0 || !search.trim()) {
+      setAiFallback(null);
+      return undefined;
+    }
+    let cancelled = false;
+    setAiFallbackLoading(true);
+    api
+      .askAiAssistant(
+        `A customer searched "${search.trim()}" on the Shop page and got zero results. Suggest up to 4 products from the catalog that might be what they meant or a close alternative, with a brief one-sentence reason.`,
+        []
+      )
+      .then((d) => { if (!cancelled) setAiFallback(d); })
+      .catch(() => { if (!cancelled) setAiFallback(null); })
+      .finally(() => { if (!cancelled) setAiFallbackLoading(false); });
+    return () => { cancelled = true; };
+  }, [loading, products.length, search]);
+
+  useEffect(() => {
+    if (!aiFallback?.productIds?.length) {
+      setAiFallbackProducts([]);
+      return undefined;
+    }
+    let cancelled = false;
+    Promise.all(
+      aiFallback.productIds.map((id) => api.getProduct(id, token).then((d) => d.product).catch(() => null))
+    ).then((list) => { if (!cancelled) setAiFallbackProducts(list.filter(Boolean)); });
+    return () => { cancelled = true; };
+  }, [aiFallback, token]);
 
   function updateParam(key, value) {
     const next = new URLSearchParams(searchParams);
@@ -273,6 +310,23 @@ export default function Shop() {
               <ChakkiWheel size={56} spin={false} />
               <h3>{t('noMatch')}</h3>
               <p className="muted">{t('noMatchSub')}</p>
+              {search.trim() && (
+                <div className="ai-no-results">
+                  {aiFallbackLoading && <p className="muted">✨ Checking if we have something close…</p>}
+                  {!aiFallbackLoading && aiFallback?.reply && (
+                    <>
+                      <p className="ai-no-results-msg">✨ {aiFallback.reply}</p>
+                      {aiFallbackProducts.length > 0 && (
+                        <div className="ai-product-cards">
+                          {aiFallbackProducts.map((p) => (
+                            <ProductChatCard key={p.id} product={p} />
+                          ))}
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+              )}
             </div>
           )}
         </div>
