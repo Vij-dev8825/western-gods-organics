@@ -165,6 +165,7 @@ router.get('/categories', async (req, res, next) => {
         slug: c.id,
         label: c.label,
         image: c.image,
+        description: c.description || '',
         count: products.filter((p) => p.category === c.id).length,
       })),
       totalCount: products.length,

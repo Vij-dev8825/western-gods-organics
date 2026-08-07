@@ -515,6 +515,10 @@ router.post('/categories', async (req, res, next) => {
       id,
       label: req.body.label,
       image: req.body.image || '',
+      // Body copy shown on the category's own /shop?category= page — this is
+      // what a category needs to genuinely rank for its own term rather than
+      // being a bare list of products with no supporting text.
+      description: req.body.description || '',
       sort: categories.length,
     };
     await db.put('categories', category);

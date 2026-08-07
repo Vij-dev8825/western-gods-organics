@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { Fragment, useEffect, useRef, useState } from 'react';
 import { api } from '../../api';
 import { useAuth } from '../../context/AuthContext';
 import { getProductImage } from '../../utils/productImages';
@@ -9,8 +9,12 @@ export default function AdminCategories() {
   const [categories, setCategories] = useState([]);
   const [label, setLabel] = useState('');
   const [image, setImage] = useState('');
+  const [description, setDescription] = useState('');
   const [message, setMessage] = useState(null);
   const [rowUploading, setRowUploading] = useState(null); // category id currently uploading
+  const [openDescId, setOpenDescId] = useState(null); // category id whose description editor is open
+  const [descDraft, setDescDraft] = useState('');
+  const [savingDesc, setSavingDesc] = useState(false);
   const rowFileInputs = useRef({});
 
   function load() {
@@ -22,9 +26,10 @@ export default function AdminCategories() {
     e.preventDefault();
     setMessage(null);
     try {
-      await api.admin.createCategory(token, { label, image });
+      await api.admin.createCategory(token, { label, image, description });
       setLabel('');
       setImage('');
+      setDescription('');
       setMessage({ type: 'success', text: 'Category added.' });
       load();
     } catch (err) {
@@ -40,6 +45,29 @@ export default function AdminCategories() {
       load();
     } catch (err) {
       setMessage({ type: 'error', text: err.message });
+    }
+  }
+
+  function toggleDescEditor(c) {
+    if (openDescId === c.id) {
+      setOpenDescId(null);
+      return;
+    }
+    setOpenDescId(c.id);
+    setDescDraft(c.description || '');
+  }
+
+  async function saveDescription(c) {
+    setSavingDesc(true);
+    try {
+      await api.admin.updateCategory(token, c.id, { description: descDraft });
+      setMessage({ type: 'success', text: `Description saved for "${c.label}".` });
+      setOpenDescId(null);
+      load();
+    } catch (err) {
+      setMessage({ type: 'error', text: err.message });
+    } finally {
+      setSavingDesc(false);
     }
   }
 
@@ -89,12 +117,23 @@ export default function AdminCategories() {
 
       {message && <div className={`alert alert-${message.type}`}>{message.text}</div>}
 
-      <form className="admin-card form-inline" onSubmit={add}>
-        <div className="field" style={{ flex: 1 }}>
-          <label>New category label</label>
-          <input value={label} onChange={(e) => setLabel(e.target.value)} placeholder="e.g. Mustard Oil" required />
+      <form className="admin-card" onSubmit={add}>
+        <div className="form-inline" style={{ marginBottom: 12 }}>
+          <div className="field" style={{ flex: 1 }}>
+            <label>New category label</label>
+            <input value={label} onChange={(e) => setLabel(e.target.value)} placeholder="e.g. Mustard Oil" required />
+          </div>
+          <ImageUploadField value={image} onChange={setImage} label="Tile image" />
         </div>
-        <ImageUploadField value={image} onChange={setImage} label="Tile image" />
+        <div className="field">
+          <label>Category page description (optional, but worth writing)</label>
+          <textarea
+            rows={3}
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="A couple of sentences shown on this category's own page — what it is, how it's used, what makes it different. This is what gives the page a real chance of ranking for its own search term, instead of being a bare product grid."
+          />
+        </div>
         <button className="btn btn-gold btn-sm">+ Add category</button>
       </form>
 
@@ -105,46 +144,70 @@ export default function AdminCategories() {
           </thead>
           <tbody>
             {categories.map((c) => (
-              <tr key={c.id}>
-                <td><img className="thumb" src={getProductImage(c.image)} alt="" /></td>
-                <td>
-                  <b>{c.label}</b>
-                  {c.pending && (
-                    <>
-                      <br />
-                      <span className="pill warn">Proposed by {c.proposedByName || 'a seller'}</span>
-                    </>
-                  )}
-                </td>
-                <td><code>{c.id}</code></td>
-                <td>
-                  {c.pending && (
-                    <>
-                      <button className="link-btn" onClick={() => approve(c)}><b>approve</b></button>{' '}
-                    </>
-                  )}
-                  <button className="link-btn" onClick={() => rename(c)}>rename</button>{' '}
-                  <button
-                    className="link-btn"
-                    disabled={rowUploading === c.id}
-                    onClick={() => rowFileInputs.current[c.id]?.click()}
-                  >
-                    {rowUploading === c.id ? 'uploading…' : 'change image'}
-                  </button>{' '}
-                  <button className="link-btn danger" onClick={() => del(c)}>delete</button>
-                  <input
-                    type="file"
-                    accept="image/jpeg,image/png,image/webp"
-                    ref={(el) => (rowFileInputs.current[c.id] = el)}
-                    onChange={(e) => {
-                      const file = e.target.files[0];
-                      e.target.value = '';
-                      if (file) changeRowImage(c, file);
-                    }}
-                    hidden
-                  />
-                </td>
-              </tr>
+              <Fragment key={c.id}>
+                <tr>
+                  <td><img className="thumb" src={getProductImage(c.image)} alt="" /></td>
+                  <td>
+                    <b>{c.label}</b>
+                    {c.pending && (
+                      <>
+                        <br />
+                        <span className="pill warn">Proposed by {c.proposedByName || 'a seller'}</span>
+                      </>
+                    )}
+                  </td>
+                  <td><code>{c.id}</code></td>
+                  <td>
+                    {c.pending && (
+                      <>
+                        <button className="link-btn" onClick={() => approve(c)}><b>approve</b></button>{' '}
+                      </>
+                    )}
+                    <button className="link-btn" onClick={() => rename(c)}>rename</button>{' '}
+                    <button
+                      className="link-btn"
+                      disabled={rowUploading === c.id}
+                      onClick={() => rowFileInputs.current[c.id]?.click()}
+                    >
+                      {rowUploading === c.id ? 'uploading…' : 'change image'}
+                    </button>{' '}
+                    <button className="link-btn" onClick={() => toggleDescEditor(c)}>
+                      {c.description ? 'edit description' : 'add description'}
+                    </button>{' '}
+                    <button className="link-btn danger" onClick={() => del(c)}>delete</button>
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                      ref={(el) => (rowFileInputs.current[c.id] = el)}
+                      onChange={(e) => {
+                        const file = e.target.files[0];
+                        e.target.value = '';
+                        if (file) changeRowImage(c, file);
+                      }}
+                      hidden
+                    />
+                  </td>
+                </tr>
+                {openDescId === c.id && (
+                  <tr>
+                    <td colSpan={4} style={{ background: 'rgba(31,61,43,0.03)' }}>
+                      <div className="field" style={{ margin: '8px 0' }}>
+                        <label>Description shown on /shop?category={c.id}</label>
+                        <textarea
+                          rows={3}
+                          value={descDraft}
+                          onChange={(e) => setDescDraft(e.target.value)}
+                          autoFocus
+                        />
+                      </div>
+                      <button className="btn btn-gold btn-sm" disabled={savingDesc} onClick={() => saveDescription(c)}>
+                        {savingDesc ? 'Saving…' : 'Save description'}
+                      </button>{' '}
+                      <button className="btn btn-ghost btn-sm" onClick={() => setOpenDescId(null)}>Cancel</button>
+                    </td>
+                  </tr>
+                )}
+              </Fragment>
             ))}
           </tbody>
         </table>

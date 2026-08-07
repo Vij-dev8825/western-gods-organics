@@ -175,7 +175,7 @@ function PageViewTracker() {
 // the HTML — otherwise every page would claim the homepage as canonical
 // and Google would drop the rest of the site from its index.
 function CanonicalTag() {
-  const { pathname } = useLocation();
+  const { pathname, search } = useLocation();
   useEffect(() => {
     let link = document.querySelector('link[rel="canonical"]');
     if (!link) {
@@ -183,8 +183,17 @@ function CanonicalTag() {
       link.setAttribute('rel', 'canonical');
       document.head.appendChild(link);
     }
-    link.setAttribute('href', `${CANONICAL_ORIGIN}${pathname}`);
-  }, [pathname]);
+    // Every other query param (sort, search, price, isNew…) genuinely should
+    // canonicalize away — there's no reason for Google to treat "/shop
+    // sorted by price" as a page distinct from "/shop". `category` is the one
+    // exception: /shop?category=X is deliberately a real, separately-listed
+    // entity (see sitemap.js and Shop.jsx's own per-category description) —
+    // canonicalizing it down to bare /shop would tell Google to disregard
+    // exactly the distinction the rest of that work depends on.
+    const category = new URLSearchParams(search).get('category');
+    const suffix = pathname === '/shop' && category && category !== 'all' ? `?category=${category}` : '';
+    link.setAttribute('href', `${CANONICAL_ORIGIN}${pathname}${suffix}`);
+  }, [pathname, search]);
   return null;
 }
 

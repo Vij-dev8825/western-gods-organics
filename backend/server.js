@@ -107,10 +107,6 @@ const distDir = path.join(__dirname, '..', 'frontend', 'dist');
 if (fs.existsSync(distDir)) {
   app.use(express.static(distDir));
   const indexPath = path.join(distDir, 'index.html');
-  // Read once at boot, not per-request — this file never changes between
-  // deploys without a restart, and re-reading it on every crawler hit would
-  // be pointless disk I/O.
-  const indexTemplate = fs.readFileSync(indexPath, 'utf8');
 
   app.get(/^\/(?!api|uploads).*/, async (req, res) => {
     // Everyday browser traffic: byte-identical to before this change, same
@@ -120,15 +116,22 @@ if (fs.existsSync(distDir)) {
       return res.sendFile(indexPath);
     }
     try {
-      const meta = await botMeta.getMetaForRoute(req.path);
+      // Read fresh on every bot request rather than caching at boot — a
+      // frontend-only deploy (rebuild, no backend restart) replaces this
+      // file with one referencing newly hashed JS chunks; a cached copy
+      // would keep pointing bots at chunks the new build just deleted until
+      // the process happened to restart. The file is a few KB and the OS
+      // keeps it page-cached, so this costs nothing worth trading
+      // correctness for.
+      const indexTemplate = fs.readFileSync(indexPath, 'utf8');
+      const meta = await botMeta.getMetaForRoute(req.path, req.query);
       res.set('Content-Type', 'text/html');
       res.send(meta ? botMeta.injectMeta(indexTemplate, meta) : indexTemplate);
     } catch (err) {
       // A lookup failure here must never be worse than doing nothing —
       // fall back to the exact same page every crawler already gets today.
       console.error('[botMeta] falling back to default template:', err.message);
-      res.set('Content-Type', 'text/html');
-      res.send(indexTemplate);
+      res.sendFile(indexPath);
     }
   });
 }

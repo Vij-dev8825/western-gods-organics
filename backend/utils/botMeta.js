@@ -100,9 +100,28 @@ const STATIC_ROUTE_META = {
  * customizing, or null to leave index.html exactly as it is (the default,
  * safe outcome for every route not explicitly handled below, and for
  * anything that fails to load — a missing product shouldn't break the page,
- * it should just fall back to the site's own default tags). */
-async function getMetaForRoute(pathname) {
-  const url = `${CANONICAL_ORIGIN}${pathname}`;
+ * it should just fall back to the site's own default tags).
+ *
+ * `pathname` is path-only (no query) — a `/shop?category=X` link is handled
+ * as a special case below via `query`, since that's exactly the URL shape
+ * the sitemap lists one entry per category under (see sitemap.js) and each
+ * one deserves its own title/description, not the generic "Shop All
+ * Products" every other query on /shop correctly falls back to. */
+async function getMetaForRoute(pathname, query = {}) {
+  const url = `${CANONICAL_ORIGIN}${pathname}${query.category ? `?category=${encodeURIComponent(query.category)}` : ''}`;
+
+  if (pathname === '/shop' && query.category && query.category !== 'all') {
+    const categories = await db.list('categories');
+    const cat = categories.find((c) => c.id === query.category && !c.pending);
+    if (!cat) return null;
+    return {
+      title: `${cat.label} | Western Gods Organics`,
+      description: (cat.description || STATIC_ROUTE_META['/shop'].description).slice(0, 160),
+      image: resolveImage(cat.image),
+      url,
+      type: 'website',
+    };
+  }
 
   if (STATIC_ROUTE_META[pathname]) {
     return { ...STATIC_ROUTE_META[pathname], url, type: 'website' };

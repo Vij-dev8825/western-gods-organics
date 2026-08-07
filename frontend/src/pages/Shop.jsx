@@ -58,6 +58,16 @@ export default function Shop() {
     return found ? found.label : t('allProducts');
   }, [category, categories, t]);
 
+  // Written per-category in Admin -> Categories. This is the difference
+  // between the page being a bare product grid and having a genuine chance
+  // of ranking for its own search term — see Keerai Kadai's own
+  // /collections/dip-soup page for what a category page that actually
+  // competes looks like.
+  const categoryDescription = useMemo(() => {
+    if (category === 'all') return '';
+    return categories.find((c) => c.slug === category)?.description || '';
+  }, [category, categories]);
+
   // Lets Google understand this page lists specific products, not just text —
   // only meaningful with an explicit crawl order, so it's skipped whenever a
   // sort/search/filter has scrambled the "recommended" order into something
@@ -89,8 +99,10 @@ export default function Shop() {
     <div className="section" style={{ paddingTop: 0 }}>
       <SeoMeta
         title={category === 'all' ? 'Shop All Products | Western Gods Organics' : `${heading} | Western Gods Organics`}
-        description="Browse our cold-pressed oils, handmade herbal soaps and stone-ground herbal powders — 100% natural, shipped across India and worldwide."
-        path="/shop"
+        description={
+          (categoryDescription || 'Browse our cold-pressed oils, handmade herbal soaps and stone-ground herbal powders — 100% natural, shipped across India and worldwide.').slice(0, 160)
+        }
+        path={category === 'all' ? '/shop' : `/shop?category=${category}`}
       />
       <StructuredData id="ld-breadcrumb" data={breadcrumbSchema} />
       {itemListSchema && <StructuredData id="ld-itemlist" data={itemListSchema} />}
@@ -101,6 +113,9 @@ export default function Shop() {
         <div>
           <span className="eyebrow">{t('shopTitle')}</span>
           <h2>{search ? `${t('searchResultsFor')} "${search}"` : heading}</h2>
+          {!search && categoryDescription && (
+            <p className="muted" style={{ maxWidth: 640, marginTop: 6 }}>{categoryDescription}</p>
+          )}
         </div>
       </div>
 
