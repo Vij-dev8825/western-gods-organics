@@ -113,7 +113,7 @@ export default function Navbar() {
             <IconHeart filled={productIds.length > 0} />
             {productIds.length > 0 && <span className="badge-count">{productIds.length}</span>}
           </button>
-          <button className="icon-btn" aria-label="Cart" onClick={() => navigate('/cart')}>
+          <button id="navbar-cart-icon" className="icon-btn" aria-label="Cart" onClick={() => navigate('/cart')}>
             <IconBag />
             {totalCount > 0 && <span className="badge-count">{totalCount}</span>}
           </button>

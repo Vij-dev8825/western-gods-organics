@@ -4,6 +4,7 @@ import { api } from '../api';
 import ProductCard from '../components/ProductCard';
 import ProductGridSkeleton from '../components/ProductCardSkeleton';
 import SectionDivider from '../components/SectionDivider';
+import Reveal from '../components/Reveal';
 import ChakkiWheel from '../components/ChakkiWheel';
 import GoogleReviewsWidget from '../components/GoogleReviewsWidget';
 import UgcGallery from '../components/UgcGallery';
@@ -208,7 +209,7 @@ export default function Home() {
       </section>
 
       {/* ---------- USP strip ---------- */}
-      <section className="usp-strip">
+      <Reveal as="section" className="usp-strip">
         <div className="container usp-grid">
           {USP_ICONS.map((icon, i) => (
             <div className="usp" key={icon}>
@@ -220,10 +221,10 @@ export default function Home() {
             </div>
           ))}
         </div>
-      </section>
+      </Reveal>
 
       {/* ---------- Categories ---------- */}
-      <section className="section container">
+      <Reveal as="section" className="section container">
         <div className="section-head">
           <div>
             <span className="eyebrow">{t('catEyebrow')}</span>
@@ -243,12 +244,12 @@ export default function Home() {
             </Link>
           ))}
         </div>
-      </section>
+      </Reveal>
 
       <SectionDivider />
 
       {/* ---------- Bestsellers ---------- */}
-      <section className="section container">
+      <Reveal as="section" className="section container">
         <div className="section-head">
           <div>
             <span className="eyebrow">{t('bestEyebrow')}</span>
@@ -269,11 +270,11 @@ export default function Home() {
             ))}
           </div>
         )}
-      </section>
+      </Reveal>
 
       {/* ---------- Combo offers ---------- */}
       {comboProducts.length > 0 && (
-        <section className="section container">
+        <Reveal as="section" className="section container">
           <div className="section-head">
             <div>
               <span className="eyebrow">Bundle & save</span>
@@ -286,12 +287,12 @@ export default function Home() {
               <ProductCard key={p.id} product={p} />
             ))}
           </div>
-        </section>
+        </Reveal>
       )}
 
       {/* ---------- Recommended for you (logged-in, purchase-history-based) ---------- */}
       {recommendedProducts.length > 0 && (
-        <section className="section container">
+        <Reveal as="section" className="section container">
           <div className="section-head">
             <div>
               <span className="eyebrow">Just for you</span>
@@ -303,12 +304,12 @@ export default function Home() {
               <ProductCard key={p.id} product={p} />
             ))}
           </div>
-        </section>
+        </Reveal>
       )}
 
       {/* ---------- Recently viewed ---------- */}
       {recentProducts.length > 0 && (
-        <section className="section container">
+        <Reveal as="section" className="section container">
           <div className="section-head">
             <div>
               <span className="eyebrow">Welcome back</span>
@@ -320,14 +321,14 @@ export default function Home() {
               <ProductCard key={p.id} product={p} />
             ))}
           </div>
-        </section>
+        </Reveal>
       )}
 
       <SectionDivider />
 
       {/* ---------- Watch how it's made ---------- */}
       {banners[1] && banners[1].type === 'video' && (
-        <section className="section container">
+        <Reveal as="section" className="section container">
           <div className="feature-split">
             <div className="feature-video">
               <video src={banners[1].url} autoPlay muted loop playsInline />
@@ -344,11 +345,11 @@ export default function Home() {
               <Link to="/shop" className="btn btn-forest">{t('watchCta')}</Link>
             </div>
           </div>
-        </section>
+        </Reveal>
       )}
 
       {/* ---------- Process ---------- */}
-      <section className="section container">
+      <Reveal as="section" className="section container">
         <div className="section-head">
           <div>
             <span className="eyebrow">{t('processEyebrow')}</span>
@@ -364,10 +365,10 @@ export default function Home() {
             </div>
           ))}
         </div>
-      </section>
+      </Reveal>
 
       {/* ---------- Certification ---------- */}
-      <section className="section container center">
+      <Reveal as="section" className="section container center">
         <span className="eyebrow">Certified &amp; trained</span>
         <h2 style={{ marginBottom: 8 }}>Trained in organic skin &amp; hair care making</h2>
         <p className="muted" style={{ maxWidth: 480, margin: '0 auto 24px' }}>
@@ -387,12 +388,12 @@ export default function Home() {
             ))}
           </div>
         </div>
-      </section>
+      </Reveal>
 
       <SectionDivider />
 
       {/* ---------- Testimonials ---------- */}
-      <section className="section container">
+      <Reveal as="section" className="section container">
         <div className="section-head">
           <div>
             <span className="eyebrow">{t('testiEyebrow')}</span>
@@ -410,20 +411,20 @@ export default function Home() {
             </figure>
           ))}
         </div>
-      </section>
+      </Reveal>
 
-      <GoogleReviewsWidget />
+      <Reveal><GoogleReviewsWidget /></Reveal>
 
-      <ImpactBanner />
-      <UgcGallery />
+      <Reveal><ImpactBanner /></Reveal>
+      <Reveal><UgcGallery /></Reveal>
 
       {/* ---------- Bulk CTA ---------- */}
-      <section className="section container center" style={{ paddingTop: 0 }}>
+      <Reveal as="section" className="section container center" style={{ paddingTop: 0 }}>
         <ChakkiWheel size={60} />
         <h2 style={{ marginTop: 20 }}>{t('bulkTitle')}</h2>
         <p className="muted" style={{ maxWidth: 480, margin: '0 auto 24px' }}>{t('bulkDesc')}</p>
         <Link to="/bulk-enquiry" className="btn btn-forest">{t('bulkCta')}</Link>
-      </section>
+      </Reveal>
     </>
   );
 }

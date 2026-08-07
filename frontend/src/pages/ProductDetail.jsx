@@ -27,6 +27,7 @@ import { localizeProductText } from '../utils/productLocale';
 import { buildBreadcrumbSchema } from '../utils/breadcrumbSchema';
 import { GUIDE_CATEGORY } from './Blog';
 import { STORE_LOCATIONS } from '../data/storeLocations';
+import { flyToCart } from '../utils/flyToCart';
 
 const SUBSCRIPTION_DISCOUNT_PERCENT = 10;
 const MIN_FREQUENCY_DAYS = 7;
@@ -294,6 +295,7 @@ export default function ProductDetail() {
 
   function handleAdd() {
     if (outOfStock) return;
+    flyToCart(document.querySelector('.product-media-zoomable img'));
     addItem(product.id, size, qty);
     showToast(`${product.name} (${size}) ×${qty} added to cart`);
   }

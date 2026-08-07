@@ -11,6 +11,7 @@ import { IconHeart } from './Icons';
 import { useLang } from '../i18n';
 import { localizeProductText } from '../utils/productLocale';
 import { getEffectivePrice, isWholesalePriceApplied } from '../utils/pricing';
+import { flyToCart } from '../utils/flyToCart';
 
 export default function ProductCard({ product }) {
   const { productIds, toggleWishlist } = useWishlist();
@@ -59,6 +60,7 @@ export default function ProductCard({ product }) {
   function handleAdd(e) {
     e.preventDefault();
     if (outOfStock) return;
+    flyToCart(e.currentTarget.closest('.product-card')?.querySelector('.product-media img'));
     addItem(product.id, size, qty);
     showToast(`${product.name} (${size}) ×${qty} added to cart`);
   }

@@ -828,6 +828,27 @@ p { margin: 0 0 1em; }
 .price-row .price { font-family: var(--font-mono); font-weight: 500; font-size: 1.1rem; color: var(--forest-deep); }
 .price-row .mrp { text-decoration: line-through; color: #a09a89; font-size: 0.85rem; }
 .price-row .off { color: #2f7a45; font-size: 0.78rem; font-weight: 600; }
+.reveal {
+  opacity: 0;
+  transform: translateY(28px);
+  transition: opacity 0.7s ease, transform 0.7s ease;
+}
+.reveal.reveal-visible { opacity: 1; transform: translateY(0); }
+@media (prefers-reduced-motion: reduce) {
+  .reveal { opacity: 1; transform: none; transition: none; }
+}
+
+.icon-btn.cart-icon-bounce { animation: cartIconBounce 0.5s ease; }
+@keyframes cartIconBounce {
+  0% { transform: scale(1); }
+  35% { transform: scale(1.32); }
+  60% { transform: scale(0.92); }
+  100% { transform: scale(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .icon-btn.cart-icon-bounce { animation: none; }
+}
+
 .harvest-ribbon {
   display: inline-flex;
   align-items: center;

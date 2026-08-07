@@ -4,6 +4,7 @@ import { api } from '../api';
 import { useCart } from '../context/CartContext';
 import { useToast } from '../context/ToastContext';
 import { getProductImage } from '../utils/productImages';
+import { flyToCart } from '../utils/flyToCart';
 
 export function ProductChatCard({ product }) {
   const { addItem } = useCart();
@@ -19,8 +20,9 @@ export function ProductChatCard({ product }) {
     : '';
   const defaultSize = sizes.find((s) => s.stock > 0);
 
-  function handleAddToCart() {
+  function handleAddToCart(e) {
     if (!defaultSize) return;
+    flyToCart(e.currentTarget.closest('.ai-product-card')?.querySelector('img'));
     addItem(product.id, defaultSize.label, 1);
     showToast(`${product.name} (${defaultSize.label}) added to cart`);
   }
