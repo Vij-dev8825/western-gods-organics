@@ -34,6 +34,7 @@ const MIN_FREQUENCY_DAYS = 7;
 const MAX_FREQUENCY_DAYS = 180;
 const MAX_REVIEW_PHOTOS = 4;
 const LOW_STOCK_THRESHOLD = 10;
+const SUPPORT_PHONE = '+918825875607';
 const RECENT_ORDER_WINDOW_LABEL = '2 days'; // mirrors backend RECENT_ORDER_WINDOW_HOURS (48h)
 const FREQUENCIES = [
   { days: 14, label: 'Every 2 weeks' },
@@ -135,6 +136,7 @@ export default function ProductDetail() {
   const [reviews, setReviews] = useState([]);
   const [size, setSize] = useState(null);
   const [qty, setQty] = useState(1);
+  const [monthlyUsage, setMonthlyUsage] = useState(500); // ml/g per month, for the cost comparison slider
   const [activeImage, setActiveImage] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [myRating, setMyRating] = useState(0);
@@ -587,12 +589,47 @@ export default function ProductDetail() {
               Reference price — you'll be charged in ₹ (INR) at checkout.
             </p>
           )}
-          {!isForeign && ourPer100 != null && marketPer100 && (
-            <p className="muted" style={{ marginTop: -12, marginBottom: 18, fontSize: '0.82rem' }}>
-              You pay ₹{ourPer100.toFixed(0)} per 100{per100Unit} — typical supermarket refined
-              versions average ~₹{marketPer100.toFixed(0)}.
-            </p>
-          )}
+          {!isForeign && ourPer100 != null && marketPer100 && (() => {
+            // Round each displayed figure first, then diff those — otherwise the
+            // savings line can be off by a rupee from what "supermarket minus
+            // ours" looks like using the two numbers actually shown above it.
+            const ourMonthly = Math.round((ourPer100 / 100) * monthlyUsage);
+            const marketMonthly = Math.round((marketPer100 / 100) * monthlyUsage);
+            const monthlySavings = marketMonthly - ourMonthly;
+            return (
+              <div className="cost-compare" style={{ marginTop: -12, marginBottom: 18 }}>
+                <p className="muted" style={{ fontSize: '0.82rem', marginBottom: 10 }}>
+                  You pay ₹{ourPer100.toFixed(0)} per 100{per100Unit} — typical supermarket refined
+                  versions average ~₹{marketPer100.toFixed(0)}.
+                </p>
+                <label className="cost-compare-slider">
+                  <span>If you use <b>{monthlyUsage}{per100Unit}</b> a month:</span>
+                  <input
+                    type="range"
+                    min={100}
+                    max={2000}
+                    step={50}
+                    value={monthlyUsage}
+                    onChange={(e) => setMonthlyUsage(Number(e.target.value))}
+                    aria-label={`Monthly usage in ${per100Unit}`}
+                  />
+                </label>
+                <div className="cost-compare-result">
+                  <div>
+                    <span className="muted">With us</span>
+                    <b>₹{ourMonthly}/mo</b>
+                  </div>
+                  <div>
+                    <span className="muted">Supermarket</span>
+                    <b>₹{marketMonthly}/mo</b>
+                  </div>
+                </div>
+                {monthlySavings > 1 && (
+                  <p className="cost-compare-savings">You save ₹{monthlySavings}/month at this usage</p>
+                )}
+              </div>
+            );
+          })()}
 
           <div className="flex gap-1 product-actions-row" style={{ marginBottom: 22 }}>
             {!outOfStock && (
@@ -681,6 +718,19 @@ export default function ProductDetail() {
                 )}
                 {product.inciIngredients && <li><b>Ingredients:</b> {product.inciIngredients}</li>}
               </ul>
+              {product.batchNumber && (
+                <a
+                  href={`https://wa.me/${SUPPORT_PHONE.replace('+', '')}?text=${encodeURIComponent(
+                    `Hi, I have a question about ${product.name} — batch ${product.batchNumber}.`
+                  )}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="btn btn-outline btn-sm"
+                  style={{ marginTop: 10 }}
+                >
+                  💬 Ask about this batch on WhatsApp
+                </a>
+              )}
               {product.sellerName && (
                 <p className="muted" style={{ fontSize: '0.78rem', margin: 0 }}>
                   {product.sellerMode === 'marketplace'

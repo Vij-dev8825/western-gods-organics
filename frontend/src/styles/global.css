@@ -701,6 +701,37 @@ p { margin: 0 0 1em; }
 .batch-info-card li:last-child { margin-bottom: 0; }
 .batch-info-card a { color: var(--gold-1); }
 
+.cost-compare {
+  background: var(--cream-deep);
+  border-radius: var(--radius-md);
+  padding: 12px 16px;
+}
+.cost-compare-slider {
+  display: block;
+  font-size: 0.82rem;
+  color: var(--forest-deep);
+  margin-bottom: 10px;
+}
+.cost-compare-slider input[type="range"] {
+  display: block;
+  width: 100%;
+  margin-top: 6px;
+  accent-color: var(--gold-1);
+}
+.cost-compare-result {
+  display: flex;
+  gap: 20px;
+}
+.cost-compare-result > div { display: flex; flex-direction: column; gap: 2px; }
+.cost-compare-result span { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.03em; }
+.cost-compare-result b { font-size: 1.05rem; color: var(--forest-deep); }
+.cost-compare-savings {
+  margin: 10px 0 0;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--gold-1);
+}
+
 .finder-options {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
