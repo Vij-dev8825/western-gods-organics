@@ -17,7 +17,8 @@ import InstallPrompt from './components/InstallPrompt';
 import SaleCountdown from './components/SaleCountdown';
 import WelcomeSelector from './components/WelcomeSelector';
 import SeoMeta from './components/SeoMeta';
-import ChakkiWheel from './components/ChakkiWheel';
+import RouteFallback from './components/RouteFallback';
+import TopProgressBar from './components/TopProgressBar';
 
 // Home loads eagerly — it's where almost every first-time visitor lands, and
 // there's no point trading a request waterfall for a saving nobody sees.
@@ -121,7 +122,12 @@ function StoreLayout() {
       <div className="announce-bar">{t('announcement')}</div>
       <Navbar />
       <main className="app-main">
-        <Outlet />
+        {/* Own Suspense boundary, not the app-wide one — a lazy page loading
+            here suspends only this <Outlet>, so the navbar/footer/announce
+            bar stay on screen instead of the whole shell blanking out. */}
+        <Suspense fallback={<RouteFallback />}>
+          <Outlet />
+        </Suspense>
       </main>
       <Footer />
       <ChatWidget />
@@ -132,18 +138,6 @@ function StoreLayout() {
       <CookieConsent />
       <PushOptIn />
       <InstallPrompt />
-    </div>
-  );
-}
-
-// Shown while a lazy route's chunk is still downloading. Centered and
-// unobtrusive — this only ever appears for the fraction of a second a chunk
-// takes to fetch on a fast connection, or briefly longer on mobile data,
-// which is the exact case code-splitting is meant to help.
-function RouteFallback() {
-  return (
-    <div className="center" style={{ padding: '120px 0' }}>
-      <ChakkiWheel size={56} />
     </div>
   );
 }
@@ -206,6 +200,7 @@ export default function App() {
     <ScrollToTop />
     <CanonicalTag />
     <PageViewTracker />
+    <TopProgressBar />
     <Suspense fallback={<RouteFallback />}>
     <Routes>
       {/* Admin area: its own login page and dashboard shell, no store chrome */}

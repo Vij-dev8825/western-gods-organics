@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { api } from '../api';
 import ProductCard from '../components/ProductCard';
+import ProductGridSkeleton from '../components/ProductCardSkeleton';
 import ChakkiWheel from '../components/ChakkiWheel';
 import PageBanner from '../components/PageBanner';
 import SeoMeta from '../components/SeoMeta';
@@ -256,9 +257,11 @@ export default function Shop() {
           </div>
 
           {loading ? (
-            <div className="center" style={{ padding: '80px 0' }}>
-              <ChakkiWheel size={50} />
-            </div>
+            // A layout-matching placeholder reads as faster than a spinner
+            // at the same load time, and — unlike the old full-page
+            // ChakkiWheel here — it shows the shape of what's coming instead
+            // of blanking the whole product area.
+            <ProductGridSkeleton count={dense ? 12 : 8} dense={dense} />
           ) : products.length ? (
             <div className={`grid ${dense ? 'grid-compact' : ''}`}>
               {products.map((p) => (

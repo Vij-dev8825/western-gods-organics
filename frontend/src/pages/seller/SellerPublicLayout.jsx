@@ -1,4 +1,6 @@
+import { Suspense } from 'react';
 import { Link, NavLink, Outlet } from 'react-router-dom';
+import RouteFallback from '../../components/RouteFallback';
 
 /** Standalone chrome for the public-facing seller site (landing, register).
  * Deliberately shares nothing with the customer storefront's Navbar/Footer —
@@ -25,7 +27,9 @@ export default function SellerPublicLayout() {
       </header>
 
       <main className="seller-site-main">
-        <Outlet />
+        <Suspense fallback={<RouteFallback />}>
+          <Outlet />
+        </Suspense>
       </main>
 
       <footer className="seller-site-footer">

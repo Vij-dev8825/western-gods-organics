@@ -19,3 +19,6 @@ backend/whatsapp-auth/
 *.log
 boot.log
 boot.err
+
+# Local Claude Code tooling config (browser preview launch config)
+.claude/

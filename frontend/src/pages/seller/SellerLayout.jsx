@@ -1,9 +1,10 @@
-import { useCallback, useEffect, useState } from 'react';
+import { Suspense, useCallback, useEffect, useState } from 'react';
 import { NavLink, Outlet, Navigate, useNavigate, useOutletContext } from 'react-router-dom';
 import { api } from '../../api';
 import { useLang, LANGS } from '../../i18n';
 import { useAuth } from '../../context/AuthContext';
 import ChakkiWheel from '../../components/ChakkiWheel';
+import RouteFallback from '../../components/RouteFallback';
 import { IconMenu } from '../../components/Icons';
 
 const links = [
@@ -124,7 +125,9 @@ export default function SellerLayout() {
         </nav>
       </aside>
       <main className="admin-content">
-        <Outlet context={{ me, reloadMe }} />
+        <Suspense fallback={<RouteFallback />}>
+          <Outlet context={{ me, reloadMe }} />
+        </Suspense>
       </main>
     </div>
   );

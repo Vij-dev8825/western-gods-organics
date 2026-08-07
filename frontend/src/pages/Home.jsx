@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api';
 import ProductCard from '../components/ProductCard';
+import ProductGridSkeleton from '../components/ProductCardSkeleton';
 import SectionDivider from '../components/SectionDivider';
 import ChakkiWheel from '../components/ChakkiWheel';
 import GoogleReviewsWidget from '../components/GoogleReviewsWidget';
@@ -80,6 +81,7 @@ export default function Home() {
   const { t, lang } = useLang();
   const { isLoggedIn, token } = useAuth();
   const [products, setProducts] = useState([]);
+  const [productsLoading, setProductsLoading] = useState(true);
   const [categories, setCategories] = useState([]);
   const [banners, setBanners] = useState([]);
   const [current, setCurrent] = useState(0);
@@ -87,7 +89,7 @@ export default function Home() {
   const timerRef = useRef(null);
 
   useEffect(() => {
-    api.getProducts({}, token).then((d) => setProducts(d.products)).catch(() => {});
+    api.getProducts({}, token).then((d) => setProducts(d.products)).catch(() => {}).finally(() => setProductsLoading(false));
     api.getCategories().then((d) => setCategories(d.categories)).catch(() => {});
     api.getBanners().then((d) => setBanners(d.banners)).catch(() => {});
   }, []);
@@ -254,11 +256,19 @@ export default function Home() {
           </div>
           <Link to="/shop" className="btn btn-outline btn-sm">{t('viewAll')}</Link>
         </div>
-        <div className="grid">
-          {products.slice(0, 4).map((p) => (
-            <ProductCard key={p.id} product={p} />
-          ))}
-        </div>
+        {productsLoading ? (
+          // Was previously an empty .grid — same class, zero children —
+          // while the fetch was in flight, so the section popped from
+          // nothing to four cards the moment data arrived. This fills that
+          // same space from the first paint instead.
+          <ProductGridSkeleton count={4} />
+        ) : (
+          <div className="grid">
+            {products.slice(0, 4).map((p) => (
+              <ProductCard key={p.id} product={p} />
+            ))}
+          </div>
+        )}
       </section>
 
       {/* ---------- Combo offers ---------- */}

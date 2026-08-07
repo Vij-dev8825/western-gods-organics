@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { NavLink, Outlet, Navigate } from 'react-router-dom';
 import { api } from '../../api';
 import { useAuth } from '../../context/AuthContext';
 import ChakkiWheel from '../../components/ChakkiWheel';
+import RouteFallback from '../../components/RouteFallback';
 import { IconMenu } from '../../components/Icons';
 
 const links = [
@@ -111,7 +112,11 @@ export default function AdminLayout() {
         </nav>
       </aside>
       <main className="admin-content">
-        <Outlet />
+        {/* Own boundary so an admin page loading its own chunk suspends only
+            this content area — the sidebar stays put instead of vanishing. */}
+        <Suspense fallback={<RouteFallback />}>
+          <Outlet />
+        </Suspense>
       </main>
     </div>
   );

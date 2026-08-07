@@ -2887,6 +2887,54 @@ input:focus-visible + .filter-radio { outline: 2px solid var(--gold-2); outline-
 }
 
 /* Logout sits in the seller sidebar's nav flow but is a button, not a link */
+/* Product grid skeleton — see ProductCardSkeleton.jsx. A shimmer sweep
+   rather than a flat gray block: research on perceived-performance loading
+   states specifically calls out fast motion as reading as "still working",
+   where a static placeholder can start to look stuck. */
+.skeleton-card {
+  pointer-events: none;
+  box-shadow: none;
+}
+.skeleton-card:hover { transform: none; }
+.skeleton,
+.skeleton-bar {
+  background: linear-gradient(
+    100deg,
+    var(--cream-deep) 30%,
+    rgba(255, 255, 255, 0.75) 50%,
+    var(--cream-deep) 70%
+  );
+  background-size: 200% 100%;
+  animation: skeletonShimmer 1.5s ease-in-out infinite;
+}
+.skeleton-bar {
+  border-radius: 5px;
+}
+@keyframes skeletonShimmer {
+  from { background-position: 150% 0; }
+  to { background-position: -50% 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .skeleton, .skeleton-bar { animation: none; }
+}
+
+/* Top route-transition progress bar — see TopProgressBar.jsx. Uses the
+   brand accent vars directly so it automatically follows the per-country
+   theme override, the same as every button already does. */
+.route-progress-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--gold-1), var(--gold-2));
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.15);
+  z-index: 9999;
+  transition: width 0.2s ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  .route-progress-bar { transition: none; }
+}
+
 /* Admin orders: filter bar + bulk action bar */
 .order-filters {
   display: flex;
