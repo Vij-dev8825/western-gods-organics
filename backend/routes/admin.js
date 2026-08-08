@@ -25,6 +25,7 @@ const whatsappBaileys = require('../utils/whatsappBaileys');
 const whatsappOrdering = require('../utils/whatsappOrdering');
 const { getPaymentMethodsConfig } = require('../utils/paymentMethods');
 const { getShippingSettings } = require('../utils/shippingSettings');
+const { getInvoiceSettings } = require('../utils/invoiceSettings');
 const { cancelGiftCard } = require('../utils/giftCards');
 const { generateUniqueAffiliateCode, getCommissionSummary, recordPayout, creditCommissionForOrder, reverseCommissionForOrder } = require('../utils/affiliates');
 const { getSummary: getSellerSummary, recordPayout: recordSellerPayout, creditSellerEarningsForOrder, reverseSellerEarningsForOrder } = require('../utils/sellers');
@@ -1126,6 +1127,66 @@ router.put('/shipping-settings', async (req, res, next) => {
     };
     await db.put('shipping-settings', shippingSettings);
     res.json({ success: true, shippingSettings });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/* ------------------------------ Invoice settings ---------------------------- */
+
+// GET /api/admin/invoice-settings — the business details, terms and
+// signature printed on every customer invoice.
+router.get('/invoice-settings', async (req, res, next) => {
+  try {
+    const invoiceSettings = await getInvoiceSettings();
+    res.json({ success: true, invoiceSettings });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// PUT /api/admin/invoice-settings
+const INVOICE_TEXT_FIELDS = ['businessName', 'legalName', 'address', 'phone', 'email', 'gstin', 'fssai', 'signatureImage', 'signatoryName'];
+// A tax classification, so only these two are accepted — a free-text heading
+// here could silently turn a tax invoice into something that isn't one.
+const DOCUMENT_TITLES = ['BILL OF SUPPLY', 'TAX INVOICE'];
+
+router.put('/invoice-settings', async (req, res, next) => {
+  try {
+    if (!String(req.body.businessName || '').trim()) {
+      return res.status(400).json({ success: false, message: 'Business name is required — it heads every invoice.' });
+    }
+    const current = await getInvoiceSettings();
+    const invoiceSettings = { ...current, id: 'main' };
+    for (const f of INVOICE_TEXT_FIELDS) {
+      if (req.body[f] !== undefined) invoiceSettings[f] = String(req.body[f]).trim().slice(0, 500);
+    }
+    if (DOCUMENT_TITLES.includes(req.body.documentTitle)) {
+      invoiceSettings.documentTitle = req.body.documentTitle;
+    }
+    const dueDays = Number(req.body.dueDays);
+    if (Number.isFinite(dueDays)) invoiceSettings.dueDays = Math.min(Math.max(Math.round(dueDays), 0), 180);
+    if (Array.isArray(req.body.terms)) {
+      const terms = req.body.terms.map((t) => String(t).trim().slice(0, 500)).filter(Boolean).slice(0, 8);
+      // Falls back to the stored/default set rather than saving an empty
+      // list — see getInvoiceSettings, which guards the same way on read.
+      if (terms.length) invoiceSettings.terms = terms;
+    }
+    await db.put('invoice-settings', invoiceSettings);
+    res.json({ success: true, invoiceSettings });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /api/admin/invoice-settings/signature — multipart 'file' → { url }.
+// Reuses the shared image upload/storage path (Cloudinary when configured,
+// else compressed into the DB), same as product and review photos.
+router.post('/invoice-settings/signature', imageUpload.single('file'), async (req, res, next) => {
+  try {
+    if (!req.file) return res.status(400).json({ success: false, message: 'No file uploaded.' });
+    const url = await storeUploadedFile(req.file);
+    res.json({ success: true, url });
   } catch (err) {
     next(err);
   }

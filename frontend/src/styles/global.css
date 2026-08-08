@@ -1801,6 +1801,17 @@ input:focus-visible + .filter-radio { outline: 2px solid var(--gold-2); outline-
   color: var(--forest-light);
 }
 .invoice-sign-line { height: 44px; border-bottom: 1px solid rgba(31,61,43,0.35); margin: 4px 0 6px; }
+/* Same footprint as the blank line it replaces, so the signature block keeps
+   its height whether or not a signature image has been uploaded. */
+.invoice-sign-img {
+  display: block;
+  height: 44px;
+  width: auto;
+  max-width: 100%;
+  object-fit: contain;
+  margin: 4px auto 6px;
+  border-bottom: 1px solid rgba(31,61,43,0.35);
+}
 
 .invoice-note {
   margin: 26px 0 0;

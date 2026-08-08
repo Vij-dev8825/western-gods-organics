@@ -5,29 +5,27 @@ import { useAuth } from '../context/AuthContext';
 import logo from '../assets/logo.svg';
 import ChakkiWheel from '../components/ChakkiWheel';
 import { amountInWords } from '../utils/numberToWords';
-import { STORE_LOCATIONS } from '../data/storeLocations';
+import { getProductImage } from '../utils/productImages';
 
 const PAYMENT_LABELS = { cod: 'Cash on Delivery', razorpay: 'Paid Online (Razorpay)', cod_advance: 'Part-paid online, rest on delivery' };
-
-// A "Bill of Supply" is the correct document only for a seller not charging
-// GST on the sale (composition scheme or exempt goods); a GST-registered
-// seller charging tax must head it "Tax Invoice" instead. Left here as one
-// switch rather than buried in the markup, since it's a tax classification
-// the business owns, not a design choice.
-const DOCUMENT_TITLE = 'BILL OF SUPPLY';
-// Payment is due at/ before delivery, so the due date is the working
-// assumption of when the order lands rather than a credit term.
-const DUE_DAYS = 7;
 
 export default function Invoice() {
   const { orderId } = useParams();
   const { token } = useAuth();
   const [order, setOrder] = useState(null);
+  // Business details, terms and signature all come from Admin → Invoice
+  // Details. Null until loaded; the invoice waits for it rather than
+  // flashing placeholder details and then correcting itself.
+  const [settings, setSettings] = useState(null);
   const [error, setError] = useState('');
 
   useEffect(() => {
     api.getOrder(token, orderId).then((d) => setOrder(d.order)).catch((e) => setError(e.message));
   }, [token, orderId]);
+
+  useEffect(() => {
+    api.getInvoiceSettings().then((d) => setSettings(d.invoiceSettings)).catch(() => {});
+  }, []);
 
   if (error) {
     return (
@@ -38,7 +36,7 @@ export default function Invoice() {
     );
   }
 
-  if (!order) {
+  if (!order || !settings) {
     return (
       <div className="center" style={{ padding: '120px 0' }}>
         <ChakkiWheel size={56} />
@@ -46,7 +44,6 @@ export default function Invoice() {
     );
   }
 
-  const mill = STORE_LOCATIONS[0];
   const subtotal = order.items.reduce((sum, it) => sum + it.price * it.quantity, 0);
   const totalQty = order.items.reduce((sum, it) => sum + it.quantity, 0);
   const discount = order.discount || 0;
@@ -74,7 +71,7 @@ export default function Invoice() {
 
   const invoiceDate = new Date(order.createdAt);
   const dueDate = new Date(invoiceDate);
-  dueDate.setDate(dueDate.getDate() + DUE_DAYS);
+  dueDate.setDate(dueDate.getDate() + (Number(settings.dueDays) || 0));
   const fmt = (d) => d.toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' });
 
   return (
@@ -104,18 +101,24 @@ export default function Invoice() {
               <img src={logo} alt="Western Gods Organics" />
             </div>
             <div className="invoice-brand">
-              <h1>Western Gods Organics</h1>
+              <h1>{settings.businessName}</h1>
               <div className="invoice-contact">
-                <span>📞 {mill.phoneDisplay}</span>
-                <span>✉️ westerngodsorganic@gmail.com</span>
+                {settings.phone && <span>📞 {settings.phone}</span>}
+                {settings.email && <span>✉️ {settings.email}</span>}
               </div>
-              <div className="invoice-contact">
-                <span>📍 {mill.address}</span>
-              </div>
-              <div className="invoice-legal">{mill.name}</div>
+              {settings.address && (
+                <div className="invoice-contact"><span>📍 {settings.address}</span></div>
+              )}
+              {(settings.gstin || settings.fssai) && (
+                <div className="invoice-contact">
+                  {settings.gstin && <span>GSTIN: {settings.gstin}</span>}
+                  {settings.fssai && <span>FSSAI: {settings.fssai}</span>}
+                </div>
+              )}
+              {settings.legalName && <div className="invoice-legal">{settings.legalName}</div>}
             </div>
             <div className="invoice-doctype">
-              <b>{DOCUMENT_TITLE}</b>
+              <b>{settings.documentTitle}</b>
               <span>ORIGINAL FOR RECIPIENT</span>
             </div>
           </header>
@@ -185,8 +188,7 @@ export default function Invoice() {
             <div className="invoice-terms">
               <b>Terms &amp; Conditions</b>
               <ol>
-                <li>Goods once sold will not be taken back or exchanged, except for damaged or incorrect items reported within 7 days of delivery.</li>
-                <li>All disputes are subject to Udumalpet, Tamil Nadu jurisdiction only.</li>
+                {settings.terms.map((t, i) => <li key={i}>{t}</li>)}
               </ol>
             </div>
 
@@ -230,14 +232,18 @@ export default function Invoice() {
 
           <div className="invoice-sign">
             <div className="invoice-sign-box">
-              <span>For Western Gods Organics</span>
-              <div className="invoice-sign-line" />
-              <span>Authorised Signatory</span>
+              <span>For {settings.businessName}</span>
+              {settings.signatureImage ? (
+                <img className="invoice-sign-img" src={getProductImage(settings.signatureImage)} alt="" />
+              ) : (
+                <div className="invoice-sign-line" />
+              )}
+              <span>{settings.signatoryName}</span>
             </div>
           </div>
 
           <p className="invoice-note">
-            Thank you for shopping with Western Gods Organics — wood-pressed with care, always.
+            Thank you for shopping with {settings.businessName} — wood-pressed with care, always.
           </p>
         </div>
       </div>

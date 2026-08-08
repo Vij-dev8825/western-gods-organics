@@ -161,6 +161,9 @@ export const api = {
 
   // public config flags
   getConfig: () => request('/config'),
+  // Business details/terms/signature printed on the invoice — public, since
+  // they already appear on the invoice the customer is reading.
+  getInvoiceSettings: () => request('/config/invoice'),
 
   // bulk enquiry + contact
   submitBulkEnquiry: (payload, token) => request('/bulk-enquiry', { method: 'POST', body: payload, token }),
@@ -238,6 +241,10 @@ export const api = {
     updatePaymentMethods: (token, methods) => request('/admin/payment-methods', { method: 'PUT', body: methods, token }),
     getShippingSettings: (token) => request('/admin/shipping-settings', { token }),
     updateShippingSettings: (token, settings) => request('/admin/shipping-settings', { method: 'PUT', body: settings, token }),
+
+    getInvoiceSettings: (token) => request('/admin/invoice-settings', { token }),
+    updateInvoiceSettings: (token, settings) => request('/admin/invoice-settings', { method: 'PUT', body: settings, token }),
+    uploadSignature: (token, formData) => request('/admin/invoice-settings/signature', { method: 'POST', formData, token }),
     getGiftCards: (token) => request('/admin/gift-cards', { token }),
     cancelGiftCard: (token, code) => request(`/admin/gift-cards/${code}/cancel`, { method: 'PATCH', token }),
     setCustomerAffiliate: (token, id, payload) => request(`/admin/customers/${id}/affiliate`, { method: 'PATCH', body: payload, token }),

@@ -45,6 +45,7 @@ const COLLECTIONS = [
   'whatsapp-ordering',
   'payment-methods',
   'shipping-settings',
+  'invoice-settings',
   'gift-cards',
   'gift-card-ledger',
   'affiliate-ledger',
