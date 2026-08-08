@@ -105,6 +105,9 @@ export const api = {
   // coupons
   validateCoupon: (token, payload) => request('/coupons/validate', { method: 'POST', body: payload, token }),
   getFeaturedCoupon: () => request('/coupons/featured'),
+  // token is optional — signed-in shoppers additionally get their own
+  // personal coupons back (e.g. a referral reward); guests get site-wide only.
+  getAvailableCoupons: (token, subtotal) => request(`/coupons/available?subtotal=${subtotal}`, { token }),
 
   // gift cards
   getGiftCardConfig: () => request('/gift-cards/config'),

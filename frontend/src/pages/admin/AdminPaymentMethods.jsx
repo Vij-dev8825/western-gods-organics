@@ -14,26 +14,36 @@ export default function AdminPaymentMethods() {
   const { showToast } = useToast();
   const [methods, setMethods] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [prepaidDraft, setPrepaidDraft] = useState('');
 
   function load() {
-    api.admin.getPaymentMethods(token).then((d) => setMethods(d.paymentMethods)).catch(() => {});
+    api.admin.getPaymentMethods(token).then((d) => {
+      setMethods(d.paymentMethods);
+      setPrepaidDraft(String(d.paymentMethods.prepaidDiscountPercent ?? 0));
+    }).catch(() => {});
   }
   useEffect(load, [token]);
 
-  async function toggle(key, value) {
-    const next = { ...methods, [key]: value };
+  async function save(next) {
+    const previous = methods;
     setMethods(next);
     setSaving(true);
     try {
-      await api.admin.updatePaymentMethods(token, next);
+      const d = await api.admin.updatePaymentMethods(token, next);
+      // Re-sync from the server's clamped value rather than the draft, so a
+      // rate it capped is visible immediately instead of silently disagreeing.
+      setMethods(d.paymentMethods);
+      setPrepaidDraft(String(d.paymentMethods.prepaidDiscountPercent ?? 0));
       showToast('Payment methods updated.');
     } catch (err) {
       showToast(err.message, 'error');
-      setMethods(methods); // revert on failure
+      setMethods(previous); // revert on failure
     } finally {
       setSaving(false);
     }
   }
+
+  const toggle = (key, value) => save({ ...methods, [key]: value });
 
   return (
     <div>
@@ -71,6 +81,39 @@ export default function AdminPaymentMethods() {
           ))
         )}
       </div>
+
+      {methods && (
+        <div className="form-card" style={{ maxWidth: 480, marginTop: 20 }}>
+          <h4 style={{ marginTop: 0 }}>Prepaid discount</h4>
+          <p className="muted" style={{ fontSize: '0.85rem' }}>
+            A percentage off for customers who pay the full amount online, shown in the cart as a
+            reason to choose Pay Online over Cash on Delivery. Every COD order you avoid is one that
+            can't come back undelivered. Set to 0 to turn this off. Partial-advance COD doesn't get
+            it — most of that total is still collected at the door.
+          </p>
+          <div className="flex gap-1" style={{ alignItems: 'center' }}>
+            <input
+              type="number"
+              min={0}
+              max={50}
+              step={0.5}
+              value={prepaidDraft}
+              disabled={saving}
+              onChange={(e) => setPrepaidDraft(e.target.value)}
+              style={{ width: 100 }}
+            />
+            <span className="muted">% off online payments</span>
+            <button
+              type="button"
+              className="btn btn-gold btn-sm"
+              disabled={saving || prepaidDraft === String(methods.prepaidDiscountPercent ?? 0)}
+              onClick={() => save({ ...methods, prepaidDiscountPercent: Number(prepaidDraft) || 0 })}
+            >
+              {saving ? 'Saving…' : 'Save'}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

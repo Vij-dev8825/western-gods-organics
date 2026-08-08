@@ -33,6 +33,43 @@ router.get('/featured', async (req, res, next) => {
   }
 });
 
+// GET /api/coupons/available?subtotal=N — every code this shopper could
+// actually use right now, for the tap-to-apply chips in the cart. Replaces
+// making them guess at an empty box (and leave the site to hunt for a code).
+// Deliberately excludes other people's personal coupons: a signed-in shopper
+// sees site-wide codes plus their own assigned ones (e.g. a referral reward
+// they'd otherwise forget), a guest sees only site-wide ones.
+router.get('/available', optionalAuth, async (req, res, next) => {
+  try {
+    const subtotal = Number(req.query.subtotal) || 0;
+    const now = new Date();
+    const coupons = (await db.list('coupons'))
+      .filter((c) => c.active && !c.redeemed)
+      .filter((c) => !c.expiresAt || new Date(c.expiresAt) >= now)
+      .filter((c) => !c.assignedToUserId || c.assignedToUserId === req.user?.id)
+      .map((c) => ({
+        code: c.code,
+        type: c.type,
+        value: c.value,
+        minOrder: c.minOrder || 0,
+        // Personal codes are worth calling out — they're the ones a shopper
+        // has forgotten about, unlike a site-wide code they just saw advertised.
+        personal: !!c.assignedToUserId,
+        // Shown as a disabled "spend ₹X more" chip rather than hidden, so the
+        // shopper can see what's within reach instead of wondering why nothing
+        // applied — the same nudge as a free-shipping threshold counter.
+        eligible: subtotal >= (c.minOrder || 0),
+        discount: computeDiscount(c, subtotal),
+      }))
+      // Best offer first, but a personal code always outranks a site-wide one
+      // of equal value since only this shopper can use it.
+      .sort((a, b) => Number(b.personal) - Number(a.personal) || b.discount - a.discount);
+    res.json({ success: true, coupons });
+  } catch (err) {
+    next(err);
+  }
+});
+
 // POST /api/coupons/validate  { code, subtotal } — checkout preview only;
 // the order-placement routes re-validate and recompute the discount
 // server-side rather than trusting whatever this returned. Guests (no

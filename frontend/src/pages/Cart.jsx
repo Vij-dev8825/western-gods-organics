@@ -55,6 +55,9 @@ export default function Cart() {
   const [appliedCoupon, setAppliedCoupon] = useState(null); // { code, discount, subtotalAtApply }
   const [couponError, setCouponError] = useState('');
   const [applyingCoupon, setApplyingCoupon] = useState(false);
+  const [availableCoupons, setAvailableCoupons] = useState([]);
+  const [showCouponInput, setShowCouponInput] = useState(false);
+  const [prepaidDiscountPercent, setPrepaidDiscountPercent] = useState(0);
   const [pointsBalance, setPointsBalance] = useState(0);
   const [usePoints, setUsePoints] = useState(false);
   const [loyaltyTier, setLoyaltyTier] = useState(null);
@@ -79,6 +82,7 @@ export default function Cart() {
       setCodAdvanceInr(d.codAdvanceInr || 0);
       if (d.paymentMethods) {
         setEnabledMethods(d.paymentMethods);
+        setPrepaidDiscountPercent(Number(d.paymentMethods.prepaidDiscountPercent) || 0);
         // Falls back off the default 'cod' selection if an admin has turned
         // it off, so the form never submits a method that isn't offered.
         if (!d.paymentMethods.cod) {
@@ -102,6 +106,7 @@ export default function Cart() {
     if (!isLoggedIn) return;
     api.getLoyalty(token).then((d) => { setPointsBalance(d.balance); setLoyaltyTier(d.tier); }).catch(() => {});
   }, [isLoggedIn, token]);
+
 
   // Prefill from the default saved address so returning customers don't have
   // to retype it every order. Addresses saved before this field existed
@@ -151,6 +156,26 @@ export default function Cart() {
 
   const isWholesale = !!user?.isWholesale;
   const subtotal = lines.reduce((sum, l) => sum + getEffectivePrice(l.sizeInfo, isWholesale) * l.quantity, 0);
+
+  // Must stay below the `subtotal` declaration above — a hook that reads a
+  // `const` defined later in the component hits the temporal dead zone on
+  // every render, which throws before the app can mount.
+  // Re-fetched as the subtotal moves so each chip's savings and its
+  // eligible/"spend more" state stay truthful while items are added or
+  // removed. Silent on failure — the manual code field still works.
+  useEffect(() => {
+    if (subtotal <= 0) {
+      setAvailableCoupons([]);
+      return undefined;
+    }
+    let cancelled = false;
+    api
+      .getAvailableCoupons(token, subtotal)
+      .then((d) => { if (!cancelled) setAvailableCoupons(d.coupons || []); })
+      .catch(() => { if (!cancelled) setAvailableCoupons([]); });
+    return () => { cancelled = true; };
+  }, [subtotal, token]);
+
   // "To Pay" (courier collects on delivery, at their own rate) only makes
   // sense for domestic delivery — force back to the store's own "Shipping"
   // fee for international, where it isn't offered as a choice.
@@ -168,14 +193,32 @@ export default function Cart() {
   const shippingOptionFee = getShippingFee(address.country, subtotal, loyaltyTier?.freeShippingMinOrder, 'shipping');
   const couponStale = appliedCoupon && appliedCoupon.subtotalAtApply !== subtotal;
   const discount = appliedCoupon && !couponStale ? appliedCoupon.discount : 0;
-  const pointsToRedeem = usePoints ? Math.min(pointsBalance, Math.max(0, subtotal + shipping - discount)) : 0;
+  // Preview only — buildOrderItems recomputes this server-side from the
+  // admin's stored rate and is the authority. Kept formula-identical to it
+  // (post-coupon basis, rounded, clamped) so the total shown here matches
+  // what actually gets charged. Only full prepayment earns it; 'cod_advance'
+  // still leaves most of the total to collect on delivery.
+  const prepaidDiscount =
+    paymentMethod === 'razorpay' && prepaidDiscountPercent > 0
+      ? Math.min(
+          Math.round(((subtotal - discount) * prepaidDiscountPercent) / 100),
+          Math.max(0, subtotal - discount)
+        )
+      : 0;
+  const pointsToRedeem = usePoints ? Math.min(pointsBalance, Math.max(0, subtotal + shipping - discount - prepaidDiscount)) : 0;
   // Always recomputed against the card's own fixed balance and whatever's
   // left after coupon/points — unlike a coupon, a gift card never goes
   // "stale" as the cart changes, it just covers more or less of it.
   const giftCardApplied = appliedGiftCard
-    ? Math.min(appliedGiftCard.balance, Math.max(0, subtotal + shipping - discount - pointsToRedeem))
+    ? Math.min(appliedGiftCard.balance, Math.max(0, subtotal + shipping - discount - prepaidDiscount - pointsToRedeem))
     : 0;
-  const total = subtotal + shipping - discount - pointsToRedeem - giftCardApplied;
+  const total = subtotal + shipping - discount - prepaidDiscount - pointsToRedeem - giftCardApplied;
+  // What switching to full prepayment would save, for the nudge on the COD
+  // option — computed even when COD is selected, hence not reusing the above.
+  const prepaidSavings =
+    prepaidDiscountPercent > 0
+      ? Math.min(Math.round(((subtotal - discount) * prepaidDiscountPercent) / 100), Math.max(0, subtotal - discount))
+      : 0;
   const minOrderCheck = checkMinOrder(subtotal);
   const hasOutOfStock = lines.some((l) => l.sizeInfo.stock <= 0);
   // Guests placing a Cash-on-Delivery order must verify the delivery phone
@@ -189,12 +232,14 @@ export default function Cart() {
     setAddressErrors((errs) => (errs[field] ? { ...errs, [field]: undefined } : errs));
   }
 
-  async function handleApplyCoupon() {
-    const code = couponInput.trim();
+  async function handleApplyCoupon(codeOverride) {
+    const code = (typeof codeOverride === 'string' ? codeOverride : couponInput).trim();
     if (!code) return;
     setApplyingCoupon(true);
     setCouponError('');
     try {
+      // Still goes through the same validate route as a typed code — a chip
+      // is a convenience, not a bypass, and the order routes re-check again.
       const res = await api.validateCoupon(token, { code, subtotal });
       setAppliedCoupon({ code: res.code, discount: res.discount, subtotalAtApply: subtotal });
       showToast(`Coupon "${res.code}" applied — you saved ₹${res.discount}.`);
@@ -524,6 +569,11 @@ export default function Cart() {
               <span>Coupon ({appliedCoupon.code})</span><span>−₹{discount}</span>
             </div>
           )}
+          {prepaidDiscount > 0 && (
+            <div className="summary-row" style={{ color: '#1e6b34' }}>
+              <span>Prepaid discount ({prepaidDiscountPercent}%)</span><span>−₹{prepaidDiscount}</span>
+            </div>
+          )}
           {pointsToRedeem > 0 && (
             <div className="summary-row" style={{ color: '#1e6b34' }}>
               <span>Reward points</span><span>−₹{pointsToRedeem}</span>
@@ -546,22 +596,54 @@ export default function Cart() {
               </div>
             ) : (
               <>
-                <div className="flex gap-1">
-                  <input
-                    placeholder="Coupon code"
-                    value={couponInput}
-                    onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
-                    style={{ flex: 1 }}
-                  />
-                  <button
-                    type="button"
-                    className="btn btn-outline btn-sm"
-                    disabled={!couponInput.trim() || applyingCoupon}
-                    onClick={handleApplyCoupon}
-                  >
-                    {applyingCoupon ? 'Applying…' : 'Apply'}
+                {/* Offers are shown as one-tap chips rather than an empty box:
+                    an empty coupon field sends shoppers off-site to hunt for a
+                    code, and many never come back. The manual field is still
+                    here, just folded away for the rare code not listed. */}
+                {availableCoupons.length > 0 && (
+                  <div className="coupon-chips">
+                    {availableCoupons.map((c) => (
+                      <button
+                        key={c.code}
+                        type="button"
+                        className={`coupon-chip ${c.personal ? 'coupon-chip-personal' : ''}`}
+                        disabled={!c.eligible || applyingCoupon}
+                        onClick={() => handleApplyCoupon(c.code)}
+                        title={c.eligible ? `Apply ${c.code}` : `Spend ₹${c.minOrder - subtotal} more to use ${c.code}`}
+                      >
+                        <b>{c.code}</b>
+                        <span>
+                          {c.personal && '⭐ '}
+                          {c.eligible
+                            ? `Save ₹${c.discount}`
+                            : `₹${c.minOrder - subtotal} more to unlock`}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {!showCouponInput ? (
+                  <button type="button" className="link-btn" onClick={() => setShowCouponInput(true)}>
+                    Have another code?
                   </button>
-                </div>
+                ) : (
+                  <div className="flex gap-1">
+                    <input
+                      placeholder="Coupon code"
+                      value={couponInput}
+                      onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
+                      style={{ flex: 1 }}
+                    />
+                    <button
+                      type="button"
+                      className="btn btn-outline btn-sm"
+                      disabled={!couponInput.trim() || applyingCoupon}
+                      onClick={() => handleApplyCoupon()}
+                    >
+                      {applyingCoupon ? 'Applying…' : 'Apply'}
+                    </button>
+                  </div>
+                )}
                 {couponStale && <div className="field-error">Your cart changed — apply the code again.</div>}
                 {couponError && <div className="field-error">{couponError}</div>}
               </>
@@ -779,6 +861,9 @@ export default function Cart() {
                     <span className="payment-option-body">
                       <b>Cash on Delivery</b>
                       <span className="muted">Pay in cash when your order arrives</span>
+                      {prepaidSavings > 0 && razorpayEnabled && enabledMethods.razorpay && (
+                        <span className="payment-option-nudge">Pay online instead and save ₹{prepaidSavings}</span>
+                      )}
                     </span>
                   </label>
                 )}
@@ -799,6 +884,9 @@ export default function Cart() {
                           ? 'Cards, UPI, NetBanking & wallets — secured by Razorpay'
                           : 'Currently unavailable — please use Cash on Delivery'}
                       </span>
+                      {prepaidSavings > 0 && razorpayEnabled && (
+                        <span className="payment-option-nudge">Save ₹{prepaidSavings} ({prepaidDiscountPercent}% off) by paying now</span>
+                      )}
                     </span>
                   </label>
                 )}

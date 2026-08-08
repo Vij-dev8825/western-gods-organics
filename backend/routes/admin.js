@@ -1073,14 +1073,18 @@ router.get('/payment-methods', async (req, res, next) => {
   }
 });
 
-// PUT /api/admin/payment-methods  { cod, razorpay, codAdvance }
+// PUT /api/admin/payment-methods  { cod, razorpay, codAdvance, prepaidDiscountPercent }
 router.put('/payment-methods', async (req, res, next) => {
   try {
+    // Clamped to 0-50: a typo'd 500 here would otherwise zero out every
+    // prepaid order's total. buildOrderItems clamps again independently.
+    const rawPrepaid = Number(req.body.prepaidDiscountPercent);
     const paymentMethods = {
       id: 'main',
       cod: !!req.body.cod,
       razorpay: !!req.body.razorpay,
       codAdvance: !!req.body.codAdvance,
+      prepaidDiscountPercent: Number.isFinite(rawPrepaid) ? Math.min(Math.max(rawPrepaid, 0), 50) : 0,
     };
     await db.put('payment-methods', paymentMethods);
     res.json({ success: true, paymentMethods });

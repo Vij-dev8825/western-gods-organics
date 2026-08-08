@@ -8,6 +8,7 @@ const { getPointsBalance, redeemPointsForOrder, getTierInfo, hasEarlyAccessPerk,
 const { getShippingSettings } = require('./shippingSettings');
 const { findValidGiftCard, redeemGiftCardForOrder } = require('./giftCards');
 const { findAffiliateByCode } = require('./affiliates');
+const { getPaymentMethodsConfig } = require('./paymentMethods');
 
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || process.env.CONTACT_NOTIFY_EMAIL;
 const REFERRAL_REWARD_INR = 100;
@@ -138,7 +139,7 @@ async function calculateShipping(subtotal, destCountry = DOMESTIC_COUNTRY, userI
   return overrides?.shipping?.[destCountry] || DEFAULT_INTL_SHIPPING;
 }
 
-async function buildOrderItems(items, couponCode, destCountry, userId, pointsToRedeem = 0, shippingChoice = 'shipping', giftCardCode = null) {
+async function buildOrderItems(items, couponCode, destCountry, userId, pointsToRedeem = 0, shippingChoice = 'shipping', giftCardCode = null, paymentMethod = 'cod') {
   const products = await db.list('products');
   // Re-fetched fresh here rather than trusting anything from the JWT, so an
   // account an admin just flagged wholesale (see PATCH /admin/customers/:id/
@@ -183,13 +184,27 @@ async function buildOrderItems(items, couponCode, destCountry, userId, pointsToR
   const coupon = await findValidCoupon(couponCode, userId);
   const discount = computeDiscount(coupon, subtotal);
 
+  // Rewards paying up front, which removes the return-to-origin risk a COD
+  // order carries. Only full prepayment ('razorpay') qualifies — 'cod_advance'
+  // still leaves the bulk of the total to collect on delivery, so it keeps
+  // that risk and doesn't earn the discount. Rate comes from admin settings
+  // and is recomputed here rather than trusted from the client, same as the
+  // coupon above. Charged on the post-coupon merchandise value, so stacking a
+  // coupon with it can't discount more than the goods are worth.
+  const { prepaidDiscountPercent } = await getPaymentMethodsConfig();
+  const prepaidRate = Math.min(Math.max(Number(prepaidDiscountPercent) || 0, 0), 100);
+  const prepaidDiscount =
+    paymentMethod === 'razorpay' && prepaidRate > 0
+      ? Math.min(Math.round(((subtotal - discount) * prepaidRate) / 100), Math.max(0, subtotal - discount))
+      : 0;
+
   // Clamped against both the customer's real balance and the order's own
   // value — never trust the requested amount, and never let points push
   // the total below zero.
   let pointsRedeemed = 0;
   if (pointsToRedeem > 0 && userId) {
     const balance = await getPointsBalance(userId);
-    const maxRedeemable = Math.max(0, subtotal + shipping - discount);
+    const maxRedeemable = Math.max(0, subtotal + shipping - discount - prepaidDiscount);
     pointsRedeemed = Math.min(Math.floor(pointsToRedeem), balance, maxRedeemable);
   }
   const pointsDiscount = pointsRedeemed * REDEEM_VALUE_INR_PER_POINT;
@@ -201,7 +216,7 @@ async function buildOrderItems(items, couponCode, destCountry, userId, pointsToR
   if (giftCardCode) {
     const giftCard = await findValidGiftCard(giftCardCode);
     if (giftCard) {
-      const remaining = Math.max(0, subtotal + shipping - discount - pointsDiscount);
+      const remaining = Math.max(0, subtotal + shipping - discount - prepaidDiscount - pointsDiscount);
       giftCardApplied = Math.min(giftCard.balance, remaining);
       appliedGiftCardCode = giftCard.id;
     }
@@ -213,10 +228,11 @@ async function buildOrderItems(items, couponCode, destCountry, userId, pointsToR
     shipping,
     discount,
     couponCode: discount > 0 ? coupon.code : null,
+    prepaidDiscount,
     pointsRedeemed,
     giftCardCode: giftCardApplied > 0 ? appliedGiftCardCode : null,
     giftCardApplied,
-    total: subtotal + shipping - discount - pointsDiscount - giftCardApplied,
+    total: subtotal + shipping - discount - prepaidDiscount - pointsDiscount - giftCardApplied,
     stockError,
   };
 }
@@ -282,7 +298,7 @@ async function issueBottleReturnCredit(userId, quantity) {
   return coupon;
 }
 
-async function createOrderRecord({ userId, orderItems, address, total, discount, couponCode, pointsRedeemed, paymentMethod, payment, subscriptionId, advancePaid, shippingChoice, giftCardCode, giftCardApplied, isGift, giftMessage, affiliateCode }) {
+async function createOrderRecord({ userId, orderItems, address, total, discount, couponCode, prepaidDiscount, pointsRedeemed, paymentMethod, payment, subscriptionId, advancePaid, shippingChoice, giftCardCode, giftCardApplied, isGift, giftMessage, affiliateCode }) {
   // Computed before this order is persisted, so it only reflects orders that
   // already existed — used below to detect a customer's genuine first order,
   // whether that's a manual checkout or their first subscription renewal.
@@ -306,6 +322,7 @@ async function createOrderRecord({ userId, orderItems, address, total, discount,
     advancePaid: paymentMethod === 'cod_advance' ? advancePaid || 0 : 0,
     discount: discount || 0,
     couponCode: couponCode || null,
+    prepaidDiscount: prepaidDiscount || 0,
     pointsRedeemed: pointsRedeemed || 0,
     giftCardCode: giftCardCode || null,
     giftCardApplied: giftCardApplied || 0,
