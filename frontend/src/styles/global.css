@@ -894,6 +894,32 @@ p { margin: 0 0 1em; }
   .icon-btn.cart-icon-bounce { animation: none; }
 }
 
+.confetti-burst {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9998;
+  overflow: hidden;
+}
+.confetti-piece {
+  position: absolute;
+  top: -10px;
+  width: 8px;
+  height: 14px;
+  opacity: 0.9;
+  border-radius: 2px;
+  animation-name: confettiFall;
+  animation-timing-function: ease-in;
+  animation-fill-mode: forwards;
+}
+@keyframes confettiFall {
+  0% { transform: translateY(0) translateX(0) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(100vh) translateX(var(--drift)) rotate(var(--rotate)); opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .confetti-burst { display: none; }
+}
+
 .harvest-ribbon {
   display: inline-flex;
   align-items: center;

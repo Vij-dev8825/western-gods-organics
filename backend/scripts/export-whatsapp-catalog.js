@@ -8,7 +8,7 @@
  * to send over chat.
  *
  * Usage: node scripts/export-whatsapp-catalog.js [siteUrl]
- *   siteUrl defaults to process.env.SITE_URL, then https://yamuna-organics.onrender.com
+ *   siteUrl defaults to process.env.SITE_URL, then https://westerngodsorganic.com
  */
 require('dotenv').config();
 const fs = require('fs');
@@ -18,7 +18,7 @@ const { buildCatalogRows, rowsToCsv } = require('../utils/whatsappCatalog');
 const { buildCatalogPdf } = require('../utils/catalogPdf');
 
 async function main() {
-  const siteUrl = (process.argv[2] || process.env.SITE_URL || 'https://yamuna-organics.onrender.com').replace(/\/$/, '');
+  const siteUrl = (process.argv[2] || process.env.SITE_URL || 'https://westerngodsorganic.com').replace(/\/$/, '');
 
   await db.init();
   const { rows, warnings } = await buildCatalogRows({ siteUrl });

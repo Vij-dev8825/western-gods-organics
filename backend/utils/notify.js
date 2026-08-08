@@ -5,7 +5,7 @@ const { sendSms } = require('./sms');
 const { sendWhatsApp } = require('./whatsapp');
 const { sendPush, sendPushToAnonymous } = require('./push');
 
-const SITE_URL = process.env.SITE_URL || 'https://yamuna-organics.onrender.com';
+const SITE_URL = process.env.SITE_URL || 'https://westerngodsorganic.com';
 
 /** Resolves a stored image path (e.g. /api/media/xyz or /uploads/xyz) to an
  * absolute URL — email clients and push payloads can't load relative paths. */

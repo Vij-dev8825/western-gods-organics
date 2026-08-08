@@ -4,6 +4,7 @@ import { api } from '../api';
 import { useAuth } from '../context/AuthContext';
 import { IconCheck } from '../components/Icons';
 import ChakkiWheel from '../components/ChakkiWheel';
+import Confetti from '../components/Confetti';
 
 const PAYMENT_LABELS = { cod: 'Cash on Delivery', razorpay: 'Paid Online (Razorpay)' };
 
@@ -39,6 +40,7 @@ export default function OrderSuccess() {
 
   return (
     <div className="container section order-success-page">
+      <Confetti key={order.id} />
       <div className="order-success-card">
         <div className="order-success-check">
           <IconCheck size={34} />
