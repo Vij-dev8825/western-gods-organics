@@ -1699,10 +1699,15 @@ input:focus-visible + .filter-radio { outline: 2px solid var(--gold-2); outline-
 .invoice-brandmark {
   border: 1.5px solid var(--inv-gold);
   border-radius: 4px;
-  padding: 6px;
+  padding: 8px 10px;
   flex: 0 0 auto;
+  display: flex;
+  align-items: center;
 }
-.invoice-brandmark img { display: block; width: 54px; height: 54px; object-fit: contain; }
+/* The logo is a wide lockup (roughly 15:4), not a square badge — constrain
+   its height and let the width follow, or a fixed square box squashes it
+   down to an unreadable smudge. */
+.invoice-brandmark img { display: block; height: 44px; width: auto; max-width: 170px; }
 .invoice-brand { flex: 1 1 260px; min-width: 0; }
 .invoice-brand h1 {
   margin: 0 0 6px;
