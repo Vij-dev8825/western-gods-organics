@@ -4,8 +4,20 @@ import { api } from '../api';
 import { useAuth } from '../context/AuthContext';
 import logo from '../assets/logo.svg';
 import ChakkiWheel from '../components/ChakkiWheel';
+import { amountInWords } from '../utils/numberToWords';
+import { STORE_LOCATIONS } from '../data/storeLocations';
 
-const PAYMENT_LABELS = { cod: 'Cash on Delivery', razorpay: 'Paid Online (Razorpay)' };
+const PAYMENT_LABELS = { cod: 'Cash on Delivery', razorpay: 'Paid Online (Razorpay)', cod_advance: 'Part-paid online, rest on delivery' };
+
+// A "Bill of Supply" is the correct document only for a seller not charging
+// GST on the sale (composition scheme or exempt goods); a GST-registered
+// seller charging tax must head it "Tax Invoice" instead. Left here as one
+// switch rather than buried in the markup, since it's a tax classification
+// the business owns, not a design choice.
+const DOCUMENT_TITLE = 'BILL OF SUPPLY';
+// Payment is due at/ before delivery, so the due date is the working
+// assumption of when the order lands rather than a credit term.
+const DUE_DAYS = 7;
 
 export default function Invoice() {
   const { orderId } = useParams();
@@ -34,19 +46,36 @@ export default function Invoice() {
     );
   }
 
+  const mill = STORE_LOCATIONS[0];
   const subtotal = order.items.reduce((sum, it) => sum + it.price * it.quantity, 0);
+  const totalQty = order.items.reduce((sum, it) => sum + it.quantity, 0);
   const discount = order.discount || 0;
+  const prepaidDiscount = order.prepaidDiscount || 0;
   const pointsDiscount = order.pointsRedeemed || 0; // 1 point = ₹1, see backend/utils/loyalty.js
   const giftCardApplied = order.giftCardApplied || 0;
   // Isolates shipping as whatever's left after every other known deduction —
   // has to account for all of them or a points/gift-card order would show
   // the wrong shipping fee here (the residual would silently absorb them).
-  const shipping = order.total - subtotal + discount + pointsDiscount + giftCardApplied;
+  const shipping = order.total - subtotal + discount + prepaidDiscount + pointsDiscount + giftCardApplied;
   // Orders placed before this existed have no shippingChoice — treat as the
   // default "shipping" (store-charged) path, same as they were charged.
   const isToPay = order.shippingChoice === 'to_pay';
   const showShippingRow = isToPay ? true : shipping > 0;
   const shippingLabel = isToPay ? 'To Pay' : 'Shipping';
+
+  // What the customer has actually handed over so far — a prepaid order is
+  // settled in full, a part-advance order only by its advance, and a plain
+  // COD order not at all until it arrives.
+  const received =
+    order.paymentMethod === 'razorpay' ? order.total
+    : order.paymentMethod === 'cod_advance' ? (order.advancePaid || 0)
+    : 0;
+  const balanceDue = Math.max(0, order.total - received);
+
+  const invoiceDate = new Date(order.createdAt);
+  const dueDate = new Date(invoiceDate);
+  dueDate.setDate(dueDate.getDate() + DUE_DAYS);
+  const fmt = (d) => d.toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' });
 
   return (
     <div className="invoice-page">
@@ -56,79 +85,160 @@ export default function Invoice() {
       </div>
 
       <div className="invoice-sheet">
-        <div className="invoice-header">
-          <img src={logo} alt="Western Gods Organics" height={44} />
-          <div className="invoice-header-address">
-            <b>Shri Gopal Flour &amp; Oil Mills</b>
-            <span>Udumalpet, Tiruppur District, Tamil Nadu – 642126</span>
-            <span>westerngodsorganic@gmail.com · +91 88258 75607</span>
+        {/* Ornamental frame — two nested rules plus corner marks, drawn as
+            empty elements so no invoice content sits inside them. */}
+        <div className="invoice-frame" aria-hidden="true">
+          <span className="invoice-corner tl" />
+          <span className="invoice-corner tr" />
+          <span className="invoice-corner bl" />
+          <span className="invoice-corner br" />
+        </div>
+
+        {/* Faint centred logo behind the content — decorative only, so it's
+            hidden from assistive tech and never intercepts clicks/selection. */}
+        <img src={logo} alt="" aria-hidden="true" className="invoice-watermark" />
+
+        <div className="invoice-body">
+          <header className="invoice-head">
+            <div className="invoice-brandmark">
+              <img src={logo} alt="Western Gods Organics" />
+            </div>
+            <div className="invoice-brand">
+              <h1>Western Gods Organics</h1>
+              <div className="invoice-contact">
+                <span>📞 {mill.phoneDisplay}</span>
+                <span>✉️ westerngodsorganic@gmail.com</span>
+              </div>
+              <div className="invoice-contact">
+                <span>📍 {mill.address}</span>
+              </div>
+              <div className="invoice-legal">{mill.name}</div>
+            </div>
+            <div className="invoice-doctype">
+              <b>{DOCUMENT_TITLE}</b>
+              <span>ORIGINAL FOR RECIPIENT</span>
+            </div>
+          </header>
+
+          <div className="invoice-meta-row">
+            <div>
+              <span>Invoice No.</span>
+              <b>{order.orderNumber}</b>
+            </div>
+            <div>
+              <span>Invoice Date</span>
+              <b>{fmt(invoiceDate)}</b>
+            </div>
+            <div>
+              <span>Due Date</span>
+              <b>{fmt(dueDate)}</b>
+            </div>
+            <div>
+              <span>Payment</span>
+              <b>{PAYMENT_LABELS[order.paymentMethod] || order.paymentMethod}</b>
+            </div>
           </div>
-        </div>
 
-        <div className="invoice-title-row">
-          <h2>Tax Invoice</h2>
-          <div className="invoice-meta">
-            <div><span>Invoice / Order #</span><b>{order.orderNumber}</b></div>
-            <div><span>Date</span><b>{new Date(order.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</b></div>
-            <div><span>Payment</span><b>{PAYMENT_LABELS[order.paymentMethod] || order.paymentMethod}</b></div>
-            <div><span>Status</span><b style={{ textTransform: 'capitalize' }}>{order.status}</b></div>
+          <div className="invoice-billto">
+            <span>Bill To</span>
+            <b>{order.address.name || order.address.phone}</b>
+            <p>
+              {order.address.line1}<br />
+              {order.address.city}, {order.address.state} – {order.address.pincode}
+              {order.address.country && order.address.country !== 'IN' ? <><br />{order.address.country}</> : null}
+              <br />Phone: {order.address.phone}
+            </p>
           </div>
-        </div>
 
-        <div className="invoice-address-block">
-          <span className="eyebrow">Deliver to</span>
-          <p style={{ margin: 0 }}>
-            {order.address.line1}<br />
-            {order.address.city}, {order.address.state} – {order.address.pincode}<br />
-            Phone: {order.address.phone}
-          </p>
-        </div>
-
-        <table className="invoice-table">
-          <thead>
-            <tr>
-              <th>#</th>
-              <th>Item</th>
-              <th>Size</th>
-              <th>Qty</th>
-              <th>Rate</th>
-              <th>Amount</th>
-            </tr>
-          </thead>
-          <tbody>
-            {order.items.map((it, i) => (
-              <tr key={i}>
-                <td>{i + 1}</td>
-                <td>{it.name}</td>
-                <td>{it.size}</td>
-                <td>{it.quantity}</td>
-                <td>₹{it.price}</td>
-                <td>₹{it.price * it.quantity}</td>
+          <table className="invoice-table">
+            <thead>
+              <tr>
+                <th className="col-no">No</th>
+                <th>Items</th>
+                <th className="col-num">Qty.</th>
+                <th className="col-num">Rate</th>
+                <th className="col-num">Total</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {order.items.map((it, i) => (
+                <tr key={i}>
+                  <td className="col-no">{i + 1}</td>
+                  <td>{it.name} <span className="invoice-size">{it.size}</span></td>
+                  <td className="col-num">{it.quantity}</td>
+                  <td className="col-num">{it.price}</td>
+                  <td className="col-num">{it.price * it.quantity}</td>
+                </tr>
+              ))}
+            </tbody>
+            <tfoot>
+              <tr>
+                <td colSpan={2}>SUBTOTAL</td>
+                <td className="col-num">{totalQty}</td>
+                <td />
+                <td className="col-num">₹ {subtotal}</td>
+              </tr>
+            </tfoot>
+          </table>
 
-        <div className="invoice-totals">
-          <div><span>Subtotal</span><span>₹{subtotal}</span></div>
-          {showShippingRow && (
-            <div><span>{shippingLabel}</span><span>{isToPay ? 'At delivery' : `₹${shipping}`}</span></div>
-          )}
-          {discount > 0 && (
-            <div><span>Coupon {order.couponCode ? `(${order.couponCode})` : ''}</span><span>−₹{discount}</span></div>
-          )}
-          {pointsDiscount > 0 && (
-            <div><span>Reward points</span><span>−₹{pointsDiscount}</span></div>
-          )}
-          {giftCardApplied > 0 && (
-            <div><span>Gift card {order.giftCardCode ? `(${order.giftCardCode})` : ''}</span><span>−₹{giftCardApplied}</span></div>
-          )}
-          <div className="invoice-total-grand"><span>Total</span><span>₹{order.total}</span></div>
-        </div>
+          <div className="invoice-lower">
+            <div className="invoice-terms">
+              <b>Terms &amp; Conditions</b>
+              <ol>
+                <li>Goods once sold will not be taken back or exchanged, except for damaged or incorrect items reported within 7 days of delivery.</li>
+                <li>All disputes are subject to Udumalpet, Tamil Nadu jurisdiction only.</li>
+              </ol>
+            </div>
 
-        <div className="invoice-footer">
-          <p>Thank you for shopping with Western Gods Organics — wood-pressed with care, always.</p>
-          <p className="muted">This is a computer-generated invoice and does not require a signature.</p>
+            <div className="invoice-amounts">
+              <div className="invoice-amount-lines">
+                <div><span>Subtotal</span><span>₹ {subtotal}</span></div>
+                {showShippingRow && (
+                  <div><span>{shippingLabel}</span><span>{isToPay ? 'At delivery' : `₹ ${shipping}`}</span></div>
+                )}
+                {discount > 0 && (
+                  <div><span>Coupon {order.couponCode ? `(${order.couponCode})` : ''}</span><span>− ₹ {discount}</span></div>
+                )}
+                {prepaidDiscount > 0 && (
+                  <div><span>Prepaid discount</span><span>− ₹ {prepaidDiscount}</span></div>
+                )}
+                {pointsDiscount > 0 && (
+                  <div><span>Reward points</span><span>− ₹ {pointsDiscount}</span></div>
+                )}
+                {giftCardApplied > 0 && (
+                  <div><span>Gift card {order.giftCardCode ? `(${order.giftCardCode})` : ''}</span><span>− ₹ {giftCardApplied}</span></div>
+                )}
+              </div>
+
+              <div className="invoice-total-band">
+                <span>Total Amount</span>
+                <b>₹ {order.total}</b>
+              </div>
+              <div className="invoice-amount-lines">
+                <div><span>Received Amount</span><span>₹ {received}</span></div>
+                {balanceDue > 0 && (
+                  <div className="invoice-balance"><span>Balance Due</span><span>₹ {balanceDue}</span></div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <div className="invoice-words">
+            <span>Total Amount (in words)</span>
+            <b>{amountInWords(order.total)}</b>
+          </div>
+
+          <div className="invoice-sign">
+            <div className="invoice-sign-box">
+              <span>For Western Gods Organics</span>
+              <div className="invoice-sign-line" />
+              <span>Authorised Signatory</span>
+            </div>
+          </div>
+
+          <p className="invoice-note">
+            Thank you for shopping with Western Gods Organics — wood-pressed with care, always.
+          </p>
         </div>
       </div>
     </div>

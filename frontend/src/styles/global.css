@@ -1652,70 +1652,199 @@ input:focus-visible + .filter-radio { outline: 2px solid var(--gold-2); outline-
   justify-content: space-between;
   align-items: center;
 }
+/* Gold used only inside the invoice sheet. Kept as its own token rather than
+   reusing --gold-1: that variable is overridden per country for the
+   storefront theme, and a printed invoice shouldn't change colour depending
+   on which country the customer happened to be browsing in. */
 .invoice-sheet {
+  --inv-gold: #b9922f;
+  --inv-band: #faf3e2;
+  position: relative;
   max-width: 800px;
   margin: 0 auto;
-  background: var(--paper);
-  border-radius: var(--radius-md);
+  background: #fff;
   box-shadow: var(--shadow-card);
-  padding: 44px;
+  padding: 12px;
 }
-.invoice-header {
+.invoice-frame {
+  position: absolute;
+  inset: 12px;
+  border: 2px solid var(--inv-gold);
+  outline: 1px solid var(--inv-gold);
+  outline-offset: 4px;
+  pointer-events: none;
+}
+/* Small right-angle marks that read as corner ornament without needing art. */
+.invoice-corner { position: absolute; width: 18px; height: 18px; }
+.invoice-corner.tl { top: 6px; left: 6px; border-top: 2px solid var(--inv-gold); border-left: 2px solid var(--inv-gold); }
+.invoice-corner.tr { top: 6px; right: 6px; border-top: 2px solid var(--inv-gold); border-right: 2px solid var(--inv-gold); }
+.invoice-corner.bl { bottom: 6px; left: 6px; border-bottom: 2px solid var(--inv-gold); border-left: 2px solid var(--inv-gold); }
+.invoice-corner.br { bottom: 6px; right: 6px; border-bottom: 2px solid var(--inv-gold); border-right: 2px solid var(--inv-gold); }
+
+.invoice-watermark {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 58%;
+  max-width: 380px;
+  transform: translate(-50%, -50%);
+  opacity: 0.05;
+  pointer-events: none;
+  user-select: none;
+}
+/* Every real row sits above the watermark. */
+.invoice-body { position: relative; z-index: 1; padding: 26px 30px 30px; }
+
+.invoice-head { display: flex; align-items: flex-start; gap: 16px; flex-wrap: wrap; }
+.invoice-brandmark {
+  border: 1.5px solid var(--inv-gold);
+  border-radius: 4px;
+  padding: 6px;
+  flex: 0 0 auto;
+}
+.invoice-brandmark img { display: block; width: 54px; height: 54px; object-fit: contain; }
+.invoice-brand { flex: 1 1 260px; min-width: 0; }
+.invoice-brand h1 {
+  margin: 0 0 6px;
+  font-family: var(--font-display);
+  font-size: 1.7rem;
+  color: var(--forest-deep);
+}
+.invoice-contact { display: flex; flex-wrap: wrap; gap: 4px 18px; font-size: 0.78rem; color: var(--forest-light); }
+.invoice-legal { margin-top: 5px; font-size: 0.76rem; color: var(--forest-light); }
+.invoice-doctype { text-align: right; flex: 0 0 auto; }
+.invoice-doctype b {
+  display: block;
+  font-size: 0.95rem;
+  letter-spacing: 0.04em;
+  color: var(--forest-deep);
+}
+.invoice-doctype span { font-size: 0.62rem; letter-spacing: 0.08em; color: var(--inv-gold); text-transform: uppercase; }
+
+.invoice-meta-row {
   display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 20px;
-  padding-bottom: 20px;
-  border-bottom: 2px solid var(--forest-deep);
-  margin-bottom: 24px;
   flex-wrap: wrap;
+  gap: 10px 40px;
+  margin: 20px 0 0;
+  padding: 14px 0;
+  border-top: 1px solid var(--inv-gold);
+  border-bottom: 1px solid var(--inv-gold);
 }
-.invoice-header-address { text-align: right; font-size: 0.82rem; color: var(--forest-light); }
-.invoice-header-address b { display: block; color: var(--forest-deep); font-size: 0.95rem; margin-bottom: 2px; }
-.invoice-header-address span { display: block; }
-.invoice-title-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  flex-wrap: wrap;
-  gap: 16px;
-  margin-bottom: 22px;
-}
-.invoice-title-row h2 { margin: 0; }
-.invoice-meta { display: grid; grid-template-columns: repeat(2, auto); gap: 4px 24px; font-size: 0.85rem; }
-.invoice-meta div { display: flex; justify-content: space-between; gap: 10px; }
-.invoice-meta span { color: var(--forest-light); }
-.invoice-address-block { background: var(--cream); border-radius: var(--radius-sm); padding: 16px 18px; margin-bottom: 26px; font-size: 0.92rem; }
-.invoice-table { width: 100%; border-collapse: collapse; margin-bottom: 24px; font-size: 0.9rem; }
+.invoice-meta-row div { display: flex; flex-direction: column; gap: 2px; }
+.invoice-meta-row span { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--forest-light); }
+.invoice-meta-row b { font-size: 0.88rem; color: var(--forest-deep); }
+
+.invoice-billto { padding: 14px 0 18px; border-bottom: 1px solid var(--inv-gold); }
+.invoice-billto > span { display: block; font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--forest-light); }
+.invoice-billto b { display: block; margin: 3px 0 4px; font-size: 0.95rem; color: var(--forest-deep); }
+.invoice-billto p { margin: 0; font-size: 0.82rem; color: var(--forest-light); line-height: 1.55; }
+
+.invoice-table { width: 100%; border-collapse: collapse; margin: 18px 0 0; font-size: 0.85rem; }
 .invoice-table th {
   text-align: left;
-  padding: 10px;
-  background: var(--forest-deep);
-  color: var(--cream);
+  padding: 10px 8px;
+  background: var(--inv-band);
+  color: var(--forest-deep);
   font-size: 0.72rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
+  font-weight: 700;
 }
-.invoice-table th:last-child, .invoice-table td:last-child { text-align: right; }
-.invoice-table td { padding: 10px; border-bottom: 1px solid rgba(31,61,43,0.1); }
-.invoice-totals { max-width: 280px; margin-left: auto; font-size: 0.92rem; }
-.invoice-totals div { display: flex; justify-content: space-between; padding: 6px 0; }
-.invoice-total-grand { font-weight: 700; font-size: 1.1rem; border-top: 1.5px dashed rgba(31,61,43,0.3); margin-top: 6px; padding-top: 12px !important; }
-.invoice-footer { margin-top: 34px; padding-top: 18px; border-top: 1px solid rgba(31,61,43,0.12); text-align: center; font-size: 0.85rem; }
+.invoice-table td { padding: 11px 8px; border-bottom: 1px solid rgba(185, 146, 47, 0.22); vertical-align: top; }
+.invoice-table .col-no { width: 40px; }
+.invoice-table .col-num { text-align: right; white-space: nowrap; }
+.invoice-size { color: var(--forest-light); font-size: 0.78rem; }
+.invoice-table tfoot td {
+  background: var(--inv-band);
+  font-weight: 700;
+  border-bottom: none;
+  letter-spacing: 0.04em;
+}
+
+.invoice-lower { display: flex; gap: 26px; margin-top: 22px; flex-wrap: wrap; }
+.invoice-terms { flex: 1 1 260px; min-width: 0; font-size: 0.74rem; color: var(--forest-light); }
+.invoice-terms b { display: block; margin-bottom: 6px; font-size: 0.8rem; color: var(--forest-deep); }
+.invoice-terms ol { margin: 0; padding-left: 16px; line-height: 1.6; }
+.invoice-amounts { flex: 0 1 290px; min-width: 240px; }
+.invoice-amount-lines { font-size: 0.82rem; }
+.invoice-amount-lines div { display: flex; justify-content: space-between; gap: 12px; padding: 5px 0; }
+.invoice-balance { font-weight: 700; color: var(--forest-deep); }
+.invoice-total-band {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  background: var(--inv-band);
+  padding: 11px 14px;
+  margin: 8px 0;
+}
+.invoice-total-band span { font-weight: 600; color: var(--forest-deep); }
+.invoice-total-band b { font-size: 1.15rem; color: var(--forest-deep); }
+
+.invoice-words { margin-top: 20px; font-size: 0.8rem; }
+.invoice-words span { display: block; font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--forest-light); }
+.invoice-words b { color: var(--forest-deep); }
+
+.invoice-sign { display: flex; justify-content: flex-end; margin-top: 26px; }
+.invoice-sign-box {
+  border: 1px solid rgba(185, 146, 47, 0.5);
+  border-radius: 4px;
+  padding: 12px 18px 10px;
+  min-width: 210px;
+  text-align: center;
+  font-size: 0.72rem;
+  color: var(--forest-light);
+}
+.invoice-sign-line { height: 44px; border-bottom: 1px solid rgba(31,61,43,0.35); margin: 4px 0 6px; }
+
+.invoice-note {
+  margin: 26px 0 0;
+  padding-top: 14px;
+  border-top: 1px solid rgba(185, 146, 47, 0.35);
+  text-align: center;
+  font-size: 0.78rem;
+  color: var(--forest-light);
+}
 
 @media print {
   .no-print, .announce-bar, .navbar, .footer, .chat-fab, .chat-panel, .whatsapp-fab, .ai-assistant-fab { display: none !important; }
   .invoice-page { background: none; padding: 0; }
-  .invoice-sheet { box-shadow: none; padding: 0; max-width: none; }
+  .invoice-sheet { box-shadow: none; max-width: none; }
+  /* Browsers strip background colours when printing unless asked not to —
+     without this the header band, subtotal row and total band all print
+     white and the layout loses its structure. */
+  .invoice-sheet, .invoice-table th, .invoice-table tfoot td, .invoice-total-band {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  /* A typical order overflowed A4 by ~70px on screen spacing alone and
+     spilled a nearly-empty second page. These trims claw that back so a
+     normal invoice prints on one sheet; a genuinely long item list still
+     paginates, and the rules below keep it from breaking mid-row. */
+  .invoice-body { padding: 18px 22px 20px; }
+  .invoice-brand h1 { font-size: 1.5rem; }
+  .invoice-meta-row { margin-top: 14px; padding: 10px 0; }
+  .invoice-billto { padding: 10px 0 12px; }
+  .invoice-table { margin-top: 12px; }
+  .invoice-table td { padding: 8px; }
+  .invoice-lower { margin-top: 16px; }
+  .invoice-words { margin-top: 14px; }
+  .invoice-sign { margin-top: 16px; }
+  .invoice-sign-line { height: 34px; }
+  .invoice-note { margin-top: 16px; padding-top: 10px; }
+  .invoice-table tr { break-inside: avoid; }
+  .invoice-lower, .invoice-sign, .invoice-words { break-inside: avoid; }
 }
 
 @media (max-width: 640px) {
-  .invoice-sheet { padding: 24px 18px; }
-  .invoice-header { flex-direction: column; }
-  .invoice-header-address { text-align: left; }
-  .invoice-meta { grid-template-columns: auto; }
-  .invoice-table { font-size: 0.78rem; }
-  .invoice-table th, .invoice-table td { padding: 7px; }
+  .invoice-body { padding: 20px 16px 24px; }
+  .invoice-head { gap: 12px; }
+  .invoice-brand h1 { font-size: 1.35rem; }
+  .invoice-doctype { text-align: left; width: 100%; }
+  .invoice-meta-row { gap: 10px 24px; }
+  .invoice-table { font-size: 0.76rem; }
+  .invoice-table th, .invoice-table td { padding: 8px 5px; }
+  .invoice-amounts { flex-basis: 100%; }
 }
 
 /* ---------- My Orders (Flipkart/Amazon-style order list) ---------- */
