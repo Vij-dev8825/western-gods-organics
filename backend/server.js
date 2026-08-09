@@ -106,6 +106,26 @@ app.use('/catalog-images', express.static(path.join(__dirname, 'public', 'catalo
 // In production (single Render service) the API also serves the built frontend.
 const distDir = path.join(__dirname, '..', 'frontend', 'dist');
 if (fs.existsSync(distDir)) {
+  // Vite stamps a content hash into every filename under /assets, so a given
+  // URL there can never change meaning — a new build writes new filenames.
+  // Without saying so, the browser revalidates each one on every navigation,
+  // which is a full round-trip per file before anything can render. That cost
+  // is invisible on a fast connection and brutal on a slow one, where latency
+  // rather than bandwidth is what makes a site feel dead. Everything else
+  // (index.html above all) must stay revalidated, or a deploy would never
+  // reach anyone who had already visited.
+  app.use(
+    '/assets',
+    express.static(path.join(distDir, 'assets'), {
+      immutable: true,
+      maxAge: '1y',
+      // A miss here is a stale index.html asking for a chunk this build no
+      // longer has. Falling through to the SPA catch-all would answer with
+      // HTML and a 200, which the browser then tries to run as JavaScript;
+      // failing outright lets it recover by refetching index.html.
+      fallthrough: false,
+    })
+  );
   app.use(express.static(distDir));
   const indexPath = path.join(distDir, 'index.html');
 

@@ -25,6 +25,14 @@ const VIDEO_MAX_HEIGHT = 720;
 const VIDEO_BITRATE = '1200k';
 const VIDEO_MAX_OUTPUT_BYTES = 20 * 1024 * 1024; // 20 MB — keeps DB rows and page loads reasonable
 
+// Poster stills stand in for a video until it has buffered, so they're tuned
+// for arriving fast rather than looking pristine — they sit behind the hero's
+// dark overlay and are replaced by the real frame within a second or two.
+const POSTER_ID_SUFFIX = '-poster';
+const POSTER_SEEK_SECONDS = 1;
+const POSTER_WIDTH = 1280;
+const POSTER_QUALITY = 62;
+
 /** Compresses an image buffer (resize + re-encode as JPEG) and stores it,
  * returning a URL the frontend can load directly. */
 async function compressAndStore(buffer) {
@@ -90,4 +98,61 @@ async function getMedia(id) {
   return db.get('media', id);
 }
 
-module.exports = { compressAndStore, compressVideoAndStore, getMedia };
+/**
+ * Returns a still frame from a stored video as a small JPEG, generating it on
+ * first request and reusing it forever after.
+ *
+ * A hero <video> shows nothing at all until enough of the clip has buffered,
+ * which on a slow connection is seconds of blank screen. A poster fills that
+ * gap for ~2% of the bytes. Deriving it here rather than at upload time means
+ * videos already in the database get one too, with no migration and nothing
+ * for an admin to redo.
+ *
+ * The derived row's id is the video's id with a suffix, so the lookup is a
+ * plain primary-key read — no scanning, and no second column to index.
+ * Returns null if the id isn't a video, so callers can 404 honestly.
+ */
+async function getVideoPoster(videoId) {
+  const posterId = `${videoId}${POSTER_ID_SUFFIX}`;
+  const cached = await db.get('media', posterId);
+  if (cached) return cached;
+
+  const video = await db.get('media', videoId);
+  if (!video || !String(video.mimeType).startsWith('video/')) return null;
+
+  const workDir = fs.mkdtempSync(path.join(os.tmpdir(), 'wgo-poster-'));
+  const videoPath = path.join(workDir, 'clip.mp4');
+  const framePath = path.join(workDir, 'frame.png');
+  try {
+    fs.writeFileSync(videoPath, Buffer.from(video.data, 'base64'));
+    await new Promise((resolve, reject) => {
+      ffmpeg(videoPath)
+        // One frame a second in, not frame zero — the very first frame of a
+        // fade-in is usually black, which makes a poster look broken.
+        .seekInput(POSTER_SEEK_SECONDS)
+        .frames(1)
+        .output(framePath)
+        .on('end', resolve)
+        .on('error', reject)
+        .run();
+    });
+
+    const jpeg = await sharp(fs.readFileSync(framePath))
+      .resize({ width: POSTER_WIDTH, withoutEnlargement: true })
+      .jpeg({ quality: POSTER_QUALITY, mozjpeg: true })
+      .toBuffer();
+
+    const poster = {
+      id: posterId,
+      mimeType: 'image/jpeg',
+      data: jpeg.toString('base64'),
+      createdAt: new Date().toISOString(),
+    };
+    await db.put('media', poster);
+    return poster;
+  } finally {
+    fs.rmSync(workDir, { recursive: true, force: true });
+  }
+}
+
+module.exports = { compressAndStore, compressVideoAndStore, getMedia, getVideoPoster };

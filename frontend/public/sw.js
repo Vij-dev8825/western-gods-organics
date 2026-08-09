@@ -3,7 +3,23 @@
 // offline support for the installed PWA, registered unconditionally on every
 // page load from main.jsx. Bump CACHE_NAME to force old runtime-cached
 // responses to be dropped on the next deploy.
-const CACHE_NAME = 'wgo-runtime-v1';
+const CACHE_NAME = 'wgo-runtime-v2';
+
+/** Build output under /assets carries a content hash in its filename, so a
+ * cached copy can never be the wrong copy — a changed file arrives at a new
+ * URL. That makes it safe to answer from cache without asking the network
+ * first, which is the difference between an instant load and one that waits
+ * out a round-trip per file on a weak signal. */
+function isImmutableAsset(url) {
+  return url.pathname.startsWith('/assets/');
+}
+
+/** Media is served from long-lived, content-addressed ids too, but it's big
+ * and optional, so it gets shown from cache immediately and refreshed quietly
+ * in the background rather than blocking on the network. */
+function isMedia(url) {
+  return url.pathname.startsWith('/api/media/') || url.pathname.startsWith('/uploads/');
+}
 
 self.addEventListener('install', () => {
   self.skipWaiting();
@@ -16,22 +32,70 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
-// Network-first, falling back to a runtime cache — simplest strategy that
-// still lets the app shell (and anything already visited) open with no
-// network, without needing a build-time list of Vite's hashed asset URLs.
-// Only same-origin GET requests are cached; API calls and cross-origin
-// requests (fonts, maps, Razorpay, etc.) always go straight to the network.
+// Three strategies, picked by what the URL can promise.
+//
+// This used to be network-first for everything, which quietly made a bad
+// connection worse: with a perfectly good cached copy of an immutable file in
+// hand, it would still wait for the network before using it, and only fall
+// back once the request had failed outright. On a slow-but-alive connection —
+// the common case, and the one that matters here — that's the whole latency
+// of the page paid again on every visit.
+//
+// Cross-origin requests (fonts, maps, Razorpay) are left alone entirely.
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   if (request.method !== 'GET') return;
   const url = new URL(request.url);
-  if (url.origin !== self.location.origin || url.pathname.startsWith('/api/')) return;
+  if (url.origin !== self.location.origin) return;
 
+  // Cache-first: hashed build output. Answer instantly, never revalidate.
+  if (isImmutableAsset(url)) {
+    event.respondWith(
+      caches.match(request).then((cached) =>
+        cached ||
+        fetch(request).then((response) => {
+          if (response.ok) {
+            const copy = response.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
+          }
+          return response;
+        })
+      )
+    );
+    return;
+  }
+
+  // Stale-while-revalidate: images and video. Show what we have, quietly
+  // fetch a fresh copy for next time. Range requests are skipped — a 206 is a
+  // slice, not the resource, and caching one would corrupt playback.
+  if (isMedia(url) && !request.headers.has('range')) {
+    event.respondWith(
+      caches.match(request).then((cached) => {
+        const network = fetch(request)
+          .then((response) => {
+            if (response.ok && response.status === 200) {
+              const copy = response.clone();
+              caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
+            }
+            return response;
+          })
+          .catch(() => cached);
+        return cached || network;
+      })
+    );
+    return;
+  }
+
+  // Everything else that isn't the API: network-first, so a deploy is picked
+  // up immediately, with the cache as the offline fallback.
+  if (url.pathname.startsWith('/api/')) return;
   event.respondWith(
     fetch(request)
       .then((response) => {
-        const copy = response.clone();
-        caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
+        if (response.ok) {
+          const copy = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
+        }
         return response;
       })
       .catch(() => caches.match(request).then((cached) => cached || caches.match('/')))

@@ -1,7 +1,24 @@
 const express = require('express');
-const { getMedia } = require('../utils/mediaStore');
+const { getMedia, getVideoPoster } = require('../utils/mediaStore');
 
 const router = express.Router();
+
+// GET /api/media/:id/poster — a still frame from a stored video, so a hero
+// slot can show something immediately instead of a blank rectangle while
+// megabytes of clip buffer. Generated on the first request and cached in the
+// database from then on. Declared before /:id so the suffix isn't swallowed
+// as part of the id.
+router.get('/:id/poster', async (req, res, next) => {
+  try {
+    const poster = await getVideoPoster(req.params.id);
+    if (!poster) return res.status(404).json({ success: false, message: 'Media not found.' });
+    res.set('Content-Type', poster.mimeType);
+    res.set('Cache-Control', 'public, max-age=31536000, immutable');
+    res.send(Buffer.from(poster.data, 'base64'));
+  } catch (err) {
+    next(err);
+  }
+});
 
 // GET /api/media/:id — serves a compressed image/video stored in the
 // database. Public and long-cached: the id is content-addressed (one id per

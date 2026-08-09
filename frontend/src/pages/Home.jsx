@@ -16,6 +16,8 @@ import { getRecentlyViewedIds } from '../utils/recentlyViewed';
 import { useAuth } from '../context/AuthContext';
 import { useLang } from '../i18n';
 import { CANONICAL_ORIGIN } from '../utils/site';
+import { shouldLoadHeavyMedia, videoPosterUrl } from '../utils/connection';
+import LazyVideo from '../components/LazyVideo';
 import skincareCertificate from '../assets/skincare-workshop-certificate.jpg';
 
 const USP_ICONS = ['🌾', '🪵', '🧪', '🚚'];
@@ -88,6 +90,17 @@ export default function Home() {
   const [current, setCurrent] = useState(0);
   const [pastOrders, setPastOrders] = useState([]);
   const timerRef = useRef(null);
+  const heroVideoRefs = useRef({});
+
+  // Whether this visit gets hero video at all. Read once on mount: the answer
+  // shouldn't flip mid-scroll and start a download the visitor didn't ask for.
+  const [heroVideoAllowed] = useState(shouldLoadHeavyMedia);
+  // Slides that have actually been on screen. A <video> with a `src` begins
+  // downloading whether or not it's the visible slide, so handing every slide
+  // its source up front pulled the whole carousel — several megabytes of
+  // footage, competing with the product data, for clips most visitors never
+  // scroll past the first of.
+  const [openedSlides, setOpenedSlides] = useState(() => new Set([0]));
 
   useEffect(() => {
     api.getProducts({}, token).then((d) => setProducts(d.products)).catch(() => {}).finally(() => setProductsLoading(false));
@@ -100,14 +113,34 @@ export default function Home() {
     api.getOrders(token).then((d) => setPastOrders(d.orders)).catch(() => {});
   }, [isLoggedIn, token]);
 
-  // Auto-rotate hero banners
+  // Auto-rotate hero banners. Held still on a slow connection, where each
+  // rotation would mean fetching another clip the visitor didn't ask for.
   useEffect(() => {
-    if (banners.length < 2) return undefined;
+    if (banners.length < 2 || !heroVideoAllowed) return undefined;
     timerRef.current = setInterval(() => {
       setCurrent((c) => (c + 1) % banners.length);
     }, 9000);
     return () => clearInterval(timerRef.current);
-  }, [banners.length]);
+  }, [banners.length, heroVideoAllowed]);
+
+  useEffect(() => {
+    setOpenedSlides((prev) => (prev.has(current) ? prev : new Set(prev).add(current)));
+  }, [current]);
+
+  // Play the slide on screen and pause the rest. A paused <video> stops
+  // pulling data, so this is what keeps an off-screen slide from quietly
+  // eating the bandwidth the visible one needs.
+  useEffect(() => {
+    Object.entries(heroVideoRefs.current).forEach(([index, el]) => {
+      if (!el) return;
+      if (Number(index) === current) {
+        const played = el.play();
+        if (played?.catch) played.catch(() => {}); // autoplay blocked — poster stands in
+      } else {
+        el.pause();
+      }
+    });
+  }, [current, banners, openedSlides]);
 
   const recentIds = getRecentlyViewedIds();
   const recentProducts = recentIds
@@ -159,13 +192,23 @@ export default function Home() {
           b.type === 'video' ? (
             <video
               key={b.id}
+              ref={(el) => { heroVideoRefs.current[i] = el; }}
               className={`hero-media ${i === current ? 'visible' : ''}`}
-              src={b.url}
-              autoPlay
+              /* No `src` until a slide has actually been on screen, and none
+                 at all on a slow connection — as long as there's a poster to
+                 carry the hero in its place. Clips hosted somewhere we can't
+                 derive a still from (Cloudinary, plain /uploads) still load,
+                 because a blank hero would be worse than a slow one. */
+              src={
+                openedSlides.has(i) && (heroVideoAllowed || !videoPosterUrl(b.url))
+                  ? b.url
+                  : undefined
+              }
+              poster={videoPosterUrl(b.url) || undefined}
               muted
               loop
               playsInline
-              preload={i === 0 ? 'auto' : 'metadata'}
+              preload="none"
             />
           ) : (
             <img
@@ -331,7 +374,7 @@ export default function Home() {
         <Reveal as="section" className="section container">
           <div className="feature-split">
             <div className="feature-video">
-              <video src={banners[1].url} autoPlay muted loop playsInline />
+              <LazyVideo src={banners[1].url} />
             </div>
             <div className="feature-copy">
               <span className="eyebrow">{t('watchEyebrow')}</span>
