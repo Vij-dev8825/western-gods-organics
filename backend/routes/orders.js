@@ -46,13 +46,47 @@ async function resolveGuestUser(guestInfo, phone) {
   };
 }
 
-// A guest order is only ever attached to a BRAND NEW account — never to an
-// existing one, since there's no OTP step to prove the phone number is
-// really theirs. Silently reusing an existing account here would let anyone
-// view/modify a stranger's order history just by typing their phone number.
-async function isPhoneAvailable(phone) {
+async function findUserByPhone(phone) {
   const users = await db.list('users');
-  return !users.some((u) => u.phone === phone);
+  return users.find((u) => u.phone === phone) || null;
+}
+
+/**
+ * Decides which account a not-logged-in checkout belongs to.
+ *
+ * A returning customer typing the phone number already on their account used
+ * to be rejected outright and sent to the login page, losing the checkout.
+ * They're now let through — but only once an OTP proves the number is really
+ * theirs, because this same request hands back a login token. Skipping that
+ * proof would let anyone check out with a stranger's phone number and be
+ * signed in as them, with their order history, addresses and points.
+ *
+ * Returns one of:
+ *   { user, isExisting }        — go ahead (new account not yet persisted)
+ *   { needsVerification: true } — right phone, no proof yet; ask for the OTP
+ *   { error }                   — bad/missing details
+ */
+async function resolveCheckoutUser(guestInfo, phone, { requireVerifiedForNew }) {
+  if (!phone) return { error: { status: 400, message: 'A phone number is required.' } };
+
+  const existing = await findUserByPhone(phone);
+  if (existing) {
+    // An admin account is never claimable this way, whatever the OTP says.
+    if (existing.role === 'admin') {
+      return { error: { status: 409, message: 'Please log in to place this order.' } };
+    }
+    if (!isPhoneVerified(phone)) return { needsVerification: true };
+    return { user: existing, isExisting: true };
+  }
+
+  // Brand-new account. Cash on Delivery is the one method with no cost to a
+  // fraudster, so it still needs the phone proven; a captured prepayment is
+  // proof enough on its own.
+  if (requireVerifiedForNew && !isPhoneVerified(phone)) return { needsVerification: true };
+
+  const resolved = await resolveGuestUser(guestInfo, phone);
+  if (resolved.error) return { error: resolved.error };
+  return { user: resolved.user, isExisting: false };
 }
 
 // POST /api/orders/verify-cod-phone  { phone, otp } — confirms a guest
@@ -112,31 +146,28 @@ router.post('/', optionalAuth, async (req, res, next) => {
 
     let userId = req.user?.id;
     let newAccount = null;
+    let returningUser = null;
     if (!userId) {
-      if (!(await isPhoneAvailable(address.phone))) {
-        return res.status(409).json({
-          success: false,
-          message: 'An account already exists with this phone number. Please log in to continue.',
-        });
-      }
-      // Guests are the one checkout path with no account history behind
-      // them, so Cash on Delivery — the only payment method with zero cost
-      // to a fraudster — requires proving ownership of the delivery phone
-      // first (see /verify-cod-phone above). Prepaid orders skip this: a
-      // captured payment is itself proof enough.
-      if (effectivePaymentMethod === 'cod' && !isPhoneVerified(address.phone)) {
+      const resolved = await resolveCheckoutUser(guestInfo, address.phone, {
+        requireVerifiedForNew: effectivePaymentMethod === 'cod',
+      });
+      if (resolved.error) return res.status(resolved.error.status).json({ success: false, message: resolved.error.message });
+      if (resolved.needsVerification) {
         return res.status(403).json({
           success: false,
-          message: 'Please verify your phone number to place a Cash on Delivery order.',
+          message: 'Please verify your phone number to place this order.',
           requiresPhoneVerification: true,
         });
       }
-      const resolved = await resolveGuestUser(guestInfo, address.phone);
-      if (resolved.error) return res.status(resolved.error.status).json({ success: false, message: resolved.error.message });
-      newAccount = resolved.user;
-      await db.put('users', newAccount);
-      userId = newAccount.id;
-      if (effectivePaymentMethod === 'cod') consumePhoneVerification(address.phone);
+      if (!resolved.isExisting) {
+        newAccount = resolved.user;
+        await db.put('users', newAccount);
+      }
+      userId = resolved.user.id;
+      // Signing an existing customer in off the back of their OTP is the
+      // same proof the login route uses, so hand back a token either way.
+      if (resolved.isExisting) returningUser = resolved.user;
+      consumePhoneVerification(address.phone);
     }
 
     const { orderItems, total, discount, couponCode: appliedCode, prepaidDiscount, pointsRedeemed, giftCardCode: appliedGiftCardCode, giftCardApplied, stockError } =
@@ -161,9 +192,12 @@ router.post('/', optionalAuth, async (req, res, next) => {
     });
 
     const response = { success: true, message: 'Order placed successfully.', order };
-    if (newAccount) {
-      response.token = signToken(newAccount);
-      response.user = newAccount;
+    // Both cases got here by proving the phone via OTP (see
+    // resolveCheckoutUser), so both are safe to sign in.
+    const signInAs = newAccount || returningUser;
+    if (signInAs) {
+      response.token = signToken(signInAs);
+      response.user = signInAs;
     }
     res.status(201).json(response);
   } catch (err) {
@@ -193,14 +227,19 @@ router.post('/razorpay/create', optionalAuth, async (req, res, next) => {
       if (!address?.phone) {
         return res.status(400).json({ success: false, message: 'A complete delivery address is required.' });
       }
-      if (!(await isPhoneAvailable(address.phone))) {
-        return res.status(409).json({
+      // Pre-flight only — nothing is created here. Gating an existing-phone
+      // checkout now (rather than after payment) means a returning customer
+      // is asked for their OTP before any money moves, and /razorpay/verify
+      // below never has to reject an already-paid order.
+      const resolved = await resolveCheckoutUser(guestInfo, address.phone, { requireVerifiedForNew: false });
+      if (resolved.error) return res.status(resolved.error.status).json({ success: false, message: resolved.error.message });
+      if (resolved.needsVerification) {
+        return res.status(403).json({
           success: false,
-          message: 'An account already exists with this phone number. Please log in to continue.',
+          message: 'Please verify your phone number to continue.',
+          requiresPhoneVerification: true,
         });
       }
-      const resolved = await resolveGuestUser(guestInfo, address.phone);
-      if (resolved.error) return res.status(resolved.error.status).json({ success: false, message: resolved.error.message });
     }
 
     // Must thread giftCardCode the same way as /razorpay/verify below — this
@@ -251,12 +290,26 @@ router.post('/razorpay/verify', optionalAuth, async (req, res, next) => {
     // captured the payment would strand a paid customer.
     let userId = req.user?.id;
     let newAccount = null;
+    let returningUser = null;
     if (!userId) {
-      const resolved = await resolveGuestUser(guestInfo, address.phone);
-      if (resolved.error) return res.status(resolved.error.status).json({ success: false, message: resolved.error.message });
-      newAccount = resolved.user;
-      await db.put('users', newAccount);
-      userId = newAccount.id;
+      // Payment is already captured, so this must never reject — rejecting
+      // would leave a paid customer with no order. An existing account with
+      // this phone gets the order attached (it's theirs, and /razorpay/create
+      // already demanded the OTP), but a token is only issued if that OTP
+      // proof is actually present — so someone who called this route directly
+      // can't buy their way into a stranger's account.
+      const existing = await findUserByPhone(address.phone);
+      if (existing) {
+        userId = existing.id;
+        if (existing.role !== 'admin' && isPhoneVerified(address.phone)) returningUser = existing;
+      } else {
+        const resolved = await resolveGuestUser(guestInfo, address.phone);
+        if (resolved.error) return res.status(resolved.error.status).json({ success: false, message: resolved.error.message });
+        newAccount = resolved.user;
+        await db.put('users', newAccount);
+        userId = newAccount.id;
+      }
+      consumePhoneVerification(address.phone);
     }
 
     // No stock re-check here: by this point Razorpay has already captured the
@@ -287,9 +340,10 @@ router.post('/razorpay/verify', optionalAuth, async (req, res, next) => {
     });
 
     const response = { success: true, message: 'Payment verified and order placed.', order };
-    if (newAccount) {
-      response.token = signToken(newAccount);
-      response.user = newAccount;
+    const signInAs = newAccount || returningUser;
+    if (signInAs) {
+      response.token = signToken(signInAs);
+      response.user = signInAs;
     }
     res.status(201).json(response);
   } catch (err) {
@@ -329,14 +383,17 @@ router.post('/cod-advance/create', optionalAuth, async (req, res, next) => {
     }
 
     if (!req.user) {
-      if (!(await isPhoneAvailable(address.phone))) {
-        return res.status(409).json({
+      // Pre-flight only, same as /razorpay/create — gate here so the verify
+      // step below never rejects an order whose advance is already captured.
+      const resolved = await resolveCheckoutUser(guestInfo, address.phone, { requireVerifiedForNew: false });
+      if (resolved.error) return res.status(resolved.error.status).json({ success: false, message: resolved.error.message });
+      if (resolved.needsVerification) {
+        return res.status(403).json({
           success: false,
-          message: 'An account already exists with this phone number. Please log in to continue.',
+          message: 'Please verify your phone number to continue.',
+          requiresPhoneVerification: true,
         });
       }
-      const resolved = await resolveGuestUser(guestInfo, address.phone);
-      if (resolved.error) return res.status(resolved.error.status).json({ success: false, message: resolved.error.message });
     }
 
     const { total, stockError } = await buildOrderItems(items, couponCode, address.country, req.user?.id, pointsToRedeem, shippingChoice, giftCardCode, 'cod_advance');
@@ -381,12 +438,23 @@ router.post('/cod-advance/verify', optionalAuth, async (req, res, next) => {
 
     let userId = req.user?.id;
     let newAccount = null;
+    let returningUser = null;
     if (!userId) {
-      const resolved = await resolveGuestUser(guestInfo, address.phone);
-      if (resolved.error) return res.status(resolved.error.status).json({ success: false, message: resolved.error.message });
-      newAccount = resolved.user;
-      await db.put('users', newAccount);
-      userId = newAccount.id;
+      // Advance already captured — must never reject. Same rule as
+      // /razorpay/verify: attach to the existing account, but only sign them
+      // in if the OTP proof is actually present.
+      const existing = await findUserByPhone(address.phone);
+      if (existing) {
+        userId = existing.id;
+        if (existing.role !== 'admin' && isPhoneVerified(address.phone)) returningUser = existing;
+      } else {
+        const resolved = await resolveGuestUser(guestInfo, address.phone);
+        if (resolved.error) return res.status(resolved.error.status).json({ success: false, message: resolved.error.message });
+        newAccount = resolved.user;
+        await db.put('users', newAccount);
+        userId = newAccount.id;
+      }
+      consumePhoneVerification(address.phone);
     }
 
     // No stock re-check here, same reasoning as /razorpay/verify — the
@@ -414,9 +482,10 @@ router.post('/cod-advance/verify', optionalAuth, async (req, res, next) => {
     });
 
     const response = { success: true, message: 'Advance payment verified and order placed.', order };
-    if (newAccount) {
-      response.token = signToken(newAccount);
-      response.user = newAccount;
+    const signInAs = newAccount || returningUser;
+    if (signInAs) {
+      response.token = signToken(signInAs);
+      response.user = signInAs;
     }
     res.status(201).json(response);
   } catch (err) {

@@ -50,6 +50,9 @@ export default function Cart() {
   const [shippingChoice, setShippingChoice] = useState('shipping'); // 'shipping' | 'to_pay'
   const [razorpayEnabled, setRazorpayEnabled] = useState(false);
   const [codVerifiedPhone, setCodVerifiedPhone] = useState(null);
+  // Set when the server reports this phone already belongs to an account —
+  // surfaces the inline OTP widget for non-COD methods too.
+  const [phoneNeedsVerification, setPhoneNeedsVerification] = useState(false);
   const [buyNowQty, setBuyNowQty] = useState(buyNowItem?.quantity || 1);
   const [couponInput, setCouponInput] = useState('');
   const [appliedCoupon, setAppliedCoupon] = useState(null); // { code, discount, subtotalAtApply }
@@ -225,7 +228,11 @@ export default function Cart() {
   // first (see backend/routes/orders.js) — logged-in customers already
   // proved phone ownership at signup, and prepaid orders are already
   // trust-gated by a captured payment.
-  const codNeedsVerification = !isLoggedIn && paymentMethod === 'cod' && codVerifiedPhone !== address.phone;
+  // Blocks the submit button while an OTP is still outstanding — for a guest
+  // COD order, or once the server has told us this phone belongs to an
+  // existing account (any payment method).
+  const codNeedsVerification =
+    !isLoggedIn && (paymentMethod === 'cod' || phoneNeedsVerification) && codVerifiedPhone !== address.phone;
 
   function updateAddress(field, value) {
     setAddress((a) => ({ ...a, [field]: value }));
@@ -302,14 +309,13 @@ export default function Cart() {
     setAffiliateError('');
   }
 
-  // A guest's phone number matched an existing account (backend/routes/
-  // orders.js) — send them straight to login instead of leaving them to find
-  // it themselves; `from: '/cart'` brings them right back to checkout after.
+  // The server asks for phone verification in two cases: a guest paying by
+  // COD, and a checkout whose phone already belongs to an account. Either
+  // way the customer stays on this page and verifies inline — they used to
+  // be redirected to /login for the second case, which lost the checkout.
   function handleOrderError(err) {
     showToast(err.message, 'error');
-    if (err.message.includes('account already exists')) {
-      navigate('/login', { state: { from: '/cart' } });
-    }
+    if (err.requiresPhoneVerification) setPhoneNeedsVerification(true);
   }
 
   async function handlePlaceOrder(e) {
@@ -907,13 +913,24 @@ export default function Cart() {
                 )}
               </div>
 
-              {!isLoggedIn && paymentMethod === 'cod' && (
+              {/* Always shown for COD (a guest must prove the delivery number
+                  before an unpaid order is accepted), and shown for any method
+                  once the server says this phone belongs to an existing
+                  account — that's a returning customer, and verifying here
+                  keeps them in checkout instead of bouncing them to login. */}
+              {!isLoggedIn && (paymentMethod === 'cod' || phoneNeedsVerification) && (
                 <CodPhoneVerify
                   phone={address.phone}
                   country={address.country}
                   verified={codVerifiedPhone === address.phone}
-                  onVerified={setCodVerifiedPhone}
+                  onVerified={(p) => { setCodVerifiedPhone(p); setPhoneNeedsVerification(false); }}
                 />
+              )}
+              {phoneNeedsVerification && codVerifiedPhone !== address.phone && (
+                <div className="alert alert-info" style={{ marginTop: 12 }}>
+                  You've ordered with this number before — verify it above and we'll add this order
+                  to your existing account. No password needed.
+                </div>
               )}
 
               {hasOutOfStock && (

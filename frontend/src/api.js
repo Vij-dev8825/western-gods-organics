@@ -14,7 +14,13 @@ async function request(path, { method = 'GET', body, token, formData } = {}) {
   const data = await res.json().catch(() => ({}));
 
   if (!res.ok) {
-    throw new Error(data.message || 'Something went wrong. Please try again.');
+    const error = new Error(data.message || 'Something went wrong. Please try again.');
+    // Carry the response body across — callers sometimes need a flag from it
+    // (e.g. requiresPhoneVerification at checkout) to decide what to show,
+    // and a bare Error would throw that away.
+    error.status = res.status;
+    Object.assign(error, data);
+    throw error;
   }
   return data;
 }
