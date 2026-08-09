@@ -15,6 +15,7 @@ import { getAttributedAffiliateCode } from '../utils/affiliateAttribution';
 import ChakkiWheel from '../components/ChakkiWheel';
 import AddressForm, { PhoneField } from '../components/AddressForm';
 import CodPhoneVerify from '../components/CodPhoneVerify';
+import CheckoutLoginPrompt from '../components/CheckoutLoginPrompt';
 
 function validateContactInfo(name, email) {
   const errors = {};
@@ -40,6 +41,10 @@ export default function Cart() {
   const [products, setProducts] = useState([]);
   const [placing, setPlacing] = useState(false);
   const [showAddressForm, setShowAddressForm] = useState(false);
+  // The one place we ask a signed-out shopper whether they'd rather log in —
+  // at "Proceed to checkout", while it can still save them typing, and never
+  // again once they've answered.
+  const [showLoginPrompt, setShowLoginPrompt] = useState(false);
   const [address, setAddress] = useState({ line1: '', city: '', state: '', pincode: '', phone: '', country: country.code });
   const [addressErrors, setAddressErrors] = useState({});
   const [selectedAddressId, setSelectedAddressId] = useState('new');
@@ -727,7 +732,7 @@ export default function Cart() {
               <button
                 className="btn btn-gold btn-block"
                 style={{ marginTop: 18 }}
-                onClick={() => setShowAddressForm(true)}
+                onClick={() => (isLoggedIn ? setShowAddressForm(true) : setShowLoginPrompt(true))}
               >
                 Proceed to checkout
               </button>
@@ -982,6 +987,13 @@ export default function Cart() {
           )}
         </div>
       </div>
+
+      {showLoginPrompt && (
+        <CheckoutLoginPrompt
+          onLogin={() => navigate('/login', { state: { from: '/cart', buyNow: buyNowItem || undefined } })}
+          onGuest={() => { setShowLoginPrompt(false); setShowAddressForm(true); }}
+        />
+      )}
     </div>
   );
 }

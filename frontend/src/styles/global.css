@@ -4047,3 +4047,16 @@ body.has-cookie-bar .install-prompt { bottom: calc(var(--cookie-bar-height, 0px)
   body.has-cookie-bar .cart-cta-bar { bottom: var(--cookie-bar-height, 0px); }
   body.has-cookie-bar .cart-layout { padding-bottom: calc(112px + var(--cookie-bar-height, 0px)); }
 }
+
+/* Log in / continue-as-guest choice shown when checkout starts. Reuses the
+   promo popup's overlay and card so there's only one dialog look on the
+   site; these rules just swap the promo layout for a stacked button pair. */
+.checkout-prompt-card { max-width: 400px; }
+.checkout-prompt-card h3 { margin: 12px 0 8px; font-size: 1.35rem; }
+.checkout-prompt-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 20px;
+}
+.checkout-prompt-note { font-size: 0.78rem; margin: 14px 0 0; }

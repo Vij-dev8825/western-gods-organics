@@ -86,21 +86,22 @@ async function syncContactDetails(userId, guestInfo) {
  * signed in as them, with their order history, addresses and points.
  *
  * Returns one of:
- *   { user, isExisting }        — go ahead (new account not yet persisted)
- *   { needsVerification: true } — right phone, no proof yet; ask for the OTP
- *   { error }                   — bad/missing details
+ *   { user, isExisting, noToken? } — go ahead (new account not yet persisted)
+ *   { needsVerification: true }    — right phone, no proof yet; ask for the OTP
+ *   { error }                      — bad/missing details
  */
 async function resolveCheckoutUser(guestInfo, phone, { requireVerifiedForNew }) {
   if (!phone) return { error: { status: 400, message: 'A phone number is required.' } };
 
   const existing = await findUserByPhone(phone);
   if (existing) {
-    // An admin account is never claimable this way, whatever the OTP says.
-    if (existing.role === 'admin') {
-      return { error: { status: 409, message: 'Please log in to place this order.' } };
-    }
     if (!isPhoneVerified(phone)) return { needsVerification: true };
-    return { user: existing, isExisting: true };
+    // The shop's own number can buy from the shop — the order is placed
+    // against that account like anyone else's. What it doesn't get is the
+    // login token this route hands back: that would turn a checkout OTP into
+    // a full admin session, escalating a weaker proof into the strongest
+    // possible one. Admins sign in through the admin login instead.
+    return { user: existing, isExisting: true, noToken: existing.role === 'admin' };
   }
 
   // Brand-new account. Cash on Delivery is the one method with no cost to a
@@ -190,7 +191,7 @@ router.post('/', optionalAuth, async (req, res, next) => {
       userId = resolved.user.id;
       // Signing an existing customer in off the back of their OTP is the
       // same proof the login route uses, so hand back a token either way.
-      if (resolved.isExisting) returningUser = resolved.user;
+      if (resolved.isExisting && !resolved.noToken) returningUser = resolved.user;
       consumePhoneVerification(address.phone);
     }
     // A brand-new guest account was just built from these exact details, so
@@ -222,7 +223,8 @@ router.post('/', optionalAuth, async (req, res, next) => {
 
     const response = { success: true, message: 'Order placed successfully.', order };
     // Both cases got here by proving the phone via OTP (see
-    // resolveCheckoutUser), so both are safe to sign in.
+    // resolveCheckoutUser), so both are safe to sign in. An admin checking out
+    // is deliberately not among them — the order is placed, but no token.
     const signInAs = newAccount || returningUser;
     if (signInAs) {
       response.token = signToken(signInAs);
