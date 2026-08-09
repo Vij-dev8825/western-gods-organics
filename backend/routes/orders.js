@@ -52,6 +52,30 @@ async function findUserByPhone(phone) {
 }
 
 /**
+ * Writes the name/email typed at checkout back onto the account placing the
+ * order, so the details a customer enters there become the details we hold
+ * for them — no separate trip to the profile page to keep them current.
+ *
+ * Only ever touches name and email, and only when something actually changed.
+ * A blank field is ignored rather than treated as "clear this", so a customer
+ * who leaves the optional email empty doesn't wipe the address we already
+ * have. Never runs for an admin account, and never for a guest whose phone
+ * hasn't been OTP-proved — both are gated by the callers below.
+ */
+async function syncContactDetails(userId, guestInfo) {
+  const name = guestInfo?.name?.trim();
+  const email = guestInfo?.email?.trim();
+  if (!name && !email) return;
+  const user = await db.get('users', userId);
+  if (!user || user.role === 'admin') return;
+  const updated = { ...user };
+  if (name && name.length >= 2 && name !== user.name) updated.name = name;
+  if (email && email !== user.email) updated.email = email;
+  if (updated.name === user.name && updated.email === user.email) return;
+  await db.put('users', updated);
+}
+
+/**
  * Decides which account a not-logged-in checkout belongs to.
  *
  * A returning customer typing the phone number already on their account used
@@ -169,6 +193,11 @@ router.post('/', optionalAuth, async (req, res, next) => {
       if (resolved.isExisting) returningUser = resolved.user;
       consumePhoneVerification(address.phone);
     }
+    // A brand-new guest account was just built from these exact details, so
+    // there's nothing to write back there. This covers the two cases that
+    // reach an already-existing account: a signed-in customer, and a
+    // returning one whose OTP just proved the number is theirs.
+    if (!newAccount) await syncContactDetails(userId, guestInfo);
 
     const { orderItems, total, discount, couponCode: appliedCode, prepaidDiscount, pointsRedeemed, giftCardCode: appliedGiftCardCode, giftCardApplied, stockError } =
       await buildOrderItems(items, couponCode, address.country, userId, pointsToRedeem, shippingChoice, giftCardCode, effectivePaymentMethod);
@@ -311,6 +340,11 @@ router.post('/razorpay/verify', optionalAuth, async (req, res, next) => {
       }
       consumePhoneVerification(address.phone);
     }
+    // Same rule as the token below: only write back to an already-existing
+    // account when this checkout is signed in or OTP-proved. Attaching a paid
+    // order to an unproved phone match is the lesser evil; letting it
+    // overwrite that account's name and email would not be.
+    if (req.user?.id || returningUser) await syncContactDetails(userId, guestInfo);
 
     // No stock re-check here: by this point Razorpay has already captured the
     // payment (verified via signature above), so rejecting on a stock race
@@ -456,6 +490,8 @@ router.post('/cod-advance/verify', optionalAuth, async (req, res, next) => {
       }
       consumePhoneVerification(address.phone);
     }
+    // Signed-in or OTP-proved only, same rule as /razorpay/verify above.
+    if (req.user?.id || returningUser) await syncContactDetails(userId, guestInfo);
 
     // No stock re-check here, same reasoning as /razorpay/verify — the
     // advance has already been captured by this point.

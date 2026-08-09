@@ -3,11 +3,41 @@ import { useCurrency } from '../context/CurrencyContext';
 import { countryFlagEmoji } from '../utils/countryFlag';
 import { api } from '../api';
 
+/** The delivery phone field, split out so checkout can render it up in its
+ * contact block while still writing to the same `address.phone` value — the
+ * country-aware input rules only need to exist once. */
+export function PhoneField({ address, onChange, errors }) {
+  return (
+    <div className="field">
+      <label>Phone</label>
+      <input
+        required
+        type="tel"
+        inputMode={address.country === 'IN' ? 'numeric' : 'tel'}
+        maxLength={address.country === 'IN' ? 10 : 16}
+        value={address.phone}
+        placeholder={address.country === 'IN' ? undefined : '+1 555 123 4567'}
+        onChange={(e) => onChange(
+          'phone',
+          address.country === 'IN'
+            ? e.target.value.replace(/\D/g, '')
+            : e.target.value.replace(/[^\d+\s-]/g, '')
+        )}
+      />
+      {errors.phone && <div className="field-error">{errors.phone}</div>}
+    </div>
+  );
+}
+
 /** Shared delivery-address field set — country, address line, pincode (with
  * auto city/state lookup for India), city, state, phone — used by Cart
  * checkout, the subscription address form, and the Profile address book so
- * the pincode-lookup behavior only needs to live in one place. */
-export default function AddressForm({ address, onChange, errors, showLabel = false, showCustomsNote = false }) {
+ * the pincode-lookup behavior only needs to live in one place.
+ *
+ * `showPhone={false}` hides the phone field for callers that collect it
+ * elsewhere (checkout asks for it up top alongside name and email). The value
+ * still lives on `address.phone` either way — only the field moves. */
+export default function AddressForm({ address, onChange, errors, showLabel = false, showCustomsNote = false, showPhone = true }) {
   const { countries } = useCurrency();
   const [cityOptions, setCityOptions] = useState([]);
   const [stateOptions, setStateOptions] = useState([]);
@@ -121,24 +151,7 @@ export default function AddressForm({ address, onChange, errors, showLabel = fal
         )}
         {errors.state && <div className="field-error">{errors.state}</div>}
       </div>
-      <div className="field">
-        <label>Phone</label>
-        <input
-          required
-          type="tel"
-          inputMode={address.country === 'IN' ? 'numeric' : 'tel'}
-          maxLength={address.country === 'IN' ? 10 : 16}
-          value={address.phone}
-          placeholder={address.country === 'IN' ? undefined : '+1 555 123 4567'}
-          onChange={(e) => onChange(
-            'phone',
-            address.country === 'IN'
-              ? e.target.value.replace(/\D/g, '')
-              : e.target.value.replace(/[^\d+\s-]/g, '')
-          )}
-        />
-        {errors.phone && <div className="field-error">{errors.phone}</div>}
-      </div>
+      {showPhone && <PhoneField address={address} onChange={onChange} errors={errors} />}
       {showCustomsNote && address.country !== 'IN' && (
         <p className="muted" style={{ fontSize: '0.8rem' }}>
           🌍 International orders may be subject to customs duties or import taxes charged by your

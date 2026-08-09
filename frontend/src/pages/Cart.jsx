@@ -13,10 +13,10 @@ import { normalizeAddresses } from '../utils/addresses';
 import { getEffectivePrice } from '../utils/pricing';
 import { getAttributedAffiliateCode } from '../utils/affiliateAttribution';
 import ChakkiWheel from '../components/ChakkiWheel';
-import AddressForm from '../components/AddressForm';
+import AddressForm, { PhoneField } from '../components/AddressForm';
 import CodPhoneVerify from '../components/CodPhoneVerify';
 
-function validateGuestInfo(name, email) {
+function validateContactInfo(name, email) {
   const errors = {};
   if (!name || name.trim().length < 2) errors.name = 'Enter your name.';
   if (email && !isValidEmail(email)) errors.email = 'Enter a valid email address, or leave it blank.';
@@ -25,7 +25,7 @@ function validateGuestInfo(name, email) {
 
 export default function Cart() {
   const { items, updateQuantity, removeItem, clearCart } = useCart();
-  const { isLoggedIn, token, user, login } = useAuth();
+  const { isLoggedIn, token, user, login, updateUser } = useAuth();
   const { showToast } = useToast();
   const { isForeign, checkMinOrder, getShippingFee, country } = useCurrency();
   const navigate = useNavigate();
@@ -43,9 +43,9 @@ export default function Cart() {
   const [address, setAddress] = useState({ line1: '', city: '', state: '', pincode: '', phone: '', country: country.code });
   const [addressErrors, setAddressErrors] = useState({});
   const [selectedAddressId, setSelectedAddressId] = useState('new');
-  const [guestName, setGuestName] = useState('');
-  const [guestEmail, setGuestEmail] = useState('');
-  const [guestErrors, setGuestErrors] = useState({});
+  const [contactName, setContactName] = useState('');
+  const [contactEmail, setContactEmail] = useState('');
+  const [contactErrors, setContactErrors] = useState({});
   const [paymentMethod, setPaymentMethod] = useState('cod'); // 'cod' | 'razorpay' | 'cod_advance'
   const [shippingChoice, setShippingChoice] = useState('shipping'); // 'shipping' | 'to_pay'
   const [razorpayEnabled, setRazorpayEnabled] = useState(false);
@@ -125,6 +125,17 @@ export default function Cart() {
     } else {
       setSelectedAddressId('new');
     }
+  }, [user]);
+
+  // Checkout asks everyone for name, email and phone up front, so a signed-in
+  // customer sees their own details already filled in rather than a blank
+  // form. Whatever they leave in these fields is what the order — and their
+  // account record — ends up carrying.
+  useEffect(() => {
+    if (!user) return;
+    setContactName((prev) => prev || user.name || '');
+    setContactEmail((prev) => prev || user.email || '');
+    setAddress((prev) => (prev.phone ? prev : { ...prev, phone: user.phone || '' }));
   }, [user]);
 
   function selectSavedAddress(a) {
@@ -334,8 +345,8 @@ export default function Cart() {
     }
     const errors = validateAddress(address);
     setAddressErrors(errors);
-    const gErrors = isLoggedIn ? {} : validateGuestInfo(guestName, guestEmail);
-    setGuestErrors(gErrors);
+    const gErrors = validateContactInfo(contactName, contactEmail);
+    setContactErrors(gErrors);
     if (Object.keys(errors).length || Object.keys(gErrors).length) {
       showToast('Please fix the highlighted fields.', 'error');
       return;
@@ -347,7 +358,10 @@ export default function Cart() {
     const orderItems = lines.map((l) => ({ productId: l.productId, size: l.size, quantity: l.quantity }));
     const couponCode = !couponStale && appliedCoupon ? appliedCoupon.code : undefined;
     const giftCardCode = appliedGiftCard ? appliedGiftCard.code : undefined;
-    const guestInfo = isLoggedIn ? undefined : { name: guestName.trim(), email: guestEmail.trim() };
+    // Sent whether or not they're signed in: for a guest it's the identity the
+    // new account is built from, and for a signed-in customer it's how edits
+    // made here flow back onto their saved profile.
+    const guestInfo = { name: contactName.trim(), email: contactEmail.trim() };
     const giftFields = { isGift, giftMessage: isGift ? giftMessage.trim() : undefined };
     const affiliateCode = appliedAffiliateCode || undefined;
     try {
@@ -375,6 +389,11 @@ export default function Cart() {
     if (data.token) {
       login(data.token, data.user);
       showToast(`Account created — track this order anytime from "My Orders."`);
+    } else if (isLoggedIn) {
+      // The server just wrote these back onto the account (see
+      // syncContactDetails in backend/routes/orders.js) — mirror it locally so
+      // the header and profile don't keep showing the old name until reload.
+      updateUser({ name: contactName.trim() || user?.name, email: contactEmail.trim() || user?.email });
     }
     if (!isBuyNow) clearCart();
 
@@ -712,35 +731,30 @@ export default function Cart() {
               >
                 Proceed to checkout
               </button>
-              {!isLoggedIn && (
-                <p className="muted center" style={{ marginTop: 10, fontSize: '0.85rem' }}>
-                  Have an account?{' '}
-                  <Link to="/login" state={{ from: '/cart', buyNow: buyNowItem || undefined }}>Log in</Link> for faster checkout.
-                </p>
-              )}
             </div>
           ) : (
             <form onSubmit={handlePlaceOrder} style={{ marginTop: 18 }} noValidate>
-              {!isLoggedIn && (
-                <>
-                  <div className="checkout-step">
-                    <span className="checkout-step-num">1</span>
-                    <h4>Your Details</h4>
-                  </div>
-                  <div className="field">
-                    <label>Full name *</label>
-                    <input required value={guestName} onChange={(e) => setGuestName(e.target.value)} />
-                    {guestErrors.name && <div className="field-error">{guestErrors.name}</div>}
-                  </div>
-                  <div className="field">
-                    <label>Email (optional, for order updates)</label>
-                    <input type="email" value={guestEmail} onChange={(e) => setGuestEmail(e.target.value)} />
-                    {guestErrors.email && <div className="field-error">{guestErrors.email}</div>}
-                  </div>
-                </>
-              )}
               <div className="checkout-step">
-                <span className="checkout-step-num">{isLoggedIn ? 1 : 2}</span>
+                <span className="checkout-step-num">1</span>
+                <h4>Your Details</h4>
+              </div>
+              <div className="field">
+                <label>Full name *</label>
+                <input required value={contactName} onChange={(e) => setContactName(e.target.value)} />
+                {contactErrors.name && <div className="field-error">{contactErrors.name}</div>}
+              </div>
+              <div className="field">
+                <label>Email (optional, for order updates)</label>
+                <input type="email" value={contactEmail} onChange={(e) => setContactEmail(e.target.value)} />
+                {contactErrors.email && <div className="field-error">{contactErrors.email}</div>}
+              </div>
+              {/* Bound to `address.phone` like it always was — the field just
+                  sits with the other contact details now instead of at the
+                  bottom of the address block. */}
+              <PhoneField address={address} onChange={updateAddress} errors={addressErrors} />
+
+              <div className="checkout-step">
+                <span className="checkout-step-num">2</span>
                 <h4>Delivery Address</h4>
               </div>
               {isLoggedIn && user?.addresses?.length > 0 && (
@@ -775,7 +789,7 @@ export default function Cart() {
                 </div>
               )}
               {(!isLoggedIn || !user?.addresses?.length || selectedAddressId === 'new') && (
-                <AddressForm address={address} onChange={updateAddress} errors={addressErrors} showCustomsNote />
+                <AddressForm address={address} onChange={updateAddress} errors={addressErrors} showCustomsNote showPhone={false} />
               )}
 
               <div className="field" style={{ marginTop: 14 }}>
@@ -831,7 +845,7 @@ export default function Cart() {
               {isDomesticAddress && (
                 <>
                   <div className="checkout-step" style={{ marginTop: 22 }}>
-                    <span className="checkout-step-num">{isLoggedIn ? 2 : 3}</span>
+                    <span className="checkout-step-num">3</span>
                     <h4>Delivery Method</h4>
                   </div>
                   <div className="payment-options">
@@ -856,7 +870,7 @@ export default function Cart() {
               )}
 
               <div className="checkout-step" style={{ marginTop: 22 }}>
-                <span className="checkout-step-num">{(isLoggedIn ? 2 : 3) + (isDomesticAddress ? 1 : 0)}</span>
+                <span className="checkout-step-num">{isDomesticAddress ? 4 : 3}</span>
                 <h4>Payment Method</h4>
               </div>
               <div className="payment-options">
