@@ -2864,8 +2864,10 @@ input:focus-visible + .filter-radio { outline: 2px solid var(--gold-2); outline-
   flex: 1;
 }
 .ai-product-card-info b { font-size: 0.85rem; }
-.ai-product-card-actions { display: flex; gap: 6px; margin-top: 4px; }
-.ai-product-card-actions .btn { padding: 4px 10px; font-size: 0.76rem; }
+/* Three actions (View / Add / Buy now) in a card that's only as wide as the
+   chat panel — allowed to wrap rather than squeezing the labels illegibly. */
+.ai-product-card-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+.ai-product-card-actions .btn { padding: 4px 9px; font-size: 0.74rem; white-space: nowrap; }
 .chat-input {
   display: flex;
   gap: 8px;
@@ -4060,3 +4062,19 @@ body.has-cookie-bar .install-prompt { bottom: calc(var(--cookie-bar-height, 0px)
   margin-top: 20px;
 }
 .checkout-prompt-note { font-size: 0.78rem; margin: 14px 0 0; }
+
+/* Tappable follow-up questions under the AI's latest reply. Deliberately
+   quieter than the product-card buttons — a nudge, not a call to action. */
+.ai-suggestions { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 4px; }
+.ai-suggestion {
+  border: 1px solid rgba(31,61,43,0.18);
+  background: var(--paper);
+  color: var(--forest);
+  border-radius: 999px;
+  padding: 5px 11px;
+  font-size: 0.76rem;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+.ai-suggestion:hover { background: rgba(111,174,79,0.1); border-color: rgba(111,174,79,0.45); }

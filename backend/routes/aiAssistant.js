@@ -1,5 +1,7 @@
 const express = require('express');
 const { askAssistant } = require('../utils/aiAssistant');
+const { optionalAuth } = require('../middleware/auth');
+const db = require('../data/db');
 
 const router = express.Router();
 
@@ -27,7 +29,10 @@ function checkRateLimit(ip) {
 }
 
 // POST /api/ai-assistant  { message, history?: [{from:'user'|'bot', text}] }
-router.post('/', async (req, res, next) => {
+// optionalAuth so a signed-in customer's own order history can inform the
+// answer ("what did I order last time", "time to restock?"). Guests get the
+// same assistant minus that context — nothing here requires a login.
+router.post('/', optionalAuth, async (req, res, next) => {
   try {
     const { message, history } = req.body;
     if (!message || !message.trim()) {
@@ -43,8 +48,18 @@ router.post('/', async (req, res, next) => {
       });
     }
 
-    const result = await askAssistant(message.trim(), Array.isArray(history) ? history : []);
-    res.json({ success: true, reply: result.reply, productIds: result.productIds || [] });
+    // Read the account fresh rather than trusting the JWT's claims — the name
+    // shown back to the customer and the orders quoted to them should reflect
+    // the record as it stands now.
+    const user = req.user?.id ? await db.get('users', req.user.id) : null;
+
+    const result = await askAssistant(message.trim(), Array.isArray(history) ? history : [], user);
+    res.json({
+      success: true,
+      reply: result.reply,
+      productIds: result.productIds || [],
+      suggestions: result.suggestions || [],
+    });
   } catch (err) {
     next(err);
   }

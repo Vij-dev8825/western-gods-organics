@@ -190,7 +190,10 @@ export const api = {
   sendChat: (token, text) => request('/chat', { method: 'POST', body: { text }, token }),
 
   // AI shopping/support assistant (no login required)
-  askAiAssistant: (message, history) => request('/ai-assistant', { method: 'POST', body: { message, history } }),
+  // Token is optional — passing it lets the assistant answer from the
+  // customer's own order history ("what did I buy last time").
+  askAiAssistant: (message, history, token) =>
+    request('/ai-assistant', { method: 'POST', body: { message, history }, token }),
 
   // admin
   admin: {

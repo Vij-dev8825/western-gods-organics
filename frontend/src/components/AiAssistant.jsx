@@ -1,14 +1,19 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { api } from '../api';
 import { useCart } from '../context/CartContext';
 import { useToast } from '../context/ToastContext';
+import { useAuth } from '../context/AuthContext';
 import { getProductImage } from '../utils/productImages';
 import { flyToCart } from '../utils/flyToCart';
 
-export function ProductChatCard({ product }) {
+/** `onNavigate` lets a host that floats over the page — the AI panel — get out
+ * of the way when a card sends the shopper somewhere. Optional: the Shop page
+ * renders these cards inline, where there's nothing to close. */
+export function ProductChatCard({ product, onNavigate }) {
   const { addItem } = useCart();
   const { showToast } = useToast();
+  const navigate = useNavigate();
   if (!product) return null;
 
   const sizes = product.sizes || [];
@@ -27,6 +32,18 @@ export function ProductChatCard({ product }) {
     showToast(`${product.name} (${defaultSize.label}) added to cart`);
   }
 
+  // Straight to checkout with just this item, the same shape Product Detail's
+  // Buy Now sends (see pages/ProductDetail.jsx) so the cart reads it the same
+  // way — a recommendation the shopper already likes shouldn't need a detour
+  // through the product page to be bought.
+  function handleBuyNow() {
+    if (!defaultSize) return;
+    onNavigate?.();
+    navigate('/cart', {
+      state: { buyNow: { productId: product.id, size: defaultSize.label, quantity: 1 } },
+    });
+  }
+
   return (
     <div className="ai-product-card">
       <img src={getProductImage(product.image)} alt={product.name} />
@@ -34,10 +51,20 @@ export function ProductChatCard({ product }) {
         <b>{product.name}</b>
         <span className="muted">{priceLabel}</span>
         <div className="ai-product-card-actions">
-          <Link to={`/product/${product.id}`} className="btn btn-outline btn-sm">View</Link>
-          <button type="button" className="btn btn-gold btn-sm" disabled={!defaultSize} onClick={handleAddToCart}>
-            {defaultSize ? 'Add to cart' : 'Out of stock'}
+          {/* Closes the panel on the way out — it floats above the page, so
+              leaving it open would land the shopper on a product page hidden
+              behind the chat they just used to find it. */}
+          <Link to={`/product/${product.id}`} className="btn btn-outline btn-sm" onClick={() => onNavigate?.()}>
+            View
+          </Link>
+          <button type="button" className="btn btn-outline btn-sm" disabled={!defaultSize} onClick={handleAddToCart}>
+            {defaultSize ? 'Add' : 'Out of stock'}
           </button>
+          {defaultSize && (
+            <button type="button" className="btn btn-gold btn-sm" onClick={handleBuyNow}>
+              Buy now
+            </button>
+          )}
         </div>
       </div>
     </div>
@@ -58,6 +85,7 @@ export default function AiAssistant() {
   const [products, setProducts] = useState([]);
   const bottomRef = useRef(null);
   const location = useLocation();
+  const { token } = useAuth();
 
   // Hidden on admin/login and on cart/checkout, where it crowds the "Place order" button on mobile.
   const hidden = location.pathname.startsWith('/admin') || location.pathname === '/login' || location.pathname === '/cart';
@@ -72,22 +100,26 @@ export default function AiAssistant() {
 
   if (hidden) return null;
 
-  async function handleSend(e) {
-    e.preventDefault();
-    const t = text.trim();
+  async function ask(question) {
+    const t = question.trim();
     if (!t || sending) return;
     const priorMessages = messages;
     setMessages((m) => [...m, { from: 'user', text: t }]);
     setText('');
     setSending(true);
     try {
-      const d = await api.askAiAssistant(t, priorMessages);
-      setMessages((m) => [...m, { from: 'bot', text: d.reply, productIds: d.productIds }]);
+      const d = await api.askAiAssistant(t, priorMessages, token);
+      setMessages((m) => [...m, { from: 'bot', text: d.reply, productIds: d.productIds, suggestions: d.suggestions }]);
     } catch (err) {
       setMessages((m) => [...m, { from: 'bot', text: err.message || 'Something went wrong — please try again.' }]);
     } finally {
       setSending(false);
     }
+  }
+
+  function handleSend(e) {
+    e.preventDefault();
+    ask(text);
   }
 
   return (
@@ -115,7 +147,22 @@ export default function AiAssistant() {
                 {m.productIds?.length > 0 && (
                   <div className="ai-product-cards">
                     {m.productIds.map((id) => (
-                      <ProductChatCard key={id} product={products.find((p) => p.id === id)} />
+                      <ProductChatCard
+                        key={id}
+                        product={products.find((p) => p.id === id)}
+                        onNavigate={() => setOpen(false)}
+                      />
+                    ))}
+                  </div>
+                )}
+                {/* Follow-ups, only on the newest reply — older ones would
+                    stack up as a wall of stale prompts as the chat grows. */}
+                {m.from === 'bot' && i === messages.length - 1 && m.suggestions?.length > 0 && !sending && (
+                  <div className="ai-suggestions">
+                    {m.suggestions.map((s) => (
+                      <button key={s} type="button" className="ai-suggestion" onClick={() => ask(s)}>
+                        {s}
+                      </button>
                     ))}
                   </div>
                 )}
