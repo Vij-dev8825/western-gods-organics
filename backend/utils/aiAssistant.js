@@ -15,6 +15,15 @@ const MAX_MESSAGE_CHARS = 1000;
 // pushes the answer itself off a phone screen.
 const MAX_SUGGESTIONS = 3;
 const MAX_SUGGESTION_CHARS = 60;
+const RECENT_ORDERS_SHOWN = 5;
+
+// Gemini reasons for as long as it judges a question needs, which for
+// "which oil for dry skin" is far longer than the answer warrants — most of
+// the wait was the model thinking, not writing. This is product lookup
+// against a catalog that's already in the prompt, so the lowest setting is
+// the right one. Overridable in case a future model names its levels
+// differently; GEMINI_THINKING_LEVEL=off skips the field entirely.
+const THINKING_LEVEL = process.env.GEMINI_THINKING_LEVEL || 'minimal';
 
 // Forces Gemini to return { message, productIds } instead of free text, so
 // the frontend can render real product cards (image, price, add-to-cart)
@@ -62,7 +71,24 @@ function describeSizes(product) {
  * declining to answer, because the customer has no reason to doubt it. Every
  * number below now comes from the same source the checkout charges from.
  */
-async function buildStoreContext(user) {
+// The catalog, policies and offers are identical for everyone and change on
+// an admin's timescale, not a chat's — rebuilding them from four database
+// reads on every message just adds latency to something a shopper is waiting
+// on. Held briefly instead, short enough that a price edit shows up in the
+// next minute rather than needing a restart.
+const SHARED_CONTEXT_TTL_MS = 60_000;
+let sharedContextCache = { text: null, expiresAt: 0 };
+
+async function buildSharedContext(now) {
+  if (sharedContextCache.text && sharedContextCache.expiresAt > now.getTime()) {
+    return sharedContextCache.text;
+  }
+  const text = await composeSharedContext(now);
+  sharedContextCache = { text, expiresAt: now.getTime() + SHARED_CONTEXT_TTL_MS };
+  return text;
+}
+
+async function composeSharedContext(now) {
   const [products, shipping, payments, coupons] = await Promise.all([
     db.list('products'),
     getShippingSettings(),
@@ -83,7 +109,6 @@ async function buildStoreContext(user) {
     })
     .join('\n');
 
-  const now = new Date();
   // Only coupons anyone can use. A coupon assigned to one customer is that
   // customer's business, so announcing it to whoever happens to be chatting
   // would hand out someone else's discount.
@@ -109,27 +134,6 @@ async function buildStoreContext(user) {
     payments.prepaidDiscountPercent > 0
       ? `\n- Paying online earns an extra ${payments.prepaidDiscountPercent}% off the order.`
       : '';
-
-  // A returning customer's own history, so "what did I order last time" and
-  // "time to restock?" can be answered instead of deflected. Only ever the
-  // signed-in customer's own orders — never anyone else's.
-  let customerContext = '';
-  if (user?.id) {
-    const orders = (await db.list('orders'))
-      .filter((o) => o.userId === user.id)
-      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-      .slice(0, 5);
-    if (orders.length) {
-      const lines = orders
-        .map((o) => {
-          const when = new Date(o.createdAt).toISOString().slice(0, 10);
-          const items = o.items.map((i) => `${i.name} ${i.size} x${i.quantity}`).join(', ');
-          return `- ${when} (${o.status}): ${items}`;
-        })
-        .join('\n');
-      customerContext = `\n\nThis customer is signed in as ${user.name || 'a returning customer'}. Their recent orders (newest first, today is ${now.toISOString().slice(0, 10)}):\n${lines}\n\nUse this to answer "what did I buy last time" or to suggest a restock when the timing fits. Never mention any other customer's orders.`;
-    }
-  }
 
   return `You are the shopping assistant for Western Gods Organics, a small family-run mill in Udumalpet, Tamil Nadu, India, selling traditional wood-pressed cold-pressed oils, handmade herbal soaps, herbal powders, spices/masalas, and honey — 100% natural, shipped across India and worldwide.
 
@@ -157,53 +161,229 @@ Store policies (these are live values — trust them over anything you remember)
 - Returns: 7 days from delivery for damaged, incorrect or quality-issue items, raised from the customer's Orders page.
 - Bulk/wholesale: minimum 20 litres per product, GST invoicing, private-label bottling — send them to the Bulk Sales Enquiry page.
 - Subscribe & Save: 10% off recurring deliveries, cancel anytime, from any product page.
-- Every batch has a traceable batch number with pressing date and source farm, viewable from the product page.${customerContext}`;
+- Every batch has a traceable batch number with pressing date and source farm, viewable from the product page.`;
+}
+
+/** The signed-in customer's own recent orders, so "what did I order last
+ * time" and restock suggestions can be answered instead of deflected. Built
+ * per request and never cached — one shopper's history must never be served
+ * to another, which is exactly the mistake a shared cache would invite. */
+async function buildCustomerContext(user, now) {
+  if (!user?.id) return '';
+  const orders = (await db.list('orders'))
+    .filter((o) => o.userId === user.id)
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+    .slice(0, RECENT_ORDERS_SHOWN);
+  if (!orders.length) return '';
+
+  const lines = orders
+    .map((o) => {
+      const when = new Date(o.createdAt).toISOString().slice(0, 10);
+      const items = o.items.map((i) => `${i.name} ${i.size} x${i.quantity}`).join(', ');
+      return `- ${when} (${o.status}): ${items}`;
+    })
+    .join('\n');
+
+  return `\n\nThis customer is signed in as ${user.name || 'a returning customer'}. Their recent orders (newest first, today is ${now.toISOString().slice(0, 10)}):\n${lines}\n\nUse this to answer "what did I buy last time" or to suggest a restock when the timing fits. Never mention any other customer's orders.`;
+}
+
+async function buildStoreContext(user) {
+  const now = new Date();
+  const [shared, customer] = await Promise.all([
+    buildSharedContext(now),
+    buildCustomerContext(user, now),
+  ]);
+  return shared + customer;
+}
+
+const NOT_CONFIGURED = {
+  reply: 'Our AI assistant isn\'t set up yet — please use the "Chat with us" button, or WhatsApp/call us, and our team will help you directly.',
+  productIds: [],
+  suggestions: [],
+  configured: false,
+};
+
+const FAILED = {
+  reply: "Sorry, I'm having trouble right now — please try again in a moment, or use \"Chat with us\" to reach our team.",
+  productIds: [],
+  suggestions: [],
+  configured: true,
+  error: true,
+};
+
+async function buildRequestBody(message, history, user) {
+  return {
+    system_instruction: { parts: [{ text: await buildStoreContext(user) }] },
+    contents: [
+      ...history.slice(-MAX_HISTORY_TURNS).map((h) => ({
+        role: h.from === 'bot' ? 'model' : 'user',
+        parts: [{ text: String(h.text || '').slice(0, MAX_MESSAGE_CHARS) }],
+      })),
+      { role: 'user', parts: [{ text: message.slice(0, MAX_MESSAGE_CHARS) }] },
+    ],
+    generationConfig: {
+      responseMimeType: 'application/json',
+      responseSchema: RESPONSE_SCHEMA,
+      ...(THINKING_LEVEL === 'off' ? {} : { thinkingLevel: THINKING_LEVEL }),
+    },
+  };
+}
+
+/** Posts to Gemini, retrying once without `thinkingLevel` if the model
+ * rejects it. Better to be slower than broken if a future model drops the
+ * field or renames its levels. */
+async function callGemini(path, body) {
+  const send = (payload) =>
+    fetch(`https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:${path}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': process.env.GEMINI_API_KEY },
+      body: JSON.stringify(payload),
+    });
+
+  let res = await send(body);
+  if (res.status === 400 && body.generationConfig.thinkingLevel) {
+    const detail = await res.clone().text().catch(() => '');
+    if (/thinking/i.test(detail)) {
+      console.warn('[AI:gemini] thinkingLevel rejected, retrying without it');
+      const { thinkingLevel, ...rest } = body.generationConfig;
+      res = await send({ ...body, generationConfig: rest });
+    }
+  }
+  return res;
+}
+
+/** Pulls the `message` field out of a JSON response that is still arriving.
+ *
+ * The schema puts `message` first, so its text is complete long before
+ * `productIds` and `suggestions` are — which is what makes it possible to
+ * show the answer while the rest is still being generated. Scans rather than
+ * parses, because a partial JSON document can't be parsed at all, and stops
+ * cleanly on a truncated escape so the next chunk can finish it.
+ */
+function extractPartialMessage(raw) {
+  const start = /"message"\s*:\s*"/.exec(raw);
+  if (!start) return '';
+  let out = '';
+  for (let i = start.index + start[0].length; i < raw.length; i++) {
+    const ch = raw[i];
+    if (ch === '"') break; // closing quote — the field is complete
+    if (ch !== '\\') { out += ch; continue; }
+
+    const esc = raw[i + 1];
+    if (esc === undefined) break; // escape split across chunks; wait for more
+    if (esc === 'u') {
+      const hex = raw.slice(i + 2, i + 6);
+      if (hex.length < 4) break; // same, mid-escape
+      out += String.fromCharCode(parseInt(hex, 16));
+      i += 5;
+      continue;
+    }
+    out += { n: '\n', t: '\t', r: '\r', b: '\b', f: '\f' }[esc] ?? esc;
+    i += 1;
+  }
+  return out;
+}
+
+/** Shared tail end of both paths: validate ids against the real catalog and
+ * tidy the follow-up suggestions. */
+async function finalizeReply(parsed) {
+  // Guard against the model inventing an id that isn't actually in the
+  // catalog (schema constrains shape, not values) — drop anything unreal
+  // rather than showing the frontend a card for a product that 404s.
+  const realIds = new Set((await db.list('products')).map((p) => p.id));
+  const productIds = (Array.isArray(parsed.productIds) ? parsed.productIds : []).filter((id) => realIds.has(id));
+
+  const suggestions = (Array.isArray(parsed.suggestions) ? parsed.suggestions : [])
+    .map((s) => String(s || '').trim())
+    .filter(Boolean)
+    .slice(0, MAX_SUGGESTIONS)
+    .map((s) => s.slice(0, MAX_SUGGESTION_CHARS));
+
+  return { productIds, suggestions };
 }
 
 /**
- * Calls Google's Gemini API (free tier) with the given message + recent
- * conversation history. Returns a friendly fallback string instead of
- * throwing whenever the API isn't configured or a call fails, since this
- * chat widget has no other error-display path.
+ * Streams a reply, calling `onText` with each new piece of the answer as it
+ * arrives and resolving once the whole response has been parsed.
+ *
+ * Waiting for a complete reply meant eight or nine seconds of nothing, which
+ * reads as broken however good the answer turns out to be. Streaming doesn't
+ * make the model faster — it makes the wait visible, with words appearing in
+ * about a second and the product cards following at the end.
  */
-async function askAssistant(message, history = [], user = null) {
+async function streamAssistant(message, history = [], user = null, onText = () => {}) {
   if (!process.env.GEMINI_API_KEY) {
-    return {
-      reply: 'Our AI assistant isn\'t set up yet — please use the "Chat with us" button, or WhatsApp/call us, and our team will help you directly.',
-      productIds: [],
-      suggestions: [],
-      configured: false,
-    };
+    onText(NOT_CONFIGURED.reply);
+    return NOT_CONFIGURED;
   }
 
-  const systemPrompt = await buildStoreContext(user);
-  const contents = [
-    ...history.slice(-MAX_HISTORY_TURNS).map((h) => ({
-      role: h.from === 'bot' ? 'model' : 'user',
-      parts: [{ text: String(h.text || '').slice(0, MAX_MESSAGE_CHARS) }],
-    })),
-    { role: 'user', parts: [{ text: message.slice(0, MAX_MESSAGE_CHARS) }] },
-  ];
+  try {
+    const body = await buildRequestBody(message, history, user);
+    const res = await callGemini('streamGenerateContent?alt=sse', body);
+    if (!res.ok || !res.body) {
+      const detail = await res.text().catch(() => '');
+      throw new Error(detail.slice(0, 200) || `Gemini ${res.status}`);
+    }
+
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let sseBuffer = '';
+    let raw = '';   // the JSON document as it accumulates
+    let sent = '';  // how much of `message` the caller already has
+
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      sseBuffer += decoder.decode(value, { stream: true });
+
+      // SSE frames are separated by a blank line; keep any partial tail.
+      const frames = sseBuffer.split('\n\n');
+      sseBuffer = frames.pop() || '';
+      for (const frame of frames) {
+        const line = frame.split('\n').find((l) => l.startsWith('data:'));
+        if (!line) continue;
+        const payload = line.slice(5).trim();
+        if (!payload || payload === '[DONE]') continue;
+        let chunk;
+        try { chunk = JSON.parse(payload); } catch { continue; }
+        const part = chunk.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (!part) continue;
+        raw += part;
+
+        const soFar = extractPartialMessage(raw);
+        if (soFar.length > sent.length) {
+          onText(soFar.slice(sent.length));
+          sent = soFar;
+        }
+      }
+    }
+
+    const parsed = JSON.parse(raw);
+    if (!parsed.message) throw new Error('Missing message in Gemini response');
+    // Anything the incremental scan missed (a trailing escape, say) is sent
+    // now, so the streamed text always ends up matching the parsed answer.
+    if (parsed.message.length > sent.length) onText(parsed.message.slice(sent.length));
+
+    const { productIds, suggestions } = await finalizeReply(parsed);
+    return { reply: parsed.message.trim(), productIds, suggestions, configured: true };
+  } catch (err) {
+    console.error('[AI:gemini:stream:error]', err.message);
+    onText(FAILED.reply);
+    return FAILED;
+  }
+}
+
+/**
+ * Non-streaming variant, kept for callers that want the whole answer at once.
+ * Returns a friendly fallback string instead of throwing whenever the API
+ * isn't configured or a call fails, since this chat widget has no other
+ * error-display path.
+ */
+async function askAssistant(message, history = [], user = null) {
+  if (!process.env.GEMINI_API_KEY) return NOT_CONFIGURED;
 
   try {
-    const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-goog-api-key': process.env.GEMINI_API_KEY,
-        },
-        body: JSON.stringify({
-          system_instruction: { parts: [{ text: systemPrompt }] },
-          contents,
-          generationConfig: {
-            responseMimeType: 'application/json',
-            responseSchema: RESPONSE_SCHEMA,
-          },
-        }),
-      }
-    );
+    const res = await callGemini('generateContent', await buildRequestBody(message, history, user));
     const data = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(data?.error?.message || `Gemini ${res.status}`);
     const raw = data.candidates?.[0]?.content?.parts?.[0]?.text;
@@ -211,29 +391,12 @@ async function askAssistant(message, history = [], user = null) {
     const parsed = JSON.parse(raw);
     if (!parsed.message) throw new Error('Missing message in Gemini response');
 
-    // Guard against the model inventing an id that isn't actually in the
-    // catalog (schema constrains shape, not values) — drop anything unreal
-    // rather than showing the frontend a card for a product that 404s.
-    const realIds = new Set((await db.list('products')).map((p) => p.id));
-    const productIds = (Array.isArray(parsed.productIds) ? parsed.productIds : []).filter((id) => realIds.has(id));
-
-    const suggestions = (Array.isArray(parsed.suggestions) ? parsed.suggestions : [])
-      .map((s) => String(s || '').trim())
-      .filter(Boolean)
-      .slice(0, MAX_SUGGESTIONS)
-      .map((s) => s.slice(0, MAX_SUGGESTION_CHARS));
-
+    const { productIds, suggestions } = await finalizeReply(parsed);
     return { reply: parsed.message.trim(), productIds, suggestions, configured: true };
   } catch (err) {
     console.error('[AI:gemini:error]', err.message);
-    return {
-      reply: "Sorry, I'm having trouble right now — please try again in a moment, or use \"Chat with us\" to reach our team.",
-      productIds: [],
-      suggestions: [],
-      configured: true,
-      error: true,
-    };
+    return FAILED;
   }
 }
 
-module.exports = { askAssistant };
+module.exports = { askAssistant, streamAssistant };

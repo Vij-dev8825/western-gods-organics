@@ -195,6 +195,64 @@ export const api = {
   askAiAssistant: (message, history, token) =>
     request('/ai-assistant', { method: 'POST', body: { message, history }, token }),
 
+  /**
+   * Same question, answered a word at a time. `onText` fires with each new
+   * piece of the reply; the promise resolves with the product cards and
+   * follow-up suggestions once the answer is complete.
+   *
+   * Falls back to the whole-answer call if streaming isn't available — an
+   * intermediary that buffers or strips the event stream would otherwise
+   * leave the chat silent, which is worse than being slow.
+   */
+  streamAiAssistant: async (message, history, token, onText) => {
+    const headers = { 'Content-Type': 'application/json', Accept: 'text/event-stream' };
+    if (token) headers.Authorization = `Bearer ${token}`;
+
+    let res;
+    try {
+      res = await fetch('/api/ai-assistant', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ message, history }),
+      });
+    } catch {
+      res = null;
+    }
+
+    if (!res?.ok || !res.body || !res.headers.get('content-type')?.includes('text/event-stream')) {
+      if (res && !res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.message || 'Something went wrong. Please try again.');
+      }
+      const data = await request('/ai-assistant', { method: 'POST', body: { message, history }, token });
+      onText(data.reply);
+      return { productIds: data.productIds || [], suggestions: data.suggestions || [] };
+    }
+
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+    let done = { productIds: [], suggestions: [] };
+
+    for (;;) {
+      const { done: finished, value } = await reader.read();
+      if (finished) break;
+      buffer += decoder.decode(value, { stream: true });
+      const frames = buffer.split('\n\n');
+      buffer = frames.pop() || ''; // keep the partial frame for the next read
+      for (const frame of frames) {
+        const event = frame.match(/^event:\s*(.+)$/m)?.[1];
+        const raw = frame.match(/^data:\s*(.+)$/m)?.[1];
+        if (!raw) continue;
+        let payload;
+        try { payload = JSON.parse(raw); } catch { continue; }
+        if (event === 'text') onText(payload.delta);
+        else if (event === 'done') done = { productIds: payload.productIds || [], suggestions: payload.suggestions || [] };
+      }
+    }
+    return done;
+  },
+
   // admin
   admin: {
     stats: (token) => request('/admin/stats', { token }),

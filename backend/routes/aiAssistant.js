@@ -1,5 +1,5 @@
 const express = require('express');
-const { askAssistant } = require('../utils/aiAssistant');
+const { askAssistant, streamAssistant } = require('../utils/aiAssistant');
 const { optionalAuth } = require('../middleware/auth');
 const db = require('../data/db');
 
@@ -53,7 +53,34 @@ router.post('/', optionalAuth, async (req, res, next) => {
     // the record as it stands now.
     const user = req.user?.id ? await db.get('users', req.user.id) : null;
 
-    const result = await askAssistant(message.trim(), Array.isArray(history) ? history : [], user);
+    const priorTurns = Array.isArray(history) ? history : [];
+
+    // Streaming when the client asks for it, whole-answer JSON otherwise.
+    // Negotiating on Accept rather than adding a second URL means a browser
+    // still running an older cached bundle keeps working unchanged.
+    if (req.get('accept')?.includes('text/event-stream')) {
+      res.set({
+        'Content-Type': 'text/event-stream; charset=utf-8',
+        'Cache-Control': 'no-cache, no-transform',
+        Connection: 'keep-alive',
+        // LiteSpeed and other reverse proxies buffer responses by default,
+        // which would hold the whole stream back and undo the point of it.
+        'X-Accel-Buffering': 'no',
+      });
+      res.flushHeaders?.();
+
+      const send = (event, data) => res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
+      const result = await streamAssistant(message.trim(), priorTurns, user, (delta) =>
+        send('text', { delta })
+      );
+      send('done', {
+        productIds: result.productIds || [],
+        suggestions: result.suggestions || [],
+      });
+      return res.end();
+    }
+
+    const result = await askAssistant(message.trim(), priorTurns, user);
     res.json({
       success: true,
       reply: result.reply,

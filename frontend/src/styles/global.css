@@ -4078,3 +4078,9 @@ body.has-cookie-bar .install-prompt { bottom: calc(var(--cookie-bar-height, 0px)
   transition: background 0.15s ease, border-color 0.15s ease;
 }
 .ai-suggestion:hover { background: rgba(111,174,79,0.1); border-color: rgba(111,174,79,0.45); }
+
+/* The waiting dots inside an as-yet-empty AI reply bubble. Gentle pulse so
+   it reads as "thinking" rather than as a stuck character. */
+.chat-typing { opacity: 0.55; animation: chat-typing-pulse 1.2s ease-in-out infinite; }
+@keyframes chat-typing-pulse { 0%, 100% { opacity: 0.3; } 50% { opacity: 0.75; } }
+@media (prefers-reduced-motion: reduce) { .chat-typing { animation: none; } }

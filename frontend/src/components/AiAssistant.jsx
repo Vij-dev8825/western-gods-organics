@@ -94,9 +94,13 @@ export default function AiAssistant() {
     api.getProducts().then((d) => setProducts(d.products)).catch(() => {});
   }, []);
 
+  // Follows the reply as it streams, not just when a message is added — the
+  // count doesn't change while text is arriving, so keying on it alone would
+  // let a long answer grow off the bottom of the panel.
+  const lastMessageLength = messages[messages.length - 1]?.text?.length || 0;
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages.length, open, sending]);
+  }, [messages.length, lastMessageLength, open, sending]);
 
   if (hidden) return null;
 
@@ -104,14 +108,34 @@ export default function AiAssistant() {
     const t = question.trim();
     if (!t || sending) return;
     const priorMessages = messages;
-    setMessages((m) => [...m, { from: 'user', text: t }]);
+    // An empty bot bubble goes up straight away and fills in as the answer
+    // streams, so the reply starts appearing in about a second instead of
+    // the customer watching a dot for eight.
+    setMessages((m) => [...m, { from: 'user', text: t }, { from: 'bot', text: '' }]);
     setText('');
     setSending(true);
+
+    const appendToReply = (delta) =>
+      setMessages((m) => {
+        const next = [...m];
+        const last = next.length - 1;
+        next[last] = { ...next[last], text: next[last].text + delta };
+        return next;
+      });
+
     try {
-      const d = await api.askAiAssistant(t, priorMessages, token);
-      setMessages((m) => [...m, { from: 'bot', text: d.reply, productIds: d.productIds, suggestions: d.suggestions }]);
+      const { productIds, suggestions } = await api.streamAiAssistant(t, priorMessages, token, appendToReply);
+      setMessages((m) => {
+        const next = [...m];
+        next[next.length - 1] = { ...next[next.length - 1], productIds, suggestions };
+        return next;
+      });
     } catch (err) {
-      setMessages((m) => [...m, { from: 'bot', text: err.message || 'Something went wrong — please try again.' }]);
+      setMessages((m) => {
+        const next = [...m];
+        next[next.length - 1] = { from: 'bot', text: err.message || 'Something went wrong — please try again.' };
+        return next;
+      });
     } finally {
       setSending(false);
     }
@@ -142,7 +166,10 @@ export default function AiAssistant() {
             {messages.map((m, i) => (
               <div key={i}>
                 <div className={`chat-msg ${m.from === 'user' ? 'mine' : 'theirs'}`}>
-                  {m.text}
+                  {/* The bubble goes up empty and fills as the reply streams,
+                      so the waiting dots live inside it rather than as a
+                      separate row that would jump when the text arrives. */}
+                  {m.text || (m.from === 'bot' ? <span className="chat-typing">…</span> : '')}
                 </div>
                 {m.productIds?.length > 0 && (
                   <div className="ai-product-cards">
@@ -168,7 +195,6 @@ export default function AiAssistant() {
                 )}
               </div>
             ))}
-            {sending && <div className="chat-msg theirs">…</div>}
             <div ref={bottomRef} />
           </div>
           <form className="chat-input" onSubmit={handleSend}>
