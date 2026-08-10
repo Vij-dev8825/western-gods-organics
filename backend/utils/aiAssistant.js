@@ -317,6 +317,10 @@ async function streamAssistant(message, history = [], user = null, onText = () =
     return NOT_CONFIGURED;
   }
 
+  // Declared out here so the catch below can tell whether the customer has
+  // already seen part of an answer.
+  let sent = ''; // how much of `message` the caller already has
+
   try {
     const body = await buildRequestBody(message, history, user);
     const res = await callGemini('streamGenerateContent?alt=sse', body);
@@ -329,18 +333,20 @@ async function streamAssistant(message, history = [], user = null, onText = () =
     const decoder = new TextDecoder();
     let sseBuffer = '';
     let raw = '';   // the JSON document as it accumulates
-    let sent = '';  // how much of `message` the caller already has
 
     for (;;) {
       const { done, value } = await reader.read();
       if (done) break;
       sseBuffer += decoder.decode(value, { stream: true });
 
-      // SSE frames are separated by a blank line; keep any partial tail.
-      const frames = sseBuffer.split('\n\n');
+      // SSE frames are separated by a blank line, which may be CRLF or LF
+      // depending on the server. Splitting on "\n\n" alone silently matches
+      // nothing against CRLF output — every frame stays stuck in the buffer
+      // and the stream looks empty. Keep any partial tail for the next read.
+      const frames = sseBuffer.split(/\r?\n\r?\n/);
       sseBuffer = frames.pop() || '';
       for (const frame of frames) {
-        const line = frame.split('\n').find((l) => l.startsWith('data:'));
+        const line = frame.split(/\r?\n/).find((l) => l.startsWith('data:'));
         if (!line) continue;
         const payload = line.slice(5).trim();
         if (!payload || payload === '[DONE]') continue;
@@ -358,6 +364,7 @@ async function streamAssistant(message, history = [], user = null, onText = () =
       }
     }
 
+    if (!raw) throw new Error('Stream produced no content');
     const parsed = JSON.parse(raw);
     if (!parsed.message) throw new Error('Missing message in Gemini response');
     // Anything the incremental scan missed (a trailing escape, say) is sent
@@ -367,9 +374,17 @@ async function streamAssistant(message, history = [], user = null, onText = () =
     const { productIds, suggestions } = await finalizeReply(parsed);
     return { reply: parsed.message.trim(), productIds, suggestions, configured: true };
   } catch (err) {
-    console.error('[AI:gemini:stream:error]', err.message);
-    onText(FAILED.reply);
-    return FAILED;
+    // Streaming is an optimisation, and an optimisation must never be the
+    // reason a customer gets no answer. Anything that goes wrong here — a
+    // frame format we don't recognise, a proxy mangling the stream, a model
+    // that won't stream this request — falls back to the plain call, which
+    // is the same request without the incremental delivery. Slower, but a
+    // real answer; only if that fails too does the apology go out.
+    console.error('[AI:gemini:stream:error] falling back to non-streaming —', err.message);
+    if (sent) return FAILED; // half a reply is already on screen; don't double up
+    const result = await askAssistant(message, history, user);
+    onText(result.reply);
+    return result;
   }
 }
 
