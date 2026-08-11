@@ -4084,3 +4084,40 @@ body.has-cookie-bar .install-prompt { bottom: calc(var(--cookie-bar-height, 0px)
 .chat-typing { opacity: 0.55; animation: chat-typing-pulse 1.2s ease-in-out infinite; }
 @keyframes chat-typing-pulse { 0%, 100% { opacity: 0.3; } 50% { opacity: 0.75; } }
 @media (prefers-reduced-motion: reduce) { .chat-typing { animation: none; } }
+
+/* Reserve-from-the-next-pressing panel on the product page. Deliberately
+   framed like a notice rather than a second buy box, so it reads as an offer
+   about a future run and not as a competing way to buy what's in stock. */
+.pressing-panel {
+  margin-top: 18px;
+  padding: 18px;
+  border: 1px solid rgba(111,174,79,0.4);
+  border-radius: var(--radius-md);
+  background: linear-gradient(180deg, rgba(111,174,79,0.07), rgba(111,174,79,0.02));
+}
+.pressing-eyebrow {
+  display: inline-block;
+  font-size: 0.7rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-weight: 600;
+  color: var(--forest-light);
+}
+.pressing-panel h4 { margin: 6px 0 8px; font-size: 1.05rem; }
+.pressing-panel p { margin: 0 0 10px; font-size: 0.86rem; }
+.pressing-note { font-style: italic; color: var(--forest); }
+.pressing-meter {
+  height: 7px;
+  border-radius: 999px;
+  background: rgba(31,61,43,0.12);
+  overflow: hidden;
+  margin-bottom: 6px;
+}
+.pressing-meter-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--forest-light);
+  transition: width 0.4s ease;
+}
+.pressing-count { font-size: 0.82rem; margin-bottom: 12px !important; }
+.pressing-terms { font-size: 0.76rem; margin: 10px 0 0 !important; }

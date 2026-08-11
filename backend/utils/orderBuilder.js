@@ -9,6 +9,7 @@ const { getShippingSettings } = require('./shippingSettings');
 const { findValidGiftCard, redeemGiftCardForOrder } = require('./giftCards');
 const { findAffiliateByCode } = require('./affiliates');
 const { getPaymentMethodsConfig } = require('./paymentMethods');
+const { validateReservation } = require('./pressings');
 
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || process.env.CONTACT_NOTIFY_EMAIL;
 const REFERRAL_REWARD_INR = 100;
@@ -156,20 +157,54 @@ async function buildOrderItems(items, couponCode, destCountry, userId, pointsToR
   const pausedSellerIds = new Set(
     (await db.list('users')).filter((u) => u.isSeller && u.sellerOnVacation).map((u) => u.id)
   );
+  // A line carrying a pressingId is a reservation against a run of the mill
+  // that hasn't happened yet, so it is checked against that run's remaining
+  // bottles instead of stock — which is zero by definition and would
+  // otherwise reject every reservation as out of stock.
+  //
+  // Quantities are totalled per pressing before checking, so two lines for
+  // the same run can't each pass a test the pair would fail.
+  const reservedHere = new Map();
+  for (const item of items) {
+    if (!item.pressingId) continue;
+    const key = `${item.pressingId}|${item.productId}|${item.size}`;
+    const prev = reservedHere.get(key) || { ...item, quantity: 0 };
+    reservedHere.set(key, { ...prev, quantity: prev.quantity + (Number(item.quantity) || 0) });
+  }
+
+  let reservationError = null;
+  if (reservedHere.size) {
+    // Nothing is handed over at the door on a pre-order, so there is nothing
+    // for Cash on Delivery to collect against. Paying up front is also what
+    // makes the run possible — it buys the seed.
+    if (paymentMethod !== 'razorpay') {
+      reservationError = 'Reservations from an upcoming pressing are paid online — there is nothing to collect on delivery.';
+    } else {
+      const orders = await db.list('orders');
+      for (const line of reservedHere.values()) {
+        const err = await validateReservation(line.pressingId, line.productId, line.size, line.quantity, orders);
+        if (err) { reservationError = err; break; }
+      }
+    }
+  }
+
   let subtotal = 0;
-  let stockError = null;
+  let stockError = reservationError;
   const orderItems = items.map((item) => {
     const product = products.find((p) => p.id === item.productId);
     const sizeInfo = product?.sizes.find((s) => s.label === item.size);
     const price = sizeInfo ? (isWholesale && sizeInfo.wholesalePrice > 0 ? sizeInfo.wholesalePrice : sizeInfo.price) : 0;
     subtotal += price * item.quantity;
     const earlyAccessLocked = product?.earlyAccessUntil && new Date(product.earlyAccessUntil).getTime() > Date.now() && !qualifiesEarlyAccess;
+    const isReservation = !!item.pressingId;
     if (!stockError) {
       if (!sizeInfo) stockError = `"${item.size}" is no longer available for this product.`;
       else if (product?.sellerId && pausedSellerIds.has(product.sellerId)) stockError = `"${product.name}" is unavailable right now — the maker has paused their shop.`;
       else if (earlyAccessLocked) stockError = `"${product.name}" launches on ${new Date(product.earlyAccessUntil).toLocaleDateString('en-IN')} — Silver & Gold reward members get early access.`;
-      else if (sizeInfo.stock <= 0) stockError = `"${product.name} (${item.size})" is currently out of stock.`;
-      else if (item.quantity > sizeInfo.stock) stockError = `Only ${sizeInfo.stock} unit(s) of "${product.name} (${item.size})" left in stock.`;
+      // Stock is deliberately not consulted for a reservation: the bottles
+      // are still seed. Capacity was checked against the pressing above.
+      else if (!isReservation && sizeInfo.stock <= 0) stockError = `"${product.name} (${item.size})" is currently out of stock.`;
+      else if (!isReservation && item.quantity > sizeInfo.stock) stockError = `Only ${sizeInfo.stock} unit(s) of "${product.name} (${item.size})" left in stock.`;
     }
     return {
       productId: item.productId,
@@ -177,6 +212,7 @@ async function buildOrderItems(items, couponCode, destCountry, userId, pointsToR
       size: item.size,
       quantity: item.quantity,
       price,
+      ...(isReservation ? { pressingId: item.pressingId } : {}),
     };
   });
   const shipping = await calculateShipping(subtotal, destCountry, userId, shippingChoice);
@@ -337,6 +373,11 @@ async function createOrderRecord({ userId, orderItems, address, total, discount,
     // charged the flat international fee) doesn't get persisted as
     // "collected by courier, nothing charged" and mislead the invoice.
     shippingChoice: (!address.country || address.country === 'IN') && shippingChoice === 'to_pay' ? 'to_pay' : 'shipping',
+    // Derived from the lines rather than taken from the request: whether an
+    // order is waiting on a pressing is a fact about what's in it, and the
+    // fulfilment screens key off this to keep reservations out of the
+    // dispatch-today list.
+    isPreOrder: orderItems.some((i) => i.pressingId),
     total,
     status: 'placed',
     createdAt: new Date().toISOString(),

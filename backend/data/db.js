@@ -56,6 +56,7 @@ const COLLECTIONS = [
   'seller-ledger',
   'seller-payout-requests',
   'seller-messages',
+  'pressings',
 ];
 
 let mode = 'json';

@@ -161,7 +161,16 @@ export default function Cart() {
       if (!product) return [];
       const sizeInfo = product.sizes.find((s) => s.label === buyNowItem.size);
       if (!sizeInfo) return [];
-      return [{ productId: buyNowItem.productId, size: buyNowItem.size, quantity: buyNowQty, product, sizeInfo }];
+      return [{
+        productId: buyNowItem.productId,
+        size: buyNowItem.size,
+        quantity: buyNowQty,
+        // Present only when this is a reservation against an upcoming pressing
+        // (see ProductDetail's handleReserve) — carried through to the order.
+        pressingId: buyNowItem.pressingId,
+        product,
+        sizeInfo,
+      }];
     }
     return items
       .map((item) => {
@@ -175,6 +184,16 @@ export default function Cart() {
 
   const isWholesale = !!user?.isWholesale;
   const subtotal = lines.reduce((sum, l) => sum + getEffectivePrice(l.sizeInfo, isWholesale) * l.quantity, 0);
+
+  // A reservation is for oil that hasn't been pressed yet, so there's nothing
+  // for a courier to collect against. The server refuses anything but online
+  // payment (see utils/orderBuilder.js); this switches the form to match so
+  // the customer meets the rule as a fact about the page rather than as a
+  // rejection after they've filled everything in.
+  const isReservation = lines.some((l) => l.pressingId);
+  useEffect(() => {
+    if (isReservation) setPaymentMethod('razorpay');
+  }, [isReservation]);
 
   // Must stay below the `subtotal` declaration above — a hook that reads a
   // `const` defined later in the component hits the temporal dead zone on
@@ -360,7 +379,12 @@ export default function Cart() {
     // Paired with the purchase event below, this is what shows how many people
     // start paying and don't finish — the number worth acting on.
     trackBeginCheckout(lines, total);
-    const orderItems = lines.map((l) => ({ productId: l.productId, size: l.size, quantity: l.quantity }));
+    const orderItems = lines.map((l) => ({
+      productId: l.productId,
+      size: l.size,
+      quantity: l.quantity,
+      ...(l.pressingId ? { pressingId: l.pressingId } : {}),
+    }));
     const couponCode = !couponStale && appliedCoupon ? appliedCoupon.code : undefined;
     const giftCardCode = appliedGiftCard ? appliedGiftCard.code : undefined;
     // Sent whether or not they're signed in: for a guest it's the identity the
@@ -879,7 +903,13 @@ export default function Cart() {
                 <h4>Payment Method</h4>
               </div>
               <div className="payment-options">
-                {enabledMethods.cod && (
+                {isReservation && (
+                  <p className="muted" style={{ margin: '0 0 10px', fontSize: '0.85rem' }}>
+                    Reservations are paid online — the oil is pressed after you book it,
+                    so there's nothing to collect on delivery.
+                  </p>
+                )}
+                {enabledMethods.cod && !isReservation && (
                   <label className={`payment-option ${paymentMethod === 'cod' ? 'active' : ''}`}>
                     <input type="radio" name="paymentMethod" checked={paymentMethod === 'cod'} onChange={() => setPaymentMethod('cod')} />
                     <span className="filter-radio" aria-hidden="true" />
@@ -915,7 +945,7 @@ export default function Cart() {
                     </span>
                   </label>
                 )}
-                {razorpayEnabled && enabledMethods.razorpay && enabledMethods.codAdvance && codAdvanceInr > 0 && (
+                {razorpayEnabled && enabledMethods.razorpay && enabledMethods.codAdvance && codAdvanceInr > 0 && !isReservation && (
                   <label className={`payment-option ${paymentMethod === 'cod_advance' ? 'active' : ''}`}>
                     <input
                       type="radio"

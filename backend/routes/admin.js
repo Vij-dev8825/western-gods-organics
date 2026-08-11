@@ -18,6 +18,7 @@ const { sendWhatsApp } = require('../utils/whatsapp');
 const { getCountries, getFullLiveRates } = require('./currency');
 const { translateProductText } = require('../utils/translateProduct');
 const { suggestProductAnswer } = require('../utils/aiAnswerSuggestion');
+const { listAll: listAllPressings, countReserved } = require('../utils/pressings');
 const { imageUpload, storeUploadedFile } = require('../utils/imageUploadHandler');
 const { creditPointsForOrder, reversePointsForOrder } = require('../utils/loyalty');
 const { issueBottleReturnCredit } = require('../utils/orderBuilder');
@@ -2182,6 +2183,143 @@ router.post('/abandoned-carts/run', async (req, res, next) => {
   try {
     const results = await processAbandonedCarts();
     res.json({ success: true, results });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ---------------------------------------------------------------------------
+// Scheduled pressings — upcoming runs of the mill customers can reserve from.
+// ---------------------------------------------------------------------------
+
+// GET /api/admin/pressings — every run, newest first, with live reservation counts.
+router.get('/pressings', async (req, res, next) => {
+  try {
+    res.json({ success: true, pressings: await listAllPressings() });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /api/admin/pressings  { productId, size, pressDate, unitsOffered, note? }
+router.post('/pressings', async (req, res, next) => {
+  try {
+    const { productId, size, pressDate, unitsOffered, note } = req.body;
+    const product = await db.get('products', productId);
+    if (!product) return res.status(400).json({ success: false, message: 'Choose a product.' });
+    if (!(product.sizes || []).some((s) => s.label === size)) {
+      return res.status(400).json({ success: false, message: 'Choose a size that exists on that product.' });
+    }
+    const when = new Date(pressDate);
+    if (Number.isNaN(when.getTime())) {
+      return res.status(400).json({ success: false, message: 'Enter a valid pressing date.' });
+    }
+    if (when.getTime() <= Date.now()) {
+      // A run in the past can't be reserved from, and letting one be created
+      // would put a listing on the shop that no customer could ever buy.
+      return res.status(400).json({ success: false, message: 'The pressing date must be in the future.' });
+    }
+    const units = Math.floor(Number(unitsOffered));
+    if (!Number.isFinite(units) || units < 1) {
+      return res.status(400).json({ success: false, message: 'Offer at least one bottle.' });
+    }
+
+    const pressing = {
+      id: uuid(),
+      productId,
+      productName: product.name,
+      size,
+      pressDate: when.toISOString(),
+      unitsOffered: units,
+      note: (note || '').slice(0, 300),
+      status: 'open',
+      batchNumber: '',
+      createdAt: new Date().toISOString(),
+    };
+    await db.put('pressings', pressing);
+    res.status(201).json({ success: true, pressing });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// PATCH /api/admin/pressings/:id  { pressDate?, unitsOffered?, note?, status? }
+router.patch('/pressings/:id', async (req, res, next) => {
+  try {
+    const pressing = await db.get('pressings', req.params.id);
+    if (!pressing) return res.status(404).json({ success: false, message: 'Pressing not found.' });
+    if (pressing.status === 'pressed') {
+      return res.status(400).json({ success: false, message: 'That pressing is already done — it can no longer be edited.' });
+    }
+
+    const updated = { ...pressing };
+    if (req.body.pressDate) {
+      const when = new Date(req.body.pressDate);
+      if (Number.isNaN(when.getTime())) {
+        return res.status(400).json({ success: false, message: 'Enter a valid pressing date.' });
+      }
+      updated.pressDate = when.toISOString();
+    }
+    if (req.body.unitsOffered !== undefined) {
+      const units = Math.floor(Number(req.body.unitsOffered));
+      if (!Number.isFinite(units) || units < 1) {
+        return res.status(400).json({ success: false, message: 'Offer at least one bottle.' });
+      }
+      // Cutting the run below what customers have already reserved would mean
+      // promising bottles that no longer exist, so the floor is what's booked.
+      const reserved = await countReserved(pressing.id);
+      if (units < reserved) {
+        return res.status(400).json({
+          success: false,
+          message: `${reserved} bottle${reserved === 1 ? ' is' : 's are'} already reserved — you can't offer fewer than that.`,
+        });
+      }
+      updated.unitsOffered = units;
+    }
+    if (req.body.note !== undefined) updated.note = String(req.body.note).slice(0, 300);
+    if (req.body.status === 'cancelled') updated.status = 'cancelled';
+
+    await db.put('pressings', updated);
+    res.json({ success: true, pressing: updated });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /api/admin/pressings/:id/pressed  { batchNumber }
+//
+// The moment the run actually happens. Stamping the real batch number onto
+// every reserved line is what closes the loop: the customer who booked oil
+// that didn't exist can now open its batch passport and see the pressing date
+// and source farm of the very run they paid for.
+router.post('/pressings/:id/pressed', async (req, res, next) => {
+  try {
+    const pressing = await db.get('pressings', req.params.id);
+    if (!pressing) return res.status(404).json({ success: false, message: 'Pressing not found.' });
+    if (pressing.status === 'pressed') {
+      return res.status(400).json({ success: false, message: 'That pressing is already marked as done.' });
+    }
+    const batchNumber = (req.body.batchNumber || '').trim();
+    if (!batchNumber) {
+      return res.status(400).json({ success: false, message: 'Enter the batch number this run produced.' });
+    }
+
+    const orders = await db.list('orders');
+    let stamped = 0;
+    for (const order of orders) {
+      if (!(order.items || []).some((i) => i.pressingId === pressing.id)) continue;
+      const items = order.items.map((i) => (i.pressingId === pressing.id ? { ...i, batchNumber } : i));
+      await db.put('orders', { ...order, items });
+      stamped += 1;
+      notifyUser(order.userId, {
+        title: 'Your reserved oil has been pressed',
+        body: `Batch ${batchNumber} came off the press today. Your order ${order.orderNumber} is being bottled and will ship shortly.`,
+        url: `/orders`,
+      }).catch(() => {});
+    }
+
+    await db.put('pressings', { ...pressing, status: 'pressed', batchNumber, pressedAt: new Date().toISOString() });
+    res.json({ success: true, stampedOrders: stamped, batchNumber });
   } catch (err) {
     next(err);
   }

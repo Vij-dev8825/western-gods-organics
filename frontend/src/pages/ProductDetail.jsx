@@ -137,6 +137,7 @@ export default function ProductDetail() {
   const [size, setSize] = useState(null);
   const [qty, setQty] = useState(1);
   const [monthlyUsage, setMonthlyUsage] = useState(500); // ml/g per month, for the cost comparison slider
+  const [pressings, setPressings] = useState([]);
   const [activeImage, setActiveImage] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [myRating, setMyRating] = useState(0);
@@ -184,6 +185,9 @@ export default function ProductDetail() {
       }
       setProduct(d.product);
       setSize(d.product.sizes[1]?.label || d.product.sizes[0].label);
+      // Failure here is silent on purpose: an upcoming pressing is a bonus
+      // offer, and a page that can't load one should still sell what's in stock.
+      api.getOpenPressings(d.product.id).then((r) => setPressings(r.pressings)).catch(() => {});
       setQty(1);
       setActiveImage(0);
       recordProductView(d.product.id);
@@ -292,6 +296,9 @@ export default function ProductDetail() {
     product.fssaiLicense || product.labReportUrl || product.inciIngredients
   );
   const isWished = productIds.includes(product.id);
+  // Pressings are scheduled per size, so only a run for the size on screen is
+  // relevant; the soonest one wins if several are open.
+  const nextPressing = pressings.find((p) => p.size === activeSize.label) || null;
   const gallery = product.images?.length ? product.images : [product.image];
   const productSchema = buildProductSchema(product);
 
@@ -305,6 +312,24 @@ export default function ProductDetail() {
   function handleBuyNow() {
     if (outOfStock) return;
     navigate('/cart', { state: { buyNow: { productId: product.id, size, quantity: qty } } });
+  }
+
+  /** Reserving goes through the same single-item Buy Now route rather than the
+   * cart, which is what keeps a reservation from ever being mixed in with
+   * in-stock items — an order that's half "ships today" and half "ships after
+   * the 15th" has no honest delivery date to show. */
+  function handleReserve() {
+    if (!nextPressing) return;
+    navigate('/cart', {
+      state: {
+        buyNow: {
+          productId: product.id,
+          size,
+          quantity: Math.min(qty, nextPressing.unitsRemaining),
+          pressingId: nextPressing.id,
+        },
+      },
+    });
   }
 
   function handleWishlist() {
@@ -640,7 +665,9 @@ export default function ProductDetail() {
               </div>
             )}
             {outOfStock ? (
-              <div className="out-of-stock-notice">Currently stock not available</div>
+              <div className="out-of-stock-notice">
+                {nextPressing ? 'Sold out — but the next pressing is open' : 'Currently stock not available'}
+              </div>
             ) : (
               <>
                 <button className="btn btn-forest" onClick={handleBuyNow}>Buy Now</button>
@@ -654,6 +681,41 @@ export default function ProductDetail() {
               <IconHeart filled={isWished} size={16} /> {isWished ? 'Wishlisted' : 'Wishlist'}
             </button>
           </div>
+
+          {/* Reserve a share of the next run of the mill. Shown for the
+              selected size only, because a pressing is scheduled per size —
+              the 500 ml run and the 5 L run are different days' work. */}
+          {nextPressing && (
+            <div className="pressing-panel">
+              <span className="pressing-eyebrow">Next pressing</span>
+              <h4>
+                Pressing on {new Date(nextPressing.pressDate).toLocaleDateString('en-IN', {
+                  day: 'numeric', month: 'long', year: 'numeric',
+                })}
+              </h4>
+              <p className="muted">
+                This oil hasn't been pressed yet. Reserve a bottle from the run and it's
+                yours the day it comes off the wood press — you'll get its batch number
+                once it's done.
+              </p>
+              {nextPressing.note && <p className="pressing-note">“{nextPressing.note}”</p>}
+              <div className="pressing-meter">
+                <div
+                  className="pressing-meter-fill"
+                  style={{ width: `${Math.min(100, Math.round((nextPressing.reserved / nextPressing.unitsOffered) * 100))}%` }}
+                />
+              </div>
+              <p className="pressing-count">
+                <b>{nextPressing.unitsRemaining}</b> of {nextPressing.unitsOffered} bottles left in this run
+              </p>
+              <button className="btn btn-forest btn-block" onClick={handleReserve}>
+                Reserve {qty > 1 ? `${qty} bottles` : 'a bottle'} — {formatPrice(activeSize.price * qty)}
+              </button>
+              <p className="muted pressing-terms">
+                Paid online now, so we can buy the seed for this run. Nothing is collected on delivery.
+              </p>
+            </div>
+          )}
 
           {outOfStock ? (
             <div className="alert alert-error">

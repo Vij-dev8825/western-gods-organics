@@ -253,8 +253,18 @@ export const api = {
     return done;
   },
 
+  // Upcoming mill runs a customer can reserve a share of.
+  getOpenPressings: (productId) =>
+    request(`/products/pressings/open${productId ? `?productId=${encodeURIComponent(productId)}` : ''}`),
+
   // admin
   admin: {
+    listPressings: (token) => request('/admin/pressings', { token }),
+    createPressing: (token, body) => request('/admin/pressings', { method: 'POST', body, token }),
+    updatePressing: (token, id, body) => request(`/admin/pressings/${id}`, { method: 'PATCH', body, token }),
+    markPressingPressed: (token, id, batchNumber) =>
+      request(`/admin/pressings/${id}/pressed`, { method: 'POST', body: { batchNumber }, token }),
+
     stats: (token) => request('/admin/stats', { token }),
 
     uploadImage: (token, formData) => request('/admin/upload-image', { method: 'POST', formData, token }),

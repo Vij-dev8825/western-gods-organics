@@ -6,6 +6,7 @@ const { imageUpload, storeUploadedFile } = require('../utils/imageUploadHandler'
 const { sendMail } = require('../utils/mailer');
 const { hasEarlyAccessPerk } = require('../utils/loyalty');
 const { notifyUser } = require('../utils/notify');
+const { listOpen: listOpenPressings } = require('../utils/pressings');
 
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || process.env.CONTACT_NOTIFY_EMAIL;
 
@@ -419,6 +420,18 @@ router.post('/:id/questions', requireAuth, async (req, res, next) => {
     }
 
     res.status(201).json({ success: true, question: record });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET /api/products/pressings/open?productId=... — upcoming mill runs a
+// customer can still reserve a share of. Public: the whole point is that
+// someone browsing a sold-out oil can see when the next batch is pressed.
+router.get('/pressings/open', async (req, res, next) => {
+  try {
+    const pressings = await listOpenPressings({ productId: req.query.productId });
+    res.json({ success: true, pressings });
   } catch (err) {
     next(err);
   }
