@@ -42,8 +42,13 @@ const GOOGLE_CATEGORY = {
   honey: '4947',
   // Food, Beverages & Tobacco > Food Items > Cooking & Baking Ingredients > Sugar & Sweeteners
   'natural-sweeteners': '503734',
-  // Food, Beverages & Tobacco > Food Items > Soups & Broths
+  // Food, Beverages & Tobacco > Food Items > Soups & Broths.
+  // Two slugs for one shelf: the category list registers 'soup-dip' while the
+  // soup mix itself is filed under 'soup-mix'. Both are mapped rather than one
+  // picked, because guessing which is canonical would silently drop whichever
+  // products sit under the other.
   'soup-dip': '2423',
+  'soup-mix': '2423',
   // Health & Beauty > Personal Care > Cosmetics > Skin Care
   'baby-kids-care': '567',
 };
