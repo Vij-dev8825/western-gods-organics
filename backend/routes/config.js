@@ -31,6 +31,15 @@ router.get('/', async (req, res, next) => {
       razorpayEnabled: razorpay.isConfigured(),
       codAdvanceInr: COD_ADVANCE_INR,
       paymentMethods,
+      // Served at runtime rather than baked in at build time. A build-time
+      // variable has to be present in the frontend's environment at the
+      // moment `npm run build` runs, which on this host means remembering it
+      // during a deploy that otherwise only pulls and builds — forget once and
+      // analytics goes quiet with nothing to show that it did. Here it sits in
+      // the same .env as every other setting and survives every rebuild.
+      // Not a secret: a GA measurement id is visible in the page source of
+      // every site that uses one.
+      gaMeasurementId: process.env.GA_MEASUREMENT_ID || '',
     });
   } catch (err) {
     next(err);

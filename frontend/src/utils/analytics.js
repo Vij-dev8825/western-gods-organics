@@ -4,9 +4,11 @@
  *
  * Two independent switches, both of which must be on:
  *
- *   1. VITE_GA_MEASUREMENT_ID is set at build time. Without it every function
- *      here is a no-op, so this can ship today and start working the day the
- *      ID is added — no code change needed.
+ *   1. A measurement id is configured. It comes from GA_MEASUREMENT_ID in the
+ *      server's .env, handed to the page by /api/config (see
+ *      setMeasurementId below), so it lives with every other setting and
+ *      survives a rebuild. VITE_GA_MEASUREMENT_ID still works as a build-time
+ *      override for anyone running the frontend on its own.
  *   2. The visitor accepted analytics in the cookie bar. "Only necessary"
  *      means we never load Google's script at all, not that we load it and
  *      ask it to behave.
@@ -15,10 +17,20 @@
  * throw into the app. Analytics failing must never break a checkout.
  */
 
-const MEASUREMENT_ID = import.meta.env.VITE_GA_MEASUREMENT_ID;
 const CONSENT_KEY = 'yo_cookie_consent';
 
+let measurementId = import.meta.env.VITE_GA_MEASUREMENT_ID || '';
 let loaded = false;
+
+/** Supplies the id fetched from /api/config. Called once on startup, before
+ * consent is known — initAnalytics is what actually decides to load. */
+export function setMeasurementId(id) {
+  if (!id || loaded) return;
+  measurementId = id;
+  // Consent may already have been given on an earlier visit, in which case the
+  // startup call to initAnalytics ran before we had an id and did nothing.
+  initAnalytics();
+}
 
 /** True only when the visitor explicitly accepted — an absent or 'essential'
  * value both mean no. */
@@ -38,18 +50,18 @@ function gtag(...args) {
 /** Injects Google's tag once, if we're allowed to. Safe to call repeatedly —
  * mount, route change, and again the moment consent is given. */
 export function initAnalytics() {
-  if (loaded || !MEASUREMENT_ID || !analyticsAllowed()) return;
+  if (loaded || !measurementId || !analyticsAllowed()) return;
   if (typeof document === 'undefined') return;
   loaded = true;
   try {
     const s = document.createElement('script');
     s.async = true;
-    s.src = `https://www.googletagmanager.com/gtag/js?id=${MEASUREMENT_ID}`;
+    s.src = `https://www.googletagmanager.com/gtag/js?id=${measurementId}`;
     document.head.appendChild(s);
     gtag('js', new Date());
     // send_page_view off: the router tells us about navigation, and letting
     // both fire double-counts every page in a single-page app.
-    gtag('config', MEASUREMENT_ID, { send_page_view: false });
+    gtag('config', measurementId, { send_page_view: false });
   } catch {
     loaded = false;
   }

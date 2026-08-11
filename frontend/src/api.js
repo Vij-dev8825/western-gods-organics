@@ -254,6 +254,8 @@ export const api = {
   },
 
   // Upcoming mill runs a customer can reserve a share of.
+  getRecentReviews: (limit = 6) => request(`/products/reviews/recent?limit=${limit}`),
+
   getOpenPressings: (productId) =>
     request(`/products/pressings/open${productId ? `?productId=${encodeURIComponent(productId)}` : ''}`),
 

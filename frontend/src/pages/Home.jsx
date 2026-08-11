@@ -18,6 +18,7 @@ import { useLang } from '../i18n';
 import { CANONICAL_ORIGIN } from '../utils/site';
 import { shouldLoadHeavyMedia, videoPosterUrl } from '../utils/connection';
 import LazyVideo from '../components/LazyVideo';
+import CustomerReviews from '../components/CustomerReviews';
 import skincareCertificate from '../assets/skincare-workshop-certificate.jpg';
 
 const USP_ICONS = ['🌾', '🪵', '🧪', '🚚'];
@@ -61,24 +62,6 @@ const WEBSITE_SCHEMA = {
     'query-input': 'required name=search_term_string',
   },
 };
-
-const TESTIMONIALS = [
-  {
-    quote: 'The groundnut oil smells exactly like the ghani near my childhood home. My family refuses to cook with anything else now.',
-    name: 'Sunita R.',
-    place: 'Hyderabad',
-  },
-  {
-    quote: 'You can taste the difference in a simple tadka. Their sesame oil is deep, nutty and honest — worth every rupee.',
-    name: 'Karthik M.',
-    place: 'Chennai',
-  },
-  {
-    quote: 'We switched our restaurant to Western Gods Organics in bulk. Consistent quality, GST invoicing, on-time delivery. Zero complaints.',
-    name: 'Chef Devansh',
-    place: 'Delhi NCR',
-  },
-];
 
 export default function Home() {
   const { t, lang } = useLang();
@@ -443,17 +426,11 @@ export default function Home() {
             <h2>{t('testiTitle')}</h2>
           </div>
         </div>
-        <div className="testimonial-grid">
-          {TESTIMONIALS.map((tm) => (
-            <figure className="testimonial" key={tm.name}>
-              <div className="stars" aria-label="5 star rating">★★★★★</div>
-              <blockquote>{tm.quote}</blockquote>
-              <figcaption>
-                <b>{tm.name}</b> · {tm.place}
-              </figcaption>
-            </figure>
-          ))}
-        </div>
+        {/* Real reviews, read live from what customers have written on the
+            product pages. This replaced a hardcoded list of invented quotes
+            with attributed names — which was both weaker than the genuine
+            article and not a claim this shop should be making. */}
+        <CustomerReviews limit={6} />
       </Reveal>
 
       <Reveal><GoogleReviewsWidget /></Reveal>

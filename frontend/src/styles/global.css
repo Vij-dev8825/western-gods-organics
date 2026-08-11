@@ -4121,3 +4121,48 @@ body.has-cookie-bar .install-prompt { bottom: calc(var(--cookie-bar-height, 0px)
 }
 .pressing-count { font-size: 0.82rem; margin-bottom: 12px !important; }
 .pressing-terms { font-size: 0.76rem; margin: 10px 0 0 !important; }
+
+/* Real customer reviews on the homepage. Reuses the testimonial grid's
+   rhythm so the section still sits in the page the way it always did — the
+   change is that the words are now genuine. */
+.customer-reviews {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 18px;
+}
+.customer-review {
+  margin: 0;
+  padding: 20px;
+  background: var(--paper);
+  border: 1px solid rgba(31,61,43,0.1);
+  border-radius: var(--radius-md);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.customer-review-stars { color: var(--gold-2); letter-spacing: 2px; font-size: 0.95rem; }
+.customer-review-stars-off { color: rgba(31,61,43,0.18); }
+.customer-review blockquote {
+  margin: 0;
+  font-size: 0.92rem;
+  line-height: 1.6;
+  flex: 1;
+}
+.customer-review figcaption {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 0.85rem;
+}
+.customer-review-product {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--forest-light);
+  font-size: 0.8rem;
+  text-decoration: none;
+}
+.customer-review-product:hover { text-decoration: underline; }
+.customer-review-product img {
+  width: 30px; height: 30px; border-radius: 6px; object-fit: cover; flex-shrink: 0;
+}

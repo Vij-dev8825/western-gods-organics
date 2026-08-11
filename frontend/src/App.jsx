@@ -1,9 +1,10 @@
 import { lazy, Suspense, useEffect } from 'react';
 import { Routes, Route, Outlet, Navigate, useLocation } from 'react-router-dom';
 import { useLang } from './i18n';
+import { api } from './api';
 import { CANONICAL_ORIGIN } from './utils/site';
 import { captureAffiliateCode } from './utils/affiliateAttribution';
-import { initAnalytics, trackPageView } from './utils/analytics';
+import { initAnalytics, setMeasurementId, trackPageView } from './utils/analytics';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -159,6 +160,16 @@ function ScrollToTop() {
 // mid-session starts being counted immediately.
 function PageViewTracker() {
   const { pathname } = useLocation();
+
+  // The measurement id lives in the server's .env and arrives with the rest of
+  // the public config, so it has to be fetched before anything can be counted.
+  // Failure is silent: analytics is never worth an error in front of a shopper.
+  useEffect(() => {
+    api.getConfig()
+      .then((d) => { if (d.gaMeasurementId) setMeasurementId(d.gaMeasurementId); })
+      .catch(() => {});
+  }, []);
+
   useEffect(() => {
     initAnalytics();
     trackPageView(pathname);

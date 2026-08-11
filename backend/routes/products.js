@@ -247,6 +247,57 @@ router.get('/reviews/gallery', async (req, res, next) => {
   }
 });
 
+// GET /api/products/reviews/recent?limit=8 — the best of what customers have
+// actually written, for the homepage.
+//
+// The photo wall next to it shows pictures and the Google widget shows quotes
+// an admin typed in by hand; neither surfaces the hundreds of written reviews
+// already sitting in the database. This does, and because it reads them live
+// it stays current on its own — the strongest sales copy on the site is the
+// part nobody has to write.
+const HOMEPAGE_REVIEW_MIN_RATING = 4;
+const HOMEPAGE_REVIEW_MIN_CHARS = 40;
+
+router.get('/reviews/recent', async (req, res, next) => {
+  try {
+    const limit = Math.min(Number(req.query.limit) || 8, 24);
+    const [reviews, products] = await Promise.all([db.list('reviews'), db.list('products')]);
+
+    const seenProducts = new Set();
+    const picked = reviews
+      // A three-star review is honest feedback but it isn't a recommendation,
+      // and a two-word one says nothing to a stranger deciding whether to buy.
+      .filter((r) => r.rating >= HOMEPAGE_REVIEW_MIN_RATING)
+      .filter((r) => (r.text || '').trim().length >= HOMEPAGE_REVIEW_MIN_CHARS)
+      .sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)))
+      .reduce((out, r) => {
+        if (out.length >= limit) return out;
+        // One per product, so the row reads as a range of things people buy
+        // rather than five reviews of the same bottle.
+        if (seenProducts.has(r.productId)) return out;
+        const product = products.find((p) => p.id === r.productId);
+        if (!product) return out;
+        seenProducts.add(r.productId);
+        out.push({
+          id: r.id,
+          rating: r.rating,
+          text: r.text,
+          userName: r.userName,
+          createdAt: r.createdAt,
+          image: r.images?.[0] || null,
+          productId: product.id,
+          productName: product.name,
+          productImage: product.image,
+        });
+        return out;
+      }, []);
+
+    res.json({ success: true, reviews: picked });
+  } catch (err) {
+    next(err);
+  }
+});
+
 // Genuine (not fabricated) "recently ordered" count for PDP urgency copy —
 // distinct non-cancelled orders containing this product within the window,
 // not a per-line count, so a single bulk order can't inflate the number.
