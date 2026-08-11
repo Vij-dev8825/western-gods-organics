@@ -559,9 +559,16 @@ export default function ProductDetail() {
               <Link to={`/sellers/${product.sellerId}`}>{product.sellerName}</Link>
             </p>
           )}
-          <div className="rating-row" style={{ marginBottom: 16 }}>
-            ★ {product.rating} <span className="count">({product.reviewsCount} reviews)</span>
-          </div>
+          {/* Same rule as the product cards: no reviews, no rating. The
+              reviews section further down invites the first one. */}
+          {product.reviewsCount > 0 && (
+            <div className="rating-row" style={{ marginBottom: 16 }}>
+              ★ {product.rating}{' '}
+              <span className="count">
+                ({product.reviewsCount} {product.reviewsCount === 1 ? 'review' : 'reviews'})
+              </span>
+            </div>
+          )}
           <p className="muted">{localizeProductText(product, 'description', lang)}</p>
 
           {product.comboItems?.length > 0 && (

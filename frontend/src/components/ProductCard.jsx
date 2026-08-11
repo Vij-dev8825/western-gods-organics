@@ -185,9 +185,14 @@ export default function ProductCard({ product, index }) {
           </span>
         )}
         <p className="product-desc">{localizeProductText(product, 'shortDescription', lang)}</p>
-        <div className="rating-row">
-          ★ {product.rating} <span className="count">({product.reviewsCount})</span>
-        </div>
+        {/* Only shown once someone has actually left a review. A star with a
+            zero beside it is worse than no star at all, and a number with no
+            reviews behind it isn't ours to display. */}
+        {product.reviewsCount > 0 && (
+          <div className="rating-row">
+            ★ {product.rating} <span className="count">({product.reviewsCount})</span>
+          </div>
+        )}
 
         <select
           className="select"
