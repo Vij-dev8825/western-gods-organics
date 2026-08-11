@@ -12,6 +12,7 @@ const { compressAndStore, compressVideoAndStore } = require('../utils/mediaStore
 const { processDueSubscriptions } = require('../utils/subscriptions');
 const { processAbandonedCarts } = require('../utils/abandonedCarts');
 const { processReorderNudges } = require('../utils/reorderNudges');
+const { processReviewRequests } = require('../utils/reviewRequests');
 const { PAGES: PAGE_BANNER_PAGES } = require('./pageBanners');
 const { sendMail } = require('../utils/mailer');
 const { sendWhatsApp } = require('../utils/whatsapp');
@@ -2182,6 +2183,18 @@ router.post('/reorder-nudges/run', async (req, res, next) => {
 router.post('/abandoned-carts/run', async (req, res, next) => {
   try {
     const results = await processAbandonedCarts();
+    res.json({ success: true, results });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /api/admin/review-requests/run — manual trigger for the same daily job
+// scheduled in server.js. Useful for reaching customers whose orders were
+// delivered before this existed, without waiting for the next daily tick.
+router.post('/review-requests/run', async (req, res, next) => {
+  try {
+    const results = await processReviewRequests();
     res.json({ success: true, results });
   } catch (err) {
     next(err);

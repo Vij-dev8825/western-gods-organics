@@ -27,6 +27,7 @@ const impactRoutes = require('./routes/impact');
 const { processDueSubscriptions } = require('./utils/subscriptions');
 const { processAbandonedCarts } = require('./utils/abandonedCarts');
 const { processReorderNudges } = require('./utils/reorderNudges');
+const { processReviewRequests } = require('./utils/reviewRequests');
 const { processDeliveryUnboxingNudges } = require('./utils/deliveryUnboxingNudge');
 const whatsappBaileys = require('./utils/whatsappBaileys');
 const mediaRoutes = require('./routes/media');
@@ -209,6 +210,13 @@ const PORT = process.env.PORT || 5000;
     processReorderNudges().catch((err) => console.error('processReorderNudges failed:', err));
     setInterval(() => {
       processReorderNudges().catch((err) => console.error('processReorderNudges failed:', err));
+    }, 24 * 60 * 60 * 1000);
+
+    // Review requests are day-granular too — a week after delivery, give or
+    // take a few hours, is the same moment either way.
+    processReviewRequests().catch((err) => console.error('processReviewRequests failed:', err));
+    setInterval(() => {
+      processReviewRequests().catch((err) => console.error('processReviewRequests failed:', err));
     }, 24 * 60 * 60 * 1000);
   } catch (err) {
     console.error('Failed to start:', err);
