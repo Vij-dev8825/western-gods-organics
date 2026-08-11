@@ -17,12 +17,35 @@
  *
  * Add --dry-run to see what it would change without writing anything.
  */
-require('dotenv').config();
+// Resolved from this file rather than the working directory. dotenv's default
+// looks in process.cwd(), so running the script from anywhere but backend/
+// silently finds no .env, leaves DATABASE_URL unset, and quietly reads the
+// committed JSON seed instead of the live database.
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
 const db = require('../data/db');
 
 const DRY_RUN = process.argv.includes('--dry-run');
+// db.init() is what reads DATABASE_URL and picks a backend; without it the
+// module sits on its 'json' default forever. The server calls it at startup,
+// so routes are fine — a standalone script has to call it itself. Omitting it
+// here is what made an earlier run report on 8 seed products while production
+// held 24, with no indication anything was wrong.
+const ALLOW_JSON = process.argv.includes('--allow-json');
 
 async function main() {
+  const mode = await db.init();
+  console.log(`Data source: ${mode}`);
+  if (mode === 'json' && !ALLOW_JSON) {
+    console.error(
+      '\nRefusing to run against the JSON seed files.\n' +
+        'DATABASE_URL is unset or unreadable, so this would report on committed\n' +
+        'sample data rather than the live shop. Check backend/.env.\n' +
+        'Pass --allow-json if local JSON really is the target.'
+    );
+    process.exit(1);
+  }
+
   const [products, reviews] = await Promise.all([db.list('products'), db.list('reviews')]);
 
   const byProduct = new Map();
