@@ -70,7 +70,16 @@ export function initAnalytics() {
 export function trackPageView(path, title) {
   if (!loaded) return;
   try {
-    gtag('event', 'page_view', { page_path: path, page_title: title || document.title });
+    gtag('event', 'page_view', {
+      page_path: path,
+      page_title: title || document.title,
+      // Sent explicitly rather than left to gtag's own reading of the address
+      // bar. Everything that says where a visitor came from — utm_source and
+      // friends on a shared link — lives in the query string, and page_path
+      // deliberately omits it to keep the path report clean. Without this,
+      // attribution would depend on an inference rather than a stated fact.
+      page_location: typeof window !== 'undefined' ? window.location.href : undefined,
+    });
   } catch { /* never let a metric break a page */ }
 }
 
