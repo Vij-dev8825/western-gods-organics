@@ -45,9 +45,12 @@ const ORGANIZATION_SCHEMA = {
     postalCode: '642126',
     addressCountry: 'IN',
   },
+  // Every official profile, so search engines can tie them to this business
+  // rather than treating each as an unrelated account.
   sameAs: [
     'https://www.facebook.com/share/1T6wVtX3dC/',
     'https://www.instagram.com/westerngodsorganic',
+    'https://www.youtube.com/@westerngodsorganics',
   ],
 };
 

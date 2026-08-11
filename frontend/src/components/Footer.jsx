@@ -3,10 +3,11 @@ import { Link } from 'react-router-dom';
 import { useLang, LANGS } from '../i18n';
 import { useCurrency } from '../context/CurrencyContext';
 import { STORE_LOCATIONS, mapEmbedSrc, directionsUrl } from '../data/storeLocations';
-import { IconFacebook, IconInstagram, IconWhatsApp } from './Icons';
+import { IconFacebook, IconInstagram, IconWhatsApp, IconYouTube } from './Icons';
 
 const FACEBOOK_URL = 'https://www.facebook.com/share/1T6wVtX3dC/';
 const INSTAGRAM_URL = 'https://www.instagram.com/westerngodsorganic?igsh=cmZqcHhraGZhZTNk';
+const YOUTUBE_URL = 'https://www.youtube.com/@westerngodsorganics';
 
 const SUPPORT_PHONE = '+918825875607';
 const SUPPORT_EMAIL = 'westerngodsorganic@gmail.com';
@@ -71,6 +72,16 @@ export default function Footer() {
             </a>
             <a href={FACEBOOK_URL} target="_blank" rel="noreferrer" aria-label="Facebook" className="social-badge" style={{ background: '#1877F2' }}>
               <IconFacebook color="#fff" />
+            </a>
+            <a
+              href={YOUTUBE_URL}
+              target="_blank"
+              rel="noreferrer"
+              aria-label="YouTube"
+              className="social-badge"
+              style={{ background: '#FF0000' }}
+            >
+              <IconYouTube color="#fff" />
             </a>
             <a
               href={`https://wa.me/${SUPPORT_PHONE.replace('+', '')}`}
