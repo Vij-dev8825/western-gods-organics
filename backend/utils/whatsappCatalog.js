@@ -12,12 +12,40 @@ const { resolveImageLink, isPlaceholderIllustration } = require('./catalogImages
 
 const BRAND = 'Western Gods Organics';
 
+/**
+ * Site category → Google product taxonomy, as numeric ids.
+ *
+ * Ids rather than full paths on purpose. Google accepts either, but a path has
+ * to match its taxonomy character for character or the value is discarded
+ * silently — and three of the paths previously written here (Cooking Oils &
+ * Sprays, a top-level Herbs & Spices, Sweeteners > Honey) were near-misses
+ * that don't exist, so most of the catalogue was being sent with a category
+ * Google threw away. An id can't drift like that.
+ *
+ * Verified against taxonomy-with-ids.en-US.txt. Path kept alongside each id
+ * for reading, not for sending.
+ *
+ * Meta reads the same field and also accepts ids, so both feeds benefit.
+ */
 const GOOGLE_CATEGORY = {
-  oils: 'Food, Beverages & Tobacco > Food Items > Cooking & Baking Ingredients > Cooking Oils & Sprays',
-  soaps: 'Health & Beauty > Personal Care > Cosmetics > Bath & Body > Soaps',
-  powders: 'Health & Beauty > Personal Care',
-  'spices-masalas': 'Food, Beverages & Tobacco > Food Items > Herbs & Spices',
-  honey: 'Food, Beverages & Tobacco > Food Items > Sweeteners > Honey',
+  // Food, Beverages & Tobacco > Food Items > Cooking & Baking Ingredients > Cooking Oils
+  oils: '2126',
+  // Health & Beauty > Personal Care > Cosmetics > Bath & Body > Bar Soap
+  soaps: '2503',
+  // Health & Beauty > Personal Care — deliberately the broad one: these are
+  // sold as both a culinary and a hair/skin ingredient, and picking a narrower
+  // leaf would be a claim about the product the shop hasn't made.
+  powders: '2915',
+  // Food, Beverages & Tobacco > Food Items > Seasonings & Spices > Herbs & Spices
+  'spices-masalas': '1529',
+  // Food, Beverages & Tobacco > Food Items > Condiments & Sauces > Honey
+  honey: '4947',
+  // Food, Beverages & Tobacco > Food Items > Cooking & Baking Ingredients > Sugar & Sweeteners
+  'natural-sweeteners': '503734',
+  // Food, Beverages & Tobacco > Food Items > Soups & Broths
+  'soup-dip': '2423',
+  // Health & Beauty > Personal Care > Cosmetics > Skin Care
+  'baby-kids-care': '567',
 };
 
 const CSV_COLUMNS = [
