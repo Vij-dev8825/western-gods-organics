@@ -1,6 +1,7 @@
 const express = require('express');
 const { buildCatalogRows, rowsToCsv } = require('../utils/whatsappCatalog');
 const { buildCatalogPdf } = require('../utils/catalogPdf');
+const { buildGoogleFeed } = require('../utils/googleFeed');
 
 const router = express.Router();
 
@@ -18,6 +19,25 @@ router.get('/whatsapp.csv', async (req, res, next) => {
     res.set('Content-Type', 'text/csv; charset=utf-8');
     res.set('Content-Disposition', 'inline; filename="whatsapp-catalog.csv"');
     res.send(rowsToCsv(rows));
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET /api/catalog/google.xml — a Google Merchant Center product feed.
+// In Merchant Center: Products → Data sources → Add product source →
+// "Scheduled fetch", pointing at this URL on a daily schedule. Prices and
+// stock then stay in step with the shop on their own. Free Shopping listings
+// need nothing beyond an approved feed and a verified site; a paid Shopping
+// campaign later reads from the same source.
+router.get('/google.xml', async (req, res, next) => {
+  try {
+    const siteUrl = (process.env.SITE_URL || `${req.protocol}://${req.get('host')}`).replace(/\/$/, '');
+    const { xml, warnings } = await buildGoogleFeed({ siteUrl });
+    warnings.forEach((w) => console.warn('[google-feed]', w));
+
+    res.set('Content-Type', 'application/xml; charset=utf-8');
+    res.send(xml);
   } catch (err) {
     next(err);
   }

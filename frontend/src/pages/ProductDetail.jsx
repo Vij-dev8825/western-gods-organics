@@ -8,6 +8,7 @@ import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { useCurrency } from '../context/CurrencyContext';
 import { recordProductView } from '../utils/recentlyViewed';
+import { trackViewItem } from '../utils/analytics';
 import { validateAddress } from '../utils/validators';
 import { normalizeAddresses } from '../utils/addresses';
 import { pricePer100, parseSizeLabel } from '../utils/sizeParsing';
@@ -184,13 +185,24 @@ export default function ProductDetail() {
         return;
       }
       setProduct(d.product);
-      setSize(d.product.sizes[1]?.label || d.product.sizes[0].label);
+      const defaultSize = d.product.sizes[1] || d.product.sizes[0];
+      setSize(defaultSize.label);
       // Failure here is silent on purpose: an upcoming pressing is a bonus
       // offer, and a page that can't load one should still sell what's in stock.
       api.getOpenPressings(d.product.id).then((r) => setPressings(r.pressings)).catch(() => {});
       setQty(1);
       setActiveImage(0);
       recordProductView(d.product.id);
+      // Sent on load with the size the page opens on, not on every size
+      // change — this measures "someone looked at this product", and firing
+      // it again each time they flick between 500ml and 1L would inflate the
+      // count and muddy the retargeting audience it feeds.
+      trackViewItem({
+        id: d.product.id,
+        name: d.product.name,
+        price: defaultSize.price,
+        size: defaultSize.label,
+      });
 
       api
         .getProducts({ category: d.product.category }, token)

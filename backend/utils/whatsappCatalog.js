@@ -84,6 +84,12 @@ async function buildCatalogRows({ siteUrl }) {
         brand: BRAND,
         google_product_category: GOOGLE_CATEGORY[product.category] || '',
         quantity_to_sell_on_facebook: Math.max(0, Math.min(size.stock ?? 0, 999)),
+        // Not in CSV_COLUMNS, so this never reaches the Meta CSV — rowsToCsv
+        // only emits the listed columns. It exists for the Google feed
+        // (utils/googleFeed.js), which uses it to group a product's sizes into
+        // one Shopping listing. Derived here rather than there so both feeds
+        // keep reading the same single description of a product.
+        item_group_id: product.id,
       });
     }
   }

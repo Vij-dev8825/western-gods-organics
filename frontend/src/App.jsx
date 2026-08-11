@@ -4,7 +4,7 @@ import { useLang } from './i18n';
 import { api } from './api';
 import { CANONICAL_ORIGIN } from './utils/site';
 import { captureAffiliateCode } from './utils/affiliateAttribution';
-import { initAnalytics, setMeasurementId, trackPageView } from './utils/analytics';
+import { configureAnalytics, initAnalytics, trackPageView } from './utils/analytics';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -162,12 +162,14 @@ function ScrollToTop() {
 function PageViewTracker() {
   const { pathname } = useLocation();
 
-  // The measurement id lives in the server's .env and arrives with the rest of
-  // the public config, so it has to be fetched before anything can be counted.
-  // Failure is silent: analytics is never worth an error in front of a shopper.
+  // The GA measurement id and Meta pixel id live in the server's .env and
+  // arrive with the rest of the public config, so they have to be fetched
+  // before anything can be counted. Either may be absent — configureAnalytics
+  // loads whichever is present. Failure is silent: measurement is never worth
+  // an error in front of a shopper.
   useEffect(() => {
     api.getConfig()
-      .then((d) => { if (d.gaMeasurementId) setMeasurementId(d.gaMeasurementId); })
+      .then((d) => configureAnalytics({ gaMeasurementId: d.gaMeasurementId, metaPixelId: d.metaPixelId }))
       .catch(() => {});
   }, []);
 

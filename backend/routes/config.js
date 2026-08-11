@@ -40,6 +40,10 @@ router.get('/', async (req, res, next) => {
       // Not a secret: a GA measurement id is visible in the page source of
       // every site that uses one.
       gaMeasurementId: process.env.GA_MEASUREMENT_ID || '',
+      // Same reasoning as above, and equally not a secret — a pixel id is
+      // readable in the page source of every site running one, and Meta's
+      // own tooling expects it to be.
+      metaPixelId: process.env.META_PIXEL_ID || '',
     });
   } catch (err) {
     next(err);
