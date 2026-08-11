@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { api } from '../api';
 import { getProductImage } from '../utils/productImages';
@@ -140,6 +140,7 @@ export default function ProductDetail() {
   const [monthlyUsage, setMonthlyUsage] = useState(500); // ml/g per month, for the cost comparison slider
   const [pressings, setPressings] = useState([]);
   const [activeImage, setActiveImage] = useState(0);
+  const mediaRef = useRef(null);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [myRating, setMyRating] = useState(0);
   const [myText, setMyText] = useState('');
@@ -313,6 +314,25 @@ export default function ProductDetail() {
   const nextPressing = pressings.find((p) => p.size === activeSize.label) || null;
   const gallery = product.images?.length ? product.images : [product.image];
   const productSchema = buildProductSchema(product);
+
+  /**
+   * Points the zoom at whatever the cursor is over, by writing the cursor
+   * position onto the frame as custom properties the stylesheet reads as a
+   * transform-origin. The magnification itself is pure CSS :hover — only the
+   * origin needs to know where the pointer is.
+   *
+   * Written straight to the node rather than held in state: this fires on
+   * every mouse move, and a setState here would re-render the whole product
+   * page — gallery, reviews, related products — dozens of times a second to
+   * move one image a few pixels.
+   */
+  function handleZoomMove(e) {
+    const frame = mediaRef.current;
+    if (!frame) return;
+    const box = frame.getBoundingClientRect();
+    frame.style.setProperty('--zoom-x', `${((e.clientX - box.left) / box.width) * 100}%`);
+    frame.style.setProperty('--zoom-y', `${((e.clientY - box.top) / box.height) * 100}%`);
+  }
 
   function handleAdd() {
     if (outOfStock) return;
@@ -510,14 +530,19 @@ export default function ProductDetail() {
         <div>
           <button
             type="button"
+            ref={mediaRef}
             className="product-media product-media-zoomable"
             style={{ borderRadius: 'var(--radius-lg)' }}
             onClick={() => setLightboxOpen(true)}
+            onMouseMove={handleZoomMove}
             aria-label="View larger image"
           >
             {discount > 0 && <span className="product-badge">{discount}% OFF</span>}
             <img src={getProductImage(gallery[activeImage])} alt={product.name} />
-            <span className="product-media-zoom-hint">🔍 Tap to zoom</span>
+            {/* Two hints, one shown per input type. A phone has no cursor to
+                magnify under, so it keeps the tap-to-open-full-screen route. */}
+            <span className="product-media-zoom-hint hint-touch">🔍 Tap to zoom</span>
+            <span className="product-media-zoom-hint hint-pointer">🔍 Move over the photo to zoom</span>
           </button>
           {gallery.length > 1 && (
             <div className="product-gallery-thumbs">

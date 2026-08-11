@@ -3651,6 +3651,39 @@ input:focus-visible + .filter-radio { outline: 2px solid var(--gold-2); outline-
   pointer-events: none;
 }
 
+/* Hover-to-magnify, the way a shopper checks a label or a seal before buying.
+   Gated behind a real cursor: a touch screen has no hover to follow, and
+   phones keep the full-screen lightbox instead.
+
+   The magnification is plain :hover — only the origin is scripted, from
+   --zoom-x/--zoom-y written by handleZoomMove in ProductDetail.jsx. That keeps
+   the image tracking the cursor rather than blowing up from the centre. */
+.hint-pointer { display: none; }
+
+@media (hover: hover) and (pointer: fine) {
+  .hint-touch { display: none; }
+  .hint-pointer { display: block; }
+
+  .product-media-zoomable img {
+    transform-origin: var(--zoom-x, 50%) var(--zoom-y, 50%);
+    /* .product-media img sets 0.4s for the card's slow drift on hover. At that
+       speed the zoom would lag a moving cursor badly, so this is deliberately
+       quick: long enough to feel like a lens settling, short enough to keep up. */
+    transition: transform 0.18s ease-out;
+    will-change: transform;
+  }
+  .product-media-zoomable:hover img { transform: scale(2.2); }
+
+  /* Out of the way once magnified — it sits exactly where someone inspecting
+     the bottom of a label would be looking. */
+  .product-media-zoomable:hover .product-media-zoom-hint { opacity: 0; }
+  .product-media-zoom-hint { transition: opacity 0.18s ease; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .product-media-zoomable img { transition: none; }
+}
+
 .lightbox-overlay {
   position: fixed;
   inset: 0;
