@@ -3046,6 +3046,75 @@ input:focus-visible + .filter-radio { outline: 2px solid var(--gold-2); outline-
 .stat-tile.alert::before { background: #d9534f; animation: none; }
 .stat-tile.alert b { color: #a52f1e; }
 
+/* ---------- Admin: Today ----------
+   A worklist, not a report. Rows are uniform on purpose so the eye runs down
+   them; the only things allowed to stand out are the left stripe (which queue)
+   and the "waiting too long" marker. */
+.today-lede { margin: -10px 0 22px; }
+
+.today-group { margin-bottom: 26px; }
+.today-group-head {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px; margin-bottom: 10px; flex-wrap: wrap;
+}
+.today-group-head h2 {
+  font-size: 1.02rem; margin: 0; display: flex; align-items: center; gap: 9px;
+}
+.today-count {
+  font-size: 0.76rem; font-weight: 700; min-width: 22px; text-align: center;
+  padding: 2px 7px; border-radius: 999px;
+  background: rgba(31, 61, 43, 0.09); color: var(--forest, #1F3D2B);
+  font-variant-numeric: tabular-nums;
+}
+.today-urgent .today-count { background: rgba(166, 75, 46, 0.13); color: #A64B2E; }
+.today-warn .today-count { background: rgba(176, 116, 30, 0.15); color: #8A5A12; }
+
+.today-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 14px;
+  background: var(--paper);
+  border: 1px solid rgba(31, 61, 43, 0.08);
+  border-left: 3px solid rgba(31, 61, 43, 0.18);
+  border-radius: var(--radius-sm, 8px);
+  padding: 11px 14px; margin-bottom: 7px;
+  text-decoration: none; color: inherit;
+  transition: border-color 0.15s ease, transform 0.15s ease;
+}
+.today-row:hover { border-left-color: var(--gold, #C79A3A); transform: translateX(2px); }
+.today-urgent .today-row { border-left-color: #A64B2E; }
+.today-warn .today-row { border-left-color: #B0741E; }
+
+.today-row-main { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.today-row-main b { font-size: 0.93rem; overflow-wrap: anywhere; }
+.today-row-main .muted { font-size: 0.81rem; }
+.today-meta {
+  flex: none; font-size: 0.78rem; color: var(--muted-text, #6B7A70);
+  font-variant-numeric: tabular-nums; white-space: nowrap;
+}
+/* Something nobody has dealt with for a day. Said with weight rather than
+   colour alone, so it still reads for anyone who can't distinguish the two. */
+.today-row.stale .today-meta { color: #A64B2E; font-weight: 700; }
+
+.today-more {
+  display: inline-block; margin-top: 3px; padding: 6px 2px;
+  font-size: 0.83rem; font-weight: 600; color: var(--gold-deep, #8A6B1E);
+  text-decoration: none;
+}
+.today-more:hover { text-decoration: underline; }
+
+.today-clear { text-align: center; padding: 52px 20px; }
+.today-clear-mark {
+  width: 54px; height: 54px; margin: 0 auto 14px; border-radius: 50%;
+  display: grid; place-items: center; font-size: 1.6rem;
+  background: rgba(78, 138, 51, 0.12); color: #4E8A33;
+}
+.today-clear h2 { margin: 0 0 6px; font-size: 1.2rem; }
+.today-clear p { margin: 0 auto; max-width: 42ch; }
+
+@media (prefers-reduced-motion: reduce) {
+  .today-row { transition: none; }
+  .today-row:hover { transform: none; }
+}
+
 .admin-card {
   position: relative;
   background: var(--paper);

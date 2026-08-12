@@ -184,6 +184,141 @@ router.get('/stats', async (req, res, next) => {
   }
 });
 
+/**
+ * GET /api/admin/today — everything currently waiting on a person.
+ *
+ * Deliberately not a smaller /stats. The dashboard answers "how is the shop
+ * doing" — trends, best sellers, recent everything — and you read it when you
+ * want to know something. This answers "what do I have to do right now", and
+ * it should be the first screen open in the morning and empty by evening.
+ *
+ * So the rule for anything here: it must be actionable and it must be able to
+ * reach zero. Revenue is neither, and is not included. Counts that only ever
+ * grow belong on the dashboard.
+ */
+router.get('/today', async (req, res, next) => {
+  try {
+    const [
+      orders, products, questions, enquiries, chats,
+      sellerApps, payoutRequests, sellerMessages, stockNotify, users,
+    ] = await Promise.all([
+      db.list('orders'),
+      db.list('products'),
+      db.list('product-questions'),
+      db.list('bulk-enquiries'),
+      db.list('chat-messages'),
+      db.list('seller-applications'),
+      db.list('seller-payout-requests'),
+      db.list('seller-messages'),
+      db.list('stock-notify'),
+      db.list('users'),
+    ]);
+
+    const productById = Object.fromEntries(products.map((p) => [p.id, p]));
+    const userNameById = Object.fromEntries(users.map((u) => [u.id, u.name || u.phone || 'Someone']));
+    const slim = (o) => ({
+      id: o.id,
+      orderNumber: o.orderNumber,
+      total: o.total,
+      itemCount: (o.items || []).reduce((n, i) => n + (i.quantity || 0), 0),
+      customer: o.address?.name || o.guestName || userNameById[o.userId] || 'Guest',
+      city: o.address?.city || '',
+      paymentMethod: o.paymentMethod,
+      createdAt: o.createdAt,
+    });
+
+    // Oldest first everywhere below: the thing someone has been waiting
+    // longest for is the thing that should be done next, which is the reverse
+    // of the newest-first ordering every listing screen uses.
+    const byOldest = (a, b) => String(a.createdAt).localeCompare(String(b.createdAt));
+
+    // On a busy day a queue can run to hundreds, and a screen that renders all
+    // of them is the wall of information this page exists to replace. Each
+    // list is trimmed to the oldest few, but the total is always reported
+    // alongside so the page can say how many are behind it — a truncation
+    // nobody is told about reads as "that's all of them", which is worse than
+    // showing everything.
+    const LIST_CAP = 8;
+    const capped = (rows) => ({ list: rows.slice(0, LIST_CAP), total: rows.length });
+
+    const toConfirm = capped(orders.filter((o) => o.status === 'placed').sort(byOldest).map(slim));
+    const toShip = capped(orders.filter((o) => o.status === 'confirmed').sort(byOldest).map(slim));
+    const inTransit = orders.filter((o) => o.status === 'shipped').length;
+
+    // Same "≤ 10 units" line the dashboard's low-stock card draws, kept
+    // deliberately in step with it — two different definitions of "low" across
+    // two admin screens is how you end up trusting neither.
+    const lowStock = [];
+    for (const p of products) {
+      for (const s of p.sizes || []) {
+        if (s.stock <= 10) lowStock.push({ productId: p.id, name: p.name, size: s.label, stock: s.stock });
+      }
+    }
+    lowStock.sort((a, b) => a.stock - b.stock);
+
+    // Someone asked to be told when this came back. If it has, that promise is
+    // now owed — and nothing else in the admin surfaces it.
+    const waiting = {};
+    for (const w of stockNotify) {
+      const key = `${w.productId}|${w.size}`;
+      (waiting[key] ||= { productId: w.productId, size: w.size, people: 0 }).people += 1;
+    }
+    const waitingForStock = capped(
+      Object.values(waiting)
+        .map((w) => {
+          const product = productById[w.productId];
+          const size = product?.sizes?.find((s) => s.label === w.size);
+          return { ...w, name: product?.name || 'Unknown product', stock: size?.stock ?? 0 };
+        })
+        .filter((w) => w.stock > 0)
+        .sort((a, b) => b.people - a.people)
+    );
+
+    res.json({
+      success: true,
+      toConfirm,
+      toShip,
+      inTransit,
+      lowStock: capped(lowStock),
+      waitingForStock,
+      unansweredQuestions: capped(
+        questions
+          .filter((q) => !q.answeredAt)
+          .sort(byOldest)
+          .map((q) => ({
+            id: q.id,
+            text: q.text,
+            productId: q.productId,
+            productName: productById[q.productId]?.name || 'Unknown product',
+            createdAt: q.createdAt,
+          }))
+      ),
+      newEnquiries: capped(
+        enquiries
+          .filter((e) => e.status === 'new')
+          .sort(byOldest)
+          .map((e) => ({ id: e.id, name: e.name, quantity: e.quantity, unit: e.unit, productCategory: e.productCategory }))
+      ),
+      sellerApplications: capped(
+        sellerApps
+          .filter((a) => a.status === 'pending')
+          .sort(byOldest)
+          .map((a) => ({ id: a.id, businessName: a.businessName, whatTheySell: a.whatTheySell }))
+      ),
+      payoutRequests: capped(
+        payoutRequests
+          .filter((r) => r.status === 'pending')
+          .sort(byOldest)
+          .map((r) => ({ id: r.id, businessName: r.businessName, amount: r.amount }))
+      ),
+      unreadChats: chats.filter((m) => m.from === 'user' && !m.readByAdmin).length,
+      unreadSellerMessages: sellerMessages.filter((m) => m.from === 'seller' && !m.readByAdmin).length,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
 /* -------------------------------- Uploads --------------------------------- */
 
 // POST /api/admin/upload-image — multipart 'file' → { url } for use as a

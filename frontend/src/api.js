@@ -268,6 +268,7 @@ export const api = {
       request(`/admin/pressings/${id}/pressed`, { method: 'POST', body: { batchNumber }, token }),
 
     stats: (token) => request('/admin/stats', { token }),
+    today: (token) => request('/admin/today', { token }),
 
     uploadImage: (token, formData) => request('/admin/upload-image', { method: 'POST', formData, token }),
 

@@ -93,6 +93,7 @@ const AdminPageBanners = lazy(() => import('./pages/admin/AdminPageBanners'));
 const AdminSaleBanner = lazy(() => import('./pages/admin/AdminSaleBanner'));
 const AdminPaymentMethods = lazy(() => import('./pages/admin/AdminPaymentMethods'));
 const AdminShipping = lazy(() => import('./pages/admin/AdminShipping'));
+const AdminToday = lazy(() => import('./pages/admin/Today'));
 const AdminPressings = lazy(() => import('./pages/admin/AdminPressings'));
 const AdminShare = lazy(() => import('./pages/admin/AdminShare'));
 const AdminInvoice = lazy(() => import('./pages/admin/AdminInvoice'));
@@ -264,6 +265,7 @@ export default function App() {
         <Route path="sale-banner" element={<AdminSaleBanner />} />
         <Route path="payment-methods" element={<AdminPaymentMethods />} />
         <Route path="shipping" element={<AdminShipping />} />
+        <Route path="today" element={<AdminToday />} />
         <Route path="pressings" element={<AdminPressings />} />
         <Route path="share" element={<AdminShare />} />
         <Route path="invoice" element={<AdminInvoice />} />

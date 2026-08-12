@@ -7,6 +7,7 @@ import RouteFallback from '../../components/RouteFallback';
 import { IconMenu } from '../../components/Icons';
 
 const links = [
+  { to: '/admin/today', label: 'Today' },
   { to: '/admin', label: 'Dashboard', end: true },
   { to: '/admin/products', label: 'Products' },
   { to: '/admin/categories', label: 'Categories' },
