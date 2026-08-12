@@ -4,6 +4,7 @@ const { notifyUser } = require('./notify');
 const { findValidCoupon, computeDiscount } = require('./coupons');
 const { sendMail } = require('./mailer');
 const { sendWhatsApp } = require('./whatsapp');
+const { sendSms } = require('./sms');
 const { getPointsBalance, redeemPointsForOrder, getTierInfo, hasEarlyAccessPerk, REDEEM_VALUE_INR_PER_POINT } = require('./loyalty');
 const { getShippingSettings } = require('./shippingSettings');
 const { findValidGiftCard, redeemGiftCardForOrder } = require('./giftCards');
@@ -39,6 +40,41 @@ function formatIST(dateStringOrDate) {
   });
 }
 
+/**
+ * Tells whoever runs the shop that something needs them — by email, and on
+ * their phone.
+ *
+ * The phone leg goes over WhatsApp first (free, threaded, and the number is
+ * already paired), but that runs on an unofficial connection which drops:
+ * it needs re-pairing after a logout, a server restart can leave it closed,
+ * and when it is closed sendWhatsAppMessage returns {sent:false} rather than
+ * throwing. Left alone that is a silent failure — the one case where silence
+ * is worst is a first order arriving and nobody being told. So when WhatsApp
+ * reports it didn't send, this falls through to SMS, which costs a little and
+ * does not depend on a session staying alive.
+ *
+ * Deliberately not awaited by callers: a customer's checkout must never wait
+ * on, or fail because of, a notification to the shop.
+ */
+async function alertAdmin({ subject, message }) {
+  if (ADMIN_EMAIL) {
+    sendMail({ to: ADMIN_EMAIL, subject, text: message }).catch(() => {});
+  }
+  const phone = process.env.ADMIN_PHONE;
+  if (!phone) return;
+
+  try {
+    const viaWhatsApp = await sendWhatsApp(phone, message);
+    if (viaWhatsApp?.sent) return;
+    console.warn(`[admin-alert] WhatsApp did not send (${viaWhatsApp?.reason || viaWhatsApp?.error || 'unknown'}) — falling back to SMS.`);
+    // SMS has no formatting, so strip the asterisks WhatsApp renders as bold
+    // rather than sending them as literal characters.
+    await sendSms(phone, message.replace(/\*/g, ''));
+  } catch (err) {
+    console.error('[admin-alert] could not reach the admin phone:', err.message);
+  }
+}
+
 function notifyAdminOfOrder(order, user) {
   const itemLines = order.items.map((i) => `${i.quantity}× ${i.name} (${i.size}) — ₹${i.price}`).join('\n');
   const paymentLine = paymentLineFor(order);
@@ -47,34 +83,26 @@ function notifyAdminOfOrder(order, user) {
     `${order.address.line1}, ${order.address.city}, ${order.address.state} - ${order.address.pincode}` +
     `${order.address.country && order.address.country !== 'IN' ? ` (${order.address.country})` : ''}`;
 
-  if (ADMIN_EMAIL) {
-    sendMail({
-      to: ADMIN_EMAIL,
-      subject: `New order ${order.orderNumber} — ₹${order.total}`,
-      text:
-        `Customer: ${user?.name || 'Unknown'} (${user?.phone || '—'})\n` +
-        `Payment: ${paymentLine}\n` +
-        `Placed: ${placedAt}\n\n` +
-        `Items:\n${itemLines}\n\n` +
-        `Total: ₹${order.total}\n\n` +
-        `Delivery address:\n${addressLine}\n` +
-        `Phone: ${order.address.phone}`,
-    }).catch(() => {});
-  }
+  // Falls back to the delivery address before giving up on a name. A guest
+  // who never filled in a profile still wrote down who to deliver to, and
+  // "Unknown (—)" in the alert would send you to the admin panel to find out
+  // something the message already had.
+  const who = user?.name || order.address.name || 'Unknown';
+  const contact = user?.phone || order.address.phone || '—';
 
-  // Admin's own WhatsApp (see utils/whatsappBaileys.js) — same number used to
-  // log into /admin, kept separate from the customer-facing order updates.
-  if (process.env.ADMIN_PHONE) {
-    sendWhatsApp(
-      process.env.ADMIN_PHONE,
+  // Goes to the admin's own number and inbox — the same phone used to log
+  // into /admin, kept separate from the customer-facing order updates.
+  alertAdmin({
+    subject: `New order ${order.orderNumber} — ₹${order.total}`,
+    message:
       `*New order ${order.orderNumber}* — ₹${order.total}\n` +
-        `${paymentLine}\n` +
-        `Placed: ${placedAt}\n\n` +
-        `${itemLines}\n\n` +
-        `${user?.name || 'Unknown'} (${user?.phone || '—'})\n` +
-        `${addressLine}`
-    ).catch(() => {});
-  }
+      `${paymentLine}\n` +
+      `Placed: ${placedAt}\n\n` +
+      `${itemLines}\n\n` +
+      `${who} (${contact})\n` +
+      `${addressLine}\n` +
+      `Phone: ${order.address.phone}`,
+  });
 }
 
 // A COD order the customer later chose to prepay online (see
@@ -88,12 +116,7 @@ function notifyAdminOfPaymentSwitch(order, user) {
     `Total: ₹${order.total}\n` +
     `${user?.name || 'Unknown'} (${user?.phone || '—'})`;
 
-  if (ADMIN_EMAIL) {
-    sendMail({ to: ADMIN_EMAIL, subject: `Order ${order.orderNumber} — switched to online payment`, text: message }).catch(() => {});
-  }
-  if (process.env.ADMIN_PHONE) {
-    sendWhatsApp(process.env.ADMIN_PHONE, message).catch(() => {});
-  }
+  alertAdmin({ subject: `Order ${order.orderNumber} — switched to online payment`, message });
 }
 
 // A customer asked to return empty bottle(s) from a delivered order — tells
@@ -104,12 +127,7 @@ function notifyAdminOfBottleReturn(order, user, quantity) {
     `*Bottle return requested — order ${order.orderNumber}*\n` +
     `${quantity} bottle(s) from ${user?.name || 'Unknown'} (${user?.phone || '—'})\n` +
     `Review in Admin → Bottle Returns.`;
-  if (ADMIN_EMAIL) {
-    sendMail({ to: ADMIN_EMAIL, subject: `Bottle return requested — order ${order.orderNumber}`, text: message }).catch(() => {});
-  }
-  if (process.env.ADMIN_PHONE) {
-    sendWhatsApp(process.env.ADMIN_PHONE, message).catch(() => {});
-  }
+  alertAdmin({ subject: `Bottle return requested — order ${order.orderNumber}`, message });
 }
 
 const DOMESTIC_COUNTRY = 'IN';
