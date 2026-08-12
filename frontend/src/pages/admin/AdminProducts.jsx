@@ -408,19 +408,22 @@ export default function AdminProducts() {
           ))}
 
           <label style={{ fontWeight: 600, fontSize: '0.85rem' }}>Sizes, rates & stock</label>
-          <table className="admin-table sizes-editor">
+          {/* Stacks on a phone too — this is where stock actually gets
+              changed, and six input columns at 560px means typing into a box
+              you can only half see. */}
+          <table className="admin-table sizes-editor admin-table-stack">
             <thead>
               <tr><th>Size label</th><th>Price ₹</th><th>MRP ₹</th><th>Stock</th><th>Wholesale ₹ (optional)</th><th /></tr>
             </thead>
             <tbody>
               {form.sizes.map((s, i) => (
                 <tr key={i}>
-                  <td><input value={s.label} onChange={(e) => setSize(i, 'label', e.target.value)} required /></td>
-                  <td><input type="number" min="0" value={s.price} onChange={(e) => setSize(i, 'price', e.target.value)} required /></td>
-                  <td><input type="number" min="0" value={s.mrp} onChange={(e) => setSize(i, 'mrp', e.target.value)} /></td>
-                  <td><input type="number" min="0" value={s.stock} onChange={(e) => setSize(i, 'stock', e.target.value)} /></td>
-                  <td><input type="number" min="0" value={s.wholesalePrice || ''} onChange={(e) => setSize(i, 'wholesalePrice', e.target.value)} placeholder="Same as price" /></td>
-                  <td>
+                  <td data-label="Size label"><input value={s.label} onChange={(e) => setSize(i, 'label', e.target.value)} required /></td>
+                  <td data-label="Price ₹"><input type="number" min="0" value={s.price} onChange={(e) => setSize(i, 'price', e.target.value)} required /></td>
+                  <td data-label="MRP ₹"><input type="number" min="0" value={s.mrp} onChange={(e) => setSize(i, 'mrp', e.target.value)} /></td>
+                  <td data-label="Stock"><input type="number" min="0" value={s.stock} onChange={(e) => setSize(i, 'stock', e.target.value)} /></td>
+                  <td data-label="Wholesale ₹ (optional)"><input type="number" min="0" value={s.wholesalePrice || ''} onChange={(e) => setSize(i, 'wholesalePrice', e.target.value)} placeholder="Same as price" /></td>
+                  <td className="cell-action">
                     {form.sizes.length > 1 && (
                       <button type="button" className="link-btn danger" onClick={() => setForm((f) => ({ ...f, sizes: f.sizes.filter((_, idx) => idx !== i) }))}>
                         remove
@@ -452,7 +455,11 @@ export default function AdminProducts() {
             like $4.99). Checkout always charges the ₹ price regardless.
           </p>
           <div style={{ overflowX: 'auto' }}>
-            <table className="admin-table sizes-editor">
+            {/* A matrix — a column per size — so on a phone it becomes one
+                card per country, each size a labelled field. The labels are
+                the sizes themselves, which is why they come from the row
+                rather than a fixed heading. */}
+            <table className="admin-table sizes-editor admin-table-stack">
               <thead>
                 <tr>
                   <th>Country</th>
@@ -464,7 +471,7 @@ export default function AdminProducts() {
               <tbody>
                 {foreignCountries.map((c) => (
                   <tr key={c.code}>
-                    <td>{c.label} ({c.currency})</td>
+                    <td className="cell-rowhead">{c.label} ({c.currency})</td>
                     {form.sizes.map((s, i) => {
                       const label = s.label || `Size ${i + 1}`;
                       const value = form.countryPrices[c.code]?.[label] ?? '';
@@ -472,7 +479,7 @@ export default function AdminProducts() {
                         ? `≈ ${c.symbol}${(Number(s.price) * rates[c.currency]).toFixed(2)}`
                         : c.symbol;
                       return (
-                        <td key={i}>
+                        <td key={i} data-label={label}>
                           <input
                             type="number"
                             min="0"
@@ -590,27 +597,27 @@ export default function AdminProducts() {
       )}
 
       <div className="admin-card">
-        <table className="admin-table">
+        <table className="admin-table admin-table-stack">
           <thead>
             <tr><th /><th>Product</th><th>Category</th><th>Sizes · price · stock</th><th>Actions</th></tr>
           </thead>
           <tbody>
             {products.map((p) => (
               <tr key={p.id}>
-                <td><img className="thumb" src={getProductImage(p.image)} alt="" /></td>
-                <td>
+                <td className="cell-thumb"><img className="thumb" src={getProductImage(p.image)} alt="" /></td>
+                <td data-label="Product">
                   <b>{p.name}</b>
                   {p.sellerId && <span className="pill" style={{ marginLeft: 6, fontSize: '0.7rem' }}>Seller listing</span>}
                 </td>
-                <td>{p.category}</td>
-                <td>
+                <td data-label="Category">{p.category}</td>
+                <td data-label="Sizes · price · stock">
                   {p.sizes.map((s) => (
                     <span className="pill" key={s.label}>
                       {s.label} · ₹{s.price}{s.wholesalePrice > 0 ? ` (₹${s.wholesalePrice} wholesale)` : ''} · {s.stock} left
                     </span>
                   ))}
                 </td>
-                <td>
+                <td className="cell-action">
                   <button className="link-btn" onClick={() => startEdit(p)}>edit</button>{' '}
                   <button className="link-btn danger" onClick={() => del(p)}>delete</button>
                 </td>

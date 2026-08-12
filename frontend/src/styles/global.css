@@ -3680,6 +3680,44 @@ input:focus-visible + .filter-radio { outline: 2px solid var(--gold-2); outline-
   /* The reason the page is open. Full width, thumb-sized, last in the card. */
   .admin-table-stack td.cell-action { padding-top: 10px; }
   .admin-table-stack td.cell-action .select { width: 100%; min-height: 46px; font-size: 0.95rem; }
+  /* Link-styled actions (edit / delete / remove) need a real hit area once
+     they're the card's footer rather than a cell in a dense row. */
+  .admin-table-stack td.cell-action .link-btn {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 0 14px 0 0;
+    font-size: 0.92rem;
+  }
+  .admin-table-stack td.cell-action:empty { display: none; }
+
+  /* Product photo sits in the card's corner, like the order checkbox — a
+     recognition aid, not a labelled field of its own. */
+  .admin-table-stack td.cell-thumb {
+    position: absolute;
+    top: 12px; right: 12px;
+    padding: 0;
+  }
+  .admin-table-stack td.cell-thumb .thumb { width: 52px; height: 52px; }
+  /* Keeps the product name clear of the photo in the corner. Adjacent sibling,
+     not :first-of-type — the first td of its type is the thumb cell itself,
+     so a :first-of-type rule matches nothing and the name runs underneath. */
+  .admin-table-stack td.cell-thumb + td[data-label] { padding-right: 66px; }
+
+  /* Full-width inputs inside a stacked row — the size editor is a column of
+     labelled fields here, not a spreadsheet. */
+  .admin-table-stack td[data-label] input { width: 100%; min-height: 44px; }
+  .sizes-editor.admin-table-stack { max-width: none; }
+
+  /* A matrix's row heading (the country) becomes the card's title once the
+     column headings are gone. */
+  .admin-table-stack td.cell-rowhead {
+    font-weight: 600;
+    color: var(--forest-deep);
+    padding: 0 0 8px;
+    margin-bottom: 6px;
+    border-bottom: 1px solid rgba(31, 61, 43, 0.1);
+  }
 
   /* Anything you tap gets a thumb-sized target. 44px is the long-standing
      floor for a finger; the 34px buttons and 13px checkboxes measured here
