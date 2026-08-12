@@ -3596,6 +3596,21 @@ input:focus-visible + .filter-radio { outline: 2px solid var(--gold-2); outline-
   .admin-brand { border-bottom: 1px solid rgba(250,246,236,0.12); margin-bottom: 0; padding: 14px 16px; }
   .admin-menu-toggle { display: flex; align-items: center; justify-content: center; }
 
+  /* The brand bar carries the only way to reach the other twenty-eight
+     admin pages, and these pages get long — the orders list runs to several
+     thousand pixels. Static, that means scrolling all the way back to the top
+     to go anywhere. Stuck to the top it is always one tap away.
+
+     Only the bar is sticky, not the whole sidebar: the open nav drawer needs
+     to scroll with the page, or a 29-link list has nowhere to go on a short
+     screen. */
+  .admin-sidebar { position: sticky; top: 0; z-index: 40; }
+  .admin-sidebar nav {
+    max-height: 70vh;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
   /* Nav collapses into a toggleable drawer below the brand bar, instead of
      squeezing 8 links + "Enquiries & Leads" into a cramped pill row. */
   .admin-sidebar nav {
@@ -3614,6 +3629,81 @@ input:focus-visible + .filter-radio { outline: 2px solid var(--gold-2); outline-
   .chat-list { max-height: 200px; border-right: none; border-bottom: 1px solid rgba(31,61,43,0.1); }
   .hero-video { min-height: 60vh; }
   .product-detail-grid, .two-col-split { grid-template-columns: 1fr; gap: 28px; }
+}
+
+/* ---------- Admin on a phone ----------
+   Two problems measured at 375px: the orders table is 560px wide, so the
+   status control — the only thing you open that page to change — sat off the
+   right edge behind a sideways swipe; and a hundred-odd controls were under
+   40px tall, including 13px checkboxes.
+
+   Scoped to (pointer: coarse) as well as width, so a narrow desktop window
+   keeps the denser table it can comfortably use. */
+@media (max-width: 720px) and (pointer: coarse) {
+  /* A table stops being a table. Each row becomes a card, each cell a
+     labelled line — the label coming from the cell's own data-label, since
+     column headings are gone. */
+  .admin-table-stack { min-width: 0; display: block; }
+  .admin-table-stack thead { display: none; }
+  .admin-table-stack tbody, .admin-table-stack tr, .admin-table-stack td { display: block; width: auto; }
+
+  .admin-table-stack tr {
+    position: relative;
+    border: 1px solid rgba(31, 61, 43, 0.12);
+    border-radius: var(--radius-md);
+    padding: 12px 14px;
+    margin-bottom: 12px;
+    background: var(--paper);
+  }
+  .admin-table-stack td { border: 0; padding: 5px 0; }
+  .admin-table-stack td[data-label]::before {
+    content: attr(data-label);
+    display: block;
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--forest-light);
+    margin-bottom: 2px;
+  }
+  /* The select-row checkbox belongs beside the order number, not on a line of
+     its own labelled "Select". */
+  .admin-table-stack td.cell-select {
+    position: absolute;
+    top: 12px; right: 12px;
+    padding: 0;
+  }
+  /* Sized up from the browser default 13px. Still short of the 44px ideal —
+     a checkbox that large looks broken — but this is the secondary flow
+     (selecting several orders to update at once); the primary control on the
+     card is the 46px status select below. */
+  .admin-table-stack td.cell-select input { width: 36px; height: 36px; }
+  /* The reason the page is open. Full width, thumb-sized, last in the card. */
+  .admin-table-stack td.cell-action { padding-top: 10px; }
+  .admin-table-stack td.cell-action .select { width: 100%; min-height: 46px; font-size: 0.95rem; }
+
+  /* Anything you tap gets a thumb-sized target. 44px is the long-standing
+     floor for a finger; the 34px buttons and 13px checkboxes measured here
+     were well under it. */
+  .admin-content .btn,
+  .admin-content select,
+  .admin-content input[type="text"],
+  .admin-content input[type="search"],
+  .admin-content input[type="number"],
+  .admin-content input[type="date"],
+  .admin-content input[type="tel"],
+  .admin-content input[type="email"] {
+    min-height: 44px;
+  }
+  .admin-content input[type="checkbox"],
+  .admin-content input[type="radio"] {
+    width: 22px;
+    height: 22px;
+  }
+  .admin-menu-toggle { min-width: 44px; min-height: 44px; }
+  .admin-sidebar nav a { min-height: 46px; display: flex; align-items: center; }
+
+  .admin-content { padding: 20px 14px 60px; }
+  .admin-head h1 { font-size: 1.35rem; }
 }
 
 /* ---------- Mobile polish (phones) ---------- */

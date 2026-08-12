@@ -164,7 +164,14 @@ export default function AdminOrders() {
           <p className="muted">{filtering ? 'No orders match those filters.' : 'No orders yet.'}</p>
         ) : (
           <>
-            <table className="admin-table">
+            {/* admin-table-stack: on a phone this stops being a table and
+                becomes one card per order. Packing orders is the job most
+                likely to be done standing up with a phone in one hand, and a
+                six-column table puts the status control off the right edge —
+                you had to swipe sideways to reach the only thing you came to
+                change. The data-label on each cell is what the stacked layout
+                prints in place of the column heading. */}
+            <table className="admin-table admin-table-stack">
               <thead>
                 <tr>
                   <th style={{ width: 32 }}>
@@ -177,7 +184,7 @@ export default function AdminOrders() {
               <tbody>
                 {orders.map((o) => (
                   <tr key={o.id}>
-                    <td>
+                    <td className="cell-select">
                       <input
                         type="checkbox"
                         checked={selected.has(o.id)}
@@ -185,17 +192,17 @@ export default function AdminOrders() {
                         aria-label={`Select order ${o.orderNumber}`}
                       />
                     </td>
-                    <td>
+                    <td data-label="Order">
                       <b>{o.orderNumber}</b>
                       <div className="muted" style={{ fontSize: '0.75rem' }}>
                         {new Date(o.createdAt).toLocaleString('en-IN')}
                       </div>
                     </td>
-                    <td>
+                    <td data-label="Customer">
                       {o.customer?.name || o.address?.name || '—'}
                       <div className="muted" style={{ fontSize: '0.75rem' }}>{o.customer?.phone || o.address?.phone}</div>
                     </td>
-                    <td>
+                    <td data-label="Items">
                       {o.items.map((i) => (
                         <div key={`${i.productId}-${i.size}`} style={{ fontSize: '0.82rem' }}>
                           {i.quantity}× {i.name} ({i.size})
@@ -217,7 +224,7 @@ export default function AdminOrders() {
                         </div>
                       )}
                     </td>
-                    <td>
+                    <td data-label="Total">
                       ₹{o.total}
                       {o.paymentMethod === 'cod_advance' && (
                         <div className="muted" style={{ fontSize: '0.72rem' }}>
@@ -228,7 +235,7 @@ export default function AdminOrders() {
                         <div className="muted" style={{ fontSize: '0.72rem' }}>Paid online</div>
                       )}
                     </td>
-                    <td>
+                    <td data-label="Status — changing this notifies the customer" className="cell-action">
                       <select className="select" value={o.status} onChange={(e) => setStatusFor(o, e.target.value)}>
                         {STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
                       </select>
