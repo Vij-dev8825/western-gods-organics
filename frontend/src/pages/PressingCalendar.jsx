@@ -19,9 +19,14 @@ function relativeDays(iso) {
   return `${Math.abs(days)} days ago`;
 }
 
-function Run({ p, past }) {
+/** Videos stored in our own database have a still frame derivable from their
+ *  URL; Cloudinary-hosted ones don't, and appending a path to those would 404.
+ *  Without a poster the player is a black rectangle until the clip buffers. */
+const posterFor = (url) => (url.startsWith('/api/media/') ? `${url}/poster` : undefined);
+
+function Run({ p, past, highlighted }) {
   return (
-    <li className={`pressing-run ${past ? 'is-past' : ''}`}>
+    <li className={`pressing-run ${past ? 'is-past' : ''} ${highlighted ? 'is-highlighted' : ''}`} id={p.id}>
       <img src={getProductImage(p.productImage)} alt="" className="pressing-run-img" />
       <div className="pressing-run-body">
         <div className="pressing-run-when">
@@ -32,6 +37,14 @@ function Run({ p, past }) {
           {p.productName} <span className="muted">· {p.size}</span>
         </Link>
         {p.note && <p className="pressing-run-note">{p.note}</p>}
+        {p.videoUrl && (
+          <figure className="pressing-run-video">
+            {/* preload="none": a page of runs shouldn't pull down every clip
+                on it before anyone asks to watch one. */}
+            <video src={p.videoUrl} poster={posterFor(p.videoUrl)} controls playsInline preload="none" />
+            <figcaption>Filmed at the mill on pressing day</figcaption>
+          </figure>
+        )}
         {past && p.batchNumber && (
           <Link to={`/batch/${p.batchNumber}`} className="pressing-run-batch">
             Batch {p.batchNumber} →
@@ -65,6 +78,23 @@ export default function PressingCalendar() {
   useEffect(() => {
     api.getPressingCalendar().then(setData).catch(() => setData(null));
   }, []);
+
+  // The "watch your run being pressed" notification links straight to one run's
+  // anchor. The browser resolves a hash before this page has fetched anything,
+  // finds nothing, and leaves the reader at the top of a list to hunt through —
+  // so both the scroll and the marker have to wait for the runs to be on the
+  // page. CSS :target can't do the marking: arriving from inside the app is a
+  // route change, not a document navigation, so nothing is ever the target.
+  const [highlighted, setHighlighted] = useState('');
+  useEffect(() => {
+    if (!data) return;
+    const id = window.location.hash.slice(1);
+    if (!id) return;
+    const el = document.getElementById(id);
+    if (!el) return;
+    setHighlighted(id);
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }, [data]);
 
   if (data === undefined) {
     return (
@@ -100,7 +130,7 @@ export default function PressingCalendar() {
         </p>
       ) : (
         <ul className="pressing-list">
-          {upcoming.map((p) => <Run key={p.id} p={p} />)}
+          {upcoming.map((p) => <Run key={p.id} p={p} highlighted={p.id === highlighted} />)}
         </ul>
       )}
 
@@ -108,7 +138,7 @@ export default function PressingCalendar() {
         <>
           <h2 className="pressing-heading">Recently pressed</h2>
           <ul className="pressing-list">
-            {recent.map((p) => <Run key={p.id} p={p} past />)}
+            {recent.map((p) => <Run key={p.id} p={p} past highlighted={p.id === highlighted} />)}
           </ul>
         </>
       )}

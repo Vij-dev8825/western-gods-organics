@@ -289,6 +289,10 @@ export const api = {
     updatePressing: (token, id, body) => request(`/admin/pressings/${id}`, { method: 'PATCH', body, token }),
     markPressingPressed: (token, id, batchNumber) =>
       request(`/admin/pressings/${id}/pressed`, { method: 'POST', body: { batchNumber }, token }),
+    uploadPressingVideo: (token, id, formData) =>
+      request(`/admin/pressings/${id}/video`, { method: 'POST', formData, token }),
+    deletePressingVideo: (token, id) =>
+      request(`/admin/pressings/${id}/video`, { method: 'DELETE', token }),
 
     stats: (token) => request('/admin/stats', { token }),
     today: (token) => request('/admin/today', { token }),

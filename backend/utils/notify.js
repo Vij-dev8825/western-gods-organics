@@ -15,8 +15,13 @@ function absoluteImageUrl(image) {
 }
 
 /** Where clicking the notification (push toast or in-app list item) should
- * land — product page takes priority over the order it may also reference. */
+ * land — product page takes priority over the order it may also reference.
+ *
+ * meta.url wins over all of it, for the notifications whose whole point is a
+ * particular place: one run on the pressing calendar, not the product page
+ * that run happens to be for. */
 function notificationUrl(meta) {
+  if (meta.url) return meta.url;
   if (meta.productId) return `/product/${meta.productId}`;
   if (meta.orderId) return '/orders';
   if (meta.cart) return '/cart';

@@ -59,8 +59,17 @@ async function compressAndStore(buffer) {
 /** keepAudio: home-page banners are silent decoration so they drop the audio
  * track (smaller file, and autoplay would be muted anyway). A seller's product
  * clip is the opposite — often someone talking through how they make it — so
- * that caller opts back in. */
-async function compressVideoAndStore(inputPath, { keepAudio = false } = {}) {
+ * that caller opts back in.
+ *
+ * bitrate/maxBytes are overridable because not every clip on this site is a
+ * hero banner. A phone video shot at the mill is watched in a notification on
+ * a village 4G connection, where a smaller file that starts instantly beats a
+ * sharper one that buffers — and where a fat base64 row risks running past
+ * MySQL's max_allowed_packet on shared hosting. */
+async function compressVideoAndStore(
+  inputPath,
+  { keepAudio = false, bitrate = VIDEO_BITRATE, maxBytes = VIDEO_MAX_OUTPUT_BYTES } = {}
+) {
   const outputPath = path.join(os.tmpdir(), `${uuid()}.mp4`);
   await new Promise((resolve, reject) => {
     const command = ffmpeg(inputPath).videoCodec('libx264');
@@ -68,7 +77,7 @@ async function compressVideoAndStore(inputPath, { keepAudio = false } = {}) {
     else command.noAudio();
     command
       .videoFilters(`scale=-2:'min(${VIDEO_MAX_HEIGHT},ih)'`)
-      .videoBitrate(VIDEO_BITRATE)
+      .videoBitrate(bitrate)
       .outputOptions(['-preset veryfast', '-movflags +faststart'])
       .output(outputPath)
       .on('end', resolve)
@@ -79,7 +88,7 @@ async function compressVideoAndStore(inputPath, { keepAudio = false } = {}) {
   const buffer = fs.readFileSync(outputPath);
   fs.unlink(outputPath, () => {});
 
-  if (buffer.length > VIDEO_MAX_OUTPUT_BYTES) {
+  if (buffer.length > maxBytes) {
     const mb = (buffer.length / (1024 * 1024)).toFixed(1);
     throw new Error(`Compressed video is still ${mb} MB — please upload a shorter clip (10-20 seconds works best).`);
   }

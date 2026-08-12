@@ -525,6 +525,10 @@ router.get('/pressings/calendar', async (req, res, next) => {
       note: p.note || '',
       batchNumber: p.batchNumber || '',
       unitsOffered: p.unitsOffered,
+      // Public on purpose. A clip of the press actually turning is the single
+      // most convincing thing on this page, and showing it only to the people
+      // who already bought would waste it on the ones needing least convincing.
+      videoUrl: p.videoUrl || '',
     });
 
     const upcoming = [];

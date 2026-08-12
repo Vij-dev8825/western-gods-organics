@@ -18,6 +18,7 @@ export default function AdminPressings() {
   const [form, setForm] = useState(BLANK);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [uploading, setUploading] = useState(null);
 
   async function load() {
     try {
@@ -65,6 +66,39 @@ export default function AdminPressings() {
     }
   }
 
+  async function handleVideo(pressing, file) {
+    if (!file) return;
+    setUploading(pressing.id);
+    try {
+      const form = new FormData();
+      form.append('file', file);
+      const res = await api.admin.uploadPressingVideo(token, pressing.id, form);
+      showToast(
+        res.notified
+          ? `Video saved — ${res.notified} customer(s) told they can watch their run.`
+          : pressing.status === 'pressed'
+            ? 'Video saved.'
+            : 'Video saved — it goes out when you mark this run pressed.'
+      );
+      load();
+    } catch (err) {
+      showToast(err.message, 'error');
+    } finally {
+      setUploading(null);
+    }
+  }
+
+  async function handleRemoveVideo(pressing) {
+    if (!window.confirm('Remove the video from this pressing?')) return;
+    try {
+      await api.admin.deletePressingVideo(token, pressing.id);
+      showToast('Video removed.');
+      load();
+    } catch (err) {
+      showToast(err.message, 'error');
+    }
+  }
+
   async function handleCancel(pressing) {
     if (pressing.reserved > 0 &&
       !window.confirm(`${pressing.reserved} bottle(s) are already reserved. Cancelling means refunding those customers by hand. Continue?`)) {
@@ -87,6 +121,12 @@ export default function AdminPressings() {
         the bottles don't exist yet, reservations are paid online — which is what funds the
         seed for the run. When the pressing is done, record its batch number and everyone
         who booked it can trace the exact batch they bought.
+      </p>
+      <p className="muted" style={{ maxWidth: 640 }}>
+        Shoot a short clip on your phone while the press is turning and add it below. Everyone
+        who reserved that run is told they can watch it, and it goes on the public pressing
+        calendar — which is the one thing on this site nobody can copy. Ten to twenty seconds
+        is plenty; longer clips are refused for being too heavy to load on a phone.
       </p>
 
       <form className="card" style={{ padding: 18, margin: '18px 0', maxWidth: 640 }} onSubmit={handleCreate}>
@@ -155,7 +195,10 @@ export default function AdminPressings() {
         <p className="muted">No pressings scheduled yet.</p>
       ) : (
         <div className="table-wrap">
-          <table className="admin-table">
+          {/* Stacked into cards on a phone. The whole point of the video column
+              is that it gets used standing next to the press, and a wide table
+              puts it off the right-hand edge of a phone with no way to reach it. */}
+          <table className="admin-table admin-table-stack">
             <thead>
               <tr>
                 <th>Product</th>
@@ -163,22 +206,54 @@ export default function AdminPressings() {
                 <th>Reserved</th>
                 <th>Status</th>
                 <th>Batch</th>
+                <th>Video</th>
                 <th />
               </tr>
             </thead>
             <tbody>
               {pressings.map((p) => (
                 <tr key={p.id}>
-                  <td>{p.productName}<br /><span className="muted">{p.size}</span></td>
-                  <td>{fmtDate(p.pressDate)}</td>
-                  <td>
+                  <td data-label="Product">{p.productName}<br /><span className="muted">{p.size}</span></td>
+                  <td data-label="Pressing date">{fmtDate(p.pressDate)}</td>
+                  <td data-label="Reserved">
                     <b>{p.reserved}</b> / {p.unitsOffered}
                     {p.status === 'open' && p.unitsRemaining === 0 && (
                       <><br /><span className="muted">fully booked</span></>
                     )}
                   </td>
-                  <td>{p.status}</td>
-                  <td>{p.batchNumber || <span className="muted">—</span>}</td>
+                  <td data-label="Status">{p.status}</td>
+                  <td data-label="Batch">{p.batchNumber || <span className="muted">—</span>}</td>
+                  <td data-label="Video" style={{ minWidth: 150 }}>
+                    {p.videoUrl ? (
+                      <>
+                        <video src={p.videoUrl} controls playsInline preload="none" style={{ width: 140, borderRadius: 6, display: 'block' }} />
+                        <button
+                          type="button"
+                          className="btn btn-outline btn-sm"
+                          style={{ marginTop: 6 }}
+                          onClick={() => handleRemoveVideo(p)}
+                        >
+                          Remove
+                        </button>
+                      </>
+                    ) : p.status === 'cancelled' ? (
+                      <span className="muted">—</span>
+                    ) : (
+                      <label className="btn btn-outline btn-sm" style={{ cursor: 'pointer', marginBottom: 0 }}>
+                        {uploading === p.id ? 'Uploading…' : 'Add video'}
+                        <input
+                          type="file"
+                          accept="video/*"
+                          hidden
+                          disabled={uploading === p.id}
+                          onChange={(e) => {
+                            handleVideo(p, e.target.files?.[0]);
+                            e.target.value = '';
+                          }}
+                        />
+                      </label>
+                    )}
+                  </td>
                   <td style={{ whiteSpace: 'nowrap' }}>
                     {p.status === 'open' && (
                       <>

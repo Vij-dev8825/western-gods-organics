@@ -3087,6 +3087,26 @@ input:focus-visible + .filter-radio { outline: 2px solid var(--gold-2); outline-
 }
 .pressing-run-tag.full { background: rgba(31, 61, 43, 0.08); color: var(--forest-light, #5c6b5e); }
 
+/* Shot on a phone at the mill, so it's usually portrait. Capped by height
+   rather than width — left to its own devices a vertical clip would run the
+   length of the screen and push every other run off the page. */
+.pressing-run-video { margin: 8px 0 0; }
+.pressing-run-video video {
+  max-height: 300px; max-width: 100%; border-radius: 10px;
+  background: #000; display: block;
+}
+.pressing-run-video figcaption {
+  margin-top: 4px; font-size: 0.76rem; color: var(--muted-text, #6B7A70);
+}
+
+/* The run a "watch it being pressed" message points at, so someone arriving
+   from a notification can see which one of these is theirs. */
+.pressing-run.is-highlighted {
+  background: rgba(212, 175, 55, 0.1);
+  box-shadow: 0 0 0 8px rgba(212, 175, 55, 0.1);
+  border-radius: 10px;
+}
+
 @media (max-width: 560px) {
   .pressing-run { flex-wrap: wrap; }
   .pressing-run-tag { align-self: flex-start; margin-left: 68px; }

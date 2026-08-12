@@ -2500,6 +2500,7 @@ router.post('/pressings/:id/pressed', async (req, res, next) => {
       return res.status(400).json({ success: false, message: 'Enter the batch number this run produced.' });
     }
 
+    const hasVideo = Boolean(pressing.videoUrl);
     const orders = await db.list('orders');
     let stamped = 0;
     for (const order of orders) {
@@ -2507,15 +2508,155 @@ router.post('/pressings/:id/pressed', async (req, res, next) => {
       const items = order.items.map((i) => (i.pressingId === pressing.id ? { ...i, batchNumber } : i));
       await db.put('orders', { ...order, items });
       stamped += 1;
-      notifyUser(order.userId, {
-        title: 'Your reserved oil has been pressed',
-        body: `Batch ${batchNumber} came off the press today. Your order ${order.orderNumber} is being bottled and will ship shortly.`,
-        url: `/orders`,
-      }).catch(() => {});
+
+      const user = order.userId ? await db.get('users', order.userId) : null;
+      if (user) {
+        notifyUser(user, {
+          title: 'Your reserved oil has been pressed',
+          message: hasVideo
+            ? `Batch ${batchNumber} came off the press today — you can watch the run you booked. Your order ${order.orderNumber} is being bottled and will ship shortly.`
+            : `Batch ${batchNumber} came off the press today. Your order ${order.orderNumber} is being bottled and will ship shortly.`,
+          meta: { orderId: order.id, ...(hasVideo ? { url: `/pressings#${pressing.id}` } : {}) },
+          // This is the message the whole reservation was waiting for — the
+          // one telling someone the thing they paid for in advance now exists.
+          // It should not sit unread in a bell icon.
+          channels: { inapp: true, email: true, whatsapp: true },
+        }).catch(() => {});
+      }
     }
 
-    await db.put('pressings', { ...pressing, status: 'pressed', batchNumber, pressedAt: new Date().toISOString() });
+    await db.put('pressings', {
+      ...pressing,
+      status: 'pressed',
+      batchNumber,
+      pressedAt: new Date().toISOString(),
+      // A video already attached went out in the message above, so the
+      // upload route must not send a second one for the same clip.
+      ...(hasVideo ? { videoNotifiedAt: new Date().toISOString() } : {}),
+    });
     res.json({ success: true, stampedOrders: stamped, batchNumber });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/* --------------------------- Pressing day videos -------------------------- */
+
+// Phones are what will actually shoot this — an iPhone writes .mov, older
+// Androids .3gp — so the ordinary banner filter (mp4/webm/ogg) would reject
+// the very files this route exists to take. ffmpeg transcodes all of them.
+const pressingVideoUpload = multer({
+  storage,
+  limits: { fileSize: 200 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    const ok = /\.(mp4|mov|m4v|webm|ogg|3gp|avi|mkv)$/i.test(file.originalname);
+    cb(ok ? null : new Error('That does not look like a video file.'), ok);
+  },
+});
+
+/** Picking a photo when you meant a clip, or a file too big to send, is an
+ *  ordinary mistake — not a server fault. Left to the global error handler
+ *  both surface as "Server error", which tells the admin nothing about what
+ *  to do differently. */
+const acceptVideo = (req, res, next) =>
+  pressingVideoUpload.single('file')(req, res, (err) => {
+    if (!err) return next();
+    const message = err.code === 'LIMIT_FILE_SIZE'
+      ? 'That file is too large to upload. Ten to twenty seconds of video is plenty.'
+      : err.message;
+    return res.status(400).json({ success: false, message });
+  });
+
+// Kept well under the 20 MB banner ceiling: this is watched on a phone, over
+// rural 4G, from a notification. A clip that starts playing immediately is
+// worth more here than a sharper one that spins.
+const PRESSING_VIDEO_BITRATE = '900k';
+const PRESSING_VIDEO_MAX_BYTES = 8 * 1024 * 1024;
+
+/**
+ * POST /api/admin/pressings/:id/video — multipart: file
+ *
+ * The clip is deliberately not part of "mark pressed". Uploading a video from
+ * the mill's phone is the slowest, most failure-prone thing an admin does here,
+ * and stamping batch numbers onto paid orders is the most important — tying
+ * them together would let a dropped connection block the part that matters.
+ *
+ * Attach it before the run is marked done and it rides along with that
+ * message; attach it after and this route sends it. Either way the people who
+ * paid for oil that didn't exist yet get to watch it being made.
+ */
+router.post('/pressings/:id/video', acceptVideo, async (req, res, next) => {
+  try {
+    if (!req.file) return res.status(400).json({ success: false, message: 'Choose a video file.' });
+    const pressing = await db.get('pressings', req.params.id);
+    if (!pressing) {
+      fs.unlink(req.file.path, () => {});
+      return res.status(404).json({ success: false, message: 'Pressing not found.' });
+    }
+
+    let url;
+    let cloudinaryPublicId = null;
+    if (cloudinary.isConfigured()) {
+      const uploaded = await cloudinary.uploadFile(req.file.path, { resourceType: 'video' });
+      url = uploaded.url;
+      cloudinaryPublicId = uploaded.publicId;
+    } else {
+      // keepAudio: the sound of the press is half of what makes this worth
+      // watching. A silent clip of a turning wheel proves much less.
+      url = await compressVideoAndStore(req.file.path, {
+        keepAudio: true,
+        bitrate: PRESSING_VIDEO_BITRATE,
+        maxBytes: PRESSING_VIDEO_MAX_BYTES,
+      });
+    }
+    fs.unlink(req.file.path, () => {});
+
+    const updated = { ...pressing, videoUrl: url, videoPublicId: cloudinaryPublicId };
+    let notified = 0;
+
+    // Only announce a run that has actually happened, and only once. Replacing
+    // a badly-shot clip is a normal thing to do; messaging every customer again
+    // because of it is not.
+    if (pressing.status === 'pressed' && !pressing.videoNotifiedAt) {
+      const orders = await db.list('orders');
+      const seen = new Set();
+      for (const order of orders) {
+        if (!(order.items || []).some((i) => i.pressingId === pressing.id)) continue;
+        if (!order.userId || seen.has(order.userId)) continue;
+        seen.add(order.userId);
+        const user = await db.get('users', order.userId);
+        if (!user) continue;
+        notified += 1;
+        notifyUser(user, {
+          title: `Watch your ${pressing.productName} being pressed`,
+          message: 'Here is the run you reserved, coming off the press at the mill.',
+          meta: { url: `/pressings#${pressing.id}` },
+          channels: { inapp: true, email: true, whatsapp: true },
+        }).catch(() => {});
+      }
+      updated.videoNotifiedAt = new Date().toISOString();
+    }
+
+    await db.put('pressings', updated);
+    res.status(201).json({ success: true, videoUrl: url, notified });
+  } catch (err) {
+    if (req.file) fs.unlink(req.file.path, () => {});
+    next(err);
+  }
+});
+
+// DELETE /api/admin/pressings/:id/video — take a bad clip back down.
+// videoNotifiedAt deliberately survives: the message has already been sent and
+// re-uploading shouldn't send it twice.
+router.delete('/pressings/:id/video', async (req, res, next) => {
+  try {
+    const pressing = await db.get('pressings', req.params.id);
+    if (!pressing) return res.status(404).json({ success: false, message: 'Pressing not found.' });
+    if (pressing.videoPublicId && cloudinary.isConfigured()) {
+      cloudinary.destroyFile(pressing.videoPublicId, 'video').catch(() => {});
+    }
+    await db.put('pressings', { ...pressing, videoUrl: '', videoPublicId: null });
+    res.json({ success: true });
   } catch (err) {
     next(err);
   }
