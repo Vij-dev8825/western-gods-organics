@@ -5,6 +5,7 @@ const { findValidCoupon, computeDiscount } = require('./coupons');
 const { sendMail } = require('./mailer');
 const { sendWhatsApp } = require('./whatsapp');
 const { sendSms } = require('./sms');
+const { sendPush } = require('./push');
 const { getPointsBalance, redeemPointsForOrder, getTierInfo, hasEarlyAccessPerk, REDEEM_VALUE_INR_PER_POINT } = require('./loyalty');
 const { getShippingSettings } = require('./shippingSettings');
 const { findValidGiftCard, redeemGiftCardForOrder } = require('./giftCards');
@@ -44,32 +45,57 @@ function formatIST(dateStringOrDate) {
  * Tells whoever runs the shop that something needs them — by email, and on
  * their phone.
  *
- * The phone leg goes over WhatsApp first (free, threaded, and the number is
- * already paired), but that runs on an unofficial connection which drops:
- * it needs re-pairing after a logout, a server restart can leave it closed,
- * and when it is closed sendWhatsAppMessage returns {sent:false} rather than
- * throwing. Left alone that is a silent failure — the one case where silence
- * is worst is a first order arriving and nobody being told. So when WhatsApp
- * reports it didn't send, this falls through to SMS, which costs a little and
- * does not depend on a session staying alive.
+ * Three ways to a phone, tried together rather than in sequence, because each
+ * fails differently and none of them is reliable enough alone:
+ *
+ *   - Push. Free, instant, arrives as a normal phone notification, and depends
+ *     on nothing but the admin having allowed notifications once. This is the
+ *     dependable one.
+ *   - WhatsApp. Also free, but runs on an unofficial connection that drops —
+ *     it needs re-pairing after a logout, and a restart can leave it closed.
+ *     When closed it returns {sent:false} rather than throwing, which read as
+ *     success to the code that used to call it.
+ *   - SMS. Only if neither of the above got through, since it costs money and
+ *     the configured provider may be unable to send at all.
+ *
+ * The one moment silence costs most is a first order arriving and nobody being
+ * told, so this reports which channels actually delivered rather than assuming.
  *
  * Deliberately not awaited by callers: a customer's checkout must never wait
  * on, or fail because of, a notification to the shop.
  */
-async function alertAdmin({ subject, message }) {
+async function alertAdmin({ subject, message, url = '/admin/today' }) {
   if (ADMIN_EMAIL) {
     sendMail({ to: ADMIN_EMAIL, subject, text: message }).catch(() => {});
   }
-  const phone = process.env.ADMIN_PHONE;
-  if (!phone) return;
 
+  const phone = process.env.ADMIN_PHONE;
+  let reachedPhone = false;
+
+  // Push goes to the admin's own devices, so it needs their user record —
+  // matched on ADMIN_PHONE, the same number they log into /admin with.
+  try {
+    const admins = (await db.list('users')).filter((u) => u.role === 'admin');
+    const admin = admins.find((u) => phone && u.phone === phone) || admins[0];
+    if (admin) {
+      const { sent } = await sendPush(admin.id, { title: subject, message, url });
+      if (sent > 0) reachedPhone = true;
+    }
+  } catch (err) {
+    console.error('[admin-alert] push failed:', err.message);
+  }
+
+  if (!phone) return;
   try {
     const viaWhatsApp = await sendWhatsApp(phone, message);
-    if (viaWhatsApp?.sent) return;
-    console.warn(`[admin-alert] WhatsApp did not send (${viaWhatsApp?.reason || viaWhatsApp?.error || 'unknown'}) — falling back to SMS.`);
-    // SMS has no formatting, so strip the asterisks WhatsApp renders as bold
-    // rather than sending them as literal characters.
-    await sendSms(phone, message.replace(/\*/g, ''));
+    if (viaWhatsApp?.sent) reachedPhone = true;
+
+    if (!reachedPhone) {
+      console.warn('[admin-alert] neither push nor WhatsApp delivered — falling back to SMS.');
+      // SMS has no formatting, so strip the asterisks WhatsApp renders as bold
+      // rather than sending them as literal characters.
+      await sendSms(phone, message.replace(/\*/g, ''));
+    }
   } catch (err) {
     console.error('[admin-alert] could not reach the admin phone:', err.message);
   }
