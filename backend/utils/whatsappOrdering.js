@@ -74,7 +74,10 @@ async function findUserByPhone(phone) {
  * exact items — a past order's price/stock isn't trusted as still valid. */
 async function reviveOrder(pastOrder, userId) {
   const items = pastOrder.items.map((i) => ({ productId: i.productId, size: i.size, quantity: i.quantity }));
-  const { orderItems, total, stockError } = await buildOrderItems(items, null, pastOrder.address?.country, userId);
+  const { orderItems, total, stockError } = await buildOrderItems(
+    items, null, pastOrder.address?.country, userId,
+    0, 'shipping', null, 'cod', pastOrder.address?.pincode
+  );
   return { orderItems, total, stockError };
 }
 

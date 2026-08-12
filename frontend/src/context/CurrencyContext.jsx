@@ -36,6 +36,7 @@ export function CurrencyProvider({ children }) {
   const [domesticShippingFee, setDomesticShippingFee] = useState(60);
   const [domesticFreeShippingThreshold, setDomesticFreeShippingThreshold] = useState(999);
   const [domesticShippingEnabled, setDomesticShippingEnabled] = useState(true);
+  const [local, setLocal] = useState({ pincodes: '', fee: 0, freeThreshold: 0 });
 
   useEffect(() => {
     api.getCurrencyRates().then((d) => {
@@ -46,6 +47,7 @@ export function CurrencyProvider({ children }) {
       if (typeof d.domesticShippingFee === 'number') setDomesticShippingFee(d.domesticShippingFee);
       if (typeof d.domesticFreeShippingThreshold === 'number') setDomesticFreeShippingThreshold(d.domesticFreeShippingThreshold);
       if (typeof d.domesticShippingEnabled === 'boolean') setDomesticShippingEnabled(d.domesticShippingEnabled);
+      if (d.localDelivery) setLocal(d.localDelivery);
     }).catch(() => {});
   }, []);
 
@@ -125,11 +127,28 @@ export function CurrencyProvider({ children }) {
   // shippingChoice ('shipping' | 'to_pay') mirrors the backend: "to_pay"
   // hands delivery to a courier who collects their own rate directly from
   // the customer, so the store charges (and can preview) nothing for it.
-  function getShippingFee(destCountryCode, inrSubtotal, freeShippingThreshold = domesticFreeShippingThreshold, shippingChoice = 'shipping') {
+  /** Mirrors isLocalPincode in backend/utils/shippingSettings.js. Duplicated
+   *  rather than fetched because the cart has to show a number before the
+   *  order exists — but the server recalculates it from the same settings at
+   *  checkout, so this is only ever a preview and never what gets charged. */
+  function isLocalPincode(pincode) {
+    const clean = String(pincode || '').replace(/\D/g, '');
+    if (clean.length !== 6) return false;
+    return String(local.pincodes || '')
+      .split(/[\s,]+/)
+      .map((p) => p.replace(/\D/g, ''))
+      .filter(Boolean)
+      .some((prefix) => clean.startsWith(prefix));
+  }
+
+  function getShippingFee(destCountryCode, inrSubtotal, freeShippingThreshold = domesticFreeShippingThreshold, shippingChoice = 'shipping', destPincode = null) {
     if (inrSubtotal === 0) return 0;
     if (!destCountryCode || destCountryCode === 'IN') {
       if (shippingChoice === 'to_pay') return 0;
       if (!domesticShippingEnabled) return 0;
+      if (isLocalPincode(destPincode)) {
+        return inrSubtotal > local.freeThreshold ? 0 : local.fee;
+      }
       return inrSubtotal > freeShippingThreshold ? 0 : domesticShippingFee;
     }
     return shipping[destCountryCode] || DEFAULT_INTL_SHIPPING;
@@ -146,6 +165,7 @@ export function CurrencyProvider({ children }) {
         getCountryPrice,
         checkMinOrder,
         getShippingFee,
+        isLocalPincode,
         domesticShippingEnabled,
         isForeign: country.currency !== 'INR',
       }}

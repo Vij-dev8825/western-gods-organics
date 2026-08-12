@@ -219,7 +219,7 @@ export default function Cart() {
   // fee for international, where it isn't offered as a choice.
   const isDomesticAddress = !address.country || address.country === 'IN';
   const effectiveShippingChoice = isDomesticAddress ? shippingChoice : 'shipping';
-  const shipping = getShippingFee(address.country, subtotal, loyaltyTier?.freeShippingMinOrder, effectiveShippingChoice);
+  const shipping = getShippingFee(address.country, subtotal, loyaltyTier?.freeShippingMinOrder, effectiveShippingChoice, address.pincode);
   // "To Pay" always shows (there's a real choice to reflect back, even
   // though the store isn't charging for it); "Shipping" only shows when
   // there's an actual charge — omit it entirely rather than show "Free".
@@ -228,7 +228,7 @@ export default function Cart() {
   // What "Shipping" would cost regardless of which option is currently
   // selected — shown on that option itself so switching to "To Pay" doesn't
   // hide what the alternative is.
-  const shippingOptionFee = getShippingFee(address.country, subtotal, loyaltyTier?.freeShippingMinOrder, 'shipping');
+  const shippingOptionFee = getShippingFee(address.country, subtotal, loyaltyTier?.freeShippingMinOrder, 'shipping', address.pincode);
   const couponStale = appliedCoupon && appliedCoupon.subtotalAtApply !== subtotal;
   const discount = appliedCoupon && !couponStale ? appliedCoupon.discount : 0;
   // Preview only — buildOrderItems recomputes this server-side from the

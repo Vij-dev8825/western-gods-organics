@@ -1290,11 +1290,25 @@ router.put('/shipping-settings', async (req, res, next) => {
         message: 'Shipping fee and free-shipping threshold must be non-negative numbers.',
       });
     }
+    const localFee = Number(req.body.localFee ?? 0);
+    const localFreeThreshold = Number(req.body.localFreeThreshold ?? 0);
+    if (!(localFee >= 0) || !(localFreeThreshold >= 0)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Nearby delivery fee and its free-delivery threshold must be non-negative numbers.',
+      });
+    }
+
     const shippingSettings = {
       id: 'main',
       domesticFee,
       domesticFreeThreshold,
       domesticShippingEnabled: !!req.body.domesticShippingEnabled,
+      // Pincodes (or leading digits of them) the mill delivers to itself.
+      // Stored as typed so the admin can keep it readable; parsed on use.
+      localPincodes: String(req.body.localPincodes || '').slice(0, 500),
+      localFee,
+      localFreeThreshold,
     };
     await db.put('shipping-settings', shippingSettings);
     res.json({ success: true, shippingSettings });

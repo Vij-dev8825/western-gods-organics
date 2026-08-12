@@ -7,7 +7,7 @@ const { sendWhatsApp } = require('./whatsapp');
 const { sendSms } = require('./sms');
 const { sendPush } = require('./push');
 const { getPointsBalance, redeemPointsForOrder, getTierInfo, hasEarlyAccessPerk, REDEEM_VALUE_INR_PER_POINT } = require('./loyalty');
-const { getShippingSettings } = require('./shippingSettings');
+const { getShippingSettings, isLocalPincode } = require('./shippingSettings');
 const { findValidGiftCard, redeemGiftCardForOrder } = require('./giftCards');
 const { findAffiliateByCode } = require('./affiliates');
 const { getPaymentMethodsConfig } = require('./paymentMethods');
@@ -168,12 +168,22 @@ const DEFAULT_INTL_SHIPPING = 1500;
 // store's own known, fixed fee vs handing delivery to a courier who collects
 // their own rate directly from the customer — a rate the store has no way to
 // know in advance, so "to_pay" always charges nothing here.
-async function calculateShipping(subtotal, destCountry = DOMESTIC_COUNTRY, userId = null, shippingChoice = 'shipping') {
+async function calculateShipping(subtotal, destCountry = DOMESTIC_COUNTRY, userId = null, shippingChoice = 'shipping', destPincode = null) {
   if (subtotal === 0) return 0;
   if (destCountry === DOMESTIC_COUNTRY) {
     if (shippingChoice === 'to_pay') return 0;
-    const { domesticFee, domesticFreeThreshold, domesticShippingEnabled } = await getShippingSettings();
+    const settings = await getShippingSettings();
+    const { domesticFee, domesticFreeThreshold, domesticShippingEnabled } = settings;
     if (!domesticShippingEnabled) return 0;
+
+    // Near the mill, delivery is a bus parcel or a bike — a fraction of what
+    // a national courier charges, and it arrives the next day. Charging the
+    // same rate to Udumalpet as to Delhi would be quietly overcharging the
+    // neighbours, who are also the customers most likely to come back.
+    if (isLocalPincode(destPincode, settings)) {
+      return subtotal > settings.localFreeThreshold ? 0 : settings.localFee;
+    }
+
     // Silver/Gold loyalty tiers lower (or remove) the free-shipping bar
     // relative to this admin-set base — see backend/utils/loyalty.js TIERS.
     // Guests and brand-new (Bronze) customers get the base threshold as-is.
@@ -184,7 +194,7 @@ async function calculateShipping(subtotal, destCountry = DOMESTIC_COUNTRY, userI
   return overrides?.shipping?.[destCountry] || DEFAULT_INTL_SHIPPING;
 }
 
-async function buildOrderItems(items, couponCode, destCountry, userId, pointsToRedeem = 0, shippingChoice = 'shipping', giftCardCode = null, paymentMethod = 'cod') {
+async function buildOrderItems(items, couponCode, destCountry, userId, pointsToRedeem = 0, shippingChoice = 'shipping', giftCardCode = null, paymentMethod = 'cod', destPincode = null) {
   const products = await db.list('products');
   // Re-fetched fresh here rather than trusting anything from the JWT, so an
   // account an admin just flagged wholesale (see PATCH /admin/customers/:id/
@@ -259,7 +269,7 @@ async function buildOrderItems(items, couponCode, destCountry, userId, pointsToR
       ...(isReservation ? { pressingId: item.pressingId } : {}),
     };
   });
-  const shipping = await calculateShipping(subtotal, destCountry, userId, shippingChoice);
+  const shipping = await calculateShipping(subtotal, destCountry, userId, shippingChoice, destPincode);
 
   const coupon = await findValidCoupon(couponCode, userId);
   const discount = computeDiscount(coupon, subtotal);

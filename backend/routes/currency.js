@@ -85,6 +85,14 @@ router.get('/rates', async (req, res, next) => {
       domesticShippingFee: domesticShipping.domesticFee,
       domesticFreeShippingThreshold: domesticShipping.domesticFreeThreshold,
       domesticShippingEnabled: domesticShipping.domesticShippingEnabled,
+      // Public on purpose: a shopper needs to know before checkout whether
+      // their pincode gets the nearby rate, and the list of areas a mill
+      // delivers to itself is not a secret — it's a selling point.
+      localDelivery: {
+        pincodes: domesticShipping.localPincodes,
+        fee: domesticShipping.localFee,
+        freeThreshold: domesticShipping.localFreeThreshold,
+      },
     });
   } catch (err) {
     // Serve a stale cache rather than failing the whole storefront if the

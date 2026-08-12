@@ -4,7 +4,10 @@ import { useAuth } from '../../context/AuthContext';
 
 export default function AdminShipping() {
   const { token } = useAuth();
-  const [settings, setSettings] = useState({ domesticFee: '', domesticFreeThreshold: '', domesticShippingEnabled: true });
+  const [settings, setSettings] = useState({
+    domesticFee: '', domesticFreeThreshold: '', domesticShippingEnabled: true,
+    localPincodes: '', localFee: '', localFreeThreshold: '',
+  });
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState(null);
 
@@ -13,6 +16,9 @@ export default function AdminShipping() {
       domesticFee: String(d.shippingSettings.domesticFee),
       domesticFreeThreshold: String(d.shippingSettings.domesticFreeThreshold),
       domesticShippingEnabled: d.shippingSettings.domesticShippingEnabled,
+      localPincodes: d.shippingSettings.localPincodes || '',
+      localFee: String(d.shippingSettings.localFee ?? 0),
+      localFreeThreshold: String(d.shippingSettings.localFreeThreshold ?? 0),
     })).catch(() => {});
   }, [token]);
 
@@ -26,11 +32,21 @@ export default function AdminShipping() {
     setSaving(true);
     setMessage(null);
     try {
-      const d = await api.admin.updateShippingSettings(token, { domesticFee, domesticFreeThreshold, domesticShippingEnabled: settings.domesticShippingEnabled });
+      const d = await api.admin.updateShippingSettings(token, {
+        domesticFee,
+        domesticFreeThreshold,
+        domesticShippingEnabled: settings.domesticShippingEnabled,
+        localPincodes: settings.localPincodes,
+        localFee: Number(settings.localFee || 0),
+        localFreeThreshold: Number(settings.localFreeThreshold || 0),
+      });
       setSettings({
         domesticFee: String(d.shippingSettings.domesticFee),
         domesticFreeThreshold: String(d.shippingSettings.domesticFreeThreshold),
         domesticShippingEnabled: d.shippingSettings.domesticShippingEnabled,
+        localPincodes: d.shippingSettings.localPincodes || '',
+        localFee: String(d.shippingSettings.localFee ?? 0),
+        localFreeThreshold: String(d.shippingSettings.localFreeThreshold ?? 0),
       });
       setMessage({ type: 'success', text: 'Shipping settings updated.' });
     } catch (err) {
@@ -91,6 +107,55 @@ export default function AdminShipping() {
               value={settings.domesticFreeThreshold}
               onChange={(e) => setSettings((s) => ({ ...s, domesticFreeThreshold: e.target.value }))}
               placeholder="e.g. 999"
+            />
+          </div>
+        </div>
+
+        <hr style={{ margin: '24px 0', border: 0, borderTop: '1px solid rgba(31,61,43,0.1)' }} />
+
+        <h3 style={{ fontSize: '1rem', margin: '0 0 4px' }}>Nearby delivery</h3>
+        <p className="muted" style={{ fontSize: '0.85rem', maxWidth: '60ch' }}>
+          Addresses you can reach yourself — by bus parcel or bike — instead of handing to a national
+          courier. Leave the pincodes blank to switch this off entirely; every order then pays the
+          rate above, exactly as now.
+        </p>
+
+        <div className="field">
+          <label>Pincodes you deliver to yourself</label>
+          <textarea
+            rows={3}
+            value={settings.localPincodes}
+            onChange={(e) => setSettings((s) => ({ ...s, localPincodes: e.target.value }))}
+            placeholder="642126, 642154, 6414"
+          />
+          <p className="muted" style={{ fontSize: '0.8rem', marginTop: 4 }}>
+            Separate with commas or spaces. A short number matches everything starting with it —
+            <b> 6421</b> covers the whole Udumalpet range, while <b>642126</b> matches only that one
+            pincode.
+          </p>
+        </div>
+
+        <div className="form-grid">
+          <div className="field">
+            <label>Nearby delivery fee (₹)</label>
+            <input
+              type="number"
+              min="0"
+              step="1"
+              value={settings.localFee}
+              onChange={(e) => setSettings((s) => ({ ...s, localFee: e.target.value }))}
+              placeholder="e.g. 20"
+            />
+          </div>
+          <div className="field">
+            <label>Free nearby delivery above (₹)</label>
+            <input
+              type="number"
+              min="0"
+              step="1"
+              value={settings.localFreeThreshold}
+              onChange={(e) => setSettings((s) => ({ ...s, localFreeThreshold: e.target.value }))}
+              placeholder="e.g. 400"
             />
           </div>
         </div>
