@@ -21,6 +21,7 @@ const { translateProductText } = require('../utils/translateProduct');
 const { suggestProductAnswer } = require('../utils/aiAnswerSuggestion');
 const { listAll: listAllPressings, countReserved } = require('../utils/pressings');
 const { imageUpload, storeUploadedFile } = require('../utils/imageUploadHandler');
+const { buildBatchLabelPdf } = require('../utils/batchLabels');
 const { creditPointsForOrder, reversePointsForOrder } = require('../utils/loyalty');
 const { issueBottleReturnCredit } = require('../utils/orderBuilder');
 const whatsappBaileys = require('../utils/whatsappBaileys');
@@ -315,6 +316,34 @@ router.get('/today', async (req, res, next) => {
       unreadSellerMessages: sellerMessages.filter((m) => m.from === 'seller' && !m.readByAdmin).length,
     });
   } catch (err) {
+    next(err);
+  }
+});
+
+// GET /api/admin/products/:id/batch-labels.pdf?count=18 — a printable sheet of
+// QR labels for this product's current batch, each pointing at that batch's
+// public passport page. Opened in a tab and printed, so it's a GET rather than
+// a POST — which also keeps it clear of the host's block on authenticated
+// POSTs to admin routes.
+router.get('/products/:id/batch-labels.pdf', async (req, res, next) => {
+  try {
+    const product = await db.get('products', req.params.id);
+    if (!product) return res.status(404).json({ success: false, message: 'Product not found.' });
+
+    const requested = Number(req.query.count);
+    // One full sheet by default. Capped so a stray digit in the address bar
+    // can't ask the server to render ten thousand pages.
+    const count = Math.min(Math.max(Number.isFinite(requested) ? Math.round(requested) : 18, 1), 600);
+    const siteUrl = (process.env.SITE_URL || `${req.protocol}://${req.get('host')}`).replace(/\/$/, '');
+
+    const pdf = await buildBatchLabelPdf({ product, siteUrl, count });
+    res.set('Content-Type', 'application/pdf');
+    res.set('Content-Disposition', `inline; filename="batch-${product.batchNumber}-labels.pdf"`);
+    res.send(pdf);
+  } catch (err) {
+    if (/no batch number/i.test(err.message)) {
+      return res.status(400).json({ success: false, message: err.message });
+    }
     next(err);
   }
 });

@@ -25,6 +25,28 @@ async function request(path, { method = 'GET', body, token, formData } = {}) {
   return data;
 }
 
+/**
+ * Fetches a binary response and hands back a blob URL.
+ *
+ * A PDF can't just be linked to: auth here is an Authorization header, and a
+ * plain <a href> or window.open sends no headers. Putting the token in the
+ * query string instead would work, and would also write an admin session token
+ * into browser history, the server's access log and any proxy in between — so
+ * the file is fetched properly and handed to the browser as a local blob.
+ *
+ * The caller owns the returned URL and should revokeObjectURL when finished.
+ */
+async function requestBlob(path, { token } = {}) {
+  const res = await fetch(`${BASE_URL}${path}`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.message || 'Could not generate that file.');
+  }
+  return URL.createObjectURL(await res.blob());
+}
+
 export const api = {
   // auth
   sendOtp: (phone, country, channel, email) =>
@@ -269,6 +291,8 @@ export const api = {
 
     stats: (token) => request('/admin/stats', { token }),
     today: (token) => request('/admin/today', { token }),
+    batchLabelsPdf: (token, productId, count) =>
+      requestBlob(`/admin/products/${productId}/batch-labels.pdf?count=${count}`, { token }),
 
     uploadImage: (token, formData) => request('/admin/upload-image', { method: 'POST', formData, token }),
 

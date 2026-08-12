@@ -107,6 +107,32 @@ export default function AdminProducts() {
     api.admin.getCategories(token).then((d) => setCategories(d.categories)).catch(() => {});
   }
   useEffect(load, [token]);
+
+  /** Opens the printable QR sheet for a product's current batch.
+   *
+   * Fetched rather than linked because the PDF route needs an Authorization
+   * header — see requestBlob in api.js. The object URL is released once the
+   * new tab has had a moment to take it; holding every sheet in memory for the
+   * life of the page would leak a megabyte at a time. */
+  async function printBatchLabels(product) {
+    const answer = window.prompt(
+      `How many labels for batch ${product.batchNumber}?\n(18 fit on one A4 sheet)`,
+      '18'
+    );
+    if (answer === null) return;
+    const count = Number(answer);
+    if (!Number.isFinite(count) || count < 1) {
+      setMessage({ type: 'error', text: 'Enter a number of labels, e.g. 18.' });
+      return;
+    }
+    try {
+      const url = await api.admin.batchLabelsPdf(token, product.id, Math.round(count));
+      window.open(url, '_blank', 'noopener');
+      setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    } catch (err) {
+      setMessage({ type: 'error', text: err.message });
+    }
+  }
   useEffect(() => {
     api.getCurrencyRates().then((d) => setRates(d.rates || {})).catch(() => {});
   }, []);
@@ -619,6 +645,14 @@ export default function AdminProducts() {
                 </td>
                 <td className="cell-action">
                   <button className="link-btn" onClick={() => startEdit(p)}>edit</button>{' '}
+                  {/* Only where there's a batch to point a code at — a QR to a
+                      passport page for a batch that doesn't exist would scan
+                      straight to a 404 on the bottle in someone's hand. */}
+                  {p.batchNumber && (
+                    <>
+                      <button className="link-btn" onClick={() => printBatchLabels(p)}>QR labels</button>{' '}
+                    </>
+                  )}
                   <button className="link-btn danger" onClick={() => del(p)}>delete</button>
                 </td>
               </tr>
