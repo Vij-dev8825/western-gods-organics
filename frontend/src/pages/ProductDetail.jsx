@@ -306,7 +306,8 @@ export default function ProductDetail() {
   const marketPer100 = product.marketPricePer100 > 0 ? product.marketPricePer100 : null;
   const hasBatchInfo = Boolean(
     product.batchNumber || product.productionDate || product.bestBeforeDate ||
-    product.fssaiLicense || product.labReportUrl || product.inciIngredients
+    product.fssaiLicense || product.labReportUrl || product.inciIngredients ||
+    product.growerName || product.growerVillage
   );
   const isWished = productIds.includes(product.id);
   // Pressings are scheduled per size, so only a run for the size on screen is
@@ -817,6 +818,12 @@ export default function ProductDetail() {
                 )}
                 {product.bestBeforeDate && (
                   <li><b>Best before:</b> {new Date(product.bestBeforeDate).toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' })}</li>
+                )}
+                {(product.growerName || product.growerVillage) && (
+                  <li>
+                    <b>Grown by:</b> {product.growerName || 'A farmer we buy from'}
+                    {product.growerVillage && `, ${product.growerVillage}`}
+                  </li>
                 )}
                 {product.fssaiLicense && <li><b>FSSAI license:</b> {product.fssaiLicense}</li>}
                 {product.labReportUrl && (

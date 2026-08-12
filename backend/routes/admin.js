@@ -451,6 +451,11 @@ router.post('/products', async (req, res, next) => {
       batchNumber: req.body.batchNumber || '',
       productionDate: req.body.productionDate || '',
       bestBeforeDate: req.body.bestBeforeDate || '',
+      // Who grew what went into this batch. "Organic" is a word anyone can
+      // print; a grower's name and village is a specific, checkable claim, and
+      // it is the kind a mill buying direct can actually make.
+      growerName: req.body.growerName || '',
+      growerVillage: req.body.growerVillage || '',
       fssaiLicense: req.body.fssaiLicense || '',
       inciIngredients: req.body.inciIngredients || '',
       labReportUrl: req.body.labReportUrl || '',

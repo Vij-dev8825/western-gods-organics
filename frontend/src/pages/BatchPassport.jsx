@@ -58,6 +58,18 @@ export default function BatchPassport() {
             <tr><td><b>Batch number</b></td><td>{batch.batchNumber}</td></tr>
             {batch.productionDate && <tr><td><b>Made on</b></td><td>{formatDate(batch.productionDate)}</td></tr>}
             {batch.bestBeforeDate && <tr><td><b>Best before</b></td><td>{formatDate(batch.bestBeforeDate)}</td></tr>}
+            {/* The village alone is worth showing when a grower asked not to
+                be named — where it came from is still more than most labels
+                say. */}
+            {(batch.growerName || batch.growerVillage) && (
+              <tr>
+                <td><b>Grown by</b></td>
+                <td>
+                  {batch.growerName || 'A farmer we buy from'}
+                  {batch.growerVillage && <span className="muted">, {batch.growerVillage}</span>}
+                </td>
+              </tr>
+            )}
             {batch.fssaiLicense && <tr><td><b>FSSAI license</b></td><td>{batch.fssaiLicense}</td></tr>}
             {/* Our own mill only — saying a marketplace seller's product came
                 out of it would simply be untrue. */}

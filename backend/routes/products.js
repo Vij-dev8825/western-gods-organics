@@ -200,6 +200,8 @@ router.get('/batch/:batchNumber', async (req, res, next) => {
         batchNumber: product.batchNumber,
         productionDate: product.productionDate || null,
         bestBeforeDate: product.bestBeforeDate || null,
+        growerName: product.growerName || null,
+        growerVillage: product.growerVillage || null,
         fssaiLicense: product.fssaiLicense || null,
         labReportUrl: product.labReportUrl || null,
         inciIngredients: product.inciIngredients || null,

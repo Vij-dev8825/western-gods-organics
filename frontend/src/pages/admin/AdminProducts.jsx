@@ -27,6 +27,8 @@ const EMPTY = {
   batchNumber: '',
   productionDate: '',
   bestBeforeDate: '',
+  growerName: '',
+  growerVillage: '',
   fssaiLicense: '',
   inciIngredients: '',
   labReportUrl: '',
@@ -47,6 +49,8 @@ function toForm(p) {
     batchNumber: p.batchNumber || '',
     productionDate: p.productionDate || '',
     bestBeforeDate: p.bestBeforeDate || '',
+    growerName: p.growerName || '',
+    growerVillage: p.growerVillage || '',
     fssaiLicense: p.fssaiLicense || '',
     inciIngredients: p.inciIngredients || '',
     labReportUrl: p.labReportUrl || '',
@@ -549,6 +553,22 @@ export default function AdminProducts() {
                 type="date"
                 value={form.bestBeforeDate}
                 onChange={(e) => setForm({ ...form, bestBeforeDate: e.target.value })}
+              />
+            </div>
+            <div className="field">
+              <label>Grown by</label>
+              <input
+                placeholder="e.g. Murugesan"
+                value={form.growerName}
+                onChange={(e) => setForm({ ...form, growerName: e.target.value })}
+              />
+            </div>
+            <div className="field">
+              <label>Grower's village</label>
+              <input
+                placeholder="e.g. Kaniyur"
+                value={form.growerVillage}
+                onChange={(e) => setForm({ ...form, growerVillage: e.target.value })}
               />
             </div>
             <div className="field">
