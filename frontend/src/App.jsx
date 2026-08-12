@@ -54,6 +54,7 @@ const RefundPolicy = lazy(() => import('./pages/RefundPolicy'));
 const TermsAndConditions = lazy(() => import('./pages/TermsAndConditions'));
 const SustainabilityImpact = lazy(() => import('./pages/SustainabilityImpact'));
 const Sourcing = lazy(() => import('./pages/Sourcing'));
+const PressingCalendar = lazy(() => import('./pages/PressingCalendar'));
 const ImportInfo = lazy(() => import('./pages/ImportInfo'));
 const StoreLocator = lazy(() => import('./pages/StoreLocator'));
 const GiftCards = lazy(() => import('./pages/GiftCards'));
@@ -374,6 +375,7 @@ export default function App() {
         <Route path="/terms" element={<TermsAndConditions />} />
         <Route path="/impact" element={<SustainabilityImpact />} />
         <Route path="/sourcing" element={<Sourcing />} />
+        <Route path="/pressings" element={<PressingCalendar />} />
         <Route path="/import" element={<ImportInfo />} />
         <Route path="/store-locator" element={<StoreLocator />} />
         <Route path="*" element={<NotFound />} />

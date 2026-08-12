@@ -18,6 +18,9 @@ const STATIC_PATHS = [
   { path: '/import', priority: '0.4', changefreq: 'monthly' },
   { path: '/store-locator', priority: '0.4', changefreq: 'monthly' },
   { path: '/impact', priority: '0.5', changefreq: 'weekly' },
+  // Changes whenever a run is scheduled or pressed, so it's worth recrawling
+  // more often than the other standing pages.
+  { path: '/pressings', priority: '0.6', changefreq: 'daily' },
   { path: '/sourcing', priority: '0.5', changefreq: 'monthly' },
   { path: '/policy', priority: '0.2', changefreq: 'yearly' },
   { path: '/refund-policy', priority: '0.2', changefreq: 'yearly' },

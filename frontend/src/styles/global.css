@@ -3046,6 +3046,52 @@ input:focus-visible + .filter-radio { outline: 2px solid var(--gold-2); outline-
 .stat-tile.alert::before { background: #d9534f; animation: none; }
 .stat-tile.alert b { color: #a52f1e; }
 
+/* ---------- Pressing calendar ----------
+   Reads as a schedule, not a product grid: the date leads, because "when" is
+   the question this page exists to answer. */
+.pressing-heading { font-size: 1.15rem; margin: 32px 0 12px; }
+.pressing-list { list-style: none; padding: 0; margin: 0; }
+
+.pressing-run {
+  display: flex; align-items: flex-start; gap: 14px;
+  padding: 14px 0; border-bottom: 1px solid rgba(31, 61, 43, 0.09);
+}
+.pressing-run:last-child { border-bottom: 0; }
+.pressing-run-img {
+  width: 54px; height: 54px; flex: none; object-fit: cover;
+  border-radius: var(--radius-sm, 8px); background: var(--cream-deep);
+}
+/* A run already done is history, not an offer — dimmed so the eye goes to
+   what's coming. */
+.pressing-run.is-past .pressing-run-img { opacity: 0.62; }
+
+.pressing-run-body { min-width: 0; flex: 1; }
+.pressing-run-when {
+  display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap;
+  font-size: 0.92rem; margin-bottom: 2px;
+}
+.pressing-run-when .muted { font-size: 0.8rem; }
+.pressing-run-name { display: inline-block; text-decoration: none; color: inherit; font-size: 0.95rem; }
+.pressing-run-name:hover { text-decoration: underline; }
+.pressing-run-note { margin: 4px 0 0; font-size: 0.84rem; color: var(--muted-text, #6B7A70); }
+.pressing-run-batch {
+  display: inline-block; margin-top: 5px; font-size: 0.8rem;
+  color: var(--gold-deep, #8A6B1E); text-decoration: none;
+}
+.pressing-run-batch:hover { text-decoration: underline; }
+
+.pressing-run-tag {
+  flex: none; align-self: center; white-space: nowrap;
+  font-size: 0.72rem; font-weight: 600; padding: 5px 10px; border-radius: 999px;
+  background: rgba(78, 138, 51, 0.12); color: #3B6B27;
+}
+.pressing-run-tag.full { background: rgba(31, 61, 43, 0.08); color: var(--forest-light, #5c6b5e); }
+
+@media (max-width: 560px) {
+  .pressing-run { flex-wrap: wrap; }
+  .pressing-run-tag { align-self: flex-start; margin-left: 68px; }
+}
+
 /* ---------- Admin: Today ----------
    A worklist, not a report. Rows are uniform on purpose so the eye runs down
    them; the only things allowed to stand out are the left stripe (which queue)

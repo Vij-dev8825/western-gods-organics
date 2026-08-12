@@ -121,6 +121,7 @@ export default function Footer() {
               Shri Gopal Flour &amp; Oil Mills,<br />Udumalpet, Tiruppur District,<br />Tamil Nadu – 642126
             </p>
             <ul style={{ marginTop: 10 }}>
+              <li><Link to="/pressings">What We're Pressing</Link></li>
               <li><Link to="/sourcing">Our Sourcing</Link></li>
               <li><Link to="/impact">Our Sustainability Impact</Link></li>
             </ul>
@@ -172,6 +173,7 @@ export default function Footer() {
               <li><Link to="/bulk-enquiry">{t('footerBulk')}</Link></li>
               <li><Link to="/contact">{t('navContact')}</Link></li>
               <li><Link to="/store-locator">{t('footerVisitUs')}</Link></li>
+              <li><Link to="/pressings">What We're Pressing</Link></li>
               <li><Link to="/sourcing">Our Sourcing</Link></li>
               <li><Link to="/impact">Our Sustainability Impact</Link></li>
               <li><Link to="/cart">{t('footerCart')}</Link></li>

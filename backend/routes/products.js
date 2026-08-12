@@ -6,7 +6,7 @@ const { imageUpload, storeUploadedFile } = require('../utils/imageUploadHandler'
 const { sendMail } = require('../utils/mailer');
 const { hasEarlyAccessPerk } = require('../utils/loyalty');
 const { notifyUser } = require('../utils/notify');
-const { listOpen: listOpenPressings } = require('../utils/pressings');
+const { listOpen: listOpenPressings, describe: describePressing } = require('../utils/pressings');
 
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || process.env.CONTACT_NOTIFY_EMAIL;
 
@@ -483,6 +483,62 @@ router.get('/pressings/open', async (req, res, next) => {
   try {
     const pressings = await listOpenPressings({ productId: req.query.productId });
     res.json({ success: true, pressings });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
+ * GET /api/products/pressings/calendar — the mill's schedule, public.
+ *
+ * Deliberately wider than /pressings/open, which exists to answer "can I
+ * reserve this" and so hides runs that are full. A calendar answering "when is
+ * this made" wants those: a run fully spoken for is the most persuasive thing
+ * on the page, and hiding it would make a busy mill look like an idle one. It
+ * also looks backwards — what came off the press recently is what makes
+ * "fresh" checkable rather than a claim.
+ */
+const RECENT_PRESSING_DAYS = 60;
+
+router.get('/pressings/calendar', async (req, res, next) => {
+  try {
+    const [pressings, orders, products] = await Promise.all([
+      db.list('pressings'),
+      db.list('orders'),
+      db.list('products'),
+    ]);
+    const imageById = Object.fromEntries(products.map((p) => [p.id, p.image]));
+    const now = Date.now();
+    const recentCutoff = now - RECENT_PRESSING_DAYS * 24 * 60 * 60 * 1000;
+
+    // Only what the mill is willing to say in public: no reservation counts,
+    // which would expose how a given run is selling.
+    const publicView = (p) => ({
+      id: p.id,
+      productId: p.productId,
+      productName: p.productName,
+      productImage: imageById[p.productId] || '',
+      size: p.size,
+      pressDate: p.pressDate,
+      note: p.note || '',
+      batchNumber: p.batchNumber || '',
+      unitsOffered: p.unitsOffered,
+    });
+
+    const upcoming = [];
+    for (const p of pressings) {
+      if (p.status !== 'open' || new Date(p.pressDate).getTime() <= now) continue;
+      const { unitsRemaining } = await describePressing(p, orders);
+      upcoming.push({ ...publicView(p), soldOut: unitsRemaining <= 0, unitsRemaining });
+    }
+    upcoming.sort((a, b) => new Date(a.pressDate) - new Date(b.pressDate));
+
+    const recent = pressings
+      .filter((p) => p.status === 'pressed' && new Date(p.pressDate).getTime() >= recentCutoff)
+      .sort((a, b) => new Date(b.pressDate) - new Date(a.pressDate))
+      .map(publicView);
+
+    res.json({ success: true, upcoming, recent });
   } catch (err) {
     next(err);
   }
