@@ -54,6 +54,36 @@ const app = express();
 // 'http' (breaking absolute URLs built from it, e.g. the catalog feed below).
 app.set('trust proxy', 1);
 
+/**
+ * One address for the site.
+ *
+ * Both westerngodsorganic.com and www.westerngodsorganic.com answered 200 with
+ * identical content, which to a search engine is two sites competing with each
+ * other — every link, every mention and every ounce of authority split in half,
+ * and neither copy ranking as well as one would. The sitemap and the meta tags
+ * this app serves to crawlers both say www, so www is the address and the bare
+ * name is a permanent redirect to it.
+ *
+ * Deliberately narrow, because this runs before everything and a mistake here
+ * takes the whole site down:
+ *
+ * - Only the exact apex is redirected. Any other host — localhost, the LAN
+ *   address, the host's own internal name, an IP — passes straight through, so
+ *   development and whatever MilesWeb does for health checks are untouched.
+ * - www is not in the list, so a redirect can never loop back on itself.
+ * - GET and HEAD only. A 301 on a POST invites the client to retry it as a GET
+ *   without its body, which on a checkout route means a lost order.
+ */
+const CANONICAL_HOST = 'www.westerngodsorganic.com';
+const REDIRECT_HOSTS = new Set(['westerngodsorganic.com']);
+
+app.use((req, res, next) => {
+  if (req.method !== 'GET' && req.method !== 'HEAD') return next();
+  const host = String(req.headers.host || '').toLowerCase().split(':')[0];
+  if (!REDIRECT_HOSTS.has(host)) return next();
+  return res.redirect(301, `https://${CANONICAL_HOST}${req.originalUrl}`);
+});
+
 app.use(cors());
 // Captures the raw bytes alongside the parsed body — needed by the Razorpay
 // webhook route, which must verify a signature over the exact raw payload
