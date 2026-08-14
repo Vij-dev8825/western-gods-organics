@@ -88,17 +88,22 @@ export default function Navbar() {
           ))}
         </nav>
 
+        {/* Its own child of .navbar-inner rather than part of .nav-icons, so
+            that on a phone it can drop into the search row. Six icon buttons
+            plus the logo plus this ran 27px past the edge of a 375px screen,
+            which is why every page scrolled sideways once you were signed in. */}
+        <select
+          className="lang-select currency-select nav-country"
+          aria-label="Country"
+          value={country.code}
+          onChange={(e) => setCountry(e.target.value)}
+        >
+          {countries.map((c) => (
+            <option key={c.code} value={c.code} title={`${c.label} — ${c.currency}`}>{countryFlagEmoji(c.code)} {c.label}</option>
+          ))}
+        </select>
+
         <div className="nav-icons">
-          <select
-            className="lang-select currency-select"
-            aria-label="Country"
-            value={country.code}
-            onChange={(e) => setCountry(e.target.value)}
-          >
-            {countries.map((c) => (
-              <option key={c.code} value={c.code} title={`${c.label} — ${c.currency}`}>{countryFlagEmoji(c.code)} {c.label}</option>
-            ))}
-          </select>
           {isLoggedIn && (
             <button className="icon-btn" aria-label="Notifications" onClick={() => navigate('/notifications')}>
               <IconBell />

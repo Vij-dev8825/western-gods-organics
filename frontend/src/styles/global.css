@@ -344,6 +344,13 @@ p { margin: 0 0 1em; }
 }
 .nav-links a:hover::after, .nav-links a.active::after { transform: scaleX(1); }
 
+/* Sits between the search box and the icon buttons on a wide screen, exactly
+   where it used to sit as the first child of .nav-icons — but as its own grid
+   item so the phone layout can move it somewhere with room. */
+.nav-country {
+  order: 3;
+  flex-shrink: 0;
+}
 .nav-icons {
   order: 4;
   display: flex;
@@ -434,13 +441,19 @@ p { margin: 0 0 1em; }
    + drawer-nav layout below that, not at the much narrower 900px used
    for page content layouts (hero/shop/cart) below. */
 @media (max-width: 1199px) {
+  /* The country picker moves down beside the search box. It was the only
+     thing in the top row that didn't have to be there, and taking it out
+     gives that row back ~76px — enough that six icon buttons and the logo
+     fit a 375px screen with room to spare, without shrinking a single tap
+     target below 40px. */
   .navbar-inner {
     display: grid;
     grid-template-columns: auto 1fr auto;
-    grid-template-areas: "logo . icons" "search search search";
+    grid-template-areas: "logo . icons" "country search search";
     row-gap: 10px;
   }
   .navbar-inner > a { grid-area: logo; order: initial; }
+  .nav-country { grid-area: country; order: initial; justify-self: start; }
   .navbar-search { grid-area: search; order: initial; flex-basis: auto; max-width: none; }
   .nav-icons { grid-area: icons; order: initial; }
   .nav-links {
@@ -3966,6 +3979,16 @@ input:focus-visible + .filter-radio { outline: 2px solid var(--gold-2); outline-
   .nav-icons { gap: 1px; }
   .icon-btn, .mobile-toggle { width: 32px; height: 32px; }
   .lang-select { font-size: 0.68rem; padding: 5px 6px; max-width: 68px; }
+
+  /* 320px — the small iPhone SE and older Androids. Even with the country
+     picker moved down, six icon buttons plus the logo need about another 13px
+     on a screen this narrow. Taken from the margins and the wordmark rather
+     than from the icon gap (already 1px above) or the tap targets (already
+     32px), neither of which has anything left to give. */
+  @media (max-width: 360px) {
+    .navbar-inner { padding-left: 10px; padding-right: 10px; }
+    .navbar-inner > a { width: 90px; }
+  }
 
   .announce-bar { font-size: 0.7rem; padding: 7px 12px; }
 
