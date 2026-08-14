@@ -249,6 +249,19 @@ export default function AdminOrders() {
                           🤝 Affiliate: {o.affiliateCode}
                         </div>
                       )}
+                      {o.source === 'counter' && (
+                        <div className="muted" style={{ fontSize: '0.75rem', marginTop: 4 }}>
+                          ☎️ Taken by phone or at the counter
+                        </div>
+                      )}
+                      {/* Whatever was said while the order was being taken —
+                          "leave it with the neighbour" is only useful to the
+                          person packing it, so it belongs beside the items. */}
+                      {o.note && (
+                        <div className="muted" style={{ fontSize: '0.75rem', marginTop: 4 }}>
+                          📝 {o.note}
+                        </div>
+                      )}
                       {/* Loud on purpose. A collection order that gets packed
                           onto the courier run is a delivery paid for twice and
                           a customer standing at the mill for nothing. */}
@@ -265,6 +278,9 @@ export default function AdminOrders() {
                       )}
                       {o.paymentMethod === 'razorpay' && (
                         <div className="muted" style={{ fontSize: '0.72rem' }}>Paid online</div>
+                      )}
+                      {o.paymentMethod === 'counter' && (
+                        <div className="muted" style={{ fontSize: '0.72rem' }}>Paid at the mill</div>
                       )}
                     </td>
                     <td data-label="Status — changing this notifies the customer" className="cell-action">

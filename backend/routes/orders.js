@@ -1,5 +1,4 @@
 const express = require('express');
-const { v4: uuid } = require('uuid');
 const db = require('../data/db');
 const { requireAuth, optionalAuth } = require('../middleware/auth');
 const { signToken } = require('./auth');
@@ -15,65 +14,15 @@ const { notifyUser } = require('../utils/notify');
 const { otpStore } = require('../utils/otpStore');
 const { markPhoneVerified, isPhoneVerified, consumePhoneVerification } = require('../utils/phoneVerification');
 const { getPaymentMethodsConfig } = require('../utils/paymentMethods');
+// Shared with the counter-order route in routes/admin.js, so an order taken
+// over the phone resolves to the same account a checkout would.
+const { findUserByPhone, resolveGuestUser, syncContactDetails } = require('../utils/customers');
 
 const CANCELLABLE_STATUSES = ['placed', 'confirmed'];
 const RETURN_WINDOW_DAYS = 7;
 const RETURN_REASONS = ['damaged-incorrect', 'quality-issue', 'other'];
 
 const router = express.Router();
-
-// Builds a candidate account for a guest checkout — does NOT check for an
-// existing phone match or persist it (callers decide when/whether to do
-// that; see the two call sites below for why they differ).
-async function resolveGuestUser(guestInfo, phone) {
-  const name = guestInfo?.name?.trim();
-  if (!name || name.length < 2) {
-    return { error: { status: 400, message: 'Enter your name.' } };
-  }
-  if (!phone) {
-    return { error: { status: 400, message: 'A phone number is required.' } };
-  }
-  return {
-    user: {
-      id: uuid(),
-      phone,
-      name,
-      email: guestInfo?.email?.trim() || '',
-      role: 'customer',
-      addresses: [],
-      createdAt: new Date().toISOString(),
-    },
-  };
-}
-
-async function findUserByPhone(phone) {
-  const users = await db.list('users');
-  return users.find((u) => u.phone === phone) || null;
-}
-
-/**
- * Writes the name/email typed at checkout back onto the account placing the
- * order, so the details a customer enters there become the details we hold
- * for them — no separate trip to the profile page to keep them current.
- *
- * Only ever touches name and email, and only when something actually changed.
- * A blank field is ignored rather than treated as "clear this", so a customer
- * who leaves the optional email empty doesn't wipe the address we already
- * have. Never runs for an admin account, and never for a guest whose phone
- * hasn't been OTP-proved — both are gated by the callers below.
- */
-async function syncContactDetails(userId, guestInfo) {
-  const name = guestInfo?.name?.trim();
-  const email = guestInfo?.email?.trim();
-  if (!name && !email) return;
-  const user = await db.get('users', userId);
-  if (!user || user.role === 'admin') return;
-  const updated = { ...user };
-  if (name && name.length >= 2 && name !== user.name) updated.name = name;
-  if (email && email !== user.email) updated.email = email;
-  if (updated.name === user.name && updated.email === user.email) return;
-  await db.put('users', updated);
-}
 
 /**
  * Decides which account a not-logged-in checkout belongs to.

@@ -418,6 +418,7 @@ export const api = {
     getWhatsAppBroadcastLog: (token) => request('/admin/whatsapp/broadcast-log', { token }),
 
     getCustomers: (token) => request('/admin/customers', { token }),
+    createCounterOrder: (token, payload) => request('/admin/orders', { method: 'POST', body: payload, token }),
     setCustomerWholesale: (token, id, isWholesale) => request(`/admin/customers/${id}/wholesale`, { method: 'PATCH', body: { isWholesale }, token }),
     getEnquiries: (token) => request('/admin/enquiries', { token }),
     updateEnquiry: (token, id, status) =>

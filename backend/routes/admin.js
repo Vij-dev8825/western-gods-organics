@@ -31,7 +31,8 @@ const { sendWhatsAppFile } = require('../utils/whatsapp');
 const { buildInvoicePdf, invoiceFileName } = require('../utils/invoicePdf');
 const { ordersCsv, productsCsv, customersCsv } = require('../utils/csvExport');
 const { creditPointsForOrder, reversePointsForOrder } = require('../utils/loyalty');
-const { issueBottleReturnCredit } = require('../utils/orderBuilder');
+const { issueBottleReturnCredit, buildOrderItems, createOrderRecord } = require('../utils/orderBuilder');
+const { findUserByPhone, resolveGuestUser } = require('../utils/customers');
 const whatsappBaileys = require('../utils/whatsappBaileys');
 const whatsappOrdering = require('../utils/whatsappOrdering');
 const { getPaymentMethodsConfig } = require('../utils/paymentMethods');
@@ -1516,6 +1517,112 @@ router.delete('/festivals/:id', async (req, res, next) => {
 router.get('/procurement', async (req, res, next) => {
   try {
     res.json({ success: true, plan: await buildProcurementPlan() });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/* ------------------------------ Counter orders ----------------------------- */
+
+// Recorded, not offered: 'razorpay' would claim a gateway payment that never
+// happened, putting a fee into the profit report that was never charged.
+// 'counter' is cash or a UPI transfer already in hand; 'cod' is still to collect.
+const COUNTER_PAYMENT_METHODS = ['counter', 'cod'];
+const COUNTER_SHIPPING_CHOICES = ['pickup', 'shipping', 'to_pay'];
+
+/**
+ * POST /api/admin/orders — an order that arrived by phone, on WhatsApp, or
+ * across the counter at the mill.
+ *
+ * Until this existed, checkout was the only way an order could come into being,
+ * so a sale taken over the phone existed nowhere: no invoice, no profit line,
+ * no CSV row, nothing in What to Buy. For a mill whose customers ring up, that
+ * is most of the business invisible to all of its own accounting.
+ *
+ * Deliberately runs through the same buildOrderItems/createOrderRecord as
+ * checkout rather than writing an order document directly. Prices, wholesale
+ * rates, coupons, stock and delivery are then enforced identically, and a
+ * phone order is the same kind of thing as a web order everywhere downstream.
+ *
+ * Where it differs from checkout, and why:
+ *   - No OTP. A guest checking out has to prove the phone is theirs because
+ *     that request hands back a login token. This one hands back nothing, and
+ *     the admin taking the call is the proof.
+ *   - No points or gift-card redemption. Spending a customer's balance on
+ *     their behalf is a decision the shop should make deliberately and out
+ *     loud; a coupon the shop quotes down the phone is fine.
+ *   - source: 'counter', which keeps the customer's website basket intact and
+ *     stops the admin's own phone buzzing about an order they just typed.
+ */
+router.post('/orders', async (req, res, next) => {
+  try {
+    const { items, customer, address, note } = req.body || {};
+    const paymentMethod = COUNTER_PAYMENT_METHODS.includes(req.body?.paymentMethod) ? req.body.paymentMethod : 'counter';
+    const shippingChoice = COUNTER_SHIPPING_CHOICES.includes(req.body?.shippingChoice) ? req.body.shippingChoice : 'pickup';
+
+    const lines = (Array.isArray(items) ? items : [])
+      .map((i) => ({ productId: i.productId, size: i.size, quantity: Math.floor(Number(i.quantity) || 0) }))
+      .filter((i) => i.productId && i.size && i.quantity > 0);
+    if (lines.length === 0) {
+      return res.status(400).json({ success: false, message: 'Add at least one product.' });
+    }
+
+    const phone = String(customer?.phone || '').trim();
+    if (!phone) return res.status(400).json({ success: false, message: "Enter the customer's phone number." });
+
+    // An existing account is reused rather than duplicated — otherwise the
+    // same person ends up with two records and a loyalty balance split
+    // between them, which only shows up much later and cannot be untangled.
+    let user = await findUserByPhone(phone);
+    let createdAccount = false;
+    if (!user) {
+      const resolved = await resolveGuestUser(customer, phone);
+      if (resolved.error) return res.status(resolved.error.status).json({ success: false, message: resolved.error.message });
+      user = resolved.user;
+      await db.put('users', user);
+      createdAccount = true;
+    }
+
+    // Enough to bill and to deliver to. A walk-in leaves the rest blank.
+    const orderAddress = {
+      name: (address?.name || customer?.name || user.name || '').trim(),
+      line1: (address?.line1 || '').trim(),
+      line2: (address?.line2 || '').trim(),
+      city: (address?.city || '').trim(),
+      state: (address?.state || '').trim(),
+      pincode: (address?.pincode || '').trim(),
+      country: 'IN',
+      phone,
+    };
+    if (shippingChoice !== 'pickup' && !orderAddress.line1) {
+      return res.status(400).json({ success: false, message: 'A delivery address is needed unless the customer is collecting from the mill.' });
+    }
+
+    const built = await buildOrderItems(
+      lines, req.body?.couponCode, 'IN', user.id, 0, shippingChoice, null, paymentMethod, orderAddress.pincode,
+      { trustPickup: true }
+    );
+    if (built.stockError) return res.status(400).json({ success: false, message: built.stockError });
+    if (built.total <= 0) {
+      return res.status(400).json({ success: false, message: 'Order total must be greater than zero.' });
+    }
+
+    const order = await createOrderRecord({
+      userId: user.id,
+      orderItems: built.orderItems,
+      address: orderAddress,
+      total: built.total,
+      discount: built.discount,
+      couponCode: built.couponCode,
+      prepaidDiscount: built.prepaidDiscount,
+      pointsRedeemed: 0,
+      paymentMethod,
+      shippingChoice,
+      source: 'counter',
+      note,
+    });
+
+    res.status(201).json({ success: true, order, createdAccount });
   } catch (err) {
     next(err);
   }

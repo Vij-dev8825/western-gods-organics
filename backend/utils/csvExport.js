@@ -69,6 +69,9 @@ async function ordersCsv({ days }) {
     { header: 'Status', value: (r) => r.order.status },
     { header: 'Payment', value: (r) => r.order.paymentMethod },
     { header: 'Payment status', value: (r) => r.order.paymentStatus },
+    // Every order before counter orders existed came through the website, so
+    // a missing source is 'web' rather than a blank column to puzzle over.
+    { header: 'Source', value: (r) => r.order.source || 'web' },
     { header: 'Customer', value: (r) => r.order.address?.name },
     { header: 'Phone', value: (r) => r.order.address?.phone },
     { header: 'City', value: (r) => r.order.address?.city },

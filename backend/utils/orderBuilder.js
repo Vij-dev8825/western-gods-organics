@@ -25,6 +25,7 @@ const COD_ADVANCE_INR = 49;
 
 function paymentLineFor(order) {
   if (order.paymentMethod === 'razorpay') return 'Paid online (Razorpay)';
+  if (order.paymentMethod === 'counter') return 'Paid at the mill (cash / UPI)';
   if (order.paymentMethod === 'cod_advance') {
     return `₹${order.advancePaid} paid online, ₹${order.total - order.advancePaid} due on delivery (COD)`;
   }
@@ -169,14 +170,18 @@ const DEFAULT_INTL_SHIPPING = 1500;
 // store's own known, fixed fee vs handing delivery to a courier who collects
 // their own rate directly from the customer — a rate the store has no way to
 // know in advance, so "to_pay" always charges nothing here.
-async function calculateShipping(subtotal, destCountry = DOMESTIC_COUNTRY, userId = null, shippingChoice = 'shipping', destPincode = null) {
+// trustPickup: the pickup gate exists to stop a *client* claiming free delivery
+// while collection is switched off. An admin recording a sale someone already
+// carried out of the mill is not making that claim — they are describing what
+// happened, and billing them for a courier nobody called would be a wrong
+// number on a real invoice.
+async function calculateShipping(subtotal, destCountry = DOMESTIC_COUNTRY, userId = null, shippingChoice = 'shipping', destPincode = null, { trustPickup = false } = {}) {
   if (subtotal === 0) return 0;
   if (destCountry === DOMESTIC_COUNTRY) {
     if (shippingChoice === 'to_pay') return 0;
-    // Nobody is delivering it, so there is nothing to charge for. Checked
-    // against the setting rather than trusting the request: a client asking
-    // for pickup while it's switched off must not get free delivery.
+    // Nobody is delivering it, so there is nothing to charge for.
     if (shippingChoice === 'pickup') {
+      if (trustPickup) return 0;
       const { pickupEnabled } = await getShippingSettings();
       if (pickupEnabled) return 0;
     }
@@ -202,7 +207,7 @@ async function calculateShipping(subtotal, destCountry = DOMESTIC_COUNTRY, userI
   return overrides?.shipping?.[destCountry] || DEFAULT_INTL_SHIPPING;
 }
 
-async function buildOrderItems(items, couponCode, destCountry, userId, pointsToRedeem = 0, shippingChoice = 'shipping', giftCardCode = null, paymentMethod = 'cod', destPincode = null) {
+async function buildOrderItems(items, couponCode, destCountry, userId, pointsToRedeem = 0, shippingChoice = 'shipping', giftCardCode = null, paymentMethod = 'cod', destPincode = null, { trustPickup = false } = {}) {
   const products = await db.list('products');
   // Re-fetched fresh here rather than trusting anything from the JWT, so an
   // account an admin just flagged wholesale (see PATCH /admin/customers/:id/
@@ -284,7 +289,7 @@ async function buildOrderItems(items, couponCode, destCountry, userId, pointsToR
       ...(isReservation ? { pressingId: item.pressingId } : {}),
     };
   });
-  const shipping = await calculateShipping(subtotal, destCountry, userId, shippingChoice, destPincode);
+  const shipping = await calculateShipping(subtotal, destCountry, userId, shippingChoice, destPincode, { trustPickup });
 
   const coupon = await findValidCoupon(couponCode, userId);
   const discount = computeDiscount(coupon, subtotal);
@@ -407,18 +412,27 @@ async function issueBottleReturnCredit(userId, quantity) {
  *  Pickup additionally has to still be switched on — an order recorded as
  *  "collect from the mill" when the mill isn't offering collection is a
  *  customer turning up to a closed door. */
-async function resolveShippingChoice(address, requested) {
+async function resolveShippingChoice(address, requested, { trustPickup = false } = {}) {
   const domestic = !address.country || address.country === 'IN';
   if (!domestic) return 'shipping';
   if (requested === 'to_pay') return 'to_pay';
   if (requested === 'pickup') {
+    if (trustPickup) return 'pickup';
     const { pickupEnabled } = await getShippingSettings();
     return pickupEnabled ? 'pickup' : 'shipping';
   }
   return 'shipping';
 }
 
-async function createOrderRecord({ userId, orderItems, address, total, discount, couponCode, prepaidDiscount, pointsRedeemed, paymentMethod, payment, subscriptionId, advancePaid, shippingChoice, giftCardCode, giftCardApplied, isGift, giftMessage, affiliateCode }) {
+/**
+ * @param source — 'web' for anything the customer placed themselves, 'counter'
+ *   for an order the shop keyed in from a call, a WhatsApp message or someone
+ *   standing at the mill. Stored on the order so the profit report and the CSVs
+ *   can tell the two apart, and it changes two behaviours: a counter order must
+ *   not wipe whatever the customer has sitting in their basket on the website,
+ *   and must not buzz the admin's phone about an order they just typed in.
+ */
+async function createOrderRecord({ userId, orderItems, address, total, discount, couponCode, prepaidDiscount, pointsRedeemed, paymentMethod, payment, subscriptionId, advancePaid, shippingChoice, giftCardCode, giftCardApplied, isGift, giftMessage, affiliateCode, source = 'web', note = '' }) {
   // Computed before this order is persisted, so it only reflects orders that
   // already existed — used below to detect a customer's genuine first order,
   // whether that's a manual checkout or their first subscription renewal.
@@ -437,7 +451,12 @@ async function createOrderRecord({ userId, orderItems, address, total, discount,
     items: orderItems,
     address,
     paymentMethod,
-    paymentStatus: paymentMethod === 'razorpay' ? 'paid' : paymentMethod === 'cod_advance' ? 'partial' : 'pending',
+    // 'counter' is settled the moment it is recorded — the cash or the UPI
+    // transfer is already in hand, which is why the shop is writing it down.
+    paymentStatus:
+      paymentMethod === 'razorpay' || paymentMethod === 'counter' ? 'paid'
+        : paymentMethod === 'cod_advance' ? 'partial'
+          : 'pending',
     payment: payment || null,
     advancePaid: paymentMethod === 'cod_advance' ? advancePaid || 0 : 0,
     discount: discount || 0,
@@ -458,19 +477,25 @@ async function createOrderRecord({ userId, orderItems, address, total, discount,
     // mislead the invoice. Anything unrecognised falls back to ordinary
     // delivery, which is the choice that charges rather than the one that
     // doesn't.
-    shippingChoice: await resolveShippingChoice(address, shippingChoice),
+    shippingChoice: await resolveShippingChoice(address, shippingChoice, { trustPickup: source === 'counter' }),
     // Derived from the lines rather than taken from the request: whether an
     // order is waiting on a pressing is a fact about what's in it, and the
     // fulfilment screens key off this to keep reservations out of the
     // dispatch-today list.
     isPreOrder: orderItems.some((i) => i.pressingId),
+    source,
+    // Free text the shop can add while taking the call — "leave with the
+    // neighbour", "wants it before Friday". Shown on the fulfilment screen.
+    note: String(note || '').slice(0, 500),
     total,
     status: 'placed',
     createdAt: new Date().toISOString(),
   };
   await db.put('orders', order);
-  if (!subscriptionId) {
-    // Subscription-generated orders don't touch the customer's live cart.
+  if (!subscriptionId && source !== 'counter') {
+    // Subscription renewals and counter orders don't touch the customer's live
+    // cart — in the counter case because the shop typing up a phone call must
+    // never empty a basket the customer is still filling on the website.
     await db.put('carts', { id: userId, items: [] });
   }
   if (pointsRedeemed > 0) {
@@ -505,12 +530,19 @@ async function createOrderRecord({ userId, orderItems, address, total, discount,
       title: `Order ${order.orderNumber} placed`,
       message: subscriptionId
         ? `Your subscription renewed: ${orderItems.length} item(s) totalling ₹${total}. We'll notify you when it ships.`
-        : `We've received your order of ${orderItems.length} item(s) totalling ₹${total}. We'll notify you when it ships.`,
+        // A counter order gets no shipping promise: it may be walked out of the
+        // mill in the customer's own hand. It is a receipt, not a dispatch note.
+        : source === 'counter'
+          ? `We've recorded your order of ${orderItems.length} item(s) totalling ₹${total}. Thank you.`
+          : `We've received your order of ${orderItems.length} item(s) totalling ₹${total}. We'll notify you when it ships.`,
       meta: { orderId: order.id },
       channels: { inapp: true, email: true, whatsapp: true },
     });
   }
-  notifyAdminOfOrder(order, user);
+  // No alert for a counter order: the admin is the one who just typed it, and
+  // a phone buzzing about your own keystrokes trains you to ignore the alert
+  // that matters — a real order arriving while you are not looking.
+  if (source !== 'counter') notifyAdminOfOrder(order, user);
   return order;
 }
 

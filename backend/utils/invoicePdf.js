@@ -36,6 +36,7 @@ const fmtDate = (d) =>
 
 const PAYMENT_LABEL = {
   razorpay: 'Paid online',
+  counter: 'Paid at the mill',
   cod: 'Cash on Delivery',
   cod_advance: 'Part-paid, balance on delivery',
 };

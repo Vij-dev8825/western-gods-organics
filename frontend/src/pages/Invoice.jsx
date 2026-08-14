@@ -7,7 +7,7 @@ import ChakkiWheel from '../components/ChakkiWheel';
 import { amountInWords } from '../utils/numberToWords';
 import { getProductImage } from '../utils/productImages';
 
-const PAYMENT_LABELS = { cod: 'Cash on Delivery', razorpay: 'Paid Online (Razorpay)', cod_advance: 'Part-paid online, rest on delivery' };
+const PAYMENT_LABELS = { cod: 'Cash on Delivery', razorpay: 'Paid Online (Razorpay)', counter: 'Paid at the mill (cash / UPI)', cod_advance: 'Part-paid online, rest on delivery' };
 
 export default function Invoice() {
   const { orderId } = useParams();
