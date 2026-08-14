@@ -103,13 +103,17 @@ export default function Today() {
     unansweredQuestions, newEnquiries, sellerApplications, payoutRequests,
     unreadChats, unreadSellerMessages,
   } = data;
+  // Older deploys of the API don't send this; treat a missing queue as empty
+  // rather than crashing the whole screen on one absent field.
+  const unhappyCustomers = data.unhappyCustomers || { list: [], total: 0 };
 
   // Counted from the totals, not the trimmed lists, so the headline number is
   // the real amount of work rather than the amount currently on screen.
   const jobs =
     toConfirm.total + toShip.total + lowStock.total + waitingForStock.total +
     unansweredQuestions.total + newEnquiries.total + sellerApplications.total +
-    payoutRequests.total + (unreadChats > 0 ? 1 : 0) + (unreadSellerMessages > 0 ? 1 : 0);
+    payoutRequests.total + unhappyCustomers.total +
+    (unreadChats > 0 ? 1 : 0) + (unreadSellerMessages > 0 ? 1 : 0);
 
   const orderRow = (o) => (
     <Row
@@ -164,6 +168,28 @@ export default function Today() {
         queue={toShip}
         action={{ to: '/admin/orders', label: 'All orders' }}
         render={orderRow}
+      />
+
+      {/* Above the questions on purpose: a parcel that arrived damaged is
+          worth a phone call today, not an answer tomorrow. */}
+      <Group
+        title="Ring these customers back"
+        urgency="urgent"
+        queue={unhappyCustomers}
+        action={{ to: '/admin/feedback', label: 'All feedback' }}
+        render={(f) => (
+          <Row
+            key={f.id}
+            to="/admin/feedback"
+            primary={`${f.rating}/5 — ${f.customerName || f.customerPhone}`}
+            secondary={
+              [f.issues.join(', '), f.comment].filter(Boolean).join(' · ') ||
+              `Order ${f.orderNumber}`
+            }
+            meta={ago(f.createdAt)}
+            stale={isStale(f.createdAt)}
+          />
+        )}
       />
 
       <Group

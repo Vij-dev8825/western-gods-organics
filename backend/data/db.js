@@ -28,6 +28,7 @@ const COLLECTIONS = [
   'notifications',
   'notification-logs',
   'reviews',
+  'order-feedback',
   'coupons',
   'subscriptions',
   'blog-posts',

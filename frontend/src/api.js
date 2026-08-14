@@ -118,6 +118,9 @@ export const api = {
   verifyCodPhone: (phone, otp) => request('/orders/verify-cod-phone', { method: 'POST', body: { phone, otp } }),
   placeOrder: (token, payload) => request('/orders', { method: 'POST', body: payload, token }),
   getOrders: (token) => request('/orders', { token }),
+  // Opened from a WhatsApp link with no account — the URL token is the credential.
+  getFeedbackForm: (feedbackToken) => request(`/feedback/${feedbackToken}`),
+  submitFeedback: (feedbackToken, payload) => request(`/feedback/${feedbackToken}`, { method: 'POST', body: payload }),
   getOrder: (token, id) => request(`/orders/${id}`, { token }),
   cancelOrder: (token, id) => request(`/orders/${id}/cancel`, { method: 'PATCH', token }),
   requestReturn: (token, id, payload) => request(`/orders/${id}/return`, { method: 'PATCH', body: payload, token }),
@@ -419,6 +422,8 @@ export const api = {
 
     getCustomers: (token) => request('/admin/customers', { token }),
     createCounterOrder: (token, payload) => request('/admin/orders', { method: 'POST', body: payload, token }),
+    getFeedback: (token) => request('/admin/feedback', { token }),
+    markFeedbackHandled: (token, id) => request(`/admin/feedback/${id}/handled`, { method: 'PATCH', token }),
     setCustomerWholesale: (token, id, isWholesale) => request(`/admin/customers/${id}/wholesale`, { method: 'PATCH', body: { isWholesale }, token }),
     getEnquiries: (token) => request('/admin/enquiries', { token }),
     updateEnquiry: (token, id, status) =>

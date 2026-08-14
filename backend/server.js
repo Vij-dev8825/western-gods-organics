@@ -29,6 +29,7 @@ const { processAbandonedCarts } = require('./utils/abandonedCarts');
 const { processReorderNudges } = require('./utils/reorderNudges');
 const { processReviewRequests } = require('./utils/reviewRequests');
 const { processDeliveryUnboxingNudges } = require('./utils/deliveryUnboxingNudge');
+const feedbackRoutes = require('./routes/feedback');
 const whatsappBaileys = require('./utils/whatsappBaileys');
 const mediaRoutes = require('./routes/media');
 const catalogRoutes = require('./routes/catalog');
@@ -126,6 +127,7 @@ app.use('/api/webhooks', webhookRoutes);
 app.use('/api/gift-cards', giftCardRoutes);
 app.use('/api/affiliates', affiliateRoutes);
 app.use('/api/seller', sellerPortalRoutes);
+app.use('/api/feedback', feedbackRoutes);
 
 // Uploaded banner videos/images
 app.use('/uploads', express.static(UPLOADS_DIR, { maxAge: '7d' }));

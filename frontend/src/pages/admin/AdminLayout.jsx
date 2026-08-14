@@ -34,6 +34,7 @@ const links = [
   { to: '/admin/homepage-reviews', label: 'Homepage Reviews' },
   { to: '/admin/blog', label: 'Blog' },
   { to: '/admin/orders', label: 'Orders' },
+  { to: '/admin/feedback', label: 'Feedback' },
   { to: '/admin/returns', label: 'Returns' },
   { to: '/admin/bottle-returns', label: 'Bottle Returns' },
   { to: '/admin/leads', label: 'Enquiries & Leads' },

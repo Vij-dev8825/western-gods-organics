@@ -33,6 +33,7 @@ const { ordersCsv, productsCsv, customersCsv } = require('../utils/csvExport');
 const { creditPointsForOrder, reversePointsForOrder } = require('../utils/loyalty');
 const { issueBottleReturnCredit, buildOrderItems, createOrderRecord } = require('../utils/orderBuilder');
 const { findUserByPhone, resolveGuestUser } = require('../utils/customers');
+const { listFeedback, openFeedback, markHandled, feedbackSummary } = require('../utils/orderFeedback');
 const whatsappBaileys = require('../utils/whatsappBaileys');
 const whatsappOrdering = require('../utils/whatsappOrdering');
 const { getPaymentMethodsConfig } = require('../utils/paymentMethods');
@@ -320,6 +321,21 @@ router.get('/today', async (req, res, next) => {
           .filter((r) => r.status === 'pending')
           .sort(byOldest)
           .map((r) => ({ id: r.id, businessName: r.businessName, amount: r.amount }))
+      ),
+      // A customer who said something went wrong is the most time-sensitive
+      // thing on this page — a leaking bottle put right the same day is a
+      // story they tell; found a week later it is a refund and a bad review.
+      unhappyCustomers: capped(
+        (await openFeedback()).sort(byOldest).map((f) => ({
+          id: f.id,
+          orderNumber: f.orderNumber,
+          customerName: f.customerName,
+          customerPhone: f.customerPhone,
+          rating: f.rating,
+          issues: f.issues,
+          comment: f.comment,
+          createdAt: f.createdAt,
+        }))
       ),
       unreadChats: chats.filter((m) => m.from === 'user' && !m.readByAdmin).length,
       unreadSellerMessages: sellerMessages.filter((m) => m.from === 'seller' && !m.readByAdmin).length,
@@ -1517,6 +1533,30 @@ router.delete('/festivals/:id', async (req, res, next) => {
 router.get('/procurement', async (req, res, next) => {
   try {
     res.json({ success: true, plan: await buildProcurementPlan() });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/* -------------------------------- Feedback --------------------------------- */
+
+// What customers said privately after delivery. Anything poor, or with a
+// problem ticked, sorts to the top and stays there until someone marks it
+// dealt with — the point of asking is that somebody acts on the answer.
+router.get('/feedback', async (req, res, next) => {
+  try {
+    const [feedback, summary] = await Promise.all([listFeedback(), feedbackSummary()]);
+    res.json({ success: true, feedback, summary });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.patch('/feedback/:id/handled', async (req, res, next) => {
+  try {
+    const record = await markHandled(req.params.id);
+    if (!record) return res.status(404).json({ success: false, message: 'Feedback not found.' });
+    res.json({ success: true, feedback: record });
   } catch (err) {
     next(err);
   }

@@ -98,6 +98,8 @@ const AdminShipping = lazy(() => import('./pages/admin/AdminShipping'));
 const AdminProfit = lazy(() => import('./pages/admin/AdminProfit'));
 const AdminProcurement = lazy(() => import('./pages/admin/AdminProcurement'));
 const AdminNewOrder = lazy(() => import('./pages/admin/AdminNewOrder'));
+const AdminFeedback = lazy(() => import('./pages/admin/AdminFeedback'));
+const Feedback = lazy(() => import('./pages/Feedback'));
 const AdminFestivals = lazy(() => import('./pages/admin/AdminFestivals'));
 const AdminTrade = lazy(() => import('./pages/admin/AdminTrade'));
 const AdminToday = lazy(() => import('./pages/admin/Today'));
@@ -275,6 +277,7 @@ export default function App() {
         <Route path="profit" element={<AdminProfit />} />
         <Route path="procurement" element={<AdminProcurement />} />
         <Route path="new-order" element={<AdminNewOrder />} />
+        <Route path="feedback" element={<AdminFeedback />} />
         <Route path="festivals" element={<AdminFestivals />} />
         <Route path="trade" element={<AdminTrade />} />
         <Route path="today" element={<AdminToday />} />
@@ -303,6 +306,9 @@ export default function App() {
         <Route path="/guides" element={<Blog />} />
         <Route path="/product/:id" element={<ProductDetail />} />
         <Route path="/batch/:batchNumber" element={<BatchPassport />} />
+        {/* Deliberately outside ProtectedRoute — opened from a WhatsApp link by
+            someone who may have no account. The URL token is the credential. */}
+        <Route path="/feedback/:token" element={<Feedback />} />
         <Route path="/finder" element={<Finder />} />
         <Route path="/cart" element={<Cart />} />
         <Route path="/wishlist" element={<Wishlist />} />
