@@ -34,6 +34,7 @@ const { creditPointsForOrder, reversePointsForOrder } = require('../utils/loyalt
 const { issueBottleReturnCredit, buildOrderItems, createOrderRecord } = require('../utils/orderBuilder');
 const { findUserByPhone, resolveGuestUser } = require('../utils/customers');
 const { listFeedback, openFeedback, markHandled, feedbackSummary } = require('../utils/orderFeedback');
+const { restoreStockForOrder, applyStockForOrder } = require('../utils/stock');
 const whatsappBaileys = require('../utils/whatsappBaileys');
 const whatsappOrdering = require('../utils/whatsappOrdering');
 const { getPaymentMethodsConfig } = require('../utils/paymentMethods');
@@ -1179,6 +1180,16 @@ router.patch('/orders/:id', async (req, res, next) => {
       sendInvoiceForOrder(order).catch((err) => console.error('[invoice:send]', err.message));
     }
     if (cancelledAfterDelivery) await reverseCreditsForOrder(order, 'cancelled');
+
+    // Stock goes back on a cancellation whatever stage it was cancelled at.
+    // Even a parcel cancelled after delivery is the goods coming back to the
+    // mill — and if they come back unfit to sell, the admin lowers the count
+    // by hand, which is a judgement no code should be making for them.
+    if (order.status === 'cancelled') await restoreStockForOrder(order);
+    // ...and comes back off if the cancellation is undone. Gated on this order
+    // having been restored by us, so an order placed before any of this existed
+    // is never silently deducted years after the fact.
+    else if (order.stockRestoredAt) await applyStockForOrder(order);
 
     const user = await db.get('users', order.userId);
     if (user) {

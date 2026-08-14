@@ -18,6 +18,7 @@ const { getPaymentMethodsConfig } = require('../utils/paymentMethods');
 // over the phone resolves to the same account a checkout would.
 const { findUserByPhone, resolveGuestUser, syncContactDetails } = require('../utils/customers');
 const { ensureFeedbackToken } = require('../utils/orderFeedback');
+const { restoreStockForOrder } = require('../utils/stock');
 
 const CANCELLABLE_STATUSES = ['placed', 'confirmed'];
 const RETURN_WINDOW_DAYS = 7;
@@ -559,6 +560,8 @@ router.patch('/:id/cancel', requireAuth, async (req, res, next) => {
 
     order.status = 'cancelled';
     await db.put('orders', order);
+    // Nothing left the mill, so the bottles go back on the shelf.
+    await restoreStockForOrder(order);
 
     const user = await db.get('users', order.userId);
     if (user) {

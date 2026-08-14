@@ -13,6 +13,7 @@ const { findAffiliateByCode } = require('./affiliates');
 const { getPaymentMethodsConfig } = require('./paymentMethods');
 const { validateReservation } = require('./pressings');
 const { isNumber } = require('./num');
+const { applyStockForOrder } = require('./stock');
 
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || process.env.CONTACT_NOTIFY_EMAIL;
 const REFERRAL_REWARD_INR = 100;
@@ -492,6 +493,18 @@ async function createOrderRecord({ userId, orderItems, address, total, discount,
     createdAt: new Date().toISOString(),
   };
   await db.put('orders', order);
+
+  // After the order is saved, never before. If taking stock off fails, the
+  // order still exists — an order with stock not yet deducted is a visible,
+  // fixable discrepancy, whereas losing a paid order is not recoverable at
+  // all. Every route that creates an order comes through here, so this is the
+  // single place a sale reaches the shelf.
+  try {
+    await applyStockForOrder(order);
+  } catch (err) {
+    console.error(`[stock] could not take stock off for ${order.orderNumber}:`, err.message);
+  }
+
   if (!subscriptionId && source !== 'counter') {
     // Subscription renewals and counter orders don't touch the customer's live
     // cart — in the counter case because the shop typing up a phone call must
