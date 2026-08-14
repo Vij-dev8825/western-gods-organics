@@ -58,6 +58,7 @@ const COLLECTIONS = [
   'seller-messages',
   'pressings',
   'festivals',
+  'trade-prospects',
 ];
 
 let mode = 'json';

@@ -26,6 +26,8 @@ const { buildProfitReport } = require('../utils/profit');
 const { sendInvoiceForOrder } = require('../utils/sendInvoice');
 const { buildProcurementPlan } = require('../utils/procurement');
 const { listAll: listAllFestivals, DEFAULT_LEAD_DAYS: FESTIVAL_LEAD_DAYS } = require('../utils/festivals');
+const { buildRateCardPdf } = require('../utils/rateCard');
+const { sendWhatsAppFile } = require('../utils/whatsapp');
 const { buildInvoicePdf, invoiceFileName } = require('../utils/invoicePdf');
 const { ordersCsv, productsCsv, customersCsv } = require('../utils/csvExport');
 const { creditPointsForOrder, reversePointsForOrder } = require('../utils/loyalty');
@@ -1298,6 +1300,147 @@ router.put('/payment-methods', async (req, res, next) => {
     await db.put('payment-methods', paymentMethods);
     res.json({ success: true, paymentMethods });
   } catch (err) {
+    next(err);
+  }
+});
+
+/* ------------------------------ Trade prospects ----------------------------- */
+//
+// Every lead the shop has recorded so far arrived on its own — a form filled
+// in, an enquiry sent. Selling a case of oil to a tiffin centre is the other
+// direction: you walk in, leave a sample, and come back on Thursday. That
+// needs a list of who and when, which nothing here had.
+
+const PROSPECT_STAGES = ['to_visit', 'visited', 'sampling', 'buying', 'not_interested'];
+
+function readProspect(body, existing = {}) {
+  const name = String(body.name || '').trim();
+  if (!name) return { error: 'Give the place a name.' };
+  const stage = PROSPECT_STAGES.includes(body.stage) ? body.stage : 'to_visit';
+  const followUpAt = body.followUpAt ? String(body.followUpAt).slice(0, 10) : '';
+  if (followUpAt && Number.isNaN(Date.parse(followUpAt))) {
+    return { error: 'That follow-up date is not a real date.' };
+  }
+  return {
+    prospect: {
+      ...existing,
+      name: name.slice(0, 120),
+      kind: String(body.kind || '').slice(0, 40),
+      area: String(body.area || '').slice(0, 80),
+      phone: String(body.phone || '').replace(/[^\d+]/g, '').slice(0, 15),
+      stage,
+      followUpAt,
+      // Append-only in practice — an admin types what was said and it stays.
+      notes: String(body.notes || '').slice(0, 2000),
+      updatedAt: new Date().toISOString(),
+    },
+  };
+}
+
+router.get('/trade-prospects', async (req, res, next) => {
+  try {
+    const all = await db.list('trade-prospects');
+    const today = new Date().toISOString().slice(0, 10);
+    const prospects = all
+      .map((p) => ({ ...p, followUpDue: !!p.followUpAt && p.followUpAt <= today }))
+      // Anything owed a call today comes first; then by stage order, so the
+      // ones already warm sit above a list of cold names.
+      .sort((a, b) => {
+        if (a.followUpDue !== b.followUpDue) return a.followUpDue ? -1 : 1;
+        const stageDiff = PROSPECT_STAGES.indexOf(a.stage) - PROSPECT_STAGES.indexOf(b.stage);
+        return stageDiff || String(a.name).localeCompare(String(b.name));
+      });
+    res.json({ success: true, prospects, stages: PROSPECT_STAGES });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.post('/trade-prospects', async (req, res, next) => {
+  try {
+    const { prospect, error } = readProspect(req.body);
+    if (error) return res.status(400).json({ success: false, message: error });
+    const saved = { id: uuid(), createdAt: new Date().toISOString(), ...prospect };
+    await db.put('trade-prospects', saved);
+    res.status(201).json({ success: true, prospect: saved });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.put('/trade-prospects/:id', async (req, res, next) => {
+  try {
+    const existing = await db.get('trade-prospects', req.params.id);
+    if (!existing) return res.status(404).json({ success: false, message: 'Not found.' });
+    const { prospect, error } = readProspect(req.body, existing);
+    if (error) return res.status(400).json({ success: false, message: error });
+    await db.put('trade-prospects', { ...prospect, id: existing.id });
+    res.json({ success: true, prospect: { ...prospect, id: existing.id } });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.delete('/trade-prospects/:id', async (req, res, next) => {
+  try {
+    await db.del('trade-prospects', req.params.id);
+    res.json({ success: true });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET /api/admin/rate-card.pdf?terms=…&validUntil=… — the sheet you hand over.
+router.get('/rate-card.pdf', async (req, res, next) => {
+  try {
+    const pdf = await buildRateCardPdf({ terms: req.query.terms || '', validUntil: req.query.validUntil || '' });
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', 'inline; filename="Western-Gods-trade-rates.pdf"');
+    res.send(pdf);
+  } catch (err) {
+    // A missing wholesale price is an admin's to-do, not a server fault.
+    if (/wholesale price/.test(err.message)) {
+      return res.status(400).json({ success: false, message: err.message });
+    }
+    next(err);
+  }
+});
+
+// POST /api/admin/trade-prospects/:id/send-rates — WhatsApp the rate card.
+router.post('/trade-prospects/:id/send-rates', async (req, res, next) => {
+  try {
+    const prospect = await db.get('trade-prospects', req.params.id);
+    if (!prospect) return res.status(404).json({ success: false, message: 'Not found.' });
+    if (!prospect.phone) {
+      return res.status(400).json({ success: false, message: 'No phone number recorded for this place.' });
+    }
+    const pdf = await buildRateCardPdf({ terms: req.body.terms || '', validUntil: req.body.validUntil || '' });
+    const r = await sendWhatsAppFile(prospect.phone, {
+      buffer: pdf,
+      fileName: 'Western-Gods-trade-rates.pdf',
+      caption: (req.body.message || '').slice(0, 800)
+        || `Our trade rates, as promised.\n\nCold-pressed at our own mill in Udumalpet, in batches. Happy to leave a sample if that helps.`,
+    });
+    if (!r.sent) {
+      return res.status(502).json({
+        success: false,
+        message: r.reason === 'not-connected'
+          ? 'WhatsApp is not connected — pair it in Admin → WhatsApp and try again.'
+          : 'Could not send the rate card.',
+      });
+    }
+    await db.put('trade-prospects', {
+      ...prospect,
+      ratesSentAt: new Date().toISOString(),
+      // Sending rates means the visit happened; leaving it at "to visit"
+      // would put it back on tomorrow's walking list.
+      stage: prospect.stage === 'to_visit' ? 'visited' : prospect.stage,
+    });
+    res.json({ success: true, message: `Rate card sent to ${prospect.name}.` });
+  } catch (err) {
+    if (/wholesale price/.test(err.message)) {
+      return res.status(400).json({ success: false, message: err.message });
+    }
     next(err);
   }
 });

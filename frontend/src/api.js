@@ -305,6 +305,13 @@ export const api = {
 
     procurement: (token) => request('/admin/procurement', { token }),
 
+    listProspects: (token) => request('/admin/trade-prospects', { token }),
+    createProspect: (token, body) => request('/admin/trade-prospects', { method: 'POST', body, token }),
+    updateProspect: (token, id, body) => request(`/admin/trade-prospects/${id}`, { method: 'PUT', body, token }),
+    deleteProspect: (token, id) => request(`/admin/trade-prospects/${id}`, { method: 'DELETE', token }),
+    sendRateCard: (token, id, body) => request(`/admin/trade-prospects/${id}/send-rates`, { method: 'POST', body, token }),
+    rateCardPdf: (token, terms) => requestBlob(`/admin/rate-card.pdf?terms=${encodeURIComponent(terms || '')}`, { token }),
+
     listFestivals: (token) => request('/admin/festivals', { token }),
     createFestival: (token, body) => request('/admin/festivals', { method: 'POST', body, token }),
     updateFestival: (token, id, body) => request(`/admin/festivals/${id}`, { method: 'PUT', body, token }),
