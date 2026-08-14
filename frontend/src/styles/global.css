@@ -3112,6 +3112,44 @@ input:focus-visible + .filter-radio { outline: 2px solid var(--gold-2); outline-
   .pressing-run-tag { align-self: flex-start; margin-left: 68px; }
 }
 
+/* ---------- Admin: Profit ----------
+   Read as a subtraction, not a scorecard: takings, then each thing that came
+   out of them, then what's left. The arithmetic is the layout, so the last
+   figure is visibly the result of the ones before it rather than an
+   unexplained number in a box. */
+.profit-flow {
+  display: flex; flex-wrap: wrap; align-items: stretch; gap: 10px; margin-top: 18px;
+}
+.profit-step {
+  flex: 1 1 150px; min-width: 140px;
+  display: flex; flex-direction: column; gap: 2px;
+  padding: 14px 16px; border-radius: var(--radius-md);
+  border: 1px solid rgba(31, 61, 43, 0.12); background: var(--paper);
+}
+.profit-step .k { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted-text, #6B7A70); }
+.profit-step b { font-size: 1.3rem; font-variant-numeric: tabular-nums; }
+.profit-step .muted { font-size: 0.75rem; }
+/* Money leaving is the same shape as money arriving, just quieter — the eye
+   should land on the total, not on each deduction. */
+.profit-step.out b { color: #A3543C; font-weight: 600; }
+.profit-step.total {
+  border-color: rgba(212, 175, 55, 0.55); background: rgba(212, 175, 55, 0.08);
+}
+.profit-step.total b { font-size: 1.55rem; }
+.profit-step.total.negative b { color: #A3543C; }
+
+/* The window picker. */
+.seg { display: inline-flex; border: 1px solid rgba(31, 61, 43, 0.16); border-radius: 999px; overflow: hidden; }
+.seg button {
+  border: 0; background: transparent; cursor: pointer; padding: 7px 14px;
+  font-size: 0.8rem; font-family: inherit; color: var(--forest-light, #5c6b5e);
+  min-height: 44px; /* thumb-sized — this gets used on a phone */
+}
+.seg button.on { background: var(--forest, #1F3D2B); color: #fff; }
+
+.btn-row { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
+.chip-list { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+
 /* ---------- Admin: Today ----------
    A worklist, not a report. Rows are uniform on purpose so the eye runs down
    them; the only things allowed to stand out are the left stripe (which queue)

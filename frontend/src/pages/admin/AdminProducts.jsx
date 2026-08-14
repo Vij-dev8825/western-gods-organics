@@ -17,7 +17,7 @@ const EMPTY = {
   descriptions: {},
   image: '',
   extraImages: [],
-  sizes: [{ label: '500 ml', price: '', mrp: '', stock: '', wholesalePrice: '' }],
+  sizes: [{ label: '500 ml', price: '', mrp: '', stock: '', costPrice: '', wholesalePrice: '' }],
   tags: '',
   comboItems: '',
   comboProductIds: [],
@@ -81,6 +81,7 @@ function fromForm(f) {
       price: Number(s.price),
       mrp: Number(s.mrp || s.price),
       stock: Number(s.stock || 0),
+      costPrice: s.costPrice !== '' && s.costPrice != null ? Number(s.costPrice) : null,
       wholesalePrice: s.wholesalePrice !== '' && s.wholesalePrice != null ? Number(s.wholesalePrice) : null,
     })),
     tags: f.tags.split(',').map((t) => t.trim()).filter(Boolean),
@@ -443,7 +444,7 @@ export default function AdminProducts() {
               you can only half see. */}
           <table className="admin-table sizes-editor admin-table-stack">
             <thead>
-              <tr><th>Size label</th><th>Price ₹</th><th>MRP ₹</th><th>Stock</th><th>Wholesale ₹ (optional)</th><th /></tr>
+              <tr><th>Size label</th><th>Price ₹</th><th>MRP ₹</th><th>Stock</th><th>Cost ₹</th><th>Wholesale ₹ (optional)</th><th /></tr>
             </thead>
             <tbody>
               {form.sizes.map((s, i) => (
@@ -452,6 +453,7 @@ export default function AdminProducts() {
                   <td data-label="Price ₹"><input type="number" min="0" value={s.price} onChange={(e) => setSize(i, 'price', e.target.value)} required /></td>
                   <td data-label="MRP ₹"><input type="number" min="0" value={s.mrp} onChange={(e) => setSize(i, 'mrp', e.target.value)} /></td>
                   <td data-label="Stock"><input type="number" min="0" value={s.stock} onChange={(e) => setSize(i, 'stock', e.target.value)} /></td>
+                  <td data-label="Cost ₹"><input type="number" min="0" value={s.costPrice ?? ''} onChange={(e) => setSize(i, 'costPrice', e.target.value)} placeholder="Not set" /></td>
                   <td data-label="Wholesale ₹ (optional)"><input type="number" min="0" value={s.wholesalePrice || ''} onChange={(e) => setSize(i, 'wholesalePrice', e.target.value)} placeholder="Same as price" /></td>
                   <td className="cell-action">
                     {form.sizes.length > 1 && (
@@ -465,13 +467,17 @@ export default function AdminProducts() {
             </tbody>
           </table>
           <p className="muted" style={{ fontSize: '0.82rem', marginTop: -4 }}>
+            Cost ₹ is what one unit costs you — seed, bottle, label, cap. Customers never see it; it is what
+            makes Admin → Profit able to tell you what you kept. Leave it blank and orders for this size are
+            left out of the profit figure rather than counted as free to make.
+            <br />
             Wholesale ₹ only applies to accounts flagged wholesale (Admin → Enquiries &amp; Leads → Customers) — leave
             blank to charge them the same price as everyone else.
           </p>
           <button
             type="button"
             className="link-btn"
-            onClick={() => setForm((f) => ({ ...f, sizes: [...f.sizes, { label: '', price: '', mrp: '', stock: '', wholesalePrice: '' }] }))}
+            onClick={() => setForm((f) => ({ ...f, sizes: [...f.sizes, { label: '', price: '', mrp: '', stock: '', costPrice: '', wholesalePrice: '' }] }))}
           >
             + add size
           </button>

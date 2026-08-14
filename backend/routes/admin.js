@@ -22,6 +22,8 @@ const { suggestProductAnswer } = require('../utils/aiAnswerSuggestion');
 const { listAll: listAllPressings, countReserved } = require('../utils/pressings');
 const { imageUpload, storeUploadedFile } = require('../utils/imageUploadHandler');
 const { buildBatchLabelPdf } = require('../utils/batchLabels');
+const { buildProfitReport } = require('../utils/profit');
+const { ordersCsv, productsCsv, customersCsv } = require('../utils/csvExport');
 const { creditPointsForOrder, reversePointsForOrder } = require('../utils/loyalty');
 const { issueBottleReturnCredit } = require('../utils/orderBuilder');
 const whatsappBaileys = require('../utils/whatsappBaileys');
@@ -434,6 +436,10 @@ router.post('/products', async (req, res, next) => {
         mrp: Number(s.mrp || s.price),
         stock: Number(s.stock || 0),
         wholesalePrice: s.wholesalePrice !== '' && s.wholesalePrice != null ? Number(s.wholesalePrice) : null,
+        // What this unit costs to make and pack. null, not 0, when unrecorded —
+        // Admin → Profit excludes an order it can't cost rather than reporting
+        // it as free to produce.
+        costPrice: s.costPrice !== '' && s.costPrice != null ? Number(s.costPrice) : null,
       })),
       rating: Number(req.body.rating || 0),
       reviewsCount: Number(req.body.reviewsCount || 0),
@@ -493,6 +499,10 @@ router.put('/products/:id', async (req, res, next) => {
         mrp: Number(s.mrp || s.price),
         stock: Number(s.stock || 0),
         wholesalePrice: s.wholesalePrice !== '' && s.wholesalePrice != null ? Number(s.wholesalePrice) : null,
+        // What this unit costs to make and pack. null, not 0, when unrecorded —
+        // Admin → Profit excludes an order it can't cost rather than reporting
+        // it as free to produce.
+        costPrice: s.costPrice !== '' && s.costPrice != null ? Number(s.costPrice) : null,
       })),
       countryPrices: normalizeCountryPrices(req.body.countryPrices ?? existing.countryPrices),
       shortDescriptions: sanitizeLangMap(req.body.shortDescriptions ?? existing.shortDescriptions),
@@ -1245,21 +1255,62 @@ router.get('/payment-methods', async (req, res, next) => {
   }
 });
 
-// PUT /api/admin/payment-methods  { cod, razorpay, codAdvance, prepaidDiscountPercent }
+// PUT /api/admin/payment-methods  { cod, razorpay, codAdvance, prepaidDiscountPercent, gatewayFeePercent }
 router.put('/payment-methods', async (req, res, next) => {
   try {
     // Clamped to 0-50: a typo'd 500 here would otherwise zero out every
     // prepaid order's total. buildOrderItems clamps again independently.
     const rawPrepaid = Number(req.body.prepaidDiscountPercent);
+    // Reporting-only — this one never touches a customer's total, so a bad
+    // value can misstate a report but can't mischarge anyone.
+    const rawGateway = Number(req.body.gatewayFeePercent);
     const paymentMethods = {
       id: 'main',
       cod: !!req.body.cod,
       razorpay: !!req.body.razorpay,
       codAdvance: !!req.body.codAdvance,
       prepaidDiscountPercent: Number.isFinite(rawPrepaid) ? Math.min(Math.max(rawPrepaid, 0), 50) : 0,
+      gatewayFeePercent: Number.isFinite(rawGateway) ? Math.min(Math.max(rawGateway, 0), 20) : 0,
     };
     await db.put('payment-methods', paymentMethods);
     res.json({ success: true, paymentMethods });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/* -------------------------- Profit and CSV exports -------------------------- */
+
+// GET /api/admin/profit?days=30
+router.get('/profit', async (req, res, next) => {
+  try {
+    const days = Math.min(Math.max(parseInt(req.query.days, 10) || 30, 1), 365);
+    res.json({ success: true, report: await buildProfitReport({ days }) });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET /api/admin/export/:what.csv
+//
+// GET, and fetched with the auth header rather than linked to directly: the
+// host's LiteSpeed layer rejects authenticated POSTs to /api/admin/* before
+// Node ever sees them, and a plain <a href> can't carry a bearer token.
+const EXPORTS = {
+  orders: { build: (q) => ordersCsv({ days: q.days ? parseInt(q.days, 10) : null }), file: 'orders' },
+  products: { build: () => productsCsv(), file: 'products' },
+  customers: { build: () => customersCsv(), file: 'customers' },
+};
+
+router.get('/export/:what.csv', async (req, res, next) => {
+  try {
+    const spec = EXPORTS[req.params.what];
+    if (!spec) return res.status(404).json({ success: false, message: 'No such export.' });
+    const csv = await spec.build(req.query);
+    const stamp = new Date().toISOString().slice(0, 10);
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="western-gods-${spec.file}-${stamp}.csv"`);
+    res.send(csv);
   } catch (err) {
     next(err);
   }

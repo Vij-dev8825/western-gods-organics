@@ -299,6 +299,10 @@ export const api = {
     batchLabelsPdf: (token, productId, count) =>
       requestBlob(`/admin/products/${productId}/batch-labels.pdf?count=${count}`, { token }),
 
+    profit: (token, days = 30) => request(`/admin/profit?days=${days}`, { token }),
+    exportCsv: (token, what, days) =>
+      requestBlob(`/admin/export/${what}.csv${days ? `?days=${days}` : ''}`, { token }),
+
     uploadImage: (token, formData) => request('/admin/upload-image', { method: 'POST', formData, token }),
 
     createProduct: (token, product) => request('/admin/products', { method: 'POST', body: product, token }),

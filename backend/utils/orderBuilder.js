@@ -266,6 +266,10 @@ async function buildOrderItems(items, couponCode, destCountry, userId, pointsToR
       size: item.size,
       quantity: item.quantity,
       price,
+      // Snapshotted, like the price beside it. Cost is a fact about the day the
+      // order was placed; re-reading the product later would let a change in
+      // what seed costs this season silently rewrite last season's profit.
+      ...(Number.isFinite(Number(sizeInfo?.costPrice)) ? { costPrice: Number(sizeInfo.costPrice) } : {}),
       ...(isReservation ? { pressingId: item.pressingId } : {}),
     };
   });
