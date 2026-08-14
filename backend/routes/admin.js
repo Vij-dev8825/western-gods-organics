@@ -27,6 +27,7 @@ const { sendInvoiceForOrder } = require('../utils/sendInvoice');
 const { buildProcurementPlan } = require('../utils/procurement');
 const { listAll: listAllFestivals, DEFAULT_LEAD_DAYS: FESTIVAL_LEAD_DAYS } = require('../utils/festivals');
 const { buildRateCardPdf } = require('../utils/rateCard');
+const { buildPriceListPdf } = require('../utils/priceList');
 const { sendWhatsAppFile } = require('../utils/whatsapp');
 const { buildInvoicePdf, invoiceFileName } = require('../utils/invoicePdf');
 const { ordersCsv, productsCsv, customersCsv } = require('../utils/csvExport');
@@ -450,6 +451,10 @@ router.post('/products', async (req, res, next) => {
       category: req.body.category,
       shortDescription: req.body.shortDescription || '',
       description: req.body.description || '',
+      // In Tamil Nadu the Tamil name is the name — நல்லெண்ணெய், not a
+      // translation of "Cold-Pressed Sesame Oil". Optional per product; a
+      // blank map falls back to the English name everywhere.
+      names: sanitizeLangMap(req.body.names),
       shortDescriptions: sanitizeLangMap(req.body.shortDescriptions),
       descriptions: sanitizeLangMap(req.body.descriptions),
       image: req.body.image || '',
@@ -542,6 +547,7 @@ router.put('/products/:id', async (req, res, next) => {
         materialPerUnit: s.materialPerUnit !== '' && s.materialPerUnit != null ? Number(s.materialPerUnit) : null,
       })),
       countryPrices: normalizeCountryPrices(req.body.countryPrices ?? existing.countryPrices),
+      names: sanitizeLangMap(req.body.names ?? existing.names),
       shortDescriptions: sanitizeLangMap(req.body.shortDescriptions ?? existing.shortDescriptions),
       descriptions: sanitizeLangMap(req.body.descriptions ?? existing.descriptions),
       comboProductIds: Array.isArray(req.body.comboProductIds ?? existing.comboProductIds)
@@ -1414,6 +1420,23 @@ router.delete('/trade-prospects/:id', async (req, res, next) => {
     await db.del('trade-prospects', req.params.id);
     res.json({ success: true });
   } catch (err) {
+    next(err);
+  }
+});
+
+// GET /api/admin/price-list.pdf?note=…&validUntil=… — the rate card's everyday
+// twin: retail prices, for a walk-in or for whoever messages asking "price?".
+router.get('/price-list.pdf', async (req, res, next) => {
+  try {
+    const pdf = await buildPriceListPdf({ note: req.query.note || '', validUntil: req.query.validUntil || '' });
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', 'inline; filename="Western-Gods-price-list.pdf"');
+    res.send(pdf);
+  } catch (err) {
+    // Nothing priced yet is an admin's to-do, not a server fault.
+    if (/has a price yet/.test(err.message)) {
+      return res.status(400).json({ success: false, message: err.message });
+    }
     next(err);
   }
 });

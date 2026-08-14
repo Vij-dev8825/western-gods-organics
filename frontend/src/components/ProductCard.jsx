@@ -29,6 +29,9 @@ export default function ProductCard({ product, index }) {
   const { isLoggedIn, token, user } = useAuth();
   const isWholesale = !!user?.isWholesale;
   const { lang } = useLang();
+  // Falls back to the English name until a Tamil (or Hindi, Telugu, Kannada)
+  // one is entered, so nothing changes for a product nobody has renamed.
+  const displayName = localizeProductText(product, 'name', lang) || product.name;
   const navigate = useNavigate();
   const [size, setSize] = useState(product.sizes[1]?.label || product.sizes[0].label);
   const [hoverIndex, setHoverIndex] = useState(0);
@@ -70,7 +73,7 @@ export default function ProductCard({ product, index }) {
     if (outOfStock) return;
     flyToCart(e.currentTarget.closest('.product-card')?.querySelector('.product-media img'));
     addItem(product.id, size, qty);
-    showToast(`${product.name} (${size}) ×${qty} added to cart`);
+    showToast(`${displayName} (${size}) ×${qty} added to cart`);
   }
 
   function handleBuyNow(e) {
@@ -88,7 +91,7 @@ export default function ProductCard({ product, index }) {
   function handleWishlist(e) {
     e.preventDefault();
     toggleWishlist(product.id);
-    showToast(isWished ? `Removed from wishlist` : `${product.name} added to wishlist`);
+    showToast(isWished ? `Removed from wishlist` : `${displayName} added to wishlist`);
   }
 
   async function handleNotifyMe(e) {
@@ -158,7 +161,7 @@ export default function ProductCard({ product, index }) {
             ))}
           </div>
         )}
-        <img src={getProductImage(gallery[hoverIndex])} alt={product.name} loading="lazy" />
+        <img src={getProductImage(gallery[hoverIndex])} alt={displayName} loading="lazy" />
 
         <div className="product-media-quickadd">
           <div className="qty-stepper qty-stepper-sm" onClick={(e) => e.preventDefault()}>
@@ -172,7 +175,7 @@ export default function ProductCard({ product, index }) {
         </div>
       </div>
       <div className="product-body">
-        <h3>{product.name}</h3>
+        <h3>{displayName}</h3>
         {/* The whole card is already an <a>, so this can't be a nested Link —
             navigate programmatically instead of producing invalid markup. */}
         {product.sellerName && (

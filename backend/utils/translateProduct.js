@@ -16,9 +16,14 @@ const RESPONSE_SCHEMA = {
 
 /**
  * Translates a product's short/full description into Hindi, Tamil, Telugu
- * and Kannada. Product names are never translated (site convention — see
- * frontend/src/i18n.jsx) so `name` is passed only as context for a more
- * accurate translation, not translated itself.
+ * and Kannada.
+ *
+ * Names are deliberately left alone, even though products can now carry a
+ * per-language name. A machine asked for the Tamil of "Cold-Pressed Sesame
+ * Oil" returns a literal rendering; what a Tamil shopper says and searches
+ * for is நல்லெண்ணெய், which no translation of the English will produce. That
+ * name is local knowledge and is typed by hand in Admin → Products. `name` is
+ * passed here only as context for a more accurate description.
  */
 async function translateProductText({ name, shortDescription, description }) {
   if (!process.env.GEMINI_API_KEY) {

@@ -168,6 +168,10 @@ export default function ProductDetail() {
   const { isLoggedIn, token, user } = useAuth();
   const { showToast } = useToast();
   const { lang } = useLang();
+  // In Tamil Nadu the Tamil name is the name, not a translation of the English
+  // one — so it is entered by hand per product and falls back to English until
+  // it is. See utils/productLocale.js for the lookup.
+  const displayName = localizeProductText(product, 'name', lang) || product?.name || '';
   const isWholesale = !!user?.isWholesale;
 
   useEffect(() => {
@@ -503,7 +507,7 @@ export default function ProductDetail() {
   return (
     <div className="container section">
       <SeoMeta
-        title={`${product.name} | Western Gods Organics`}
+        title={`${displayName} | Western Gods Organics`}
         description={(localizeProductText(product, 'shortDescription', lang) || localizeProductText(product, 'description', lang)).slice(0, 160)}
         // Placeholder products use an inline data: URI image — social-share
         // crawlers can't fetch that as an og:image, so fall back to the
@@ -524,7 +528,7 @@ export default function ProductDetail() {
         ])}
       />
       <div className="breadcrumb">
-        <Link to="/shop">Shop</Link> / {product.name}
+        <Link to="/shop">Shop</Link> / {displayName}
       </div>
 
       <div className="product-detail-grid">
@@ -539,7 +543,7 @@ export default function ProductDetail() {
             aria-label="View larger image"
           >
             {discount > 0 && <span className="product-badge">{discount}% OFF</span>}
-            <img src={getProductImage(gallery[activeImage])} alt={product.name} />
+            <img src={getProductImage(gallery[activeImage])} alt={displayName} />
             {/* Two hints, one shown per input type. A phone has no cursor to
                 magnify under, so it keeps the tap-to-open-full-screen route. */}
             <span className="product-media-zoom-hint hint-touch">🔍 Tap to zoom</span>
@@ -580,7 +584,7 @@ export default function ProductDetail() {
               You're seeing it early as a Silver/Gold reward member.
             </p>
           )}
-          <h1>{product.name}</h1>
+          <h1>{displayName}</h1>
           {product.batchNumber && (
             <Link to={`/batch/${encodeURIComponent(product.batchNumber)}`} className="harvest-ribbon">
               🌿 Batch {product.batchNumber}

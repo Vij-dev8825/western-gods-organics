@@ -13,6 +13,7 @@ const EMPTY = {
   category: '',
   shortDescription: '',
   description: '',
+  names: {},
   shortDescriptions: {},
   descriptions: {},
   image: '',
@@ -46,6 +47,7 @@ function toForm(p) {
     comboProductIds: p.comboProductIds || [],
     earlyAccessUntil: p.earlyAccessUntil ? p.earlyAccessUntil.slice(0, 10) : '',
     countryPrices: p.countryPrices || {},
+    names: p.names || {},
     shortDescriptions: p.shortDescriptions || {},
     descriptions: p.descriptions || {},
     batchNumber: p.batchNumber || '',
@@ -283,11 +285,24 @@ export default function AdminProducts() {
     }
   }
 
+  // One sheet of everything you sell, at retail. For the person standing at
+  // the mill asking what else you have, and for whoever messages "price?".
+  async function openPriceList() {
+    try {
+      const url = await api.admin.priceListPdf(token);
+      window.open(url, '_blank', 'noopener');
+      setTimeout(() => URL.revokeObjectURL(url), 60000);
+    } catch (err) {
+      setMessage({ type: 'error', text: err.message });
+    }
+  }
+
   return (
     <>
       <div className="admin-head">
         <h1>Products</h1>
         <div className="flex gap-2">
+          <button className="btn btn-outline btn-sm" onClick={openPriceList}>🧾 Price list PDF</button>
           <button className="btn btn-outline btn-sm" onClick={translateAll} disabled={bulkTranslating}>
             {bulkTranslating ? 'Translating all…' : '✨ Auto-translate all missing'}
           </button>
@@ -414,6 +429,31 @@ export default function AdminProducts() {
             Add a translated description so shoppers see it when they've selected that language.
             Leave a language blank and it'll fall back to the English text above.
           </p>
+
+          {/* Names are typed, never auto-translated. The Tamil name for sesame
+              oil is நல்லெண்ணெய் — what people actually call it and search for —
+              not a machine's rendering of "Cold-Pressed Sesame Oil". Only
+              someone who knows the trade can supply that. */}
+          <div className="form-card" style={{ margin: '0 0 14px', padding: '12px 14px' }}>
+            <label style={{ fontWeight: 600, fontSize: '0.85rem' }}>Product name in other languages</label>
+            <p className="muted" style={{ fontSize: '0.78rem', margin: '2px 0 10px' }}>
+              Type the name people actually use — நல்லெண்ணெய், not a translation of the English.
+              It is what a Tamil shopper reads, and what they search for. Blank means the
+              English name is used. Auto-translate deliberately leaves these alone.
+            </p>
+            <div className="form-grid">
+              {TRANSLATABLE_LANGS.map((l) => (
+                <div className="field" key={`name-${l.code}`}>
+                  <label>Name ({l.label})</label>
+                  <input
+                    value={form.names[l.code] || ''}
+                    onChange={(e) => setForm({ ...form, names: { ...form.names, [l.code]: e.target.value } })}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+
           {TRANSLATABLE_LANGS.map((l) => (
             <div key={l.code} className="form-grid" style={{ marginBottom: 8 }}>
               <div className="field">

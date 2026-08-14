@@ -3,9 +3,11 @@ import { createContext, useContext, useEffect, useState } from 'react';
 /**
  * Lightweight i18n: flat key → string dictionaries per language.
  * Missing keys fall back to English, so partial translations never break the UI.
- * Product names always come from the database as entered by the admin (untranslated).
- * Product descriptions can optionally be translated per-language via the admin's
- * product form — see utils/productLocale.js for the fallback-to-English lookup.
+ * Product names and descriptions can both be given per-language versions in the
+ * admin's product form, falling back to English when one hasn't been entered —
+ * see utils/productLocale.js for the lookup. Names are typed by hand and never
+ * auto-translated: in Tamil Nadu the Tamil name for sesame oil is நல்லெண்ணெய்,
+ * which is what people say and search for, not a rendering of the English.
  */
 
 export const LANGS = [

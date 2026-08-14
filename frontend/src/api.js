@@ -315,6 +315,7 @@ export const api = {
     deleteProspect: (token, id) => request(`/admin/trade-prospects/${id}`, { method: 'DELETE', token }),
     sendRateCard: (token, id, body) => request(`/admin/trade-prospects/${id}/send-rates`, { method: 'POST', body, token }),
     rateCardPdf: (token, terms) => requestBlob(`/admin/rate-card.pdf?terms=${encodeURIComponent(terms || '')}`, { token }),
+    priceListPdf: (token, note) => requestBlob(`/admin/price-list.pdf?note=${encodeURIComponent(note || '')}`, { token }),
 
     listFestivals: (token) => request('/admin/festivals', { token }),
     createFestival: (token, body) => request('/admin/festivals', { method: 'POST', body, token }),
