@@ -71,6 +71,21 @@ export default function Orders() {
   const [bottleFormId, setBottleFormId] = useState(null);
   const [bottleQty, setBottleQty] = useState(1);
   const [submittingBottle, setSubmittingBottle] = useState(false);
+  const [feedbackId, setFeedbackId] = useState(null);
+
+  // The same form the WhatsApp message links to. The token is fetched on the
+  // click rather than listed with the orders, so nothing is minted for an
+  // order nobody ever wants to comment on.
+  async function openFeedback(order) {
+    setFeedbackId(order.id);
+    try {
+      const { token: feedbackToken } = await api.getOrderFeedbackLink(token, order.id);
+      navigate(`/feedback/${feedbackToken}`);
+    } catch (err) {
+      showToast(err.message, 'error');
+      setFeedbackId(null);
+    }
+  }
   const [qrOrderId, setQrOrderId] = useState(null);
   const [qrDataUrl, setQrDataUrl] = useState(null);
   const [loadingQr, setLoadingQr] = useState(false);
@@ -299,6 +314,21 @@ export default function Orders() {
                   <Link to={`/invoice/${o.id}`} className="btn btn-outline btn-sm">
                     Invoice
                   </Link>
+                  {/* Only once it has arrived — there is nothing to say about
+                      how a parcel went before it has gone anywhere. */}
+                  {o.status === 'delivered' && (
+                    <button
+                      className={o.feedbackRating ? 'btn btn-outline btn-sm' : 'btn btn-forest btn-sm'}
+                      disabled={feedbackId === o.id}
+                      onClick={() => openFeedback(o)}
+                    >
+                      {feedbackId === o.id
+                        ? 'Opening…'
+                        : o.feedbackRating
+                          ? `You rated this ${o.feedbackRating}/5 — change`
+                          : 'How did it go?'}
+                    </button>
+                  )}
                   {canPayOnline(o) && (
                     <button
                       className="btn btn-gold btn-sm"

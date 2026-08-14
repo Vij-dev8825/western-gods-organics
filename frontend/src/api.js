@@ -119,6 +119,7 @@ export const api = {
   placeOrder: (token, payload) => request('/orders', { method: 'POST', body: payload, token }),
   getOrders: (token) => request('/orders', { token }),
   // Opened from a WhatsApp link with no account — the URL token is the credential.
+  getOrderFeedbackLink: (token, orderId) => request(`/orders/${orderId}/feedback-link`, { method: 'POST', token }),
   getFeedbackForm: (feedbackToken) => request(`/feedback/${feedbackToken}`),
   submitFeedback: (feedbackToken, payload) => request(`/feedback/${feedbackToken}`, { method: 'POST', body: payload }),
   getOrder: (token, id) => request(`/orders/${id}`, { token }),

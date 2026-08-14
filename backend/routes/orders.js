@@ -17,6 +17,7 @@ const { getPaymentMethodsConfig } = require('../utils/paymentMethods');
 // Shared with the counter-order route in routes/admin.js, so an order taken
 // over the phone resolves to the same account a checkout would.
 const { findUserByPhone, resolveGuestUser, syncContactDetails } = require('../utils/customers');
+const { ensureFeedbackToken } = require('../utils/orderFeedback');
 
 const CANCELLABLE_STATUSES = ['placed', 'confirmed'];
 const RETURN_WINDOW_DAYS = 7;
@@ -484,7 +485,45 @@ router.post('/cod-advance/verify', optionalAuth, async (req, res, next) => {
 router.get('/', requireAuth, async (req, res, next) => {
   try {
     const orders = (await db.list('orders')).filter((o) => o.userId === req.user.id);
-    res.json({ success: true, orders });
+    // What they already said about each one, so the Orders page can offer
+    // "how did it go?" or "you said 4/5 — change it" rather than a button that
+    // gives no clue whether it has been pressed before.
+    const feedback = await db.list('order-feedback');
+    const ratingByOrder = new Map(feedback.map((f) => [f.orderId, f.rating]));
+    res.json({
+      success: true,
+      orders: orders.map((o) => ({ ...o, feedbackRating: ratingByOrder.get(o.id) ?? null })),
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
+ * POST /api/orders/:id/feedback-link → { token }
+ *
+ * The same form the WhatsApp message links to, reached from the customer's own
+ * order history instead. The token is minted here rather than at delivery
+ * because an order delivered before this existed has none, and because a
+ * customer who never got the message — WhatsApp down, number changed — should
+ * still be able to say how it went.
+ *
+ * Reuses whatever token the order already has, so the link in their WhatsApp
+ * thread and the button on this page open the same form and the same answer.
+ */
+router.post('/:id/feedback-link', requireAuth, async (req, res, next) => {
+  try {
+    const order = await db.get('orders', req.params.id);
+    if (!order || order.userId !== req.user.id) {
+      return res.status(404).json({ success: false, message: 'Order not found.' });
+    }
+    if (order.status !== 'delivered') {
+      return res.status(400).json({
+        success: false,
+        message: "We'll ask how it went once this order has been delivered.",
+      });
+    }
+    res.json({ success: true, token: await ensureFeedbackToken(order) });
   } catch (err) {
     next(err);
   }
