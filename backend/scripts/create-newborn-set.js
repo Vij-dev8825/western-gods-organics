@@ -92,7 +92,19 @@ function smallestSize(product) {
       process.exit(1);
     }
     const rx = new RegExp(want.pattern, 'i');
-    const matches = products.filter((p) => rx.test(p.name) && p.id !== KIT_ID);
+    const usable = products.filter((p) => p.id !== KIT_ID);
+
+    // The slot's own category first. A kit needs a soap, so "turmeric" should
+    // find the soap and not collide with the turmeric powder three shelves
+    // over — the word is only ambiguous if you ignore what is being asked for.
+    const inCategory = usable.filter((p) => p.category === want.category && rx.test(p.name));
+    // Widened only when the category has nothing, so a product filed oddly is
+    // still findable rather than invisible. Called out when it happens: a soap
+    // that isn't in "soaps" is worth knowing about.
+    const elsewhere = usable.filter((p) => p.category !== want.category && rx.test(p.name));
+    const matches = inCategory.length ? inCategory : elsewhere;
+    const widened = !inCategory.length && elsewhere.length > 0;
+
     if (matches.length === 0) {
       console.error(`Nothing matches "${want.pattern}" for the ${want.key}.`);
       console.error(`Your ${want.category}:\n${candidates(want)}`);
@@ -100,10 +112,13 @@ function smallestSize(product) {
       process.exit(1);
     }
     if (matches.length > 1) {
-      console.error(`"${want.pattern}" matches ${matches.length} products:`);
+      console.error(`"${want.pattern}" matches ${matches.length} of your ${want.category}:`);
       matches.forEach((m) => console.error(`   - ${m.name}`));
       console.error(`\nToo ambiguous to choose for you. Give --${want.key} more of the name.`);
       process.exit(1);
+    }
+    if (widened) {
+      console.log(`Note: "${matches[0].name}" is filed under "${matches[0].category}", not "${want.category}" — using it anyway.`);
     }
     const product = matches[0];
     const size = smallestSize(product);
