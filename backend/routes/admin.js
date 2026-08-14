@@ -23,6 +23,8 @@ const { listAll: listAllPressings, countReserved } = require('../utils/pressings
 const { imageUpload, storeUploadedFile } = require('../utils/imageUploadHandler');
 const { buildBatchLabelPdf } = require('../utils/batchLabels');
 const { buildProfitReport } = require('../utils/profit');
+const { sendInvoiceForOrder } = require('../utils/sendInvoice');
+const { buildInvoicePdf, invoiceFileName } = require('../utils/invoicePdf');
 const { ordersCsv, productsCsv, customersCsv } = require('../utils/csvExport');
 const { creditPointsForOrder, reversePointsForOrder } = require('../utils/loyalty');
 const { issueBottleReturnCredit } = require('../utils/orderBuilder');
@@ -1135,6 +1137,12 @@ router.patch('/orders/:id', async (req, res, next) => {
       await creditPointsForOrder(order);
       await creditCommissionForOrder(order);
       await creditSellerEarningsForOrder(order);
+      // Not awaited: rendering a PDF and pushing it over WhatsApp takes long
+      // enough to be felt, and the admin marking a parcel delivered should not
+      // wait on it. The status and every credit above are already saved, so a
+      // failure here loses nothing — and leaves the order eligible to be
+      // invoiced again, since invoiceSentAt is only stamped on real delivery.
+      sendInvoiceForOrder(order).catch((err) => console.error('[invoice:send]', err.message));
     }
     if (cancelledAfterDelivery) await reverseCreditsForOrder(order, 'cancelled');
 
@@ -1274,6 +1282,47 @@ router.put('/payment-methods', async (req, res, next) => {
     };
     await db.put('payment-methods', paymentMethods);
     res.json({ success: true, paymentMethods });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/* --------------------------------- Invoices -------------------------------- */
+
+// POST /api/admin/orders/:id/send-invoice — re-send by hand.
+//
+// The automatic send on delivery is the normal path; this exists for when the
+// customer says they never got it, or gives you an email address after the
+// fact. Awaited, unlike the automatic one, because here the admin is standing
+// there waiting to be told whether it worked.
+router.post('/orders/:id/send-invoice', async (req, res, next) => {
+  try {
+    const order = await db.get('orders', req.params.id);
+    if (!order) return res.status(404).json({ success: false, message: 'Order not found.' });
+    const result = await sendInvoiceForOrder(order, { force: true });
+    if (!result.email && !result.whatsapp) {
+      return res.status(502).json({
+        success: false,
+        message: 'The invoice could not be sent. Check the customer has an email address, and that WhatsApp is connected in Admin → WhatsApp.',
+      });
+    }
+    const went = [result.email && 'email', result.whatsapp && 'WhatsApp'].filter(Boolean).join(' and ');
+    res.json({ success: true, message: `Invoice sent by ${went}.`, ...result });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET /api/admin/orders/:id/invoice.pdf — the same file the customer is sent,
+// for printing a copy to go in the box.
+router.get('/orders/:id/invoice.pdf', async (req, res, next) => {
+  try {
+    const order = await db.get('orders', req.params.id);
+    if (!order) return res.status(404).json({ success: false, message: 'Order not found.' });
+    const pdf = await buildInvoicePdf(order);
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `inline; filename="${invoiceFileName(order)}"`);
+    res.send(pdf);
   } catch (err) {
     next(err);
   }

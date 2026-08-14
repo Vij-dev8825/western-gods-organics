@@ -151,6 +151,11 @@ async function resetSession() {
   return init();
 }
 
+/** Bare 10-digit numbers are Indian; anything already in +country form keeps
+ *  the country it was given. Shared by both senders so a document and a text
+ *  can never disagree about who they are going to. */
+const toJid = (phone) => `${phone.startsWith('+') ? phone.slice(1) : `91${phone}`}@s.whatsapp.net`;
+
 async function sendWhatsAppMessage(phone, message) {
   if (!phone) return { sent: false, reason: 'no-phone' };
   if (!sock || state !== 'open') {
@@ -158,8 +163,7 @@ async function sendWhatsAppMessage(phone, message) {
     return { sent: false, reason: 'not-connected' };
   }
   try {
-    const digits = phone.startsWith('+') ? phone.slice(1) : `91${phone}`;
-    await sock.sendMessage(`${digits}@s.whatsapp.net`, { text: message });
+    await sock.sendMessage(toJid(phone), { text: message });
     return { sent: true, provider: 'baileys' };
   } catch (err) {
     console.error('[whatsapp:baileys:error]', err.message);
@@ -167,4 +171,27 @@ async function sendWhatsAppMessage(phone, message) {
   }
 }
 
-module.exports = { init, getStatus, resetSession, sendWhatsAppMessage };
+/**
+ * Sends a file — an invoice PDF, in practice.
+ *
+ * Deliberately one message carrying both the document and its caption, rather
+ * than a text followed by an attachment: two messages can arrive out of order,
+ * and a PDF landing with no explanation looks like something to be wary of.
+ */
+async function sendWhatsAppDocument(phone, { buffer, fileName, mimetype = 'application/pdf', caption }) {
+  if (!phone) return { sent: false, reason: 'no-phone' };
+  if (!buffer?.length) return { sent: false, reason: 'no-file' };
+  if (!sock || state !== 'open') {
+    console.log(`[whatsapp:not-connected] to=${phone} | document ${fileName} (${buffer.length} bytes)`);
+    return { sent: false, reason: 'not-connected' };
+  }
+  try {
+    await sock.sendMessage(toJid(phone), { document: buffer, fileName, mimetype, caption });
+    return { sent: true, provider: 'baileys' };
+  } catch (err) {
+    console.error('[whatsapp:baileys:document:error]', err.message);
+    return { sent: false, error: err.message };
+  }
+}
+
+module.exports = { init, getStatus, resetSession, sendWhatsAppMessage, sendWhatsAppDocument };

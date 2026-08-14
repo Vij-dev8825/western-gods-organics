@@ -3148,6 +3148,11 @@ input:focus-visible + .filter-radio { outline: 2px solid var(--gold-2); outline-
 .seg button.on { background: var(--forest, #1F3D2B); color: #fff; }
 
 .btn-row { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
+
+/* Secondary actions under a row's main control. Small, but still thumb-height
+   on a phone — this sits in the orders table, which gets worked from one. */
+.row-links { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 6px; }
+.row-links .link-btn { font-size: 0.75rem; padding: 4px 0; min-height: 32px; }
 .chip-list { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
 
 /* ---------- Admin: Today ----------

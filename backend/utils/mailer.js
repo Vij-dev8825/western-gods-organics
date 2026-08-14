@@ -36,8 +36,13 @@ const FROM = process.env.MAIL_FROM
  * ports), falling back to SMTP, then to a console log when neither is set up
  * — so the whole notification flow is testable locally with no email account.
  */
-async function sendMail({ to, subject, text, html }) {
+/** attachments: [{ filename, content: Buffer, contentType }] — the two
+ *  providers want the same file in different shapes (Resend takes base64 in
+ *  JSON, nodemailer takes the Buffer), so callers pass a Buffer and this
+ *  translates. */
+async function sendMail({ to, subject, text, html, attachments }) {
   if (!to) return { sent: false, reason: 'no-address' };
+  const files = (attachments || []).filter((a) => a && a.content);
 
   if (RESEND_API_KEY) {
     try {
@@ -47,7 +52,12 @@ async function sendMail({ to, subject, text, html }) {
           Authorization: `Bearer ${RESEND_API_KEY}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ from: FROM, to, subject, text, html }),
+        body: JSON.stringify({
+          from: FROM, to, subject, text, html,
+          ...(files.length
+            ? { attachments: files.map((a) => ({ filename: a.filename, content: Buffer.from(a.content).toString('base64') })) }
+            : {}),
+        }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.message || `Resend ${res.status}`);
@@ -59,11 +69,17 @@ async function sendMail({ to, subject, text, html }) {
   }
 
   if (!transporter) {
-    console.log(`[MAIL:dev] to=${to} | ${subject} | ${String(text || '').slice(0, 120)}`);
+    const withFiles = files.length ? ` [+${files.map((a) => a.filename).join(', ')}]` : '';
+    console.log(`[MAIL:dev] to=${to} | ${subject}${withFiles} | ${String(text || '').slice(0, 120)}`);
     return { sent: true, dev: true };
   }
   try {
-    await transporter.sendMail({ from: FROM, to, subject, text, html });
+    await transporter.sendMail({
+      from: FROM, to, subject, text, html,
+      ...(files.length
+        ? { attachments: files.map((a) => ({ filename: a.filename, content: a.content, contentType: a.contentType })) }
+        : {}),
+    });
     return { sent: true, provider: 'smtp' };
   } catch (err) {
     console.error('[MAIL:error]', err.message);

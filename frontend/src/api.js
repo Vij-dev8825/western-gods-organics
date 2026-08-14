@@ -299,6 +299,9 @@ export const api = {
     batchLabelsPdf: (token, productId, count) =>
       requestBlob(`/admin/products/${productId}/batch-labels.pdf?count=${count}`, { token }),
 
+    sendInvoice: (token, orderId) => request(`/admin/orders/${orderId}/send-invoice`, { method: 'POST', token }),
+    invoicePdf: (token, orderId) => requestBlob(`/admin/orders/${orderId}/invoice.pdf`, { token }),
+
     profit: (token, days = 30) => request(`/admin/profit?days=${days}`, { token }),
     exportCsv: (token, what, days) =>
       requestBlob(`/admin/export/${what}.csv${days ? `?days=${days}` : ''}`, { token }),

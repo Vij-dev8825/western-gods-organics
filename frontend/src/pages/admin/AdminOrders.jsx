@@ -13,6 +13,7 @@ export default function AdminOrders() {
   const [page, setPage] = useState(1);
   const [message, setMessage] = useState(null);
   const [busy, setBusy] = useState(false);
+  const [sending, setSending] = useState(null);
   const [selected, setSelected] = useState(() => new Set());
 
   // `search` is what's typed; `query` is what's actually been sent. Kept apart
@@ -44,6 +45,31 @@ export default function AdminOrders() {
   function clearAll() {
     setSearch(''); setQuery(''); setStatus(''); setFrom(''); setTo('');
     setSelected(new Set()); setPage(1);
+  }
+
+  async function resendInvoice(o) {
+    setSending(o.id);
+    setMessage(null);
+    try {
+      const d = await api.admin.sendInvoice(token, o.id);
+      setMessage({ type: 'success', text: `${o.orderNumber}: ${d.message}` });
+      load();
+    } catch (err) {
+      setMessage({ type: 'error', text: err.message });
+    } finally {
+      setSending(null);
+    }
+  }
+
+  async function openInvoice(o) {
+    try {
+      const url = await api.admin.invoicePdf(token, o.id);
+      window.open(url, '_blank', 'noopener');
+      // Held in memory until revoked; long enough for the new tab to load it.
+      setTimeout(() => URL.revokeObjectURL(url), 60000);
+    } catch (err) {
+      setMessage({ type: 'error', text: err.message });
+    }
   }
 
   async function setStatusFor(o, next) {
@@ -239,6 +265,20 @@ export default function AdminOrders() {
                       <select className="select" value={o.status} onChange={(e) => setStatusFor(o, e.target.value)}>
                         {STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
                       </select>
+                      {/* The bill goes out by itself when an order is marked
+                          delivered. This is for "I never got it", or an email
+                          address given after the fact. */}
+                      <div className="row-links">
+                        <button type="button" className="link-btn" disabled={sending === o.id} onClick={() => resendInvoice(o)}>
+                          {sending === o.id ? 'Sending…' : o.invoiceSentAt ? 'Send bill again' : 'Send bill'}
+                        </button>
+                        <button type="button" className="link-btn" onClick={() => openInvoice(o)}>print</button>
+                      </div>
+                      {o.invoiceSentAt && (
+                        <div className="muted" style={{ fontSize: '0.7rem' }}>
+                          Bill sent {new Date(o.invoiceSentAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
+                        </div>
+                      )}
                     </td>
                   </tr>
                 ))}
