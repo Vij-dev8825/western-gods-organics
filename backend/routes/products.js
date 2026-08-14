@@ -7,6 +7,7 @@ const { sendMail } = require('../utils/mailer');
 const { hasEarlyAccessPerk } = require('../utils/loyalty');
 const { notifyUser } = require('../utils/notify');
 const { listOpen: listOpenPressings, describe: describePressing } = require('../utils/pressings');
+const { listUpcoming: listUpcomingFestivals } = require('../utils/festivals');
 
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || process.env.CONTACT_NOTIFY_EMAIL;
 
@@ -473,6 +474,43 @@ router.post('/:id/questions', requireAuth, async (req, res, next) => {
     }
 
     res.status(201).json({ success: true, question: record });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
+ * GET /api/products/festivals — the season ahead, public.
+ *
+ * Products are resolved here rather than on the client so the page can't show
+ * something delisted or out of stock as a festival recommendation.
+ */
+router.get('/festivals', async (req, res, next) => {
+  try {
+    const [festivals, products] = await Promise.all([listUpcomingFestivals(), db.list('products')]);
+    const byId = Object.fromEntries(products.map((p) => [p.id, p]));
+    res.json({
+      success: true,
+      festivals: festivals.map((f) => ({
+        id: f.id,
+        name: f.name,
+        date: f.date,
+        note: f.note,
+        daysAway: f.daysAway,
+        orderBy: f.orderBy,
+        orderingClosed: f.orderingClosed,
+        products: (f.productIds || [])
+          .map((id) => byId[id])
+          .filter(Boolean)
+          .map((p) => ({
+            id: p.id,
+            name: p.name,
+            image: p.image,
+            price: (p.sizes || [])[0]?.price ?? null,
+            inStock: (p.sizes || []).some((s) => (Number(s.stock) || 0) > 0),
+          })),
+      })),
+    });
   } catch (err) {
     next(err);
   }

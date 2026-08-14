@@ -57,6 +57,7 @@ const COLLECTIONS = [
   'seller-payout-requests',
   'seller-messages',
   'pressings',
+  'festivals',
 ];
 
 let mode = 'json';

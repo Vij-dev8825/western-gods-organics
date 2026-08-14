@@ -279,6 +279,7 @@ export const api = {
   getRecentReviews: (limit = 6) => request(`/products/reviews/recent?limit=${limit}`),
 
   getPressingCalendar: () => request('/products/pressings/calendar'),
+  getFestivals: () => request('/products/festivals'),
   getOpenPressings: (productId) =>
     request(`/products/pressings/open${productId ? `?productId=${encodeURIComponent(productId)}` : ''}`),
 
@@ -303,6 +304,11 @@ export const api = {
     invoicePdf: (token, orderId) => requestBlob(`/admin/orders/${orderId}/invoice.pdf`, { token }),
 
     procurement: (token) => request('/admin/procurement', { token }),
+
+    listFestivals: (token) => request('/admin/festivals', { token }),
+    createFestival: (token, body) => request('/admin/festivals', { method: 'POST', body, token }),
+    updateFestival: (token, id, body) => request(`/admin/festivals/${id}`, { method: 'PUT', body, token }),
+    deleteFestival: (token, id) => request(`/admin/festivals/${id}`, { method: 'DELETE', token }),
 
     profit: (token, days = 30) => request(`/admin/profit?days=${days}`, { token }),
     exportCsv: (token, what, days) =>

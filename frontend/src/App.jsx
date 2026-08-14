@@ -55,6 +55,7 @@ const TermsAndConditions = lazy(() => import('./pages/TermsAndConditions'));
 const SustainabilityImpact = lazy(() => import('./pages/SustainabilityImpact'));
 const Sourcing = lazy(() => import('./pages/Sourcing'));
 const PressingCalendar = lazy(() => import('./pages/PressingCalendar'));
+const Festivals = lazy(() => import('./pages/Festivals'));
 const ImportInfo = lazy(() => import('./pages/ImportInfo'));
 const StoreLocator = lazy(() => import('./pages/StoreLocator'));
 const GiftCards = lazy(() => import('./pages/GiftCards'));
@@ -96,6 +97,7 @@ const AdminPaymentMethods = lazy(() => import('./pages/admin/AdminPaymentMethods
 const AdminShipping = lazy(() => import('./pages/admin/AdminShipping'));
 const AdminProfit = lazy(() => import('./pages/admin/AdminProfit'));
 const AdminProcurement = lazy(() => import('./pages/admin/AdminProcurement'));
+const AdminFestivals = lazy(() => import('./pages/admin/AdminFestivals'));
 const AdminToday = lazy(() => import('./pages/admin/Today'));
 const AdminPressings = lazy(() => import('./pages/admin/AdminPressings'));
 const AdminShare = lazy(() => import('./pages/admin/AdminShare'));
@@ -270,6 +272,7 @@ export default function App() {
         <Route path="shipping" element={<AdminShipping />} />
         <Route path="profit" element={<AdminProfit />} />
         <Route path="procurement" element={<AdminProcurement />} />
+        <Route path="festivals" element={<AdminFestivals />} />
         <Route path="today" element={<AdminToday />} />
         <Route path="pressings" element={<AdminPressings />} />
         <Route path="share" element={<AdminShare />} />
@@ -380,6 +383,7 @@ export default function App() {
         <Route path="/impact" element={<SustainabilityImpact />} />
         <Route path="/sourcing" element={<Sourcing />} />
         <Route path="/pressings" element={<PressingCalendar />} />
+          <Route path="/festivals" element={<Festivals />} />
         <Route path="/import" element={<ImportInfo />} />
         <Route path="/store-locator" element={<StoreLocator />} />
         <Route path="*" element={<NotFound />} />

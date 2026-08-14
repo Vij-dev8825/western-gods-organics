@@ -25,6 +25,7 @@ const { buildBatchLabelPdf } = require('../utils/batchLabels');
 const { buildProfitReport } = require('../utils/profit');
 const { sendInvoiceForOrder } = require('../utils/sendInvoice');
 const { buildProcurementPlan } = require('../utils/procurement');
+const { listAll: listAllFestivals, DEFAULT_LEAD_DAYS: FESTIVAL_LEAD_DAYS } = require('../utils/festivals');
 const { buildInvoicePdf, invoiceFileName } = require('../utils/invoicePdf');
 const { ordersCsv, productsCsv, customersCsv } = require('../utils/csvExport');
 const { creditPointsForOrder, reversePointsForOrder } = require('../utils/loyalty');
@@ -1296,6 +1297,73 @@ router.put('/payment-methods', async (req, res, next) => {
     };
     await db.put('payment-methods', paymentMethods);
     res.json({ success: true, paymentMethods });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/* -------------------------------- Festivals -------------------------------- */
+
+// GET /api/admin/festivals — every festival, past and future.
+router.get('/festivals', async (req, res, next) => {
+  try {
+    res.json({ success: true, festivals: await listAllFestivals() });
+  } catch (err) {
+    next(err);
+  }
+});
+
+function readFestival(body, existing = {}) {
+  const when = new Date(body.date);
+  if (Number.isNaN(when.getTime())) return { error: 'Enter a valid date for the festival.' };
+  const name = String(body.name || '').trim();
+  if (!name) return { error: 'Give the festival a name.' };
+  return {
+    festival: {
+      ...existing,
+      name: name.slice(0, 80),
+      // Stored as a plain date, not a timestamp: a festival is a day, and a
+      // timezone-shifted midnight would show the wrong one to half the country.
+      date: when.toISOString().slice(0, 10),
+      note: String(body.note || '').slice(0, 400),
+      // Which of your products this season actually calls for. Free of any
+      // pricing effect — this is a reading list, not a bundle.
+      productIds: Array.isArray(body.productIds) ? body.productIds.filter(Boolean).slice(0, 12) : [],
+      leadDays: Math.min(Math.max(Math.round(Number(body.leadDays) || FESTIVAL_LEAD_DAYS), 0), 60),
+      active: body.active !== false,
+    },
+  };
+}
+
+router.post('/festivals', async (req, res, next) => {
+  try {
+    const { festival, error } = readFestival(req.body);
+    if (error) return res.status(400).json({ success: false, message: error });
+    const saved = { id: uuid(), createdAt: new Date().toISOString(), ...festival };
+    await db.put('festivals', saved);
+    res.status(201).json({ success: true, festival: saved });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.put('/festivals/:id', async (req, res, next) => {
+  try {
+    const existing = await db.get('festivals', req.params.id);
+    if (!existing) return res.status(404).json({ success: false, message: 'Festival not found.' });
+    const { festival, error } = readFestival(req.body, existing);
+    if (error) return res.status(400).json({ success: false, message: error });
+    await db.put('festivals', { ...festival, id: existing.id });
+    res.json({ success: true, festival: { ...festival, id: existing.id } });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.delete('/festivals/:id', async (req, res, next) => {
+  try {
+    await db.del('festivals', req.params.id);
+    res.json({ success: true });
   } catch (err) {
     next(err);
   }

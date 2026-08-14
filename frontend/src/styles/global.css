@@ -3112,6 +3112,44 @@ input:focus-visible + .filter-radio { outline: 2px solid var(--gold-2); outline-
   .pressing-run-tag { align-self: flex-start; margin-left: 68px; }
 }
 
+/* ---------- Festival calendar ----------
+   Each entry leads with how far off it is rather than the date. Everyone
+   already knows when Pongal is; what they don't know is whether there is
+   still time to order. */
+.festival-list { list-style: none; padding: 0; margin: 22px 0 0; display: flex; flex-direction: column; gap: 14px; }
+.festival {
+  padding: 16px 18px; border-radius: var(--radius-md);
+  border: 1px solid rgba(31, 61, 43, 0.13); background: var(--paper);
+}
+.festival.is-closed { opacity: 0.72; }
+.festival-when {
+  display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap;
+  font-size: 0.82rem; color: var(--muted-text, #6B7A70);
+}
+.festival-when b { font-size: 0.95rem; color: var(--gold-deep, #8A6B1E); }
+.festival-name { font-size: 1.15rem; margin: 4px 0 0; }
+.festival-note { margin: 6px 0 0; font-size: 0.88rem; color: var(--muted-text, #6B7A70); max-width: 56ch; }
+
+.festival-order { margin: 10px 0 0; font-size: 0.88rem; }
+.festival-order b { color: var(--forest, #1F3D2B); }
+.festival-order.closed { color: var(--muted-text, #6B7A70); }
+
+.festival-products { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
+.festival-product {
+  display: flex; align-items: center; gap: 8px; text-decoration: none; color: inherit;
+  padding: 6px 12px 6px 6px; border-radius: 999px;
+  border: 1px solid rgba(31, 61, 43, 0.12); background: rgba(31, 61, 43, 0.02);
+}
+.festival-product:hover { border-color: rgba(212, 175, 55, 0.6); }
+.festival-product img { width: 34px; height: 34px; border-radius: 50%; object-fit: cover; }
+.festival-product span { display: flex; flex-direction: column; font-size: 0.84rem; line-height: 1.3; }
+.festival-product em { font-style: normal; font-size: 0.74rem; color: var(--muted-text, #6B7A70); }
+.festival-product em.oos { color: #A3543C; }
+
+/* A product picker in the admin: a pill that can be switched on. */
+.pill.selectable { cursor: pointer; border: 1px solid rgba(31, 61, 43, 0.16); background: transparent; min-height: 34px; }
+.pill.selectable.on { background: var(--forest, #1F3D2B); color: #fff; border-color: var(--forest, #1F3D2B); }
+
 /* Collection details, shown once "Collect from the mill" is picked — an
    address someone has to actually drive to, so it gets room rather than a
    line of small print. */

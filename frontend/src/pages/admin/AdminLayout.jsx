@@ -24,6 +24,7 @@ const links = [
   { to: '/admin/payment-methods', label: 'Payment Methods' },
   { to: '/admin/shipping', label: 'Domestic Shipping' },
   { to: '/admin/pressings', label: 'Scheduled Pressings' },
+  { to: '/admin/festivals', label: 'Festival Calendar' },
   { to: '/admin/share', label: 'Share & Promote' },
   { to: '/admin/invoice', label: 'Invoice Details' },
   { to: '/admin/countries', label: 'Countries & Currencies' },
