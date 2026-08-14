@@ -597,6 +597,19 @@ export default function ProductDetail() {
               <Link to={`/sellers/${product.sellerId}`}>{product.sellerName}</Link>
             </p>
           )}
+          {/* Named here, beside the price, rather than only in the compliance
+              list at the foot of the page. "Organic" is a word anyone can
+              print; a grower and a village is a specific, checkable claim, and
+              it is worth nothing to a buyer who never scrolls far enough to
+              find it. Only shown for the mill's own goods — a seller's product
+              already carries their name two lines above. */}
+          {!product.sellerName && (product.growerName || product.growerVillage) && (
+            <p className="grower-line">
+              <span aria-hidden="true">🌾</span> Grown by{' '}
+              <b>{product.growerName || 'a farmer we buy from directly'}</b>
+              {product.growerVillage && <> in {product.growerVillage}</>}
+            </p>
+          )}
           {/* Same rule as the product cards: no reviews, no rating. The
               reviews section further down invites the first one. */}
           {product.reviewsCount > 0 && (

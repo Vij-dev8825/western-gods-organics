@@ -3112,6 +3112,16 @@ input:focus-visible + .filter-radio { outline: 2px solid var(--gold-2); outline-
   .pressing-run-tag { align-self: flex-start; margin-left: 68px; }
 }
 
+/* The grower, beside the price rather than buried in the spec list. Quiet
+   enough not to compete with the product name, specific enough to be read as
+   a fact rather than a slogan. */
+.grower-line {
+  margin: 6px 0 2px;
+  font-size: 0.86rem;
+  color: var(--forest-light, #5c6b5e);
+}
+.grower-line b { color: var(--forest, #1F3D2B); font-weight: 600; }
+
 /* ---------- Admin: What to buy ----------
    The top block is meant to be read standing in a yard holding a phone, so
    the quantity is the biggest thing on it and the grower's name is the only
