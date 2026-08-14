@@ -11,9 +11,14 @@
  * --write. Re-running is safe: it updates the existing kit rather than
  * creating a second one.
  *
- *   node scripts/create-newborn-set.js            # show what it would do
- *   node scripts/create-newborn-set.js --write    # actually do it
- *   node scripts/create-newborn-set.js --write --save 10   # 10% off the parts
+ *   node scripts/create-newborn-set.js                     # show what it would do
+ *   node scripts/create-newborn-set.js --write             # actually do it
+ *   node scripts/create-newborn-set.js --save 10           # 10% off the parts
+ *   node scripts/create-newborn-set.js --soap turmeric     # pick a different soap
+ *
+ * Each component can be re-pointed with --castor / --coconut / --soap, so a
+ * shop that renames a product, or makes a new one, never needs this file
+ * edited. Patterns are matched case-insensitively against the product name.
  */
 const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
@@ -22,13 +27,25 @@ const db = require('../data/db');
 const KIT_ID = 'newborn-care-set';
 const DEFAULT_SAVING_PERCENT = 8;
 
+/** Read a --flag value from the command line. */
+function arg(name, fallback) {
+  const i = process.argv.indexOf(`--${name}`);
+  return i > -1 && process.argv[i + 1] && !process.argv[i + 1].startsWith('--')
+    ? process.argv[i + 1]
+    : fallback;
+}
+
 // Matched on the words a mill actually uses, not on an id we'd have to be told.
 // Each entry needs one unambiguous match or the script stops — silently
 // picking the wrong oil for a baby's kit is not a thing to be relaxed about.
+//
+// There is no default soap. Which bar belongs in a kit for a newborn is a
+// judgement about the shop's own products, and it is not one a script should
+// make on the owner's behalf; run with --soap and name it.
 const WANTED = [
-  { key: 'castor', match: /castor/i, why: 'For the oil bath — the cooling one, and the one most households use on a baby.' },
-  { key: 'coconut', match: /coconut/i, why: 'Lighter, for everyday use on skin and scalp.' },
-  { key: 'soap', match: /hibiscus/i, why: 'A mild bar for washing the oil off, made with hibiscus.' },
+  { key: 'castor', pattern: arg('castor', 'castor'), category: 'oils' },
+  { key: 'coconut', pattern: arg('coconut', 'coconut'), category: 'oils' },
+  { key: 'soap', pattern: arg('soap', null), category: 'soaps' },
 ];
 
 const rupees = (n) => `Rs. ${Math.round(n).toLocaleString('en-IN')}`;
@@ -57,18 +74,35 @@ function smallestSize(product) {
   const products = await db.list('products');
   console.log(`Catalogue: ${products.length} products\n`);
 
+  /** What the shop has in this slot's usual category — printed whenever a
+   *  pattern matches nothing or too much, so the next run can be right
+   *  without anyone going and looking the names up. */
+  const candidates = (want) => {
+    const list = products.filter((p) => p.category === want.category && p.id !== KIT_ID);
+    if (!list.length) return `   (nothing in the "${want.category}" category)`;
+    return list.map((p) => `   - ${p.name}`).join('\n');
+  };
+
   const chosen = [];
   for (const want of WANTED) {
-    const matches = products.filter((p) => want.match.test(p.name) && p.id !== KIT_ID);
+    if (!want.pattern) {
+      console.error(`No --${want.key} given, and there is no default for it.`);
+      console.error(`Your ${want.category}:\n${candidates(want)}`);
+      console.error(`\nPick one and run again, e.g.  --${want.key} "turmeric"`);
+      process.exit(1);
+    }
+    const rx = new RegExp(want.pattern, 'i');
+    const matches = products.filter((p) => rx.test(p.name) && p.id !== KIT_ID);
     if (matches.length === 0) {
-      console.error(`No product matching /${want.match.source}/ — nothing to put in the kit for "${want.key}".`);
-      console.error('Add it to the catalogue first, or edit WANTED in this script to match what you call it.');
+      console.error(`Nothing matches "${want.pattern}" for the ${want.key}.`);
+      console.error(`Your ${want.category}:\n${candidates(want)}`);
+      console.error(`\nRun again with --${want.key} and something from that list.`);
       process.exit(1);
     }
     if (matches.length > 1) {
-      console.error(`${matches.length} products match /${want.match.source}/:`);
+      console.error(`"${want.pattern}" matches ${matches.length} products:`);
       matches.forEach((m) => console.error(`   - ${m.name}`));
-      console.error('Too ambiguous to choose for you. Narrow the pattern in WANTED and run again.');
+      console.error(`\nToo ambiguous to choose for you. Give --${want.key} more of the name.`);
       process.exit(1);
     }
     const product = matches[0];
