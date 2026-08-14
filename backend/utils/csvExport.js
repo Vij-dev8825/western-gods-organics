@@ -10,6 +10,7 @@
 const db = require('../data/db');
 const { orderEconomics, ledgerTotalsByOrder, deriveShipping, lineSubtotal } = require('./profit');
 const { getPaymentMethodsConfig } = require('./paymentMethods');
+const { isNumber } = require('./num');
 
 /**
  * One CSV field.
@@ -79,8 +80,8 @@ async function ordersCsv({ days }) {
     { header: 'Qty', value: (r) => r.qty },
     { header: 'Unit price', value: (r) => r.item.price },
     { header: 'Line revenue', value: (r) => Math.round(r.lineRevenue) },
-    { header: 'Unit cost', value: (r) => (Number.isFinite(Number(r.item.costPrice)) ? r.item.costPrice : '') },
-    { header: 'Line cost', value: (r) => (Number.isFinite(Number(r.item.costPrice)) ? Math.round(Number(r.item.costPrice) * r.qty) : '') },
+    { header: 'Unit cost', value: (r) => (isNumber(r.item.costPrice) ? r.item.costPrice : '') },
+    { header: 'Line cost', value: (r) => (isNumber(r.item.costPrice) ? Math.round(Number(r.item.costPrice) * r.qty) : '') },
     { header: 'Batch', value: (r) => r.item.batchNumber || '' },
     { header: 'Order subtotal', value: (r) => Math.round(r.subtotal) },
     { header: 'Order discount', value: (r) => r.order.discount || 0 },
@@ -117,14 +118,14 @@ async function productsCsv() {
     { header: 'Size', value: (r) => r.s.label },
     { header: 'Price', value: (r) => r.s.price },
     { header: 'MRP', value: (r) => r.s.mrp },
-    { header: 'Cost', value: (r) => (Number.isFinite(Number(r.s.costPrice)) ? r.s.costPrice : '') },
+    { header: 'Cost', value: (r) => (isNumber(r.s.costPrice) ? r.s.costPrice : '') },
     {
       header: 'Margin per unit',
-      value: (r) => (Number.isFinite(Number(r.s.costPrice)) ? Math.round(r.s.price - Number(r.s.costPrice)) : ''),
+      value: (r) => (isNumber(r.s.costPrice) ? Math.round(r.s.price - Number(r.s.costPrice)) : ''),
     },
     {
       header: 'Margin %',
-      value: (r) => (Number.isFinite(Number(r.s.costPrice)) && r.s.price > 0
+      value: (r) => (isNumber(r.s.costPrice) && r.s.price > 0
         ? Math.round(((r.s.price - Number(r.s.costPrice)) / r.s.price) * 100) : ''),
     },
     { header: 'Wholesale price', value: (r) => r.s.wholesalePrice ?? '' },

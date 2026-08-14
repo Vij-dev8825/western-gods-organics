@@ -10,6 +10,7 @@ const links = [
   { to: '/admin/today', label: 'Today' },
   { to: '/admin', label: 'Dashboard', end: true },
   { to: '/admin/profit', label: 'Profit' },
+  { to: '/admin/procurement', label: 'What to Buy' },
   { to: '/admin/products', label: 'Products' },
   { to: '/admin/categories', label: 'Categories' },
   { to: '/admin/coupons', label: 'Coupons' },

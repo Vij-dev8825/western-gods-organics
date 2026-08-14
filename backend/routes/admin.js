@@ -24,6 +24,7 @@ const { imageUpload, storeUploadedFile } = require('../utils/imageUploadHandler'
 const { buildBatchLabelPdf } = require('../utils/batchLabels');
 const { buildProfitReport } = require('../utils/profit');
 const { sendInvoiceForOrder } = require('../utils/sendInvoice');
+const { buildProcurementPlan } = require('../utils/procurement');
 const { buildInvoicePdf, invoiceFileName } = require('../utils/invoicePdf');
 const { ordersCsv, productsCsv, customersCsv } = require('../utils/csvExport');
 const { creditPointsForOrder, reversePointsForOrder } = require('../utils/loyalty');
@@ -442,6 +443,10 @@ router.post('/products', async (req, res, next) => {
         // Admin → Profit excludes an order it can't cost rather than reporting
         // it as free to produce.
         costPrice: s.costPrice !== '' && s.costPrice != null ? Number(s.costPrice) : null,
+        // Seed (or milk, or flowers) that goes in to get one of these out —
+        // in the product's own materialUnit. Optional; Admin → Procurement
+        // still lists the run without it, just not the kilos.
+        materialPerUnit: s.materialPerUnit !== '' && s.materialPerUnit != null ? Number(s.materialPerUnit) : null,
       })),
       rating: Number(req.body.rating || 0),
       reviewsCount: Number(req.body.reviewsCount || 0),
@@ -464,6 +469,11 @@ router.post('/products', async (req, res, next) => {
       // it is the kind a mill buying direct can actually make.
       growerName: req.body.growerName || '',
       growerVillage: req.body.growerVillage || '',
+      // What this is made from, as you'd say it on the phone to the grower —
+      // "Groundnut", "Neem seed", "Hibiscus". Admin → Procurement adds these
+      // up across scheduled runs into one buying list.
+      rawMaterial: req.body.rawMaterial || '',
+      materialUnit: req.body.materialUnit || 'kg',
       fssaiLicense: req.body.fssaiLicense || '',
       inciIngredients: req.body.inciIngredients || '',
       labReportUrl: req.body.labReportUrl || '',
@@ -505,6 +515,10 @@ router.put('/products/:id', async (req, res, next) => {
         // Admin → Profit excludes an order it can't cost rather than reporting
         // it as free to produce.
         costPrice: s.costPrice !== '' && s.costPrice != null ? Number(s.costPrice) : null,
+        // Seed (or milk, or flowers) that goes in to get one of these out —
+        // in the product's own materialUnit. Optional; Admin → Procurement
+        // still lists the run without it, just not the kilos.
+        materialPerUnit: s.materialPerUnit !== '' && s.materialPerUnit != null ? Number(s.materialPerUnit) : null,
       })),
       countryPrices: normalizeCountryPrices(req.body.countryPrices ?? existing.countryPrices),
       shortDescriptions: sanitizeLangMap(req.body.shortDescriptions ?? existing.shortDescriptions),
@@ -1282,6 +1296,15 @@ router.put('/payment-methods', async (req, res, next) => {
     };
     await db.put('payment-methods', paymentMethods);
     res.json({ success: true, paymentMethods });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET /api/admin/procurement — what to buy, and who to ring.
+router.get('/procurement', async (req, res, next) => {
+  try {
+    res.json({ success: true, plan: await buildProcurementPlan() });
   } catch (err) {
     next(err);
   }

@@ -3112,6 +3112,41 @@ input:focus-visible + .filter-radio { outline: 2px solid var(--gold-2); outline-
   .pressing-run-tag { align-self: flex-start; margin-left: 68px; }
 }
 
+/* ---------- Admin: What to buy ----------
+   The top block is meant to be read standing in a yard holding a phone, so
+   the quantity is the biggest thing on it and the grower's name is the only
+   other thing that carries weight — everything else is context for those two. */
+.proc-heading { font-size: 1.05rem; margin: 26px 0 10px; }
+
+.proc-buy { display: flex; flex-direction: column; gap: 10px; }
+.proc-buy-item {
+  display: flex; align-items: flex-start; gap: 16px;
+  padding: 14px 16px; border-radius: var(--radius-md);
+  border: 1px solid rgba(31, 61, 43, 0.14); background: var(--paper);
+}
+/* Three days or less is the point at which this stops being a plan. */
+.proc-buy-item.urgent { border-color: rgba(163, 84, 60, 0.45); background: rgba(163, 84, 60, 0.05); }
+
+.proc-buy-qty {
+  flex: none; min-width: 92px; text-align: right;
+  font-size: 1.5rem; font-weight: 700; line-height: 1.1;
+  color: var(--forest, #1F3D2B); font-variant-numeric: tabular-nums;
+}
+.proc-buy-qty span { display: block; font-size: 0.72rem; font-weight: 500; color: var(--muted-text, #6B7A70); }
+
+.proc-buy-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.proc-buy-body b { font-size: 1.02rem; }
+.proc-buy-body .muted { font-size: 0.8rem; }
+/* The actual instruction: ring this person. */
+.proc-grower { margin-top: 4px; font-size: 0.84rem; font-weight: 600; color: var(--gold-deep, #8A6B1E); }
+
+.proc-soon { color: #A3543C; font-weight: 600; }
+
+@media (max-width: 560px) {
+  .proc-buy-item { gap: 12px; padding: 12px 13px; }
+  .proc-buy-qty { min-width: 74px; font-size: 1.3rem; }
+}
+
 /* ---------- Admin: Profit ----------
    Read as a subtraction, not a scorecard: takings, then each thing that came
    out of them, then what's left. The arithmetic is the layout, so the last

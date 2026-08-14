@@ -12,6 +12,7 @@ const { findValidGiftCard, redeemGiftCardForOrder } = require('./giftCards');
 const { findAffiliateByCode } = require('./affiliates');
 const { getPaymentMethodsConfig } = require('./paymentMethods');
 const { validateReservation } = require('./pressings');
+const { isNumber } = require('./num');
 
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || process.env.CONTACT_NOTIFY_EMAIL;
 const REFERRAL_REWARD_INR = 100;
@@ -269,7 +270,10 @@ async function buildOrderItems(items, couponCode, destCountry, userId, pointsToR
       // Snapshotted, like the price beside it. Cost is a fact about the day the
       // order was placed; re-reading the product later would let a change in
       // what seed costs this season silently rewrite last season's profit.
-      ...(Number.isFinite(Number(sizeInfo?.costPrice)) ? { costPrice: Number(sizeInfo.costPrice) } : {}),
+      // isNumber, not Number.isFinite(Number(…)): the product routes store
+      // null for an unrecorded cost, and Number(null) is 0 — which would stamp
+      // "free to make" onto the line and overstate profit for ever after.
+      ...(isNumber(sizeInfo?.costPrice) ? { costPrice: Number(sizeInfo.costPrice) } : {}),
       ...(isReservation ? { pressingId: item.pressingId } : {}),
     };
   });

@@ -22,6 +22,7 @@
 const db = require('../data/db');
 const { REDEEM_VALUE_INR_PER_POINT } = require('./loyalty');
 const { getPaymentMethodsConfig } = require('./paymentMethods');
+const { isNumber, finiteOrNull } = require('./num');
 
 // Money that came in and stayed in.
 const EARNED_STATUS = 'delivered';
@@ -63,9 +64,9 @@ function orderEconomics(order, { gatewayFeeRate, ledgerByOrder }) {
 
   // A line with no recorded cost isn't a free line — it's an unknown one, and
   // one unknown line makes the whole order's margin unknowable.
-  const costKnown = items.length > 0 && items.every((it) => Number.isFinite(Number(it.costPrice)));
+  const costKnown = items.length > 0 && items.every((it) => isNumber(it.costPrice));
   const goodsCost = costKnown
-    ? items.reduce((sum, it) => sum + Number(it.costPrice) * (Number(it.quantity) || 0), 0)
+    ? items.reduce((sum, it) => sum + finiteOrNull(it.costPrice) * (Number(it.quantity) || 0), 0)
     : null;
 
   // COD collects cash at the door; only money that went through the gateway
@@ -159,7 +160,7 @@ async function buildProfitReport({ days = 30 } = {}) {
       const qty = Number(it.quantity) || 0;
       row.units += qty;
       row.revenue += (Number(it.price) || 0) * qty;
-      if (Number.isFinite(Number(it.costPrice))) row.cost += Number(it.costPrice) * qty;
+      if (isNumber(it.costPrice)) row.cost += finiteOrNull(it.costPrice) * qty;
       else row.costKnown = false;
     }
   }
@@ -176,7 +177,7 @@ async function buildProfitReport({ days = 30 } = {}) {
   const missingCost = [];
   for (const p of products) {
     for (const s of p.sizes || []) {
-      if (!Number.isFinite(Number(s.costPrice))) missingCost.push({ productId: p.id, name: p.name, size: s.label });
+      if (!isNumber(s.costPrice)) missingCost.push({ productId: p.id, name: p.name, size: s.label });
     }
   }
 

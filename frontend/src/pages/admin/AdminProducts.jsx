@@ -17,7 +17,7 @@ const EMPTY = {
   descriptions: {},
   image: '',
   extraImages: [],
-  sizes: [{ label: '500 ml', price: '', mrp: '', stock: '', costPrice: '', wholesalePrice: '' }],
+  sizes: [{ label: '500 ml', price: '', mrp: '', stock: '', costPrice: '', materialPerUnit: '', wholesalePrice: '' }],
   tags: '',
   comboItems: '',
   comboProductIds: [],
@@ -29,6 +29,8 @@ const EMPTY = {
   bestBeforeDate: '',
   growerName: '',
   growerVillage: '',
+  rawMaterial: '',
+  materialUnit: 'kg',
   fssaiLicense: '',
   inciIngredients: '',
   labReportUrl: '',
@@ -51,6 +53,8 @@ function toForm(p) {
     bestBeforeDate: p.bestBeforeDate || '',
     growerName: p.growerName || '',
     growerVillage: p.growerVillage || '',
+    rawMaterial: p.rawMaterial || '',
+    materialUnit: p.materialUnit || 'kg',
     fssaiLicense: p.fssaiLicense || '',
     inciIngredients: p.inciIngredients || '',
     labReportUrl: p.labReportUrl || '',
@@ -82,6 +86,7 @@ function fromForm(f) {
       mrp: Number(s.mrp || s.price),
       stock: Number(s.stock || 0),
       costPrice: s.costPrice !== '' && s.costPrice != null ? Number(s.costPrice) : null,
+      materialPerUnit: s.materialPerUnit !== '' && s.materialPerUnit != null ? Number(s.materialPerUnit) : null,
       wholesalePrice: s.wholesalePrice !== '' && s.wholesalePrice != null ? Number(s.wholesalePrice) : null,
     })),
     tags: f.tags.split(',').map((t) => t.trim()).filter(Boolean),
@@ -444,7 +449,7 @@ export default function AdminProducts() {
               you can only half see. */}
           <table className="admin-table sizes-editor admin-table-stack">
             <thead>
-              <tr><th>Size label</th><th>Price ₹</th><th>MRP ₹</th><th>Stock</th><th>Cost ₹</th><th>Wholesale ₹ (optional)</th><th /></tr>
+              <tr><th>Size label</th><th>Price ₹</th><th>MRP ₹</th><th>Stock</th><th>Cost ₹</th><th>Material per unit</th><th>Wholesale ₹ (optional)</th><th /></tr>
             </thead>
             <tbody>
               {form.sizes.map((s, i) => (
@@ -454,6 +459,7 @@ export default function AdminProducts() {
                   <td data-label="MRP ₹"><input type="number" min="0" value={s.mrp} onChange={(e) => setSize(i, 'mrp', e.target.value)} /></td>
                   <td data-label="Stock"><input type="number" min="0" value={s.stock} onChange={(e) => setSize(i, 'stock', e.target.value)} /></td>
                   <td data-label="Cost ₹"><input type="number" min="0" value={s.costPrice ?? ''} onChange={(e) => setSize(i, 'costPrice', e.target.value)} placeholder="Not set" /></td>
+                  <td data-label="Material per unit"><input type="number" min="0" step="0.01" value={s.materialPerUnit ?? ''} onChange={(e) => setSize(i, 'materialPerUnit', e.target.value)} placeholder="e.g. 2.8" /></td>
                   <td data-label="Wholesale ₹ (optional)"><input type="number" min="0" value={s.wholesalePrice || ''} onChange={(e) => setSize(i, 'wholesalePrice', e.target.value)} placeholder="Same as price" /></td>
                   <td className="cell-action">
                     {form.sizes.length > 1 && (
@@ -477,7 +483,7 @@ export default function AdminProducts() {
           <button
             type="button"
             className="link-btn"
-            onClick={() => setForm((f) => ({ ...f, sizes: [...f.sizes, { label: '', price: '', mrp: '', stock: '', costPrice: '', wholesalePrice: '' }] }))}
+            onClick={() => setForm((f) => ({ ...f, sizes: [...f.sizes, { label: '', price: '', mrp: '', stock: '', costPrice: '', materialPerUnit: '', wholesalePrice: '' }] }))}
           >
             + add size
           </button>
@@ -576,6 +582,27 @@ export default function AdminProducts() {
                 value={form.growerVillage}
                 onChange={(e) => setForm({ ...form, growerVillage: e.target.value })}
               />
+            </div>
+            <div className="field">
+              <label>Made from</label>
+              <input
+                placeholder="e.g. Groundnut"
+                value={form.rawMaterial}
+                onChange={(e) => setForm({ ...form, rawMaterial: e.target.value })}
+              />
+              <p className="muted" style={{ fontSize: '0.78rem', marginTop: 4 }}>
+                What you buy to make it, as you'd say it on the phone. Admin → What to buy adds these
+                up across your scheduled pressings into one list.
+              </p>
+            </div>
+            <div className="field">
+              <label>Measured in</label>
+              <select value={form.materialUnit} onChange={(e) => setForm({ ...form, materialUnit: e.target.value })}>
+                <option value="kg">kg</option>
+                <option value="litres">litres</option>
+                <option value="bundles">bundles</option>
+                <option value="pieces">pieces</option>
+              </select>
             </div>
             <div className="field">
               <label>FSSAI license number</label>
