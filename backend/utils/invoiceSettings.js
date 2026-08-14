@@ -14,6 +14,9 @@ const DEFAULTS = {
   gstin: '',
   fssai: '',
   documentTitle: 'BILL OF SUPPLY',
+  // Drawn at the top of the invoice and the trade rate card in place of the
+  // business name. PNG or JPEG — PDFKit cannot draw an SVG.
+  logoImage: '',
   signatureImage: '',
   signatoryName: 'Authorised Signatory',
   dueDays: 7,

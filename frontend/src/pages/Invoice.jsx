@@ -98,7 +98,12 @@ export default function Invoice() {
         <div className="invoice-body">
           <header className="invoice-head">
             <div className="invoice-brandmark">
-              <img src={logo} alt="Western Gods Organics" />
+              {/* The uploaded logo wins so the printed page and the PDF that
+                  goes out on WhatsApp show the same mark. */}
+              <img
+                src={settings.logoImage ? getProductImage(settings.logoImage) : logo}
+                alt={settings.businessName}
+              />
             </div>
             <div className="invoice-brand">
               <h1>{settings.businessName}</h1>

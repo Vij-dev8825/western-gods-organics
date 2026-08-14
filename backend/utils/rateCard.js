@@ -15,6 +15,7 @@ const PDFDocument = require('pdfkit');
 const db = require('./../data/db');
 const { getInvoiceSettings } = require('./invoiceSettings');
 const { isNumber, finiteOrNull } = require('./num');
+const { loadBrandLogo, drawFitted } = require('./pdfImage');
 
 const FOREST = '#1F3D2B';
 const INK = '#2C3A31';
@@ -66,8 +67,15 @@ async function buildRateCardPdf({ terms = '', validUntil = '' } = {}) {
     doc.on('error', reject);
   });
 
-  /* Header */
-  doc.font('Helvetica-Bold').fontSize(18).fillColor(FOREST).text(settings.businessName, MARGIN, MARGIN);
+  /* Header — same treatment as the invoice: the logo stands in for the name
+     when there is one, so a shop owner sees one consistent letterhead. */
+  const logo = await loadBrandLogo(settings);
+  let used = logo ? drawFitted(doc, logo, { x: MARGIN, y: MARGIN - 2, maxWidth: 140, maxHeight: 48 }) : 0;
+  if (!used) {
+    doc.font('Helvetica-Bold').fontSize(18).fillColor(FOREST).text(settings.businessName, MARGIN, MARGIN);
+    used = doc.y - MARGIN;
+  }
+  doc.y = MARGIN + used;
   let y = doc.y + 2;
   doc.font('Helvetica').fontSize(8.5).fillColor(INK_SOFT);
   for (const bit of [settings.legalName, settings.address, `${settings.phone}  ·  ${settings.email}`]) {

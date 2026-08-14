@@ -34,18 +34,29 @@ const POSTER_WIDTH = 1280;
 const POSTER_QUALITY = 62;
 
 /** Compresses an image buffer (resize + re-encode as JPEG) and stores it,
- * returning a URL the frontend can load directly. */
-async function compressAndStore(buffer) {
-  const compressed = await sharp(buffer)
+ * returning a URL the frontend can load directly.
+ *
+ * preserveAlpha: JPEG has no alpha channel, so re-encoding a transparent image
+ * as one fills the transparent area with black. That is invisible for a photo
+ * and fatal for a logo, which is almost always a transparent PNG and would
+ * otherwise print as a black rectangle at the top of every invoice. Callers
+ * that are storing a mark rather than a photograph opt in, and pay for it in
+ * row size only when the source actually has transparency. */
+async function compressAndStore(buffer, { preserveAlpha = false } = {}) {
+  const resized = sharp(buffer)
     .rotate() // respect EXIF orientation before stripping metadata
-    .resize({ width: MAX_DIMENSION, height: MAX_DIMENSION, fit: 'inside', withoutEnlargement: true })
-    .jpeg({ quality: JPEG_QUALITY, mozjpeg: true })
-    .toBuffer();
+    .resize({ width: MAX_DIMENSION, height: MAX_DIMENSION, fit: 'inside', withoutEnlargement: true });
+
+  const transparent = preserveAlpha && (await sharp(buffer).metadata()).hasAlpha;
+  const mimeType = transparent ? 'image/png' : 'image/jpeg';
+  const compressed = transparent
+    ? await resized.png({ compressionLevel: 9, palette: true }).toBuffer()
+    : await resized.jpeg({ quality: JPEG_QUALITY, mozjpeg: true }).toBuffer();
 
   const id = uuid();
   await db.put('media', {
     id,
-    mimeType: 'image/jpeg',
+    mimeType,
     data: compressed.toString('base64'),
     createdAt: new Date().toISOString(),
   });

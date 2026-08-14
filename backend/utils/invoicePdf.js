@@ -18,6 +18,7 @@
 const PDFDocument = require('pdfkit');
 const { getInvoiceSettings } = require('./invoiceSettings');
 const { deriveShipping, lineSubtotal } = require('./profit');
+const { loadImage, loadBrandLogo, drawFitted } = require('./pdfImage');
 
 const FOREST = '#1F3D2B';
 const INK = '#2C3A31';
@@ -66,9 +67,24 @@ function invoiceAmounts(order) {
   };
 }
 
-function header(doc, settings) {
-  doc.font('Helvetica-Bold').fontSize(17).fillColor(FOREST)
-    .text(settings.businessName, MARGIN, MARGIN, { width: CONTENT_W * 0.62 });
+const LOGO_MAX_W = 132;
+const LOGO_MAX_H = 46;
+
+function header(doc, settings, logo) {
+  // The logo replaces the business name rather than sitting beside it — a
+  // wordmark next to the same words set in Helvetica reads as a mistake. When
+  // there is no logo, or it could not be loaded, the name stands in and the
+  // rest of the header moves up to meet it.
+  let nameHeight = 0;
+  if (logo) {
+    nameHeight = drawFitted(doc, logo, { x: MARGIN, y: MARGIN - 2, maxWidth: LOGO_MAX_W, maxHeight: LOGO_MAX_H });
+  }
+  if (!nameHeight) {
+    doc.font('Helvetica-Bold').fontSize(17).fillColor(FOREST)
+      .text(settings.businessName, MARGIN, MARGIN, { width: CONTENT_W * 0.62 });
+    nameHeight = doc.y - MARGIN;
+  }
+  doc.y = MARGIN + nameHeight;
 
   let y = doc.y + 2;
   doc.font('Helvetica').fontSize(8.5).fillColor(INK_SOFT);
@@ -225,7 +241,7 @@ function totals(doc, order, amounts, y) {
   return y + 24;
 }
 
-function footer(doc, settings, y) {
+function footer(doc, settings, y, signature) {
   if (y > 640) { doc.addPage(); y = MARGIN; }
 
   doc.font('Helvetica-Bold').fontSize(8).fillColor(INK).text('TERMS', MARGIN, y, { width: 320, characterSpacing: 0.6 });
@@ -238,6 +254,8 @@ function footer(doc, settings, y) {
 
   const signX = PAGE_W - MARGIN - 150;
   const signY = Math.max(y + 10, 690);
+  // Sits on the rule rather than above the name, the way a signature does.
+  drawFitted(doc, signature, { x: signX + 25, y: signY - 34, maxWidth: 100, maxHeight: 32 });
   doc.moveTo(signX, signY).lineTo(PAGE_W - MARGIN, signY).strokeColor(RULE).lineWidth(0.8).stroke();
   doc.font('Helvetica').fontSize(8).fillColor(INK_SOFT)
     .text(settings.signatoryName || 'Authorised Signatory', signX, signY + 4, { width: 150, align: 'center' });
@@ -248,6 +266,12 @@ function footer(doc, settings, y) {
 async function buildInvoicePdf(order) {
   const settings = await getInvoiceSettings();
   const amounts = invoiceAmounts(order);
+  // Fetched before drawing starts: PDFKit's API is synchronous, so an await
+  // in the middle of laying out a page would interleave badly.
+  const [logo, signature] = await Promise.all([
+    loadBrandLogo(settings),
+    loadImage(settings.signatureImage),
+  ]);
 
   const doc = new PDFDocument({ size: 'A4', margin: MARGIN, bufferPages: true });
   const chunks = [];
@@ -257,11 +281,11 @@ async function buildInvoicePdf(order) {
     doc.on('error', reject);
   });
 
-  let y = header(doc, settings);
+  let y = header(doc, settings, logo);
   y = metaAndAddress(doc, order, settings, y);
   y = itemsTable(doc, order, y);
   y = totals(doc, order, amounts, y);
-  footer(doc, settings, y);
+  footer(doc, settings, y, signature);
 
   doc.end();
   return done;

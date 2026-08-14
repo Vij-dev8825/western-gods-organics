@@ -24,7 +24,10 @@ const imageUpload = multer({
   },
 });
 
-async function storeUploadedFile(file) {
+/** preserveAlpha is passed through for logos and other transparent marks —
+ *  see compressAndStore. Cloudinary keeps the uploaded format as-is, so it
+ *  needs no equivalent flag. */
+async function storeUploadedFile(file, { preserveAlpha = false } = {}) {
   if (cloudinary.isConfigured()) {
     const { url } = await cloudinary.uploadFile(file.path, { resourceType: 'image' });
     fs.unlink(file.path, () => {});
@@ -33,7 +36,7 @@ async function storeUploadedFile(file) {
   // No Cloudinary configured — compress and store in the database instead
   // of local disk, which Render's free plan wipes on every redeploy.
   const buffer = fs.readFileSync(file.path);
-  const url = await compressAndStore(buffer);
+  const url = await compressAndStore(buffer, { preserveAlpha });
   fs.unlink(file.path, () => {});
   return url;
 }

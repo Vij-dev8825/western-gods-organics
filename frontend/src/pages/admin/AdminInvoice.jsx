@@ -21,7 +21,7 @@ export default function AdminInvoice() {
   const { showToast } = useToast();
   const [settings, setSettings] = useState(null);
   const [saving, setSaving] = useState(false);
-  const [uploading, setUploading] = useState(false);
+  const [uploading, setUploading] = useState('');
 
   useEffect(() => {
     api.admin.getInvoiceSettings(token).then((d) => setSettings(d.invoiceSettings)).catch(() => {});
@@ -55,19 +55,20 @@ export default function AdminInvoice() {
     }
   }
 
-  async function uploadSignature(file) {
+  async function upload(field, file) {
     if (!file) return;
-    setUploading(true);
+    setUploading(field);
     try {
       const fd = new FormData();
       fd.append('file', file);
-      const d = await api.admin.uploadSignature(token, fd);
-      set('signatureImage', d.url);
-      showToast('Signature uploaded — remember to Save.');
+      const upload = field === 'logoImage' ? api.admin.uploadInvoiceLogo : api.admin.uploadSignature;
+      const d = await upload(token, fd);
+      set(field, d.url);
+      showToast(`${field === 'logoImage' ? 'Logo' : 'Signature'} uploaded — remember to Save.`);
     } catch (err) {
       showToast(err.message, 'error');
     } finally {
-      setUploading(false);
+      setUploading('');
     }
   }
 
@@ -162,6 +163,37 @@ export default function AdminInvoice() {
       </div>
 
       <div className="form-card" style={{ maxWidth: 620, marginTop: 18 }}>
+        <h4 style={{ marginTop: 0 }}>Logo</h4>
+        <p className="muted" style={{ fontSize: '0.82rem' }}>
+          Prints at the top left of every invoice and of the trade rate card, in place of your
+          business name. A wide logo works best — it is fitted into a box about 45mm across.
+          Use a PNG with a transparent background if you have one. Leave empty to print the
+          business name as text instead.
+        </p>
+        {settings.logoImage ? (
+          <div style={{ marginBottom: 12 }}>
+            <img
+              src={getProductImage(settings.logoImage)}
+              alt="Current invoice logo"
+              style={{ maxHeight: 64, maxWidth: 240, display: 'block', marginBottom: 8 }}
+            />
+            <button type="button" className="link-btn" onClick={() => set('logoImage', '')}>
+              Remove logo
+            </button>
+          </div>
+        ) : (
+          <p className="muted" style={{ fontSize: '0.82rem' }}><i>No logo uploaded — your business name prints as text.</i></p>
+        )}
+        <input
+          type="file"
+          accept="image/jpeg,image/png"
+          disabled={!!uploading}
+          onChange={(e) => upload('logoImage', e.target.files?.[0])}
+        />
+        {uploading === 'logoImage' && <span className="muted"> Uploading…</span>}
+      </div>
+
+      <div className="form-card" style={{ maxWidth: 620, marginTop: 18 }}>
         <h4 style={{ marginTop: 0 }}>Signature</h4>
         <p className="muted" style={{ fontSize: '0.82rem' }}>
           Upload a photo or scan of your signature on white paper (jpg/png/webp). It prints above
@@ -184,10 +216,10 @@ export default function AdminInvoice() {
         <input
           type="file"
           accept="image/jpeg,image/png,image/webp"
-          disabled={uploading}
-          onChange={(e) => uploadSignature(e.target.files?.[0])}
+          disabled={!!uploading}
+          onChange={(e) => upload('signatureImage', e.target.files?.[0])}
         />
-        {uploading && <span className="muted"> Uploading…</span>}
+        {uploading === 'signatureImage' && <span className="muted"> Uploading…</span>}
       </div>
 
       <div className="flex gap-1" style={{ marginTop: 20, alignItems: 'center' }}>

@@ -1671,7 +1671,7 @@ router.get('/invoice-settings', async (req, res, next) => {
 });
 
 // PUT /api/admin/invoice-settings
-const INVOICE_TEXT_FIELDS = ['businessName', 'legalName', 'address', 'phone', 'email', 'gstin', 'fssai', 'signatureImage', 'signatoryName'];
+const INVOICE_TEXT_FIELDS = ['businessName', 'legalName', 'address', 'phone', 'email', 'gstin', 'fssai', 'logoImage', 'signatureImage', 'signatoryName'];
 // A tax classification, so only these two are accepted — a free-text heading
 // here could silently turn a tax invoice into something that isn't one.
 const DOCUMENT_TITLES = ['BILL OF SUPPLY', 'TAX INVOICE'];
@@ -1711,6 +1711,18 @@ router.post('/invoice-settings/signature', imageUpload.single('file'), async (re
   try {
     if (!req.file) return res.status(400).json({ success: false, message: 'No file uploaded.' });
     const url = await storeUploadedFile(req.file);
+    res.json({ success: true, url });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /api/admin/invoice-settings/logo — same, but transparency is kept so a
+// PNG wordmark prints against the paper rather than a black square.
+router.post('/invoice-settings/logo', imageUpload.single('file'), async (req, res, next) => {
+  try {
+    if (!req.file) return res.status(400).json({ success: false, message: 'No file uploaded.' });
+    const url = await storeUploadedFile(req.file, { preserveAlpha: true });
     res.json({ success: true, url });
   } catch (err) {
     next(err);

@@ -376,6 +376,7 @@ export const api = {
     getInvoiceSettings: (token) => request('/admin/invoice-settings', { token }),
     updateInvoiceSettings: (token, settings) => request('/admin/invoice-settings', { method: 'PUT', body: settings, token }),
     uploadSignature: (token, formData) => request('/admin/invoice-settings/signature', { method: 'POST', formData, token }),
+    uploadInvoiceLogo: (token, formData) => request('/admin/invoice-settings/logo', { method: 'POST', formData, token }),
     getGiftCards: (token) => request('/admin/gift-cards', { token }),
     cancelGiftCard: (token, code) => request(`/admin/gift-cards/${code}/cancel`, { method: 'PATCH', token }),
     setCustomerAffiliate: (token, id, payload) => request(`/admin/customers/${id}/affiliate`, { method: 'PATCH', body: payload, token }),
