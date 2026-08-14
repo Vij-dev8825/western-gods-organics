@@ -12,6 +12,7 @@ import { validateAddress, isValidEmail } from '../utils/validators';
 import { normalizeAddresses } from '../utils/addresses';
 import { getEffectivePrice } from '../utils/pricing';
 import { getAttributedAffiliateCode } from '../utils/affiliateAttribution';
+import { STORE_LOCATIONS, directionsUrl } from '../data/storeLocations';
 import ChakkiWheel from '../components/ChakkiWheel';
 import AddressForm, { PhoneField } from '../components/AddressForm';
 import CodPhoneVerify from '../components/CodPhoneVerify';
@@ -28,7 +29,7 @@ export default function Cart() {
   const { items, updateQuantity, removeItem, clearCart } = useCart();
   const { isLoggedIn, token, user, login, updateUser } = useAuth();
   const { showToast } = useToast();
-  const { isForeign, checkMinOrder, getShippingFee, country } = useCurrency();
+  const { isForeign, checkMinOrder, getShippingFee, country, pickup } = useCurrency();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -220,11 +221,13 @@ export default function Cart() {
   const isDomesticAddress = !address.country || address.country === 'IN';
   const effectiveShippingChoice = isDomesticAddress ? shippingChoice : 'shipping';
   const shipping = getShippingFee(address.country, subtotal, loyaltyTier?.freeShippingMinOrder, effectiveShippingChoice, address.pincode);
-  // "To Pay" always shows (there's a real choice to reflect back, even
-  // though the store isn't charging for it); "Shipping" only shows when
-  // there's an actual charge — omit it entirely rather than show "Free".
-  const showShippingRow = effectiveShippingChoice === 'to_pay' ? true : shipping > 0;
-  const shippingLabel = effectiveShippingChoice === 'to_pay' ? 'To Pay' : 'Shipping';
+  // "To Pay" and "Collection" always show — each is a real choice worth
+  // reflecting back even though the store charges nothing for it. "Shipping"
+  // only shows when there's an actual charge, rather than a row saying "Free".
+  const showShippingRow = effectiveShippingChoice === 'shipping' ? shipping > 0 : true;
+  const shippingLabel =
+    effectiveShippingChoice === 'to_pay' ? 'To Pay'
+      : effectiveShippingChoice === 'pickup' ? 'Collection' : 'Shipping';
   // What "Shipping" would cost regardless of which option is currently
   // selected — shown on that option itself so switching to "To Pay" doesn't
   // hide what the alternative is.
@@ -615,7 +618,12 @@ export default function Cart() {
           <div className="summary-row"><span>Subtotal</span><span>₹{subtotal}</span></div>
           {showShippingRow && (
             <div className="summary-row">
-              <span>{shippingLabel}</span><span>{effectiveShippingChoice === 'to_pay' ? 'At delivery' : `₹${shipping}`}</span>
+              <span>{shippingLabel}</span>
+              <span>
+                {effectiveShippingChoice === 'to_pay' ? 'At delivery'
+                  : effectiveShippingChoice === 'pickup' ? 'You collect'
+                    : `₹${shipping}`}
+              </span>
             </div>
           )}
           {discount > 0 && (
@@ -894,7 +902,45 @@ export default function Cart() {
                         <span className="muted">Courier collects their own delivery charge directly from you — not included here</span>
                       </span>
                     </label>
+                    {pickup.enabled && (
+                      <label className={`payment-option ${shippingChoice === 'pickup' ? 'active' : ''}`}>
+                        <input type="radio" name="shippingChoice" checked={shippingChoice === 'pickup'} onChange={() => setShippingChoice('pickup')} />
+                        <span className="filter-radio" aria-hidden="true" />
+                        <span className="payment-option-body">
+                          <b>Collect from the mill</b>
+                          <span className="muted">
+                            Free — {STORE_LOCATIONS[0].locality}
+                            {pickup.hours && `, ${pickup.hours}`}
+                          </span>
+                        </span>
+                      </label>
+                    )}
                   </div>
+                  {shippingChoice === 'pickup' && (
+                    <div className="pickup-note">
+                      <p>
+                        <b>{STORE_LOCATIONS[0].name}</b><br />
+                        {STORE_LOCATIONS[0].address}
+                        {pickup.hours && <><br />{pickup.hours}</>}
+                      </p>
+                      {pickup.refillDiscount > 0 && (
+                        // Stated as a promise kept at the counter, not taken off
+                        // the total here: the mill can see whether a bottle
+                        // actually turned up, and a discount given for one that
+                        // didn't is money to chase back.
+                        <p className="pickup-refill">
+                          🫙 Bring your own clean bottles and we'll take{' '}
+                          <b>₹{pickup.refillDiscount} off each one</b> when you collect.
+                        </p>
+                      )}
+                      <a href={directionsUrl(STORE_LOCATIONS[0].address)} target="_blank" rel="noreferrer" className="link-btn">
+                        Directions →
+                      </a>
+                      <p className="muted" style={{ fontSize: '0.78rem', marginBottom: 0 }}>
+                        We'll message you when it's ready. Your address below is still used for the bill.
+                      </p>
+                    </div>
+                  )}
                 </>
               )}
 

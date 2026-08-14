@@ -3112,6 +3112,28 @@ input:focus-visible + .filter-radio { outline: 2px solid var(--gold-2); outline-
   .pressing-run-tag { align-self: flex-start; margin-left: 68px; }
 }
 
+/* Collection details, shown once "Collect from the mill" is picked — an
+   address someone has to actually drive to, so it gets room rather than a
+   line of small print. */
+.pickup-note {
+  margin-top: 10px; padding: 14px 16px;
+  border: 1px solid rgba(31, 61, 43, 0.16); border-radius: var(--radius-md);
+  background: rgba(31, 61, 43, 0.03);
+}
+.pickup-note p { margin: 0 0 8px; font-size: 0.88rem; line-height: 1.5; }
+.pickup-refill {
+  padding: 8px 10px; border-radius: var(--radius-sm);
+  background: rgba(212, 175, 55, 0.12); color: var(--gold-deep, #8A6B1E);
+}
+
+/* Impossible to miss in a packing list. A collected order sent by courier is
+   a delivery paid for twice and a customer waiting at the mill for nothing. */
+.collect-flag {
+  display: inline-block; margin-top: 6px; padding: 3px 8px;
+  border-radius: 999px; font-size: 0.7rem; font-weight: 700;
+  letter-spacing: 0.04em; background: #A3543C; color: #fff;
+}
+
 /* The grower, beside the price rather than buried in the spec list. Quiet
    enough not to compete with the product name, specific enough to be read as
    a fact rather than a slogan. */

@@ -249,6 +249,12 @@ export default function AdminOrders() {
                           🤝 Affiliate: {o.affiliateCode}
                         </div>
                       )}
+                      {/* Loud on purpose. A collection order that gets packed
+                          onto the courier run is a delivery paid for twice and
+                          a customer standing at the mill for nothing. */}
+                      {o.shippingChoice === 'pickup' && (
+                        <div className="collect-flag">🏭 COLLECTING — do not courier</div>
+                      )}
                     </td>
                     <td data-label="Total">
                       ₹{o.total}

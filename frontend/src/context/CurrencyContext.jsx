@@ -37,6 +37,7 @@ export function CurrencyProvider({ children }) {
   const [domesticFreeShippingThreshold, setDomesticFreeShippingThreshold] = useState(999);
   const [domesticShippingEnabled, setDomesticShippingEnabled] = useState(true);
   const [local, setLocal] = useState({ pincodes: '', fee: 0, freeThreshold: 0 });
+  const [pickup, setPickup] = useState({ enabled: false, hours: '', refillDiscount: 0 });
 
   useEffect(() => {
     api.getCurrencyRates().then((d) => {
@@ -48,6 +49,7 @@ export function CurrencyProvider({ children }) {
       if (typeof d.domesticFreeShippingThreshold === 'number') setDomesticFreeShippingThreshold(d.domesticFreeShippingThreshold);
       if (typeof d.domesticShippingEnabled === 'boolean') setDomesticShippingEnabled(d.domesticShippingEnabled);
       if (d.localDelivery) setLocal(d.localDelivery);
+      if (d.pickup) setPickup(d.pickup);
     }).catch(() => {});
   }, []);
 
@@ -145,6 +147,11 @@ export function CurrencyProvider({ children }) {
     if (inrSubtotal === 0) return 0;
     if (!destCountryCode || destCountryCode === 'IN') {
       if (shippingChoice === 'to_pay') return 0;
+      // Nobody delivers a collected order, so there is nothing to charge.
+      // Gated on the setting for the same reason the server is: with pickup
+      // switched off, a stale client asking for it must not preview free
+      // delivery it won't actually get.
+      if (shippingChoice === 'pickup' && pickup.enabled) return 0;
       if (!domesticShippingEnabled) return 0;
       if (isLocalPincode(destPincode)) {
         return inrSubtotal > local.freeThreshold ? 0 : local.fee;
@@ -167,6 +174,7 @@ export function CurrencyProvider({ children }) {
         getShippingFee,
         isLocalPincode,
         domesticShippingEnabled,
+        pickup,
         isForeign: country.currency !== 'INR',
       }}
     >

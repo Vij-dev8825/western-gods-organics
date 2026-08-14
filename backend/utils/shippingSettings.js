@@ -13,6 +13,15 @@ const DEFAULTS = {
   localPincodes: '',
   localFee: 0,
   localFreeThreshold: 0,
+  // Collection at the mill. Off by default — a shop that offers it and isn't
+  // ready for someone to turn up has made a promise it can't keep.
+  pickupEnabled: false,
+  pickupHours: '',
+  // A rupee saving per bottle for a customer who brings their own, honoured at
+  // the counter rather than taken off the checkout total. Deliberate: the mill
+  // can see whether a bottle actually arrived, a payment gateway cannot, and a
+  // discount given for something that didn't happen is a refund to chase.
+  refillDiscount: 0,
 };
 
 async function getShippingSettings() {

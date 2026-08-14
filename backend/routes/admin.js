@@ -1432,6 +1432,12 @@ router.put('/shipping-settings', async (req, res, next) => {
       localPincodes: String(req.body.localPincodes || '').slice(0, 500),
       localFee,
       localFreeThreshold,
+      pickupEnabled: !!req.body.pickupEnabled,
+      pickupHours: String(req.body.pickupHours || '').slice(0, 200),
+      // Clamped rather than validated away: this is a promise made at the
+      // counter, not a charge, so a silly number misstates a sign — it can't
+      // mischarge anyone.
+      refillDiscount: Math.min(Math.max(Math.round(Number(req.body.refillDiscount) || 0), 0), 500),
     };
     await db.put('shipping-settings', shippingSettings);
     res.json({ success: true, shippingSettings });

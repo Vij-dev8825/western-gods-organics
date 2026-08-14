@@ -49,6 +49,7 @@ function invoiceAmounts(order) {
   const pointsDiscount = Number(order.pointsRedeemed) || 0; // 1 point = Rs.1
   const giftCardApplied = Number(order.giftCardApplied) || 0;
   const isToPay = order.shippingChoice === 'to_pay';
+  const isPickup = order.shippingChoice === 'pickup';
 
   // What the customer has actually handed over: a prepaid order is settled,
   // a part-advance order only by its advance, a COD order by nothing yet.
@@ -58,7 +59,7 @@ function invoiceAmounts(order) {
         : 0;
 
   return {
-    subtotal, shipping, discount, prepaidDiscount, pointsDiscount, giftCardApplied, isToPay,
+    subtotal, shipping, discount, prepaidDiscount, pointsDiscount, giftCardApplied, isToPay, isPickup,
     total: Number(order.total) || 0,
     received,
     balanceDue: Math.max(0, (Number(order.total) || 0) - received),
@@ -187,9 +188,11 @@ function totals(doc, order, amounts, y) {
 
   const lines = [
     ['Subtotal', money(amounts.subtotal)],
-    amounts.isToPay
-      ? ['Delivery (To Pay)', 'At delivery']
-      : amounts.shipping > 0 ? ['Delivery', money(amounts.shipping)] : null,
+    amounts.isPickup
+      ? ['Collection', 'From the mill']
+      : amounts.isToPay
+        ? ['Delivery (To Pay)', 'At delivery']
+        : amounts.shipping > 0 ? ['Delivery', money(amounts.shipping)] : null,
     amounts.discount > 0 ? [`Coupon${order.couponCode ? ` (${order.couponCode})` : ''}`, `- ${money(amounts.discount)}`] : null,
     amounts.prepaidDiscount > 0 ? ['Prepaid discount', `- ${money(amounts.prepaidDiscount)}`] : null,
     amounts.pointsDiscount > 0 ? ['Reward points', `- ${money(amounts.pointsDiscount)}`] : null,

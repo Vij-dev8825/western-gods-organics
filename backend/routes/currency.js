@@ -93,6 +93,14 @@ router.get('/rates', async (req, res, next) => {
         fee: domesticShipping.localFee,
         freeThreshold: domesticShipping.localFreeThreshold,
       },
+      // Whether the mill is taking collections, and what it will knock off for
+      // a customer who brings their own bottle. Public because the checkout
+      // has to decide whether to offer the option at all.
+      pickup: {
+        enabled: domesticShipping.pickupEnabled,
+        hours: domesticShipping.pickupHours,
+        refillDiscount: domesticShipping.refillDiscount,
+      },
     });
   } catch (err) {
     // Serve a stale cache rather than failing the whole storefront if the

@@ -173,6 +173,13 @@ async function calculateShipping(subtotal, destCountry = DOMESTIC_COUNTRY, userI
   if (subtotal === 0) return 0;
   if (destCountry === DOMESTIC_COUNTRY) {
     if (shippingChoice === 'to_pay') return 0;
+    // Nobody is delivering it, so there is nothing to charge for. Checked
+    // against the setting rather than trusting the request: a client asking
+    // for pickup while it's switched off must not get free delivery.
+    if (shippingChoice === 'pickup') {
+      const { pickupEnabled } = await getShippingSettings();
+      if (pickupEnabled) return 0;
+    }
     const settings = await getShippingSettings();
     const { domesticFee, domesticFreeThreshold, domesticShippingEnabled } = settings;
     if (!domesticShippingEnabled) return 0;
@@ -396,6 +403,21 @@ async function issueBottleReturnCredit(userId, quantity) {
   return coupon;
 }
 
+/** What actually gets stored on the order, re-derived rather than trusted.
+ *  Pickup additionally has to still be switched on — an order recorded as
+ *  "collect from the mill" when the mill isn't offering collection is a
+ *  customer turning up to a closed door. */
+async function resolveShippingChoice(address, requested) {
+  const domestic = !address.country || address.country === 'IN';
+  if (!domestic) return 'shipping';
+  if (requested === 'to_pay') return 'to_pay';
+  if (requested === 'pickup') {
+    const { pickupEnabled } = await getShippingSettings();
+    return pickupEnabled ? 'pickup' : 'shipping';
+  }
+  return 'shipping';
+}
+
 async function createOrderRecord({ userId, orderItems, address, total, discount, couponCode, prepaidDiscount, pointsRedeemed, paymentMethod, payment, subscriptionId, advancePaid, shippingChoice, giftCardCode, giftCardApplied, isGift, giftMessage, affiliateCode }) {
   // Computed before this order is persisted, so it only reflects orders that
   // already existed — used below to detect a customer's genuine first order,
@@ -429,12 +451,14 @@ async function createOrderRecord({ userId, orderItems, address, total, discount,
     affiliateCode: validAffiliate ? validAffiliate.affiliateCode : null,
     affiliateUserId: validAffiliate ? validAffiliate.id : null,
     subscriptionId: subscriptionId || null,
-    // "to_pay" only ever meant anything for domestic delivery (see
-    // calculateShipping) — re-derive from the address here too, so a
-    // request that sent it for an international order (which was actually
-    // charged the flat international fee) doesn't get persisted as
-    // "collected by courier, nothing charged" and mislead the invoice.
-    shippingChoice: (!address.country || address.country === 'IN') && shippingChoice === 'to_pay' ? 'to_pay' : 'shipping',
+    // "to_pay" and "pickup" only ever meant anything for domestic orders (see
+    // calculateShipping) — re-derived from the address here too, so a request
+    // that sent one for an international order (which was actually charged the
+    // flat international fee) doesn't get persisted as "nothing charged" and
+    // mislead the invoice. Anything unrecognised falls back to ordinary
+    // delivery, which is the choice that charges rather than the one that
+    // doesn't.
+    shippingChoice: await resolveShippingChoice(address, shippingChoice),
     // Derived from the lines rather than taken from the request: whether an
     // order is waiting on a pressing is a fact about what's in it, and the
     // fulfilment screens key off this to keep reservations out of the

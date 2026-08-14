@@ -7,6 +7,7 @@ export default function AdminShipping() {
   const [settings, setSettings] = useState({
     domesticFee: '', domesticFreeThreshold: '', domesticShippingEnabled: true,
     localPincodes: '', localFee: '', localFreeThreshold: '',
+    pickupEnabled: false, pickupHours: '', refillDiscount: '',
   });
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState(null);
@@ -19,6 +20,9 @@ export default function AdminShipping() {
       localPincodes: d.shippingSettings.localPincodes || '',
       localFee: String(d.shippingSettings.localFee ?? 0),
       localFreeThreshold: String(d.shippingSettings.localFreeThreshold ?? 0),
+      pickupEnabled: !!d.shippingSettings.pickupEnabled,
+      pickupHours: d.shippingSettings.pickupHours || '',
+      refillDiscount: String(d.shippingSettings.refillDiscount ?? 0),
     })).catch(() => {});
   }, [token]);
 
@@ -39,6 +43,9 @@ export default function AdminShipping() {
         localPincodes: settings.localPincodes,
         localFee: Number(settings.localFee || 0),
         localFreeThreshold: Number(settings.localFreeThreshold || 0),
+        pickupEnabled: settings.pickupEnabled,
+        pickupHours: settings.pickupHours,
+        refillDiscount: Number(settings.refillDiscount || 0),
       });
       setSettings({
         domesticFee: String(d.shippingSettings.domesticFee),
@@ -47,6 +54,9 @@ export default function AdminShipping() {
         localPincodes: d.shippingSettings.localPincodes || '',
         localFee: String(d.shippingSettings.localFee ?? 0),
         localFreeThreshold: String(d.shippingSettings.localFreeThreshold ?? 0),
+      pickupEnabled: !!d.shippingSettings.pickupEnabled,
+      pickupHours: d.shippingSettings.pickupHours || '',
+      refillDiscount: String(d.shippingSettings.refillDiscount ?? 0),
       });
       setMessage({ type: 'success', text: 'Shipping settings updated.' });
     } catch (err) {
@@ -158,6 +168,51 @@ export default function AdminShipping() {
               placeholder="e.g. 400"
             />
           </div>
+        </div>
+
+        <hr style={{ margin: '24px 0', border: 0, borderTop: '1px solid rgba(31,61,43,0.1)' }} />
+
+        <h3 style={{ fontSize: '1rem', margin: '0 0 4px' }}>Collection at the mill</h3>
+        <label className="check-row">
+          <input
+            type="checkbox"
+            checked={settings.pickupEnabled}
+            onChange={(e) => setSettings((s) => ({ ...s, pickupEnabled: e.target.checked }))}
+          />
+          Let customers collect their order from the mill
+        </label>
+        <p className="muted" style={{ fontSize: '0.85rem', maxWidth: '60ch' }}>
+          Adds a third delivery choice at checkout, with no charge — nobody is delivering it.
+          Only turn it on when someone is reliably there to hand orders over; a customer who
+          drives to Udumalpet and finds the door shut does not come back. Collection orders are
+          flagged in Orders so they don't get put on the courier run by mistake.
+        </p>
+
+        <div className="field">
+          <label>When they can collect</label>
+          <input
+            maxLength={200}
+            value={settings.pickupHours}
+            onChange={(e) => setSettings((s) => ({ ...s, pickupHours: e.target.value }))}
+            placeholder="e.g. Mon–Sat, 9am–6pm"
+          />
+        </div>
+
+        <div className="field" style={{ maxWidth: 260 }}>
+          <label>Off each bottle they bring (₹)</label>
+          <input
+            type="number"
+            min="0"
+            step="1"
+            value={settings.refillDiscount}
+            onChange={(e) => setSettings((s) => ({ ...s, refillDiscount: e.target.value }))}
+            placeholder="e.g. 15"
+          />
+          <p className="muted" style={{ fontSize: '0.8rem', marginTop: 4 }}>
+            Shown at checkout as a promise and taken off <b>at the counter</b>, not from the
+            online total — you can see whether a bottle actually arrived; a payment gateway
+            can't. Leave at 0 to say nothing about refills.
+          </p>
         </div>
 
         <button type="button" className="btn btn-gold btn-sm" disabled={saving} onClick={save}>
