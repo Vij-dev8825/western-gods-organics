@@ -11,6 +11,7 @@ const links = [
   { to: '/admin/new-order', label: 'Record an Order' },
   { to: '/admin', label: 'Dashboard', end: true },
   { to: '/admin/profit', label: 'Profit' },
+  { to: '/admin/margins', label: 'Margins' },
   { to: '/admin/procurement', label: 'What to Buy' },
   { to: '/admin/products', label: 'Products' },
   { to: '/admin/categories', label: 'Categories' },

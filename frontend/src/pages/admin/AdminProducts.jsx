@@ -8,6 +8,55 @@ import { LANGS } from '../../i18n';
 
 const TRANSLATABLE_LANGS = LANGS.filter((l) => l.code !== 'en');
 
+/** Gross margin for one size row, as it's being typed. Mirrors the server's
+ *  catalogMargin.js: a blank cost is "not costed yet", never zero. */
+function sizeMargin(size) {
+  const price = Number(size.price);
+  if (!Number.isFinite(price) || price <= 0) return null;
+  if (size.costPrice === '' || size.costPrice == null) return null;
+  const cost = Number(size.costPrice);
+  if (!Number.isFinite(cost)) return null;
+  return { keep: Math.round(price - cost), percent: Math.round(((price - cost) / price) * 1000) / 10 };
+}
+
+/** Under a fifth of the price left is worth a second look before saving. */
+const THIN_MARGIN_PERCENT = 20;
+
+/** The margin span across a saved product's sizes, for the listing. */
+function marginRange(product) {
+  const percents = (product.sizes || [])
+    .map((s) => sizeMargin({ price: s.price, costPrice: s.costPrice }))
+    .filter(Boolean)
+    .map((m) => m.percent);
+  if (percents.length === 0) {
+    return <span className="muted" style={{ fontSize: '0.78rem' }}><i>no cost set</i></span>;
+  }
+  const lo = Math.min(...percents);
+  const hi = Math.max(...percents);
+  const partial = percents.length < (product.sizes || []).length;
+  return (
+    <span style={{ fontSize: '0.82rem', color: lo < 0 ? '#A8462B' : lo < THIN_MARGIN_PERCENT ? '#9A6A12' : 'inherit' }}>
+      <b>{lo === hi ? `${lo}%` : `${lo}–${hi}%`}</b>
+      {partial && <span className="muted" style={{ fontSize: '0.72rem' }}> · some sizes uncosted</span>}
+    </span>
+  );
+}
+
+function keepLabel(size) {
+  const m = sizeMargin(size);
+  if (!m) return <span className="muted" style={{ fontSize: '0.78rem' }}>—</span>;
+  const thin = m.percent < THIN_MARGIN_PERCENT;
+  return (
+    <span
+      style={{ fontSize: '0.82rem', color: m.keep < 0 ? 'var(--danger, #A8462B)' : thin ? '#9A6A12' : 'inherit' }}
+      title={m.keep < 0 ? 'This size sells below what it costs you' : thin ? 'Thin margin' : ''}
+    >
+      <b>₹{m.keep}</b> <span className="muted">{m.percent}%</span>
+      {m.keep < 0 && ' ⚠'}
+    </span>
+  );
+}
+
 const EMPTY = {
   name: '',
   category: '',
@@ -489,7 +538,7 @@ export default function AdminProducts() {
               you can only half see. */}
           <table className="admin-table sizes-editor admin-table-stack">
             <thead>
-              <tr><th>Size label</th><th>Price ₹</th><th>MRP ₹</th><th>Stock</th><th>Cost ₹</th><th>Material per unit</th><th>Wholesale ₹ (optional)</th><th /></tr>
+              <tr><th>Size label</th><th>Price ₹</th><th>MRP ₹</th><th>Stock</th><th>Cost ₹</th><th>You keep</th><th>Material per unit</th><th>Wholesale ₹ (optional)</th><th /></tr>
             </thead>
             <tbody>
               {form.sizes.map((s, i) => (
@@ -499,6 +548,10 @@ export default function AdminProducts() {
                   <td data-label="MRP ₹"><input type="number" min="0" value={s.mrp} onChange={(e) => setSize(i, 'mrp', e.target.value)} /></td>
                   <td data-label="Stock"><input type="number" min="0" value={s.stock} onChange={(e) => setSize(i, 'stock', e.target.value)} /></td>
                   <td data-label="Cost ₹"><input type="number" min="0" value={s.costPrice ?? ''} onChange={(e) => setSize(i, 'costPrice', e.target.value)} placeholder="Not set" /></td>
+                  {/* Live as you type. Entering a cost and immediately seeing
+                      what it leaves is the whole point — a margin discovered
+                      after the first sale is discovered too late to act on. */}
+                  <td data-label="You keep">{keepLabel(s)}</td>
                   <td data-label="Material per unit"><input type="number" min="0" step="0.01" value={s.materialPerUnit ?? ''} onChange={(e) => setSize(i, 'materialPerUnit', e.target.value)} placeholder="e.g. 2.8" /></td>
                   <td data-label="Wholesale ₹ (optional)"><input type="number" min="0" value={s.wholesalePrice || ''} onChange={(e) => setSize(i, 'wholesalePrice', e.target.value)} placeholder="Same as price" /></td>
                   <td className="cell-action">
@@ -718,7 +771,7 @@ export default function AdminProducts() {
       <div className="admin-card">
         <table className="admin-table admin-table-stack">
           <thead>
-            <tr><th /><th>Product</th><th>Category</th><th>Sizes · price · stock</th><th>Actions</th></tr>
+            <tr><th /><th>Product</th><th>Category</th><th>Margin</th><th>Sizes · price · stock</th><th>Actions</th></tr>
           </thead>
           <tbody>
             {products.map((p) => (
@@ -729,6 +782,10 @@ export default function AdminProducts() {
                   {p.sellerId && <span className="pill" style={{ marginLeft: 6, fontSize: '0.7rem' }}>Seller listing</span>}
                 </td>
                 <td data-label="Category">{p.category}</td>
+                {/* The range across sizes, so a product where one size is
+                    healthy and another is thin doesn't hide behind an average.
+                    Blank means no cost entered — visibly a to-do, not a zero. */}
+                <td data-label="Margin">{marginRange(p)}</td>
                 <td data-label="Sizes · price · stock">
                   {p.sizes.map((s) => (
                     <span className="pill" key={s.label}>

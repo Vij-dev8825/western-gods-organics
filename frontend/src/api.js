@@ -323,6 +323,7 @@ export const api = {
     deleteFestival: (token, id) => request(`/admin/festivals/${id}`, { method: 'DELETE', token }),
 
     profit: (token, days = 30) => request(`/admin/profit?days=${days}`, { token }),
+    catalogMargins: (token) => request('/admin/catalog-margins', { token }),
     exportCsv: (token, what, days) =>
       requestBlob(`/admin/export/${what}.csv${days ? `?days=${days}` : ''}`, { token }),
 

@@ -28,6 +28,7 @@ const { buildProcurementPlan } = require('../utils/procurement');
 const { listAll: listAllFestivals, DEFAULT_LEAD_DAYS: FESTIVAL_LEAD_DAYS } = require('../utils/festivals');
 const { buildRateCardPdf } = require('../utils/rateCard');
 const { buildPriceListPdf } = require('../utils/priceList');
+const { buildCatalogMargins } = require('../utils/catalogMargin');
 const { sendWhatsAppFile } = require('../utils/whatsapp');
 const { buildInvoicePdf, invoiceFileName } = require('../utils/invoicePdf');
 const { ordersCsv, productsCsv, customersCsv } = require('../utils/csvExport');
@@ -1419,6 +1420,17 @@ router.delete('/trade-prospects/:id', async (req, res, next) => {
   try {
     await db.del('trade-prospects', req.params.id);
     res.json({ success: true });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET /api/admin/catalog-margins — what every size would earn if it sold today.
+// Needs no orders, unlike Admin → Profit, so the costs an admin has just
+// entered are visible immediately rather than after the first sale.
+router.get('/catalog-margins', async (req, res, next) => {
+  try {
+    res.json({ success: true, ...(await buildCatalogMargins()) });
   } catch (err) {
     next(err);
   }
