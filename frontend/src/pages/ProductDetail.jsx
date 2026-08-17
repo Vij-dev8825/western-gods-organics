@@ -37,6 +37,14 @@ const MAX_REVIEW_PHOTOS = 4;
 const LOW_STOCK_THRESHOLD = 10;
 const SUPPORT_PHONE = '+918825875607';
 const RECENT_ORDER_WINDOW_LABEL = '2 days'; // mirrors backend RECENT_ORDER_WINDOW_HOURS (48h)
+
+/** A still from a stored clip, via the poster route media.js already serves.
+ *  Only database-stored media has one — a Cloudinary or /uploads URL falls back
+ *  to the browser's own first frame, which is what it would have shown anyway. */
+function posterFor(video) {
+  const match = /^\/api\/media\/([^/?]+)/.exec(video || '');
+  return match ? `/api/media/${match[1]}/poster` : undefined;
+}
 const FREQUENCIES = [
   { days: 14, label: 'Every 2 weeks' },
   { days: 28, label: 'Every 4 weeks' },
@@ -163,6 +171,8 @@ export default function ProductDetail() {
   const [subscribing, setSubscribing] = useState(false);
   const [notifyEmail, setNotifyEmail] = useState('');
   const [notifyState, setNotifyState] = useState('idle'); // idle | submitting | done
+  const actionsRef = useRef(null);
+  const [buyBarVisible, setBuyBarVisible] = useState(false);
   const { addItem } = useCart();
   const { productIds, toggleWishlist } = useWishlist();
   const { isLoggedIn, token, user } = useAuth();
@@ -239,6 +249,39 @@ export default function ProductDetail() {
     api.getReviews(id).then((d) => setReviews(d.reviews)).catch(() => {});
     api.getProductQuestions(id).then((d) => setQuestions(d.questions)).catch(() => {});
   }, [id]);
+
+  // The sticky buy bar only earns its place once the real Add-to-cart button
+  // has scrolled away — showing both at once would cover the page with a
+  // second copy of a button already under the reader's thumb. Watches the
+  // action row rather than a scroll offset, so it stays right whatever the
+  // page above it happens to be (early-access notice, kit callout, pressing).
+  useEffect(() => {
+    const row = actionsRef.current;
+    const sizes = product?.sizes || [];
+    const active = sizes.find((s) => s.label === size) || sizes[0];
+    // A sold-out size renders no bar at all, so don't report one as showing —
+    // the body class below would otherwise lift the floating buttons to make
+    // room for something that isn't there. Re-runs on size for the same reason.
+    if (!row || !active || active.stock <= 0 || typeof IntersectionObserver === 'undefined') {
+      setBuyBarVisible(false);
+      return undefined;
+    }
+    const observer = new IntersectionObserver(
+      ([entry]) => setBuyBarVisible(!entry.isIntersecting && entry.boundingClientRect.top < 0),
+      { threshold: 0 }
+    );
+    observer.observe(row);
+    return () => observer.disconnect();
+  }, [product?.id, size]);
+
+  // The floating chat/WhatsApp/AI buttons live outside this page's tree, so
+  // the only way to move them out of the bar's way is a class on <body>.
+  // Removed on unmount as well as on hide, or leaving the page mid-scroll
+  // would strand them a bar's height up on every other screen.
+  useEffect(() => {
+    document.body.classList.toggle('buy-bar-up', buyBarVisible);
+    return () => document.body.classList.remove('buy-bar-up');
+  }, [buyBarVisible]);
 
   useEffect(() => {
     if (!user) return;
@@ -564,14 +607,21 @@ export default function ProductDetail() {
               ))}
             </div>
           )}
+          {/* The mill's own footage. A poster frame is pulled from the stored
+              clip so this shows the press rather than a black rectangle while
+              megabytes buffer on a village connection — the same reasoning as
+              the hero video, and the route already existed. */}
           {product.video && (
-            <video
-              src={getProductImage(product.video)}
-              controls
-              playsInline
-              preload="metadata"
-              style={{ width: '100%', marginTop: 12, borderRadius: 'var(--radius-md)', background: '#000' }}
-            />
+            <figure className="product-video">
+              <video
+                src={getProductImage(product.video)}
+                poster={posterFor(product.video)}
+                controls
+                playsInline
+                preload="metadata"
+              />
+              <figcaption>Pressed at our own mill in Udumalpet — sound on.</figcaption>
+            </figure>
           )}
         </div>
 
@@ -718,7 +768,7 @@ export default function ProductDetail() {
             );
           })()}
 
-          <div className="flex gap-1 product-actions-row" style={{ marginBottom: 22 }}>
+          <div className="flex gap-1 product-actions-row" ref={actionsRef} style={{ marginBottom: 22 }}>
             {!outOfStock && (
               <div className="qty-stepper">
                 <button onClick={() => setQty((q) => Math.max(1, q - 1))} aria-label="Decrease quantity">−</button>
@@ -743,6 +793,23 @@ export default function ProductDetail() {
               <IconHeart filled={isWished} size={16} /> {isWished ? 'Wishlisted' : 'Wishlist'}
             </button>
           </div>
+
+          {/* On a phone, the buy button scrolls out of reach the moment someone
+              opens the description or the reviews — which is exactly when they
+              are deciding. This bar keeps the price and the action in the
+              thumb's path, the same pattern the cart page already uses.
+              Calls the same handler, so there is one add-to-cart, not two. */}
+          {!outOfStock && (
+            <div className={`buy-bar${buyBarVisible ? ' visible' : ''}`} aria-hidden={!buyBarVisible}>
+              <div className="buy-bar-price">
+                <b>{formatProductPrice(getEffectivePrice(activeSize, isWholesale), product, activeSize.label)}</b>
+                <span className="muted">{activeSize.label}</span>
+              </div>
+              <button className="btn btn-gold" onClick={handleAdd} tabIndex={buyBarVisible ? 0 : -1}>
+                Add to cart
+              </button>
+            </div>
+          )}
 
           {/* Reserve a share of the next run of the mill. Shown for the
               selected size only, because a pressing is scheduled per size —

@@ -67,6 +67,7 @@ const EMPTY = {
   descriptions: {},
   image: '',
   extraImages: [],
+  video: '',
   sizes: [{ label: '500 ml', price: '', mrp: '', stock: '', costPrice: '', materialPerUnit: '', wholesalePrice: '' }],
   tags: '',
   comboItems: '',
@@ -91,6 +92,7 @@ function toForm(p) {
   return {
     ...p,
     extraImages: (p.images || []).filter((img) => img && img !== p.image),
+    video: p.video || '',
     tags: (p.tags || []).join(', '),
     comboItems: (p.comboItems || []).join(', '),
     comboProductIds: p.comboProductIds || [],
@@ -160,6 +162,7 @@ export default function AdminProducts() {
   const [busy, setBusy] = useState(false);
   const [rates, setRates] = useState({});
   const [translating, setTranslating] = useState(false);
+  const [uploadingVideo, setUploadingVideo] = useState(false);
   const [bulkTranslating, setBulkTranslating] = useState(false);
   const formRef = useRef(null);
 
@@ -225,6 +228,29 @@ export default function AdminProducts() {
     setForm(toForm(p));
     setEditing(p.id);
     setMessage(null);
+  }
+
+  // Uploaded against the saved product straight away rather than held until
+  // Save — the route compresses on the server and hands back a URL, and a
+  // half-minute upload sitting in a form the admin might abandon is worse
+  // than one that has already landed. Only offered on an existing product,
+  // since the route needs an id.
+  async function handleVideo(file) {
+    if (!file) return;
+    setUploadingVideo(true);
+    setMessage(null);
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      const res = await api.admin.uploadProductVideo(token, editing, fd);
+      setForm((f) => ({ ...f, video: res.url }));
+      setMessage({ type: 'success', text: 'Video saved on this product.' });
+      load();
+    } catch (err) {
+      setMessage({ type: 'error', text: err.message });
+    } finally {
+      setUploadingVideo(false);
+    }
   }
 
   function setSize(i, key, value) {
@@ -419,6 +445,58 @@ export default function AdminProducts() {
           >
             + add another photo
           </button>
+
+          {/* A clip of this being pressed or made, shown under the photos on
+              the product page. Save the product first — the upload attaches
+              to an id, so there is nothing to attach to on a new one. */}
+          <div className="field" style={{ marginTop: 16 }}>
+            <label>Product video (optional)</label>
+            {editing === 'new' ? (
+              <p className="muted" style={{ margin: 0, fontSize: '0.82rem' }}>
+                Save this product first, then reopen it to add a video.
+              </p>
+            ) : (
+              <div className="flex gap-1" style={{ alignItems: 'center', flexWrap: 'wrap' }}>
+                {form.video && (
+                  <video
+                    src={form.video}
+                    controls
+                    playsInline
+                    preload="none"
+                    style={{ width: 160, borderRadius: 6, display: 'block' }}
+                  />
+                )}
+                <label className={`btn btn-outline btn-sm ${uploadingVideo ? 'disabled' : ''}`}>
+                  {uploadingVideo ? 'Uploading…' : form.video ? 'Replace video' : 'Upload video'}
+                  <input
+                    type="file"
+                    accept="video/*"
+                    onChange={(e) => {
+                      const file = e.target.files[0];
+                      e.target.value = '';
+                      handleVideo(file);
+                    }}
+                    disabled={uploadingVideo}
+                    hidden
+                  />
+                </label>
+                {form.video && (
+                  <button
+                    type="button"
+                    className="link-btn danger"
+                    onClick={() => setForm((f) => ({ ...f, video: '' }))}
+                  >
+                    remove
+                  </button>
+                )}
+              </div>
+            )}
+            {form.video && (
+              <p className="muted" style={{ marginTop: 6, fontSize: '0.78rem' }}>
+                Removing it here takes effect when you save the product.
+              </p>
+            )}
+          </div>
 
           <div className="field" style={{ marginTop: 16 }}>
             <label>Combo includes (comma-separated, optional)</label>

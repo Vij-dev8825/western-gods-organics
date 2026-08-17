@@ -456,6 +456,11 @@ router.post('/products', async (req, res, next) => {
       // translation of "Cold-Pressed Sesame Oil". Optional per product; a
       // blank map falls back to the English name everywhere.
       names: sanitizeLangMap(req.body.names),
+      // Ten seconds of oil coming off the press is the most persuasive thing
+      // this shop owns, and it belongs on the page where someone is deciding.
+      // Named `video` because ProductDetail has rendered product.video since
+      // long before this — the markup was there, nothing ever filled it.
+      video: req.body.video || '',
       shortDescriptions: sanitizeLangMap(req.body.shortDescriptions),
       descriptions: sanitizeLangMap(req.body.descriptions),
       image: req.body.image || '',
@@ -549,6 +554,7 @@ router.put('/products/:id', async (req, res, next) => {
       })),
       countryPrices: normalizeCountryPrices(req.body.countryPrices ?? existing.countryPrices),
       names: sanitizeLangMap(req.body.names ?? existing.names),
+      video: req.body.video ?? existing.video ?? '',
       shortDescriptions: sanitizeLangMap(req.body.shortDescriptions ?? existing.shortDescriptions),
       descriptions: sanitizeLangMap(req.body.descriptions ?? existing.descriptions),
       comboProductIds: Array.isArray(req.body.comboProductIds ?? existing.comboProductIds)
@@ -3117,6 +3123,44 @@ const acceptVideo = (req, res, next) =>
 // worth more here than a sharper one that spins.
 const PRESSING_VIDEO_BITRATE = '900k';
 const PRESSING_VIDEO_MAX_BYTES = 8 * 1024 * 1024;
+
+/**
+ * POST /api/admin/products/:id/video — multipart: file
+ *
+ * Lives here rather than beside the other product routes because it shares the
+ * pressing clip's uploader and limits, which are declared just above — using
+ * them earlier in the file would throw before the server ever starts.
+ *
+ * Same treatment as a pressing clip, for the same reason: audio kept, because
+ * the sound of the press is half of what makes it convincing, and the bitrate
+ * capped low because this is watched on a phone over rural 4G by somebody who
+ * has not decided to buy yet. A clip that plays at once persuades; one that
+ * spins loses them.
+ */
+router.post('/products/:id/video', acceptVideo, async (req, res, next) => {
+  try {
+    if (!req.file) return res.status(400).json({ success: false, message: 'Choose a video file.' });
+    const product = await db.get('products', req.params.id);
+    if (!product) return res.status(404).json({ success: false, message: 'Product not found.' });
+
+    let url;
+    if (cloudinary.isConfigured()) {
+      url = (await cloudinary.uploadFile(req.file.path, { resourceType: 'video' })).url;
+    } else {
+      url = await compressVideoAndStore(req.file.path, {
+        keepAudio: true,
+        bitrate: PRESSING_VIDEO_BITRATE,
+        maxBytes: PRESSING_VIDEO_MAX_BYTES,
+      });
+    }
+    fs.unlink(req.file.path, () => {});
+
+    await db.put('products', { ...product, video: url, updatedAt: new Date().toISOString() });
+    res.json({ success: true, url });
+  } catch (err) {
+    next(err);
+  }
+});
 
 /**
  * POST /api/admin/pressings/:id/video — multipart: file
