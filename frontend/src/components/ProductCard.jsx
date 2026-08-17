@@ -13,6 +13,7 @@ import { localizeProductText } from '../utils/productLocale';
 import { getEffectivePrice, isWholesalePriceApplied } from '../utils/pricing';
 import { flyToCart } from '../utils/flyToCart';
 import { useReveal } from '../hooks/useReveal';
+import FadeImage from './FadeImage';
 
 // Caps how long a big grid takes to finish cascading in — beyond this many
 // cards, later ones just reveal at the same delay as the last staggered one
@@ -161,7 +162,7 @@ export default function ProductCard({ product, index }) {
             ))}
           </div>
         )}
-        <img src={getProductImage(gallery[hoverIndex])} alt={displayName} loading="lazy" />
+        <FadeImage src={getProductImage(gallery[hoverIndex])} alt={displayName} loading="lazy" />
 
         <div className="product-media-quickadd">
           <div className="qty-stepper qty-stepper-sm" onClick={(e) => e.preventDefault()}>

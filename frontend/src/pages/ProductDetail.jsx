@@ -29,6 +29,8 @@ import { buildBreadcrumbSchema } from '../utils/breadcrumbSchema';
 import { GUIDE_CATEGORY } from './Blog';
 import { STORE_LOCATIONS } from '../data/storeLocations';
 import { flyToCart } from '../utils/flyToCart';
+import { useReveal } from '../hooks/useReveal';
+import FadeImage from '../components/FadeImage';
 
 const SUBSCRIPTION_DISCOUNT_PERCENT = 10;
 const MIN_FREQUENCY_DAYS = 7;
@@ -176,6 +178,14 @@ export default function ProductDetail() {
   const [notifyState, setNotifyState] = useState('idle'); // idle | submitting | done
   const actionsRef = useRef(null);
   const [buyBarVisible, setBuyBarVisible] = useState(false);
+  // The blocks below the fold arrived fully formed while the home page's
+  // equivalents rose into view — the same primitive, just never wired up
+  // here. Applied to the elements themselves rather than through <Reveal>,
+  // which would add a wrapper between the page and blocks that are already
+  // positioned as its direct children.
+  const reviewsReveal = useReveal();
+  const questionsReveal = useReveal();
+  const guidesReveal = useReveal();
   const { addItem } = useCart();
   const { productIds, toggleWishlist } = useWishlist();
   const { isLoggedIn, token, user } = useAuth();
@@ -589,7 +599,7 @@ export default function ProductDetail() {
             aria-label="View larger image"
           >
             {discount > 0 && <span className="product-badge">{discount}% OFF</span>}
-            <img src={getProductImage(gallery[activeImage])} alt={displayName} />
+            <FadeImage src={getProductImage(gallery[activeImage])} alt={displayName} />
             {/* Two hints, one shown per input type. A phone has no cursor to
                 magnify under, so it keeps the tap-to-open-full-screen route. */}
             <span className="product-media-zoom-hint hint-touch">🔍 Tap to zoom</span>
@@ -1027,7 +1037,10 @@ export default function ProductDetail() {
       )}
 
       {/* ---------- Reviews ---------- */}
-      <div className="reviews-section">
+      <div
+        ref={reviewsReveal.ref}
+        className={`reviews-section reveal ${reviewsReveal.visible ? 'reveal-visible' : ''}`}
+      >
         <h2>Customer Reviews</h2>
 
         {/* An average hides its own shape: 4.2 out of forties and fives is a
@@ -1146,7 +1159,10 @@ export default function ProductDetail() {
       </div>
 
       {/* ---------- Questions & Answers ---------- */}
-      <div className="reviews-section">
+      <div
+        ref={questionsReveal.ref}
+        className={`reviews-section reveal ${questionsReveal.visible ? 'reveal-visible' : ''}`}
+      >
         <h2>Questions &amp; Answers</h2>
 
         {isLoggedIn ? (
@@ -1196,13 +1212,16 @@ export default function ProductDetail() {
 
       {/* ---------- Usage guides ---------- */}
       {guides.length > 0 && (
-        <div className="related-section">
+        <div
+          ref={guidesReveal.ref}
+          className={`related-section reveal ${guidesReveal.visible ? 'reveal-visible' : ''}`}
+        >
           <h2>Usage Guides</h2>
           <div className="blog-grid">
             {guides.map((g) => (
               <Link key={g.id} to={`/blog/${g.id}`} className="blog-card">
                 <div className="blog-card-media">
-                  <img src={getProductImage(g.image)} alt={g.title} loading="lazy" />
+                  <FadeImage src={getProductImage(g.image)} alt={g.title} loading="lazy" />
                 </div>
                 <div className="blog-card-body">
                   <span className="blog-card-tag">{GUIDE_CATEGORY}</span>

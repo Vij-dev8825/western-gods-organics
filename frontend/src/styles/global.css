@@ -892,6 +892,49 @@ p { margin: 0 0 1em; }
   transition: opacity 0.5s ease, transform 0.2s ease, box-shadow 0.2s ease;
 }
 .product-card.card-reveal.card-reveal-visible { opacity: 1; }
+
+/* Photos fade in as their bytes arrive rather than snapping into place — see
+   FadeImage.jsx. Deliberately an animation and not a transition: .product-media
+   img already owns `transition` for the hover zoom, and a second `transition`
+   shorthand on the same element would replace it wholesale and silently kill
+   that zoom — the same collision the .reveal note above describes. */
+.fade-img { opacity: 0; }
+.fade-img-in { animation: fadeImgIn 0.4s ease forwards; }
+@keyframes fadeImgIn { from { opacity: 0; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) {
+  .fade-img { opacity: 1; }
+  .fade-img-in { animation: none; }
+}
+
+/* On a phone, "You might also like" and the usage guides are four cards
+   squeezed into two columns or stacked into a column nobody reaches the end
+   of. Turn them into a row you flick through, the way every large shop does.
+   Scoped to .related-section so the Shop page's own grid — which is the
+   point of that page and should stay a grid — is untouched.
+
+   The 76% width is what makes it obviously swipeable: the next card is
+   always half-visible at the edge, which is the only affordance a touch
+   screen gets. No JavaScript; scroll-snap does all of it. */
+@media (max-width: 700px) {
+  .related-section .grid,
+  .related-section .blog-grid {
+    display: flex;
+    gap: 14px;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 8px;
+    scrollbar-width: none;
+  }
+  .related-section .grid::-webkit-scrollbar,
+  .related-section .blog-grid::-webkit-scrollbar { display: none; }
+  .related-section .grid > *,
+  .related-section .blog-grid > * {
+    flex: 0 0 76%;
+    scroll-snap-align: start;
+  }
+}
 @media (prefers-reduced-motion: reduce) {
   .product-card.card-reveal { opacity: 1; transition: transform 0.2s ease, box-shadow 0.2s ease; }
 }
