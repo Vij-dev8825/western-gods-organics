@@ -37,6 +37,9 @@ const MAX_REVIEW_PHOTOS = 4;
 const LOW_STOCK_THRESHOLD = 10;
 const SUPPORT_PHONE = '+918825875607';
 const RECENT_ORDER_WINDOW_LABEL = '2 days'; // mirrors backend RECENT_ORDER_WINDOW_HOURS (48h)
+// Below this, five bars of mostly zero tell a shopper less than just reading
+// the two reviews would, and make a thin reviews section look thinner.
+const RATING_BREAKDOWN_MIN = 3;
 
 /** A still from a stored clip, via the poster route media.js already serves.
  *  Only database-stored media has one — a Cloudinary or /uploads URL falls back
@@ -1026,6 +1029,35 @@ export default function ProductDetail() {
       {/* ---------- Reviews ---------- */}
       <div className="reviews-section">
         <h2>Customer Reviews</h2>
+
+        {/* An average hides its own shape: 4.2 out of forties and fives is a
+            different product from 4.2 out of fives and a one, and the second
+            is what a careful shopper is looking for. Counted from the reviews
+            already loaded, so no extra request. Held back below three, where
+            five bars of mostly zero says less than the reviews themselves. */}
+        {reviews.length >= RATING_BREAKDOWN_MIN && (
+          <div className="rating-breakdown">
+            <div className="rating-breakdown-score">
+              <b>{(reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1)}</b>
+              <span className="muted">{reviews.length} review{reviews.length === 1 ? '' : 's'}</span>
+            </div>
+            <div className="rating-breakdown-bars">
+              {[5, 4, 3, 2, 1].map((star) => {
+                const count = reviews.filter((r) => r.rating === star).length;
+                const share = count / reviews.length;
+                return (
+                  <div className="rating-breakdown-row" key={star}>
+                    <span className="rating-breakdown-label">{star}★</span>
+                    <span className="rating-breakdown-track">
+                      <span className="rating-breakdown-fill" style={{ width: `${Math.round(share * 100)}%` }} />
+                    </span>
+                    <span className="rating-breakdown-count">{count}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {isLoggedIn ? (
           <form className="review-form" onSubmit={handleSubmitReview}>

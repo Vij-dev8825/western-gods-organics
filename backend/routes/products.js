@@ -301,6 +301,116 @@ router.get('/reviews/recent', async (req, res, next) => {
   }
 });
 
+const SUGGESTION_LIMIT = 3;
+
+/**
+ * GET /api/products/also-bought?ids=a,b,c — up to three things worth adding to
+ * a cart that already holds `ids`.
+ *
+ * Three sources, best first, and the `basis` it comes back with decides what
+ * the cart is allowed to call it. A shop with no orders cannot honestly say
+ * "often bought together", so it doesn't — it falls through to something that
+ * is true on day one instead.
+ *
+ *   bought-together — distinct past orders containing a cart item and this one.
+ *                     Real co-purchase; needs orders to exist.
+ *   kit             — the rest of a kit one of the cart's items belongs to.
+ *                     Real curation the shop already keeps; needs no orders.
+ *   parcel          — the cheapest thing from a category the cart doesn't
+ *                     touch. Claims nothing about behaviour, only the fact
+ *                     that the box is already going out, which is always true.
+ *
+ * Registered above /:id so "also-bought" isn't read as a product id.
+ */
+router.get('/also-bought', optionalAuth, async (req, res, next) => {
+  try {
+    const inCart = new Set(
+      String(req.query.ids || '').split(',').map((s) => s.trim()).filter(Boolean)
+    );
+    if (!inCart.size) return res.json({ success: true, basis: 'none', products: [] });
+
+    const all = await db.list('products');
+    const byId = new Map(all.map((p) => [p.id, p]));
+    const sellerById = await loadSellers(all);
+
+    // Anything the shopper couldn't buy right now is not a suggestion: hidden
+    // or paused listings, an early-access product they don't have access to,
+    // and — the one most likely to embarrass — a product with no stock in any
+    // size. Suggesting a sold-out bottle is worse than suggesting nothing.
+    const hasEarlyAccess = await userHasEarlyAccess(req);
+    const sellable = (p) =>
+      p &&
+      !inCart.has(p.id) &&
+      !isHiddenFromViewer(p, req, sellerById) &&
+      (!isEarlyAccessLocked(p) || hasEarlyAccess) &&
+      (p.sizes || []).some((s) => Number(s.stock) > 0);
+
+    // 1. Real co-purchase. Counted once per order, so one bulk order of six
+    //    soaps can't outrank six different people buying one each.
+    const orders = await db.list('orders');
+    const together = new Map();
+    for (const order of orders) {
+      if (order.status === 'cancelled') continue;
+      const ids = new Set((order.items || []).map((it) => it.productId));
+      let touchesCart = false;
+      for (const id of inCart) if (ids.has(id)) { touchesCart = true; break; }
+      if (!touchesCart) continue;
+      for (const id of ids) {
+        if (inCart.has(id)) continue;
+        together.set(id, (together.get(id) || 0) + 1);
+      }
+    }
+    let basis = 'bought-together';
+    let picked = [...together.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .map(([id]) => byId.get(id))
+      .filter(sellable);
+
+    // 2. The rest of a kit something in the cart belongs to. Deliberately the
+    //    kit's other components and not the kit product itself — someone who
+    //    already has the oil in their cart does not want to buy it again
+    //    inside a box.
+    if (!picked.length) {
+      const mates = new Set();
+      for (const p of all) {
+        const parts = Array.isArray(p.comboProductIds) ? p.comboProductIds : [];
+        if (!parts.some((id) => inCart.has(id))) continue;
+        for (const id of parts) if (!inCart.has(id)) mates.add(id);
+      }
+      picked = [...mates].map((id) => byId.get(id)).filter(sellable);
+      if (picked.length) basis = 'kit';
+    }
+
+    // 3. Cheapest sellable item from a category the cart doesn't already
+    //    cover — one per category, so this is a spread rather than three
+    //    variants of the same thing.
+    if (!picked.length) {
+      const cartCategories = new Set(
+        [...inCart].map((id) => byId.get(id)?.category).filter(Boolean)
+      );
+      const cheapestPerCategory = new Map();
+      for (const p of all) {
+        if (!p.category || cartCategories.has(p.category) || !sellable(p)) continue;
+        const from = Math.min(...(p.sizes || []).filter((s) => Number(s.stock) > 0).map((s) => Number(s.price)));
+        if (!Number.isFinite(from)) continue;
+        const held = cheapestPerCategory.get(p.category);
+        if (!held || from < held.from) cheapestPerCategory.set(p.category, { product: p, from });
+      }
+      picked = [...cheapestPerCategory.values()].sort((a, b) => a.from - b.from).map((e) => e.product);
+      if (picked.length) basis = 'parcel';
+    }
+
+    if (!picked.length) return res.json({ success: true, basis: 'none', products: [] });
+    res.json({
+      success: true,
+      basis,
+      products: attachSellerNames(picked.slice(0, SUGGESTION_LIMIT), sellerById),
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
 // Genuine (not fabricated) "recently ordered" count for PDP urgency copy —
 // distinct non-cancelled orders containing this product within the window,
 // not a per-line count, so a single bulk order can't inflate the number.

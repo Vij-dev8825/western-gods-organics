@@ -66,6 +66,8 @@ export const api = {
   },
   getCategories: () => request('/products/categories'),
   getProduct: (id, token) => request(`/products/${id}`, { token }),
+  getAlsoBought: (ids, token) =>
+    request(`/products/also-bought?ids=${encodeURIComponent(ids.join(','))}`, { token }),
   getBatch: (batchNumber) => request(`/products/batch/${encodeURIComponent(batchNumber)}`),
   getReviews: (id) => request(`/products/${id}/reviews`),
   submitReview: (token, id, payload) => request(`/products/${id}/reviews`, { method: 'POST', body: payload, token }),

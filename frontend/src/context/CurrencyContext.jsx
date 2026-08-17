@@ -161,6 +161,39 @@ export function CurrencyProvider({ children }) {
     return shipping[destCountryCode] || DEFAULT_INTL_SHIPPING;
   }
 
+  /** How much further this order has to go before delivery stops being
+   *  charged — or null when the question does not apply. Same arguments and
+   *  deliberately the same branch order as getShippingFee above, because the
+   *  two disagreeing would mean promising a saving the checkout won't give.
+   *
+   *  Null, not zero, for every case where there is nothing to chase: an order
+   *  already over the line, a courier-collected or collected-at-the-mill
+   *  order, delivery switched off, an overseas address where the rate is flat
+   *  and never waived, or a fee of zero to begin with.
+   *
+   *  Strictly greater, like getShippingFee: at exactly the threshold you still
+   *  pay, so the gap is one rupee past it and never off by one. */
+  function getFreeShippingGap(destCountryCode, inrSubtotal, freeShippingThreshold = domesticFreeShippingThreshold, shippingChoice = 'shipping', destPincode = null) {
+    if (!(inrSubtotal > 0)) return null;
+    if (destCountryCode && destCountryCode !== 'IN') return null;
+    if (shippingChoice === 'to_pay') return null;
+    if (shippingChoice === 'pickup' && pickup.enabled) return null;
+    if (!domesticShippingEnabled) return null;
+
+    const isLocal = isLocalPincode(destPincode);
+    const threshold = isLocal ? local.freeThreshold : freeShippingThreshold;
+    const fee = isLocal ? local.fee : domesticShippingFee;
+    if (!(fee > 0) || !(threshold > 0)) return null;
+    if (inrSubtotal > threshold) return null;
+
+    return {
+      gap: Math.max(1, Math.round(threshold + 1 - inrSubtotal)),
+      target: threshold + 1,
+      fee,
+      progress: Math.min(1, inrSubtotal / (threshold + 1)),
+    };
+  }
+
   return (
     <CurrencyContext.Provider
       value={{
@@ -172,6 +205,7 @@ export function CurrencyProvider({ children }) {
         getCountryPrice,
         checkMinOrder,
         getShippingFee,
+        getFreeShippingGap,
         isLocalPincode,
         domesticShippingEnabled,
         pickup,

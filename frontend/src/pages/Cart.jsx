@@ -18,6 +18,16 @@ import AddressForm, { PhoneField } from '../components/AddressForm';
 import CodPhoneVerify from '../components/CodPhoneVerify';
 import CheckoutLoginPrompt from '../components/CheckoutLoginPrompt';
 
+// One heading per basis the also-bought route can return, so the cart never
+// claims data it doesn't have. "Often bought" is a statement about other
+// customers and is only allowed when there are orders behind it; "same
+// parcel" claims nothing but the fact that the box is already going.
+const SUGGESTION_HEADINGS = {
+  'bought-together': 'Often bought with this',
+  kit: 'The rest of the set',
+  parcel: 'Goes in the same parcel — nothing extra to deliver',
+};
+
 function validateContactInfo(name, email) {
   const errors = {};
   if (!name || name.trim().length < 2) errors.name = 'Enter your name.';
@@ -26,10 +36,10 @@ function validateContactInfo(name, email) {
 }
 
 export default function Cart() {
-  const { items, updateQuantity, removeItem, clearCart } = useCart();
+  const { items, addItem, updateQuantity, removeItem, clearCart } = useCart();
   const { isLoggedIn, token, user, login, updateUser } = useAuth();
   const { showToast } = useToast();
-  const { isForeign, checkMinOrder, getShippingFee, country, pickup } = useCurrency();
+  const { isForeign, checkMinOrder, getShippingFee, getFreeShippingGap, country, pickup } = useCurrency();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -186,6 +196,31 @@ export default function Cart() {
   const isWholesale = !!user?.isWholesale;
   const subtotal = lines.reduce((sum, l) => sum + getEffectivePrice(l.sizeInfo, isWholesale) * l.quantity, 0);
 
+  // What else could go in this parcel. The server decides both what to offer
+  // and on what grounds — real co-purchase, a kit, or simply that the box is
+  // already going — and hands back the grounds so the heading below can say
+  // something true rather than "recommended for you". Keyed on the set of
+  // product ids, not the whole cart, so changing a quantity doesn't refetch.
+  const cartProductIds = useMemo(
+    () => [...new Set(lines.map((l) => l.productId))].sort().join(','),
+    [lines]
+  );
+  const [suggestions, setSuggestions] = useState({ basis: 'none', products: [] });
+  useEffect(() => {
+    if (!cartProductIds) {
+      setSuggestions({ basis: 'none', products: [] });
+      return undefined;
+    }
+    let cancelled = false;
+    api
+      .getAlsoBought(cartProductIds.split(','), token)
+      // Silent on failure: this is an aside, and a cart that shows an error
+      // where a suggestion should be is worse than one that shows nothing.
+      .then((d) => { if (!cancelled) setSuggestions({ basis: d.basis, products: d.products }); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [cartProductIds, token]);
+
   // A reservation is for oil that hasn't been pressed yet, so there's nothing
   // for a courier to collect against. The server refuses anything but online
   // payment (see utils/orderBuilder.js); this switches the form to match so
@@ -232,6 +267,11 @@ export default function Cart() {
   // selected — shown on that option itself so switching to "To Pay" doesn't
   // hide what the alternative is.
   const shippingOptionFee = getShippingFee(address.country, subtotal, loyaltyTier?.freeShippingMinOrder, 'shipping', address.pincode);
+  // How much further before delivery stops being charged. Same arguments as
+  // the fee above, so it moves with the pincode, the loyalty tier and the
+  // delivery choice rather than quoting one fixed number at everybody. Null
+  // whenever there's nothing to chase, which is what hides the bar.
+  const freeShipping = getFreeShippingGap(address.country, subtotal, loyaltyTier?.freeShippingMinOrder, effectiveShippingChoice, address.pincode);
   const couponStale = appliedCoupon && appliedCoupon.subtotalAtApply !== subtotal;
   const discount = appliedCoupon && !couponStale ? appliedCoupon.discount : 0;
   // Preview only — buildOrderItems recomputes this server-side from the
@@ -611,10 +651,79 @@ export default function Cart() {
               ← Go to your full cart instead
             </Link>
           )}
+
+          {/* Anything else for the box. Hidden during Buy Now, which is
+              deliberately a single item and does not touch the saved cart —
+              an Add button there would quietly put things somewhere the
+              shopper isn't looking. */}
+          {!isBuyNow && suggestions.products.length > 0 && (
+            <div className="cart-suggestions">
+              <h4>{SUGGESTION_HEADINGS[suggestions.basis] || SUGGESTION_HEADINGS.parcel}</h4>
+              <div className="cart-suggestion-list">
+                {suggestions.products.map((p) => {
+                  const size = (p.sizes || []).find((s) => Number(s.stock) > 0);
+                  if (!size) return null;
+                  return (
+                    <div className="cart-suggestion" key={p.id}>
+                      <Link to={`/product/${p.id}`}>
+                        <img src={getProductImage(p.image)} alt="" />
+                      </Link>
+                      <div className="cart-suggestion-body">
+                        <Link to={`/product/${p.id}`}>{p.name}</Link>
+                        <span className="muted">{size.label} · ₹{getEffectivePrice(size, isWholesale)}</span>
+                      </div>
+                      <button
+                        type="button"
+                        className="btn btn-outline btn-sm"
+                        onClick={() => {
+                          addItem(p.id, size.label, 1);
+                          showToast(`${p.name} added.`);
+                        }}
+                      >
+                        Add
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="summary-card">
           <h3>Order Summary</h3>
+          {/* Somebody ₹120 short of free delivery is being charged ₹60 for
+              want of information nobody gave them — and one more soap would
+              have cost less than the delivery does. The number comes from the
+              same function that sets the fee, so this can't promise a saving
+              checkout won't honour. */}
+          {freeShipping && (
+            <div className="free-ship-nudge">
+              <p>
+                Add <b>₹{freeShipping.gap}</b> more and delivery is free
+                <span className="muted"> — you're paying ₹{freeShipping.fee} for it now</span>
+              </p>
+              <div
+                className="free-ship-meter"
+                role="progressbar"
+                aria-valuemin={0}
+                aria-valuemax={freeShipping.target}
+                aria-valuenow={subtotal}
+                aria-label={`₹${freeShipping.gap} more for free delivery`}
+              >
+                <div className="free-ship-meter-fill" style={{ width: `${Math.round(freeShipping.progress * 100)}%` }} />
+              </div>
+              {!isBuyNow && <Link to="/shop" className="link-btn">Add something small →</Link>}
+            </div>
+          )}
+          {/* And say so once they're over it. Without this, crossing the line
+              just makes the bar vanish and the Shipping row disappear, which
+              reads as the page losing interest rather than as good news. */}
+          {!freeShipping && isDomesticAddress && effectiveShippingChoice === 'shipping' && subtotal > 0 && shipping === 0 && (
+            <div className="free-ship-nudge earned">
+              <p><b>Delivery is free on this order.</b></p>
+            </div>
+          )}
           <div className="summary-row"><span>Subtotal</span><span>₹{subtotal}</span></div>
           {showShippingRow && (
             <div className="summary-row">

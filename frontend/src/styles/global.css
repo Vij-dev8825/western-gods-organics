@@ -1422,6 +1422,119 @@ input:focus-visible + .filter-radio { outline: 2px solid var(--gold-2); outline-
 .summary-row.total { font-weight: 700; font-size: 1.05rem; border-top: 1px dashed rgba(31,61,43,0.2); margin-top: 8px; padding-top: 14px; }
 .empty-state { text-align: center; padding: 80px 20px; }
 
+/* How far off free delivery this order is. Sits above the subtotal because
+   it is about changing the subtotal, and reads as a note rather than a
+   promotion — the saving is real money the shopper is otherwise spending on
+   a courier, not an offer being pushed at them. */
+.free-ship-nudge {
+  background: rgba(111, 174, 79, 0.09);
+  border: 1px dashed var(--gold-1);
+  border-radius: var(--radius-sm);
+  padding: 11px 13px;
+  margin-bottom: 14px;
+}
+.free-ship-nudge p { margin: 0; font-size: 0.86rem; color: var(--forest-deep); line-height: 1.45; }
+.free-ship-nudge b { font-family: var(--font-mono); }
+.free-ship-nudge .muted { font-size: 0.8rem; }
+.free-ship-nudge .link-btn { margin-top: 8px; font-size: 0.82rem; }
+.free-ship-meter {
+  height: 5px;
+  margin-top: 9px;
+  border-radius: 3px;
+  background: rgba(31, 61, 43, 0.12);
+  overflow: hidden;
+}
+.free-ship-meter-fill {
+  height: 100%;
+  border-radius: 3px;
+  background: var(--gold-1);
+  transition: width 0.3s ease;
+}
+.free-ship-nudge.earned { border-style: solid; }
+@media (prefers-reduced-motion: reduce) {
+  .free-ship-meter-fill { transition: none; }
+}
+
+/* What else could go in the parcel, under the cart's own lines. Kept visibly
+   quieter than a cart line — smaller thumbnail, outline button — because
+   these are an aside, and anything that reads like a cart line invites a
+   double-take about what is actually being bought. */
+.cart-suggestions { margin-top: 26px; padding-top: 20px; border-top: 1px dashed rgba(31,61,43,0.18); }
+.cart-suggestions h4 {
+  margin: 0 0 12px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--forest-light);
+}
+.cart-suggestion-list { display: flex; flex-direction: column; gap: 10px; }
+.cart-suggestion {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--paper);
+  border-radius: var(--radius-sm);
+  padding: 9px 12px;
+}
+.cart-suggestion img {
+  width: 46px; height: 46px;
+  flex: 0 0 46px;
+  object-fit: cover;
+  border-radius: 6px;
+  display: block;
+}
+.cart-suggestion-body { display: flex; flex-direction: column; gap: 1px; min-width: 0; flex: 1 1 auto; }
+.cart-suggestion-body a {
+  color: var(--forest-deep);
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-decoration: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cart-suggestion-body a:hover { text-decoration: underline; }
+.cart-suggestion-body .muted { font-size: 0.8rem; font-family: var(--font-mono); }
+.cart-suggestion .btn { flex: 0 0 auto; }
+
+/* The shape behind the average, above the reviews it summarises. */
+.rating-breakdown {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  flex-wrap: wrap;
+  background: var(--paper);
+  border-radius: var(--radius-md);
+  padding: 18px 20px;
+  margin-bottom: 20px;
+  box-shadow: var(--shadow-card);
+}
+.rating-breakdown-score { display: flex; flex-direction: column; align-items: center; flex: 0 0 auto; }
+.rating-breakdown-score b {
+  font: 400 2.3rem/1 var(--font-display, Georgia, serif);
+  color: var(--forest-deep);
+  font-variant-numeric: tabular-nums;
+}
+.rating-breakdown-score .muted { font-size: 0.78rem; margin-top: 4px; }
+.rating-breakdown-bars { display: flex; flex-direction: column; gap: 5px; flex: 1 1 200px; min-width: 180px; }
+.rating-breakdown-row { display: flex; align-items: center; gap: 10px; font-size: 0.8rem; }
+.rating-breakdown-label { flex: 0 0 26px; color: var(--forest-light); font-variant-numeric: tabular-nums; }
+.rating-breakdown-track {
+  flex: 1 1 auto;
+  height: 7px;
+  border-radius: 4px;
+  background: rgba(31, 61, 43, 0.1);
+  overflow: hidden;
+}
+.rating-breakdown-fill { display: block; height: 100%; border-radius: 4px; background: var(--gold-2); }
+.rating-breakdown-count {
+  flex: 0 0 22px;
+  text-align: right;
+  color: var(--forest-light);
+  font-variant-numeric: tabular-nums;
+}
+
 .coupon-chips {
   display: flex;
   flex-wrap: wrap;
