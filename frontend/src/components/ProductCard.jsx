@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { flushSync } from 'react-dom';
 import { Link, useNavigate } from 'react-router-dom';
 import { api } from '../api';
 import { getProductImage } from '../utils/productImages';
@@ -14,6 +15,7 @@ import { getEffectivePrice, isWholesalePriceApplied } from '../utils/pricing';
 import { flyToCart } from '../utils/flyToCart';
 import { useReveal } from '../hooks/useReveal';
 import FadeImage from './FadeImage';
+import { canAnimateTransitions, claimHero, runViewTransition } from '../utils/viewTransition';
 
 // Caps how long a big grid takes to finish cascading in — beyond this many
 // cards, later ones just reveal at the same delay as the last staggered one
@@ -113,9 +115,45 @@ export default function ProductCard({ product, index }) {
     }
   }
 
+  /* Carries this card's photograph into the product page's hero image instead
+     of cutting between two pages.
+     Everything the browser needs is a synchronous DOM update inside the
+     transition callback, which is why the navigate is wrapped in flushSync —
+     React would otherwise batch it and the browser would snapshot the old
+     page twice. */
+  function handleCardClick(e) {
+    // A quick-add or wishlist press inside the card has already cancelled the
+    // navigation; anything with a modifier is someone opening a new tab, and
+    // both should behave exactly as before.
+    if (
+      e.defaultPrevented ||
+      e.button !== 0 ||
+      e.metaKey || e.ctrlKey || e.shiftKey || e.altKey
+    ) return;
+    if (!canAnimateTransitions()) return; // plain <Link> navigation
+    const img = e.currentTarget.querySelector('.product-media img');
+    if (!img) return;
+
+    e.preventDefault();
+    claimHero(img);
+    // The photograph travels with the navigation so the product page can paint
+    // it immediately. Without it that page renders a spinner until its fetch
+    // resolves, and the browser would snapshot the spinner — the morph would
+    // land on nothing. It also just reads better: the picture you tapped is
+    // already there while the rest of the page arrives.
+    runViewTransition(() => {
+      flushSync(() =>
+        navigate(`/product/${product.id}`, {
+          state: { heroImage: img.currentSrc || img.src, heroName: displayName },
+        })
+      );
+    });
+  }
+
   return (
     <Link
       to={`/product/${product.id}`}
+      onClick={handleCardClick}
       ref={revealRef}
       className={`product-card card-reveal ${revealed ? 'card-reveal-visible' : ''}`}
       style={index != null ? { transitionDelay: `${Math.min(index, MAX_STAGGER_INDEX) * STAGGER_STEP_MS}ms` } : undefined}

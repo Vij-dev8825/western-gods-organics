@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate, useLocation, Link } from 'react-router-dom';
 import { api } from '../api';
 import { getProductImage } from '../utils/productImages';
 import { useCart } from '../context/CartContext';
@@ -31,6 +31,7 @@ import { STORE_LOCATIONS } from '../data/storeLocations';
 import { flyToCart } from '../utils/flyToCart';
 import { useReveal } from '../hooks/useReveal';
 import FadeImage from '../components/FadeImage';
+import { HERO_CLASS } from '../utils/viewTransition';
 
 const SUBSCRIPTION_DISCOUNT_PERCENT = 10;
 const MIN_FREQUENCY_DAYS = 7;
@@ -350,9 +351,29 @@ export default function ProductDetail() {
   }
 
   if (!product) {
+    // Arriving from a product card, the photograph came with the navigation,
+    // so show it rather than a spinner. This is also what makes the morph
+    // connect at all: the browser snapshots the incoming page the moment the
+    // navigation commits, and the fetch has not resolved by then — without
+    // something here to receive it, the animation would land on the spinner.
+    const preview = location.state?.heroImage;
+    if (!preview) {
+      return (
+        <div className="center" style={{ padding: '120px 0' }}>
+          <ChakkiWheel size={56} />
+        </div>
+      );
+    }
     return (
-      <div className="center" style={{ padding: '120px 0' }}>
-        <ChakkiWheel size={56} />
+      <div className="container">
+        <div className="product-detail-grid">
+          <div className="product-media" style={{ borderRadius: 'var(--radius-lg)' }}>
+            <img className={HERO_CLASS} src={preview} alt={location.state?.heroName || ''} />
+          </div>
+          <div className="center" style={{ padding: '60px 0' }}>
+            <ChakkiWheel size={56} />
+          </div>
+        </div>
       </div>
     );
   }
@@ -599,7 +620,13 @@ export default function ProductDetail() {
             aria-label="View larger image"
           >
             {discount > 0 && <span className="product-badge">{discount}% OFF</span>}
-            <FadeImage src={getProductImage(gallery[activeImage])} alt={displayName} />
+            {/* Receives the photograph travelling in from the product card,
+                and hands it back when you tap through to a related product. */}
+            <FadeImage
+              className={activeImage === 0 ? HERO_CLASS : undefined}
+              src={getProductImage(gallery[activeImage])}
+              alt={displayName}
+            />
             {/* Two hints, one shown per input type. A phone has no cursor to
                 magnify under, so it keeps the tap-to-open-full-screen route. */}
             <span className="product-media-zoom-hint hint-touch">🔍 Tap to zoom</span>

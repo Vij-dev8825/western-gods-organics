@@ -5052,3 +5052,47 @@ body.has-cookie-bar .install-prompt { bottom: calc(var(--cookie-bar-height, 0px)
   font-size: 0.88rem;
   line-height: 1.55;
 }
+
+/* ---------------------------------------------------------------------------
+   View transitions — the product photograph carries across the navigation.
+
+   The name is applied by a class rather than inline, because the page being
+   navigated *to* must already carry it during its own synchronous render; the
+   browser snapshots the moment the update callback returns, well before any
+   effect could run. See utils/viewTransition.js.
+
+   Only one element may hold a given view-transition-name at a time. Two
+   holders abort the whole transition and the page jump-cuts, which is why
+   claimHero() strips the class from everyone else before granting it. */
+.vt-product-hero {
+  view-transition-name: product-hero;
+}
+
+/* The default root cross-fade is a little slow for a shop, where people tap
+   through several products in a row. Shortened, and eased so it settles
+   rather than stopping dead. */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 0.22s;
+  animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* The photograph itself gets longer than the cross-fade behind it — the
+   morph is the thing worth watching, and at 220ms it reads as a glitch
+   rather than a movement. */
+::view-transition-old(product-hero),
+::view-transition-new(product-hero) {
+  animation-duration: 0.36s;
+  animation-timing-function: cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+/* Belt and braces: canAnimateTransitions() already declines to start one when
+   the preference is set, so this only catches a transition already running
+   when the setting changes mid-flight. */
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
+}
