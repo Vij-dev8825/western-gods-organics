@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useParams, useNavigate, useLocation, Link } from 'react-router-dom';
 import { api } from '../api';
-import { getProductImage } from '../utils/productImages';
+import { getProductImage, getProductImageSrcSet } from '../utils/productImages';
 import { useCart } from '../context/CartContext';
 import { useWishlist } from '../context/WishlistContext';
 import { useAuth } from '../context/AuthContext';
@@ -660,6 +660,10 @@ export default function ProductDetail() {
             <FadeImage
               className={activeImage === 0 ? HERO_CLASS : undefined}
               src={getProductImage(gallery[activeImage])}
+              srcSet={getProductImageSrcSet(gallery[activeImage]) || undefined}
+              // Full width on a phone, roughly half the page beside the buy
+              // panel on a desktop.
+              sizes="(max-width: 900px) 100vw, 50vw"
               alt={displayName}
             />
             {/* Two hints, one shown per input type. A phone has no cursor to

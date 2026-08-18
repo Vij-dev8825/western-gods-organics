@@ -175,4 +175,81 @@ async function getVideoPoster(videoId) {
   }
 }
 
-module.exports = { compressAndStore, compressVideoAndStore, getMedia, getVideoPoster };
+/* ------------------------- Resized image variants ------------------------- */
+
+/** Whitelisted, not free-form. An arbitrary ?w= would let anyone fill the
+ *  media table with a thousand near-identical rows by walking the numbers;
+ *  four sizes cover every slot the site actually renders. */
+const VARIANT_WIDTHS = [200, 400, 800, 1200];
+
+/** WebP is roughly 25-35% smaller than JPEG at matching quality and is
+ *  understood by every browser that matters now, including Safari since 14.
+ *  Clients that don't send it in Accept get JPEG, so nothing breaks. */
+const VARIANT_QUALITY = 72;
+
+function variantId(id, width, webp) {
+  return `${id}-w${width}${webp ? '-webp' : ''}`;
+}
+
+/** Nearest allowed width at or above the request, so a 156px thumbnail on a
+ *  2x screen asks for 312 and gets 400 rather than the full 1376. Returns null
+ *  for anything not in range, and the caller then serves the original. */
+function normaliseWidth(raw) {
+  const n = Number(raw);
+  if (!Number.isFinite(n) || n <= 0) return null;
+  return VARIANT_WIDTHS.find((w) => w >= n) || null;
+}
+
+/**
+ * Returns a resized copy of a stored image, generating it on first request and
+ * reusing it forever after — the same derive-and-cache approach as
+ * getVideoPoster, and for the same reason: every image already in the database
+ * gets the benefit with no migration and nothing for an admin to redo.
+ *
+ * Stored images are capped at 1600px because that is the right size for a
+ * product page hero on a desktop. The shop grid then renders that same file
+ * into a 156px box — about nineteen times the pixels actually painted, on the
+ * page where twenty-five of them load at once. This is that waste, returned.
+ *
+ * Never enlarges: asking for 800 from a 400px original returns the original
+ * rather than a blurred upscale.
+ */
+async function getImageVariant(id, requestedWidth, { webp = false } = {}) {
+  const width = normaliseWidth(requestedWidth);
+  if (!width) return null;
+
+  const cached = await db.get('media', variantId(id, width, webp));
+  if (cached) return cached;
+
+  const original = await db.get('media', id);
+  if (!original || !String(original.mimeType).startsWith('image/')) return null;
+
+  const source = Buffer.from(original.data, 'base64');
+  const meta = await sharp(source).metadata();
+  // Already at or below the asked-for width — resizing would only cost bytes
+  // and sharpness. Hand back the original and let it be cached as normal.
+  if (meta.width && meta.width <= width) return null;
+
+  const pipeline = sharp(source).resize({ width, withoutEnlargement: true });
+  const data = webp
+    ? await pipeline.webp({ quality: VARIANT_QUALITY }).toBuffer()
+    : await pipeline.jpeg({ quality: VARIANT_QUALITY, mozjpeg: true }).toBuffer();
+
+  const variant = {
+    id: variantId(id, width, webp),
+    mimeType: webp ? 'image/webp' : 'image/jpeg',
+    data: data.toString('base64'),
+    createdAt: new Date().toISOString(),
+  };
+  await db.put('media', variant);
+  return variant;
+}
+
+module.exports = {
+  compressAndStore,
+  compressVideoAndStore,
+  getMedia,
+  getVideoPoster,
+  getImageVariant,
+  VARIANT_WIDTHS,
+};

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { flushSync } from 'react-dom';
 import { Link, useNavigate } from 'react-router-dom';
 import { api } from '../api';
-import { getProductImage } from '../utils/productImages';
+import { getProductImage, getProductImageSrcSet } from '../utils/productImages';
 import { useWishlist } from '../context/WishlistContext';
 import { useCart } from '../context/CartContext';
 import { useToast } from '../context/ToastContext';
@@ -218,7 +218,18 @@ export default function ProductCard({ product, index }) {
             ))}
           </div>
         )}
-        <FadeImage src={getProductImage(gallery[hoverIndex])} alt={displayName} loading="lazy" />
+        {/* sizes tells the browser how wide this will be painted before layout
+            happens, so it can pick from srcset on its first pass. Without it
+            the browser assumes full viewport width and downloads the largest
+            option — which would undo the whole point. Two columns below 900px,
+            four above, matching .grid. */}
+        <FadeImage
+          src={getProductImage(gallery[hoverIndex])}
+          srcSet={getProductImageSrcSet(gallery[hoverIndex]) || undefined}
+          sizes="(max-width: 900px) 50vw, 25vw"
+          alt={displayName}
+          loading="lazy"
+        />
 
         <div className="product-media-quickadd">
           <div className="qty-stepper qty-stepper-sm" onClick={(e) => e.preventDefault()}>
