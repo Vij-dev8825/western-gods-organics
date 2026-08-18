@@ -5096,3 +5096,36 @@ body.has-cookie-bar .install-prompt { bottom: calc(var(--cookie-bar-height, 0px)
     animation: none !important;
   }
 }
+
+/* ---------------------------------------------------------------------------
+   Scroll-driven reveal.
+
+   The existing reveals (hooks/useReveal.js) run through an IntersectionObserver
+   and are left alone — they work, and rewriting working animation to prove a
+   point is not an improvement. This is for the places that had no reveal at
+   all, where a pure-CSS one costs nothing: no hook, no wrapper element, no
+   per-item component to call a hook from inside a .map().
+
+   It also runs on the compositor rather than the main thread, so it stays
+   smooth while the page is still parsing product JSON on a mid-range phone.
+
+   Guarded twice over. Where animation-timeline is unsupported the whole block
+   is skipped and elements simply render normally — never stuck invisible,
+   which is the one failure mode that would matter. */
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .scroll-reveal {
+      animation: scrollReveal linear both;
+      animation-timeline: view();
+      /* Finishes well before the element reaches the middle of the screen —
+         a reveal still animating once you are reading it is a distraction,
+         not an entrance. */
+      animation-range: entry 0% entry 55%;
+    }
+
+    @keyframes scrollReveal {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: none; }
+    }
+  }
+}

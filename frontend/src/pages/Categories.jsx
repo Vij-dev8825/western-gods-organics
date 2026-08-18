@@ -52,7 +52,7 @@ export default function Categories() {
 
         <div className="category-trio">
           {categories.map((cat) => (
-            <Link key={cat.slug} to={`/shop?category=${cat.slug}`} className="category-tile">
+            <Link key={cat.slug} to={`/shop?category=${cat.slug}`} className="category-tile scroll-reveal">
               <img src={getProductImage(cat.image)} alt={cat.label} />
               <div className="overlay" />
               <div className="label">

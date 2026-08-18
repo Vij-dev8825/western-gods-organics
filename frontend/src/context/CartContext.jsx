@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useRef, useState, useCallback } f
 import { useAuth } from './AuthContext';
 import { api } from '../api';
 import { trackAddToCart } from '../utils/analytics';
+import { hapticTap } from '../utils/haptics';
 
 const CartContext = createContext(null);
 const GUEST_KEY = 'yo_guest_cart';
@@ -78,6 +79,9 @@ export function CartProvider({ children }) {
     // stores ids — but GA4 accepts an item on its id alone, and the count is
     // what matters for "how many people add something and never check out".
     trackAddToCart({ id: productId, size, quantity });
+    // Every add-to-cart in the app funnels through here — card, product page,
+    // reorder — so the confirming tick belongs here rather than in each caller.
+    hapticTap();
     const current = itemsRef.current;
     const existing = current.find((i) => i.productId === productId && i.size === size);
     let next;
