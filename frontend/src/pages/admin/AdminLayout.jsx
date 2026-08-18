@@ -13,6 +13,7 @@ const links = [
   { to: '/admin/profit', label: 'Profit' },
   { to: '/admin/margins', label: 'Margins' },
   { to: '/admin/procurement', label: 'What to Buy' },
+  { to: '/admin/activity', label: 'Activity log' },
   { to: '/admin/products', label: 'Products' },
   { to: '/admin/categories', label: 'Categories' },
   { to: '/admin/coupons', label: 'Coupons' },

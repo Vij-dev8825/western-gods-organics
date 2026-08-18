@@ -45,6 +45,7 @@ const { getInvoiceSettings } = require('../utils/invoiceSettings');
 const { cancelGiftCard } = require('../utils/giftCards');
 const { generateUniqueAffiliateCode, getCommissionSummary, recordPayout, creditCommissionForOrder, reverseCommissionForOrder } = require('../utils/affiliates');
 const { getSummary: getSellerSummary, recordPayout: recordSellerPayout, creditSellerEarningsForOrder, reverseSellerEarningsForOrder } = require('../utils/sellers');
+const { auditAdminMutations, listAuditLog } = require('../utils/auditLog');
 
 /** Undoes everything a delivery credited — the customer's points, the
  * referring affiliate's commission and each seller's share — when that sale
@@ -67,6 +68,9 @@ const ADMIN_PHONE = process.env.ADMIN_PHONE;
 
 const router = express.Router();
 router.use(requireAdmin);
+// After the gate, so entries always have an actor and unauthenticated probes
+// never reach it. Covers every mutation below, including ones added later.
+router.use(auditAdminMutations);
 
 /* --------------------------------- Uploads -------------------------------- */
 
@@ -1576,6 +1580,17 @@ router.delete('/festivals/:id', async (req, res, next) => {
   try {
     await db.del('festivals', req.params.id);
     res.json({ success: true });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET /api/admin/audit-log — who changed what, newest first. A GET, so it
+// does not record its own reading and fill the log with itself.
+router.get('/audit-log', async (req, res, next) => {
+  try {
+    const entries = await listAuditLog({ limit: req.query.limit });
+    res.json({ success: true, count: entries.length, entries });
   } catch (err) {
     next(err);
   }

@@ -60,6 +60,7 @@ const COLLECTIONS = [
   'pressings',
   'festivals',
   'trade-prospects',
+  'audit-log',
 ];
 
 let mode = 'json';

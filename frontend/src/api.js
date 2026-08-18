@@ -312,6 +312,7 @@ export const api = {
     invoicePdf: (token, orderId) => requestBlob(`/admin/orders/${orderId}/invoice.pdf`, { token }),
 
     procurement: (token) => request('/admin/procurement', { token }),
+    auditLog: (token, limit) => request(`/admin/audit-log${limit ? `?limit=${limit}` : ''}`, { token }),
 
     listProspects: (token) => request('/admin/trade-prospects', { token }),
     createProspect: (token, body) => request('/admin/trade-prospects', { method: 'POST', body, token }),
