@@ -8,7 +8,12 @@ const { requireAdmin } = require('../middleware/auth');
 const { notifyUser, broadcast } = require('../utils/notify');
 const { UPLOADS_DIR } = require('../data/seed');
 const cloudinary = require('../utils/cloudinary');
-const { compressAndStore, compressVideoAndStore } = require('../utils/mediaStore');
+const {
+  compressAndStore,
+  compressVideoAndStore,
+  BANNER_VIDEO_MAX_HEIGHT,
+  BANNER_VIDEO_BITRATE,
+} = require('../utils/mediaStore');
 const { processDueSubscriptions } = require('../utils/subscriptions');
 const { processAbandonedCarts } = require('../utils/abandonedCarts');
 const { processReorderNudges } = require('../utils/reorderNudges');
@@ -1038,7 +1043,15 @@ router.post('/banners', upload.single('file'), async (req, res, next) => {
     } else if (isVideo) {
       // No Cloudinary — transcode to a size-capped MP4 and store in the
       // database so it survives Render's disk wipes, same as images below.
-      url = await compressVideoAndStore(req.file.path);
+      //
+      // Banner settings rather than the general defaults: this clip loops
+      // silently behind an overlay and is never the thing being studied, so
+      // 720p at 1200k was buying detail nobody sees. Three of them load on the
+      // home page.
+      url = await compressVideoAndStore(req.file.path, {
+        maxHeight: BANNER_VIDEO_MAX_HEIGHT,
+        bitrate: BANNER_VIDEO_BITRATE,
+      });
       fs.unlink(req.file.path, () => {});
     } else {
       // No Cloudinary and this is an image — compress and store in the

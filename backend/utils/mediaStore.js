@@ -23,6 +23,15 @@ const JPEG_QUALITY = 78;
 
 const VIDEO_MAX_HEIGHT = 720;
 const VIDEO_BITRATE = '1200k';
+
+/** Home-page banners are a different job from a pressing clip: muted, looping,
+ *  behind an overlay, and never the thing being studied. Measured on a real
+ *  banner, 720p at ~1000 kbps costs 1290 KB for ten seconds; 480p at 500k
+ *  costs 521 KB, and 854px wide is still comfortably more than the ~750 device
+ *  pixels a phone gives it. Three of these load on the home page, so the
+ *  difference is megabytes on a connection that can least afford them. */
+const BANNER_VIDEO_MAX_HEIGHT = 480;
+const BANNER_VIDEO_BITRATE = '500k';
 const VIDEO_MAX_OUTPUT_BYTES = 20 * 1024 * 1024; // 20 MB — keeps DB rows and page loads reasonable
 
 // Poster stills stand in for a video until it has buffered, so they're tuned
@@ -79,7 +88,12 @@ async function compressAndStore(buffer, { preserveAlpha = false } = {}) {
  * MySQL's max_allowed_packet on shared hosting. */
 async function compressVideoAndStore(
   inputPath,
-  { keepAudio = false, bitrate = VIDEO_BITRATE, maxBytes = VIDEO_MAX_OUTPUT_BYTES } = {}
+  {
+    keepAudio = false,
+    bitrate = VIDEO_BITRATE,
+    maxBytes = VIDEO_MAX_OUTPUT_BYTES,
+    maxHeight = VIDEO_MAX_HEIGHT,
+  } = {}
 ) {
   const outputPath = path.join(os.tmpdir(), `${uuid()}.mp4`);
   await new Promise((resolve, reject) => {
@@ -87,7 +101,7 @@ async function compressVideoAndStore(
     if (keepAudio) command.audioCodec('aac').audioBitrate('96k');
     else command.noAudio();
     command
-      .videoFilters(`scale=-2:'min(${VIDEO_MAX_HEIGHT},ih)'`)
+      .videoFilters(`scale=-2:'min(${maxHeight},ih)'`)
       .videoBitrate(bitrate)
       .outputOptions(['-preset veryfast', '-movflags +faststart'])
       .output(outputPath)
@@ -252,4 +266,6 @@ module.exports = {
   getVideoPoster,
   getImageVariant,
   VARIANT_WIDTHS,
+  BANNER_VIDEO_MAX_HEIGHT,
+  BANNER_VIDEO_BITRATE,
 };
