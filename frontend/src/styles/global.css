@@ -1082,7 +1082,10 @@ p { margin: 0 0 1em; }
   color: #fff8ec;
   font-family: var(--font-display);
   font-style: italic;
-  font-weight: 600;
+  /* 500, because that is the only italic Fraunces actually downloaded — the
+     <link> requests `1,9..144,500`. Asking for 600 did not make it bolder; it
+     made the browser synthesise a weight, which is the blurrier result. */
+  font-weight: 500;
   letter-spacing: 0.015em;
   font-size: 0.95rem;
   border-radius: var(--radius-md);
@@ -6128,7 +6131,10 @@ p { margin: 0 0 1em; }
   color: #fff8ec;
   font-family: var(--font-display);
   font-style: italic;
-  font-weight: 600;
+  /* 500, because that is the only italic Fraunces actually downloaded — the
+     <link> requests `1,9..144,500`. Asking for 600 did not make it bolder; it
+     made the browser synthesise a weight, which is the blurrier result. */
+  font-weight: 500;
   letter-spacing: 0.015em;
   font-size: 0.95rem;
   border-radius: var(--radius-md);
