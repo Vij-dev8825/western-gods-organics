@@ -8,6 +8,34 @@ import StructuredData from '../components/StructuredData';
 import { useLang } from '../i18n';
 import { buildBreadcrumbSchema } from '../utils/breadcrumbSchema';
 import { CANONICAL_ORIGIN } from '../utils/site';
+import { useReveal } from '../hooks/useReveal';
+
+/** One tile, split out purely so it can hold a hook — a reveal cannot be
+ *  called from inside the .map() below.
+ *
+ *  This uses the IntersectionObserver reveal the rest of the site already
+ *  uses, rather than the CSS scroll-timeline version I reached for first.
+ *  That was the right instinct and the wrong browser: Safari has no
+ *  animation-timeline, so on every iPhone below 26 the tiles simply appeared,
+ *  which is most of the people this page is for. An observer works
+ *  everywhere back to iOS 12. */
+function CategoryTile({ cat, t }) {
+  const { ref, visible } = useReveal();
+  return (
+    <Link
+      ref={ref}
+      to={`/shop?category=${cat.slug}`}
+      className={`category-tile card-reveal ${visible ? 'card-reveal-visible' : ''}`}
+    >
+      <img src={getProductImage(cat.image)} alt={cat.label} />
+      <div className="overlay" />
+      <div className="label">
+        <span>{t('catTag')}</span>
+        <h3>{cat.label}</h3>
+      </div>
+    </Link>
+  );
+}
 
 export default function Categories() {
   const { t } = useLang();
@@ -52,14 +80,7 @@ export default function Categories() {
 
         <div className="category-trio">
           {categories.map((cat) => (
-            <Link key={cat.slug} to={`/shop?category=${cat.slug}`} className="category-tile scroll-reveal">
-              <img src={getProductImage(cat.image)} alt={cat.label} />
-              <div className="overlay" />
-              <div className="label">
-                <span>{t('catTag')}</span>
-                <h3>{cat.label}</h3>
-              </div>
-            </Link>
+            <CategoryTile key={cat.slug} cat={cat} t={t} />
           ))}
         </div>
       </div>

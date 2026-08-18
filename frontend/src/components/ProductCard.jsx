@@ -15,7 +15,7 @@ import { getEffectivePrice, isWholesalePriceApplied } from '../utils/pricing';
 import { flyToCart } from '../utils/flyToCart';
 import { useReveal } from '../hooks/useReveal';
 import FadeImage from './FadeImage';
-import { canAnimateTransitions, claimHero, runViewTransition } from '../utils/viewTransition';
+import { canAnimateTransitions, claimHero, motionAllowed, runViewTransition } from '../utils/viewTransition';
 
 // Caps how long a big grid takes to finish cascading in — beyond this many
 // cards, later ones just reveal at the same delay as the last staggered one
@@ -130,9 +130,27 @@ export default function ProductCard({ product, index }) {
       e.button !== 0 ||
       e.metaKey || e.ctrlKey || e.shiftKey || e.altKey
     ) return;
-    if (!canAnimateTransitions()) return; // plain <Link> navigation
     const img = e.currentTarget.querySelector('.product-media img');
     if (!img) return;
+    const src = img.currentSrc || img.src;
+
+    // Safari only shipped View Transitions in 18.2, so a great many real
+    // iPhones never reach the branch below. Rather than leaving those with a
+    // plain cut, hand the photograph's current position to the product page
+    // and let it animate the same move itself.
+    if (!canAnimateTransitions()) {
+      if (!motionAllowed()) return; // plain <Link> navigation, no animation
+      const r = img.getBoundingClientRect();
+      e.preventDefault();
+      navigate(`/product/${product.id}`, {
+        state: {
+          heroImage: src,
+          heroName: displayName,
+          heroRect: { left: r.left, top: r.top, width: r.width, height: r.height },
+        },
+      });
+      return;
+    }
 
     e.preventDefault();
     claimHero(img);

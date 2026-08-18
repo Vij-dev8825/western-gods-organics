@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useParams, useNavigate, useLocation, Link } from 'react-router-dom';
 import { api } from '../api';
 import { getProductImage } from '../utils/productImages';
@@ -31,7 +31,7 @@ import { STORE_LOCATIONS } from '../data/storeLocations';
 import { flyToCart } from '../utils/flyToCart';
 import { useReveal } from '../hooks/useReveal';
 import FadeImage from '../components/FadeImage';
-import { HERO_CLASS } from '../utils/viewTransition';
+import { HERO_CLASS, flipFrom } from '../utils/viewTransition';
 
 const SUBSCRIPTION_DISCOUNT_PERCENT = 10;
 const MIN_FREQUENCY_DAYS = 7;
@@ -145,6 +145,10 @@ function recentHarvestLabel(productionDate) {
 export default function ProductDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
+  // Not optional: without this, `location` silently resolves to the global
+  // window.location, whose .state is always undefined — so every read of the
+  // navigation state below quietly returns nothing instead of throwing.
+  const location = useLocation();
   const [product, setProduct] = useState(null);
   const [related, setRelated] = useState([]);
   const [guides, setGuides] = useState([]);
@@ -155,6 +159,34 @@ export default function ProductDetail() {
   const [pressings, setPressings] = useState([]);
   const [activeImage, setActiveImage] = useState(0);
   const mediaRef = useRef(null);
+
+  // Plays the arrival move on browsers without View Transitions — which is
+  // every iPhone below iOS 18.2, so in practice a large share of real
+  // shoppers. The card measured where its photograph was and sent the
+  // rectangle along with the navigation; this puts the incoming photo back
+  // there and animates it home.
+  //
+  // useLayoutEffect, and deliberately with no dependency array: the hero can
+  // arrive from either branch, and which one wins is a race with the network.
+  // A cached product renders loaded on the very first pass, so the placeholder
+  // never mounts — an approach pinned to the placeholder animates only on a
+  // cold load, which is exactly the case you stop seeing once you have used
+  // the site for a minute. Running after every render until one succeeds
+  // catches whichever hero actually appears.
+  //
+  // Layout rather than plain effect because this must run before paint; a
+  // frame late and the photograph visibly jumps to its final place first,
+  // which is the thing the animation exists to hide.
+  const flippedRef = useRef(false);
+  useLayoutEffect(() => {
+    if (flippedRef.current) return;
+    const from = location.state?.heroRect;
+    if (!from) return;
+    const el = document.querySelector('.' + HERO_CLASS);
+    if (!el || !el.getBoundingClientRect().height) return; // not laid out yet
+    flippedRef.current = true; // once per arrival, not once per render
+    flipFrom(el, from);
+  });
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [myRating, setMyRating] = useState(0);
   const [myText, setMyText] = useState('');
@@ -199,6 +231,9 @@ export default function ProductDetail() {
   const isWholesale = !!user?.isWholesale;
 
   useEffect(() => {
+    // A new product is a new arrival, so the morph is allowed to run again —
+    // otherwise tapping through related products animates only the first one.
+    flippedRef.current = false;
     setProduct(null);
     setReviews([]);
     setQuestions([]);

@@ -36,13 +36,76 @@ export function claimHero(el) {
   if (el) el.classList.add(HERO_CLASS);
 }
 
-/** Checked per call, not once at import: someone can turn on "reduce motion"
- *  while the tab is open, and a shop should respect that immediately. */
+/** The one question that outranks everything else here. Checked per call, not
+ *  once at import: someone can turn this on while the tab is open — and on
+ *  Android, Battery Saver turns it on for them — so a shop should respect it
+ *  immediately rather than at page load. */
+export function motionAllowed() {
+  return (
+    typeof window !== 'undefined' &&
+    !window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  );
+}
+
+/** Whether the *native* path is available. Safari only shipped View
+ *  Transitions in 18.2, so a large share of real iPhones answer no — hence
+ *  flipFrom below, which does the same job with an API Safari has had since
+ *  13. */
 export function canAnimateTransitions() {
   return (
     typeof document !== 'undefined' &&
     typeof document.startViewTransition === 'function' &&
-    !window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    motionAllowed()
+  );
+}
+
+/** The same morph, done by hand, for every browser without View Transitions.
+ *
+ *  FLIP: the element is already sitting where it belongs (Last), so put it
+ *  back where it came from with a transform (Invert) and animate that away
+ *  (Play). Nothing reflows — it is one composited transform — and because the
+ *  element is really in its final position the whole time, layout, taps and
+ *  scrolling are all correct from the first frame.
+ *
+ *  Returns the animation, or null when it declined: no element, no source
+ *  rectangle, motion turned off, or the two boxes already close enough that
+ *  animating between them would only look like a twitch. */
+export function flipFrom(el, from, { duration = 340 } = {}) {
+  if (!el || !from || !motionAllowed()) return null;
+  if (typeof el.animate !== 'function') return null;
+
+  const to = el.getBoundingClientRect();
+  if (!to.width || !to.height || !from.width || !from.height) return null;
+
+  const dx = from.left - to.left;
+  const dy = from.top - to.top;
+  const sx = from.width / to.width;
+  const sy = from.height / to.height;
+  if (![dx, dy, sx, sy].every(Number.isFinite)) return null;
+  // Below this the movement is indistinguishable from a flicker.
+  if (Math.abs(dx) < 2 && Math.abs(dy) < 2 && Math.abs(sx - 1) < 0.02 && Math.abs(sy - 1) < 0.02) {
+    return null;
+  }
+
+  // transform-origin is pinned to the corner the offsets were measured from
+  // and held constant across both frames. Left at its default centre, the
+  // scale would pull away from the middle and the arithmetic above would be
+  // describing a different box than the one that actually moves.
+  return el.animate(
+    [
+      {
+        transformOrigin: 'top left',
+        transform: `translate(${dx}px, ${dy}px) scale(${sx}, ${sy})`,
+        opacity: 0.85,
+      },
+      { transformOrigin: 'top left', transform: 'none', opacity: 1 },
+    ],
+    {
+      duration,
+      // Travels fast, settles slow — the shape of something arriving rather
+      // than something being played.
+      easing: 'cubic-bezier(0.32, 0.72, 0, 1)',
+    }
   );
 }
 
