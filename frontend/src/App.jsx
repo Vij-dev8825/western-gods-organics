@@ -16,6 +16,7 @@ import CookieConsent from './components/CookieConsent';
 import PushOptIn from './components/PushOptIn';
 import InstallPrompt from './components/InstallPrompt';
 import SaleCountdown from './components/SaleCountdown';
+import MotionCheck from './components/MotionCheck';
 import WelcomeSelector from './components/WelcomeSelector';
 import SeoMeta from './components/SeoMeta';
 import RouteFallback from './components/RouteFallback';
@@ -137,6 +138,8 @@ function StoreLayout() {
   useFabAutoHide();
   return (
     <div className="app-shell">
+      {/* Renders nothing unless ?motion-check is in the URL. */}
+      <MotionCheck />
       <SaleCountdown />
       <div className="announce-bar">{t('announcement')}</div>
       <Navbar />
