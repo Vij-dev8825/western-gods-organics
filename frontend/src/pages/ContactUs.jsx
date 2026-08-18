@@ -4,6 +4,9 @@ import { isValidEmail, isValidPhone } from '../utils/validators';
 import ChakkiWheel from '../components/ChakkiWheel';
 import PageBanner from '../components/PageBanner';
 import SeoMeta from '../components/SeoMeta';
+import { STORE_LOCATIONS } from '../data/storeLocations';
+
+const MILL = STORE_LOCATIONS[0];
 
 function validate(form) {
   const errors = {};
@@ -61,9 +64,13 @@ export default function ContactUs() {
         <div>
           <div>
             <h3>Visit the mill</h3>
-            <p className="muted">Shri Gopal Flour &amp; Oil Mills, Udumalpet, Tiruppur District, Tamil Nadu – 642126</p>
+            {/* From the shared record — this is the page Google is most
+                likely to read an address off, so it must match the Business
+                Profile character for character. It previously opened with the
+                mill's name and dropped SH 97. */}
+            <p className="muted">{MILL.name}, {MILL.address}</p>
             <h3>Call us</h3>
-            <p className="muted"><a href="tel:+918825875607">+91 88258 75607</a> (Mon–Sat, 9am–7pm)</p>
+            <p className="muted"><a href={`tel:${MILL.phone}`}>{MILL.phoneDisplay}</a> ({MILL.hours})</p>
             <h3>Email</h3>
             <p className="muted"><a href="mailto:westerngodsorganic@gmail.com">westerngodsorganic@gmail.com</a></p>
           </div>

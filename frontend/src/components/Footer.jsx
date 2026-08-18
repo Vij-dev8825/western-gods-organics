@@ -11,6 +11,7 @@ const YOUTUBE_URL = 'https://www.youtube.com/@westerngodsorganics';
 
 const SUPPORT_PHONE = '+918825875607';
 const SUPPORT_EMAIL = 'westerngodsorganic@gmail.com';
+const MILL_NAME = STORE_LOCATIONS[0].name;
 const MILL_ADDRESS = STORE_LOCATIONS[0].address;
 const MAP_EMBED_SRC = mapEmbedSrc(MILL_ADDRESS);
 const DIRECTIONS_URL = directionsUrl(MILL_ADDRESS);
@@ -117,8 +118,13 @@ export default function Footer() {
         <div className="footer-accordions">
           <FooterAccordion title={t('footerAbout')} isOpen={openSection === 'about'} onToggle={() => toggle('about')}>
             <p style={{ fontSize: '0.85rem' }}>{t('footerAboutText')}</p>
+            {/* From the shared record, because Google reads the address a
+                visitor can see as well as the one in the structured data, and
+                counts a business less trustworthy when they disagree. This
+                used to open with the mill's name where the street belongs and
+                omit SH 97 entirely. */}
             <p style={{ fontSize: '0.85rem', margin: 0 }}>
-              Shri Gopal Flour &amp; Oil Mills,<br />Udumalpet, Tiruppur District,<br />Tamil Nadu – 642126
+              {MILL_NAME},<br />{MILL_ADDRESS}
             </p>
             <ul style={{ marginTop: 10 }}>
               <li><Link to="/pressings">What We're Pressing</Link></li>

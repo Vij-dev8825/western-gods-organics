@@ -1,6 +1,9 @@
 import { Suspense } from 'react';
 import { Link, NavLink, Outlet } from 'react-router-dom';
 import RouteFallback from '../../components/RouteFallback';
+import { STORE_LOCATIONS } from '../../data/storeLocations';
+
+const MILL = STORE_LOCATIONS[0];
 
 /** Standalone chrome for the public-facing seller site (landing, register).
  * Deliberately shares nothing with the customer storefront's Navbar/Footer —
@@ -35,8 +38,9 @@ export default function SellerPublicLayout() {
       <footer className="seller-site-footer">
         <div>
           <b>Western Gods Organics — Seller Central</b>
+          {/* Shared record, so this can't drift from the Business Profile. */}
           <p className="muted">
-            Shri Gopal Flour &amp; Oil Mills, Udumalpet, Tiruppur District, Tamil Nadu – 642126
+            {MILL.name}, {MILL.address}
           </p>
         </div>
         <div className="seller-site-footer-links">
