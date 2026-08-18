@@ -2462,9 +2462,37 @@ input:focus-visible + .filter-radio { outline: 2px solid var(--gold-2); outline-
 }
 .sale-countdown-value { font-family: var(--font-mono); font-weight: 700; font-size: 0.95rem; line-height: 1.2; }
 .sale-countdown-label { font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.04em; }
+/* On a phone this bar was 89px tall — the title wrapped across lines and then
+   pushed the timer onto a row of its own. Stacked with the announcement bar
+   and the two-row navbar that was 245px, roughly a third of an 812px screen,
+   gone before a customer saw a single product.
+
+   Almost all of that height was the title wrapping, not the timer. So on a
+   phone the bar becomes a single row that never wraps: the title takes
+   whatever room is left and ellipsises, and the timer keeps its natural width
+   — a countdown missing its digits is worse than a title missing its tail. */
 @media (max-width: 640px) {
-  .sale-countdown { font-size: 0.78rem; padding: 8px 12px; }
-  .sale-countdown-unit { min-width: 32px; }
+  .sale-countdown {
+    flex-wrap: nowrap;
+    gap: 10px;
+    padding: 6px 12px;
+    font-size: 0.74rem;
+    line-height: 1.25;
+    min-width: 0;
+  }
+  .sale-countdown-text {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  /* The chips keep their stacked shape — a number above its unit is what makes
+     a countdown readable at a glance, and at ~30px they were never the problem.
+     Only their padding comes down. */
+  .sale-countdown-timer { flex: 0 0 auto; gap: 5px; }
+  .sale-countdown-unit { min-width: 28px; padding: 2px 5px; }
+  .sale-countdown-value { font-size: 0.8rem; }
+  .sale-countdown-label { font-size: 0.55rem; }
 }
 .lang-select {
   border: 1.5px solid rgba(31, 61, 43, 0.18);
