@@ -18,7 +18,7 @@ const STORES_SCHEMA = {
     url: 'https://www.westerngodsorganic.com/store-locator',
     address: {
       '@type': 'PostalAddress',
-      streetAddress: loc.address,
+      streetAddress: loc.street,
       addressLocality: loc.locality,
       addressRegion: loc.region,
       ...(loc.postalCode ? { postalCode: loc.postalCode } : {}),

@@ -10,6 +10,13 @@ export const STORE_LOCATIONS = [
     // and treats a mismatch as a reason to trust the listing less, so these
     // two must be edited together or not at all.
     address: 'SH 97, Udumalpet, Tiruppur District, Tamil Nadu – 642126',
+    // The street on its own. `address` above is the human-readable line — it
+    // repeats the locality, region and postcode, which is right for a label
+    // and wrong for schema.org's streetAddress, where those have their own
+    // fields and repeating them describes a different place. Every structured
+    // address on the site is built from these parts, so the three renderings
+    // can't drift apart again.
+    street: 'SH 97',
     locality: 'Udumalpet',
     region: 'Tamil Nadu',
     postalCode: '642126',
@@ -22,7 +29,8 @@ export const STORE_LOCATIONS = [
     id: 'vedapatti-shop',
     name: 'Western Gods Organics — Vedapatti',
     address: 'Vedapatti, Coimbatore, Tamil Nadu',
-    locality: 'Vedapatti, Coimbatore',
+    street: 'Vedapatti',
+    locality: 'Coimbatore',
     region: 'Tamil Nadu',
     postalCode: '',
     phone: '+918825875607',

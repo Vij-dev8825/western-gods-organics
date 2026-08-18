@@ -16,12 +16,17 @@ import { getRecentlyViewedIds } from '../utils/recentlyViewed';
 import { useAuth } from '../context/AuthContext';
 import { useLang } from '../i18n';
 import { CANONICAL_ORIGIN } from '../utils/site';
+import { STORE_LOCATIONS } from '../data/storeLocations';
 import { shouldLoadHeavyMedia, videoPosterUrl } from '../utils/connection';
 import LazyVideo from '../components/LazyVideo';
 import CustomerReviews from '../components/CustomerReviews';
 import skincareCertificate from '../assets/skincare-workshop-certificate.jpg';
 
 const USP_ICONS = ['🌾', '🪵', '🧪', '🚚'];
+
+// The mill — the address and phone a Google Business Profile is registered
+// against, and the one every other page on the site quotes.
+const MILL = STORE_LOCATIONS[0];
 
 // schema.org Organization + WebSite structured data — describes the
 // business entity (helps with Knowledge Panel-style recognition) and
@@ -35,14 +40,20 @@ const ORGANIZATION_SCHEMA = {
   url: CANONICAL_ORIGIN,
   logo: `${CANONICAL_ORIGIN}/favicon-96x96.png`,
   image: `${CANONICAL_ORIGIN}/favicon-96x96.png`,
-  telephone: '+918825875607',
+  telephone: MILL.phone,
   email: 'westerngodsorganic@gmail.com',
+  // Built from the same record the footer, store locator and pickup option
+  // read, because Google cross-checks a business's address across every page
+  // that states one. This block used to disagree with storeLocations.js on
+  // two of five fields — the mill's name sat in streetAddress, and
+  // addressLocality read "Tiruppur District", which is the district, not the
+  // locality. Udumalpet is. Anything asserting an address here derives it.
   address: {
     '@type': 'PostalAddress',
-    streetAddress: 'Shri Gopal Flour & Oil Mills, Udumalpet',
-    addressLocality: 'Tiruppur District',
-    addressRegion: 'Tamil Nadu',
-    postalCode: '642126',
+    streetAddress: MILL.street,
+    addressLocality: MILL.locality,
+    addressRegion: MILL.region,
+    postalCode: MILL.postalCode,
     addressCountry: 'IN',
   },
   // Every official profile, so search engines can tie them to this business
