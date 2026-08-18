@@ -29,13 +29,13 @@ export function useFabAutoHide() {
     let last = window.scrollY;
     let idle;
 
-    const show = () => document.body.classList.remove('fabs-hidden');
+    const show = () => document.body.classList.remove('scrolling-down');
 
     const onScroll = () => {
       const y = window.scrollY;
       const delta = y - last;
       if (Math.abs(delta) > MOVE_THRESHOLD_PX) {
-        document.body.classList.toggle('fabs-hidden', delta > 0 && y > IGNORE_ABOVE_PX);
+        document.body.classList.toggle('scrolling-down', delta > 0 && y > IGNORE_ABOVE_PX);
         last = y;
       }
       clearTimeout(idle);

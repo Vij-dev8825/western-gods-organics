@@ -2486,6 +2486,50 @@ input:focus-visible + .filter-radio { outline: 2px solid var(--gold-2); outline-
     text-overflow: ellipsis;
     white-space: nowrap;
   }
+  /* Pinned, so it is never half-scrolled behind the phone's own browser
+     furniture — reported three times as "the sale can't show fully", and a
+     bar that renders correctly only at the very top of the page is not
+     actually showing. Sticky re-anchors it to the real viewport top whatever
+     the browser does with its toolbars.
+     Above .navbar's z-index 50 so it wins if they ever meet, and the navbar
+     parks underneath at exactly the bar's height rather than on top of it.
+
+     Gated on :has() because the navbar's offset is only correct while the bar
+     is actually on the page — SaleCountdown renders null the moment the
+     countdown expires, and a countdown does expire. Without the gate the
+     navbar would stick 42px down over a gap of bare page. Both rules sit
+     inside @supports so a browser without :has() gets today's behaviour
+     intact rather than a navbar hidden under the bar. */
+  :root { --sale-bar-h: 42px; }
+
+  @supports selector(:has(a)) {
+    .sale-countdown {
+      position: sticky; top: 0; z-index: 60;
+      transition: transform 0.2s ease;
+    }
+    body:has(.sale-countdown) .navbar {
+      top: var(--sale-bar-h);
+      transition: transform 0.2s ease;
+    }
+
+    /* It costs nothing permanent because it leaves while you are reading: the
+       same scroll state that moves the floating buttons tucks this away, and
+       the navbar rides up into the space so nothing is left hanging.
+       Both move by transform rather than by changing `top`, so they travel in
+       lockstep — shifting the navbar's `top` instead would drop it 42px the
+       instant the class cleared, flashing a gap while the bar was still
+       sliding back down. Transforms also don't affect layout, so nothing
+       below either one reflows. */
+    body.scrolling-down .sale-countdown { transform: translateY(-100%); }
+    body.scrolling-down:has(.sale-countdown) .navbar {
+      transform: translateY(calc(-1 * var(--sale-bar-h)));
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .sale-countdown, .navbar { transition: none; }
+    }
+  }
+
   /* The chips keep their stacked shape — a number above its unit is what makes
      a countdown readable at a glance, and at ~30px they were never the problem.
      Only their padding comes down. */
@@ -3064,9 +3108,9 @@ input:focus-visible + .filter-radio { outline: 2px solid var(--gold-2); outline-
   .chat-fab, .whatsapp-fab, .ai-assistant-fab {
     transition: opacity 0.18s ease, transform 0.18s ease;
   }
-  body.fabs-hidden .chat-fab,
-  body.fabs-hidden .whatsapp-fab,
-  body.fabs-hidden .ai-assistant-fab {
+  body.scrolling-down .chat-fab,
+  body.scrolling-down .whatsapp-fab,
+  body.scrolling-down .ai-assistant-fab {
     opacity: 0;
     transform: scale(0.85) translateY(10px);
     /* So a tap during the fade lands on the page, not on a ghost. */
@@ -3074,9 +3118,9 @@ input:focus-visible + .filter-radio { outline: 2px solid var(--gold-2); outline-
   }
   @media (prefers-reduced-motion: reduce) {
     .chat-fab, .whatsapp-fab, .ai-assistant-fab { transition: none; }
-    body.fabs-hidden .chat-fab,
-    body.fabs-hidden .whatsapp-fab,
-    body.fabs-hidden .ai-assistant-fab { transform: none; }
+    body.scrolling-down .chat-fab,
+    body.scrolling-down .whatsapp-fab,
+    body.scrolling-down .ai-assistant-fab { transform: none; }
   }
 }
 /* Opens further above the AI fab itself. */
