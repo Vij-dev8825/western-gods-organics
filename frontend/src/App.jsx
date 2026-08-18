@@ -20,6 +20,7 @@ import WelcomeSelector from './components/WelcomeSelector';
 import SeoMeta from './components/SeoMeta';
 import RouteFallback from './components/RouteFallback';
 import TopProgressBar from './components/TopProgressBar';
+import { useFabAutoHide } from './hooks/useFabAutoHide';
 
 // Home loads eagerly — it's where almost every first-time visitor lands, and
 // there's no point trading a request waterfall for a saving nobody sees.
@@ -131,6 +132,9 @@ function NotFound() {
 // Kept entirely separate from the admin area, which has its own shell.
 function StoreLayout() {
   const { t } = useLang();
+  // The floating buttons step aside while the page scrolls down; here rather
+  // than in each button so all three move together and there's one listener.
+  useFabAutoHide();
   return (
     <div className="app-shell">
       <SaleCountdown />

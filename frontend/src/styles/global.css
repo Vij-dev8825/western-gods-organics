@@ -3050,6 +3050,35 @@ input:focus-visible + .filter-radio { outline: 2px solid var(--gold-2); outline-
   transition: transform 0.15s ease;
 }
 .ai-assistant-fab:hover, .ai-assistant-fab:focus-visible { transform: scale(1.06); }
+
+/* The three buttons step aside while the page scrolls down — see
+   useFabAutoHide.js for why and when. Phones only: on a desktop viewport they
+   never land on top of anything, and hiding a support channel that isn't in
+   the way would only cost enquiries.
+
+   Both properties are named in one transition so this doesn't wipe out the
+   `transition: transform` the hover scale relies on — a shorthand replaces the
+   whole declaration, which is how the hover zoom nearly died on the product
+   images. Transform is still animated, opacity is simply added to it. */
+@media (max-width: 900px) {
+  .chat-fab, .whatsapp-fab, .ai-assistant-fab {
+    transition: opacity 0.18s ease, transform 0.18s ease;
+  }
+  body.fabs-hidden .chat-fab,
+  body.fabs-hidden .whatsapp-fab,
+  body.fabs-hidden .ai-assistant-fab {
+    opacity: 0;
+    transform: scale(0.85) translateY(10px);
+    /* So a tap during the fade lands on the page, not on a ghost. */
+    pointer-events: none;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .chat-fab, .whatsapp-fab, .ai-assistant-fab { transition: none; }
+    body.fabs-hidden .chat-fab,
+    body.fabs-hidden .whatsapp-fab,
+    body.fabs-hidden .ai-assistant-fab { transform: none; }
+  }
+}
 /* Opens further above the AI fab itself. */
 .ai-assistant-panel { bottom: 158px !important; }
 
