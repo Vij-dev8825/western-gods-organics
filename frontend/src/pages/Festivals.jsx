@@ -86,6 +86,16 @@ export default function Festivals() {
                 </p>
               )}
 
+              {/* Onam is the one festival on this calendar with something to
+                  do rather than only something to order. Shown off the name so
+                  it appears the moment an Onam entry exists and never needs a
+                  second switch to keep in sync. */}
+              {/onam/i.test(f.name) && (
+                <p className="festival-order">
+                  <Link to="/onam">Lay a pookalam →</Link>
+                </p>
+              )}
+
               {f.products.length > 0 && (
                 <div className="festival-products">
                   {f.products.map((p) => (

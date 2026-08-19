@@ -1560,6 +1560,11 @@ function readFestival(body, existing = {}) {
       // pricing effect — this is a reading list, not a bundle.
       productIds: Array.isArray(body.productIds) ? body.productIds.filter(Boolean).slice(0, 12) : [],
       leadDays: Math.min(Math.max(Math.round(Number(body.leadDays) || FESTIVAL_LEAD_DAYS), 0), 60),
+      // An offer code to hand out for this season, if there is one. Public by
+      // design — a coupon code is meant to be given away — but optional, so a
+      // festival with no offer simply has none rather than a fake one. Must
+      // match a real coupon; nothing here creates one.
+      couponCode: String(body.couponCode || '').trim().toUpperCase().slice(0, 24),
       active: body.active !== false,
     },
   };

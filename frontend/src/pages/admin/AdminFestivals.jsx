@@ -3,7 +3,7 @@ import { api } from '../../api';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 
-const BLANK = { name: '', date: '', note: '', productIds: [], leadDays: 5, active: true };
+const BLANK = { name: '', date: '', note: '', productIds: [], leadDays: 5, couponCode: '', active: true };
 
 const fmt = (iso) => new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
 
@@ -67,7 +67,8 @@ export default function AdminFestivals() {
     setEditingId(f.id);
     setForm({
       name: f.name, date: f.date, note: f.note || '',
-      productIds: f.productIds || [], leadDays: f.leadDays ?? 5, active: f.active !== false,
+      productIds: f.productIds || [], leadDays: f.leadDays ?? 5,
+      couponCode: f.couponCode || '', active: f.active !== false,
     });
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
@@ -122,6 +123,16 @@ export default function AdminFestivals() {
             onChange={(e) => setForm({ ...form, leadDays: e.target.value })} />
           <p className="muted" style={{ fontSize: '0.8rem', marginTop: 4 }}>
             Counted back from the festival to work out the "order by" date shown to customers.
+          </p>
+        </div>
+        <div className="field">
+          <label>Offer code for this festival (optional)</label>
+          <input type="text" maxLength={24} value={form.couponCode}
+            placeholder="e.g. ONAM10"
+            onChange={(e) => setForm({ ...form, couponCode: e.target.value.toUpperCase() })} />
+          <p className="muted" style={{ fontSize: '0.8rem', marginTop: 4 }}>
+            Must be a code you have already created under Coupons — this only hands it
+            out, it does not create it or set a discount. Leave blank if there is no offer.
           </p>
         </div>
         <div className="field">

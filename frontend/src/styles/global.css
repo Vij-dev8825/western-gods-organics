@@ -10148,3 +10148,125 @@ body.has-cookie-bar .install-prompt { bottom: calc(var(--cookie-bar-height, 0px)
     animation: none !important;
   }
 }
+
+/* ---------------------------------------------------------------------------
+ * Pookalam — the Onam flower carpet at /onam
+ *
+ * Petals are SVG paths, so all the sizing is handled by the viewBox and the
+ * only job here is colour, touch targets and the settling animation. The
+ * carpet is capped rather than fluid: past about 420px the petals get large
+ * enough that the whole thing stops reading as a flower carpet.
+ * ------------------------------------------------------------------------ */
+.pookalam-wrap {
+  max-width: 420px;
+  margin: 18px auto 14px;
+  /* Placing petals is a drag gesture, so the browser must not claim it for
+     scrolling — without this, dragging across the carpet on a phone scrolls
+     the page and lays nothing. */
+  touch-action: none;
+}
+
+.pookalam {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.pookalam-ground {
+  fill: rgba(0, 0, 0, 0.035);
+}
+
+.pookalam-petal {
+  fill: rgba(0, 0, 0, 0.06);
+  stroke: rgba(255, 255, 255, 0.5);
+  stroke-width: 0.3;
+  cursor: pointer;
+  transition: fill 0.18s ease;
+}
+
+.pookalam-petal:hover {
+  fill: rgba(0, 0, 0, 0.12);
+}
+
+/* Each petal settles as it is laid, the way a real one is dropped into place.
+   Scoped to the petal's own origin so it grows outward from the centre. */
+.pookalam-petal.is-laid {
+  animation: pookalam-settle 0.32s cubic-bezier(0.32, 0.72, 0, 1);
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+@keyframes pookalam-settle {
+  from { opacity: 0.25; }
+  to { opacity: 1; }
+}
+
+.pookalam-lamp {
+  fill: var(--gold, #C9A227);
+  pointer-events: none;
+}
+
+.pookalam-palette {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: 6px;
+}
+
+.pookalam-swatch {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: 2px solid rgba(0, 0, 0, 0.12);
+  cursor: pointer;
+  padding: 0;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.pookalam-swatch:hover { transform: scale(1.08); }
+
+.pookalam-swatch.is-active {
+  transform: scale(1.14);
+  box-shadow: 0 0 0 2px var(--bg, #fff), 0 0 0 4px var(--gold, #C9A227);
+}
+
+.pookalam-done {
+  margin-top: 20px;
+  animation: pookalam-bloom 0.5s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+@keyframes pookalam-bloom {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: none; }
+}
+
+.pookalam-code {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 1.5rem;
+  letter-spacing: 0.12em;
+  font-weight: 700;
+  padding: 10px 22px;
+  border: 2px dashed var(--gold, #C9A227);
+  border-radius: 10px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+/* The user's own phone had Reduce Motion on, which is exactly the case that
+   matters: the carpet must still be layable, just without anything moving. */
+@media (prefers-reduced-motion: reduce) {
+  .pookalam-petal.is-laid,
+  .pookalam-done {
+    animation: none;
+  }
+  .pookalam-petal,
+  .pookalam-swatch {
+    transition: none;
+  }
+  .pookalam-swatch:hover,
+  .pookalam-swatch.is-active {
+    transform: none;
+  }
+}

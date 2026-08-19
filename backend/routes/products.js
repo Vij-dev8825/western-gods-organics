@@ -426,6 +426,58 @@ async function getRecentOrderCount(productId) {
   ).length;
 }
 
+// Everything with a fixed path must be declared above the /:id route below.
+// Express matches in declaration order and /:id swallows any single-segment
+// path, so a fixed route registered after it is unreachable — which is what
+// happened to this one: /api/products/festivals answered "Product not found"
+// and the festival calendar rendered empty no matter what the admin entered.
+// (/pressings/open survived only by having two segments.)
+/**
+ * GET /api/products/festivals — the season ahead, public.
+ *
+ * Products are resolved here rather than on the client so the page can't show
+ * something delisted or out of stock as a festival recommendation.
+ */
+router.get('/festivals', async (req, res, next) => {
+  try {
+    const [festivals, products] = await Promise.all([listUpcomingFestivals(), db.list('products')]);
+    const byId = Object.fromEntries(products.map((p) => [p.id, p]));
+    res.json({
+      success: true,
+      festivals: festivals.map((f) => ({
+        id: f.id,
+        name: f.name,
+        date: f.date,
+        note: f.note,
+        daysAway: f.daysAway,
+        orderBy: f.orderBy,
+        orderingClosed: f.orderingClosed,
+        // Public on purpose. A coupon code is meant to be handed out, and the
+        // pookalam at /onam is a celebration rather than a lock — anyone who
+        // opens the network tab can read this without laying a petal, exactly
+        // as they could on any play-for-a-code promotion. Guarding it would
+        // mean a per-session token flow protecting something that ends up on
+        // coupon sites the first time one person shares it. The real limits
+        // on an offer are the ones set on the coupon itself: expiry, minimum
+        // order, per-customer use.
+        couponCode: f.couponCode || '',
+        products: (f.productIds || [])
+          .map((id) => byId[id])
+          .filter(Boolean)
+          .map((p) => ({
+            id: p.id,
+            name: p.name,
+            image: p.image,
+            price: (p.sizes || [])[0]?.price ?? null,
+            inStock: (p.sizes || []).some((s) => (Number(s.stock) || 0) > 0),
+          })),
+      })),
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
 // GET /api/products/:id
 router.get('/:id', optionalAuth, async (req, res, next) => {
   try {
@@ -584,43 +636,6 @@ router.post('/:id/questions', requireAuth, async (req, res, next) => {
     }
 
     res.status(201).json({ success: true, question: record });
-  } catch (err) {
-    next(err);
-  }
-});
-
-/**
- * GET /api/products/festivals — the season ahead, public.
- *
- * Products are resolved here rather than on the client so the page can't show
- * something delisted or out of stock as a festival recommendation.
- */
-router.get('/festivals', async (req, res, next) => {
-  try {
-    const [festivals, products] = await Promise.all([listUpcomingFestivals(), db.list('products')]);
-    const byId = Object.fromEntries(products.map((p) => [p.id, p]));
-    res.json({
-      success: true,
-      festivals: festivals.map((f) => ({
-        id: f.id,
-        name: f.name,
-        date: f.date,
-        note: f.note,
-        daysAway: f.daysAway,
-        orderBy: f.orderBy,
-        orderingClosed: f.orderingClosed,
-        products: (f.productIds || [])
-          .map((id) => byId[id])
-          .filter(Boolean)
-          .map((p) => ({
-            id: p.id,
-            name: p.name,
-            image: p.image,
-            price: (p.sizes || [])[0]?.price ?? null,
-            inStock: (p.sizes || []).some((s) => (Number(s.stock) || 0) > 0),
-          })),
-      })),
-    });
   } catch (err) {
     next(err);
   }
