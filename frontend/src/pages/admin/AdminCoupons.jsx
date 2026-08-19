@@ -13,6 +13,8 @@ const EMPTY = {
   promoImage: '',
   promoHeadline: '',
   promoSubtext: '',
+  promoLink: '',
+  promoCta: '',
 };
 
 export default function AdminCoupons() {
@@ -42,6 +44,8 @@ export default function AdminCoupons() {
         promoImage: form.promoImage,
         promoHeadline: form.promoHeadline,
         promoSubtext: form.promoSubtext,
+        promoLink: form.promoLink,
+        promoCta: form.promoCta,
       });
       setForm(EMPTY);
       setMessage({ type: 'success', text: 'Coupon created.' });
@@ -165,6 +169,27 @@ export default function AdminCoupons() {
                 value={form.promoSubtext}
                 onChange={(e) => setForm({ ...form, promoSubtext: e.target.value })}
                 placeholder="e.g. Don't miss out — this deal ends soon!"
+              />
+            </div>
+            <div className="field">
+              <label>Button goes to (optional)</label>
+              <input
+                value={form.promoLink}
+                onChange={(e) => setForm({ ...form, promoLink: e.target.value })}
+                placeholder="e.g. /onam"
+              />
+              <p className="muted" style={{ fontSize: '0.8rem', marginTop: 4 }}>
+                A page on this site, starting with a slash — /onam for the pookalam,
+                /shop, /gifting. Leave blank for no button.
+              </p>
+            </div>
+            <div className="field">
+              <label>Button says (optional)</label>
+              <input
+                value={form.promoCta}
+                onChange={(e) => setForm({ ...form, promoCta: e.target.value })}
+                placeholder="e.g. Lay a pookalam"
+                maxLength={40}
               />
             </div>
           </div>

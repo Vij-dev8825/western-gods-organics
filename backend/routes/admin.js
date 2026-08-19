@@ -983,6 +983,17 @@ router.post('/coupons', async (req, res, next) => {
       promoImage: req.body.promoImage || '',
       promoHeadline: req.body.promoHeadline || '',
       promoSubtext: req.body.promoSubtext || '',
+      // Where the popup's button sends a shopper — e.g. /onam for the pookalam.
+      // Deliberately restricted to a path on this site: a popup that can point
+      // anywhere is a phishing surface, and every page worth sending someone
+      // to from here is our own. Anything not starting with a single / is
+      // dropped rather than saved half-valid.
+      promoLink: /^\/[^/]/.test(String(req.body.promoLink || '').trim())
+        ? String(req.body.promoLink).trim().slice(0, 200)
+        : '',
+      // Label for that button. Without one it reads "Take me there", which
+      // tells a shopper nothing about what is on the other side.
+      promoCta: String(req.body.promoCta || '').trim().slice(0, 40),
       createdAt: new Date().toISOString(),
     };
     await db.put('coupons', coupon);

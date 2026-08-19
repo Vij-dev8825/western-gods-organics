@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { api } from '../api';
 import { getProductImage } from '../utils/productImages';
 
@@ -83,6 +84,21 @@ export default function PromoPopup() {
             {coupon.code}
             <span className="promo-popup-copy-hint">{copied ? 'Copied!' : 'Tap to copy'}</span>
           </button>
+
+          {/* Somewhere to go with the code. Copying it and then closing onto the
+              homepage leaves a shopper holding a code and no next step; when an
+              admin has set a destination this gives them one. Copies on the way
+              through so the code is on the clipboard when they land. */}
+          {coupon.promoLink && (
+            <Link
+              className="btn btn-gold promo-popup-cta"
+              to={coupon.promoLink}
+              onClick={() => { copyCode(); dismiss(); }}
+            >
+              {coupon.promoCta || 'Take me there'}
+            </Link>
+          )}
+
           <button className="btn btn-outline btn-sm" onClick={dismiss} style={{ marginTop: 16 }}>
             No thanks
           </button>

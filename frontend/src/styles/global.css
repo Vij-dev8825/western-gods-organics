@@ -10270,3 +10270,11 @@ body.has-cookie-bar .install-prompt { bottom: calc(var(--cookie-bar-height, 0px)
     transform: none;
   }
 }
+
+/* The promo popup's "go here" button. Sits under the code, above "No thanks",
+ * so the order down the card is: what you get, the code, where to use it. */
+.promo-popup-cta {
+  display: inline-block;
+  margin-top: 14px;
+  text-decoration: none;
+}

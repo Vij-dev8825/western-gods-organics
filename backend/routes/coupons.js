@@ -26,6 +26,15 @@ router.get('/featured', async (req, res, next) => {
         promoImage: coupon.promoImage || '',
         promoHeadline: coupon.promoHeadline || '',
         promoSubtext: coupon.promoSubtext || '',
+        // Re-checked here rather than trusted from storage. PATCH /admin/coupons
+        // spreads its body wholesale, so a value that never passed the check on
+        // create can still land in the record — and this one ends up in an href.
+        // A path on this site only: no scheme, no //host, nothing to smuggle a
+        // javascript: or an off-site redirect through.
+        promoLink: /^\/[^/]/.test(String(coupon.promoLink || '').trim())
+          ? String(coupon.promoLink).trim()
+          : '',
+        promoCta: coupon.promoCta || '',
       },
     });
   } catch (err) {
