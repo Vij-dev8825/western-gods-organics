@@ -10173,7 +10173,44 @@ body.has-cookie-bar .install-prompt { bottom: calc(var(--cookie-bar-height, 0px)
 }
 
 .pookalam-ground {
-  fill: rgba(0, 0, 0, 0.035);
+  fill: rgba(0, 0, 0, 0.045);
+}
+
+/* The mirror control and the row of actions under the palette. */
+.pookalam-folds {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+
+.pookalam-fold {
+  border: 1px solid rgba(0, 0, 0, 0.16);
+  background: transparent;
+  color: inherit;
+  border-radius: 999px;
+  padding: 5px 13px;
+  font-size: 0.82rem;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.pookalam-fold:hover { border-color: var(--gold, #C9A227); }
+
+.pookalam-fold.is-active {
+  background: var(--gold, #C9A227);
+  border-color: var(--gold, #C9A227);
+  color: #1c1206;
+  font-weight: 600;
+}
+
+.pookalam-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  flex-wrap: wrap;
 }
 
 .pookalam-petal {
@@ -10262,7 +10299,8 @@ body.has-cookie-bar .install-prompt { bottom: calc(var(--cookie-bar-height, 0px)
     animation: none;
   }
   .pookalam-petal,
-  .pookalam-swatch {
+  .pookalam-swatch,
+  .pookalam-fold {
     transition: none;
   }
   .pookalam-swatch:hover,
