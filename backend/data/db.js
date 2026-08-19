@@ -62,6 +62,7 @@ const COLLECTIONS = [
   'trade-prospects',
   'audit-log',
   'client-errors',
+  'shop-health',
 ];
 
 let mode = 'json';

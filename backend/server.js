@@ -28,6 +28,7 @@ const { processDueSubscriptions } = require('./utils/subscriptions');
 const { processAbandonedCarts } = require('./utils/abandonedCarts');
 const { processReorderNudges } = require('./utils/reorderNudges');
 const { processReviewRequests } = require('./utils/reviewRequests');
+const { checkShopHealth } = require('./utils/shopHealth');
 const { processDeliveryUnboxingNudges } = require('./utils/deliveryUnboxingNudge');
 const feedbackRoutes = require('./routes/feedback');
 const whatsappBaileys = require('./utils/whatsappBaileys');
@@ -252,6 +253,15 @@ const PORT = process.env.PORT || 5000;
     setInterval(() => {
       processReviewRequests().catch((err) => console.error('processReviewRequests failed:', err));
     }, 24 * 60 * 60 * 1000);
+
+    // Hourly, because the failures it looks for are the quiet ones — every
+    // size out of stock, both payment methods off, Razorpay keys missing. The
+    // shop keeps loading perfectly while none of it can take money, and the
+    // only other symptom is an absence of orders.
+    checkShopHealth().catch((err) => console.error('checkShopHealth failed:', err));
+    setInterval(() => {
+      checkShopHealth().catch((err) => console.error('checkShopHealth failed:', err));
+    }, 60 * 60 * 1000);
   } catch (err) {
     console.error('Failed to start:', err);
     process.exit(1);
