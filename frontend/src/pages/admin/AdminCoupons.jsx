@@ -21,6 +21,7 @@ export default function AdminCoupons() {
   const { token } = useAuth();
   const [coupons, setCoupons] = useState([]);
   const [form, setForm] = useState(EMPTY);
+  const [editing, setEditing] = useState(null); // the coupon being edited, or null to create
   const [message, setMessage] = useState(null);
   const [busy, setBusy] = useState(false);
 
@@ -29,32 +30,73 @@ export default function AdminCoupons() {
   }
   useEffect(load, [token]);
 
-  async function add(e) {
+  const isExpired = (c) => !!c.expiresAt && new Date(c.expiresAt) < new Date();
+
+  /* Which featured coupon the site will actually put in the popup. Same rule as
+     GET /api/coupons/featured — first one that is featured, enabled and not
+     past its date. Worked out here so the table can say so, rather than leaving
+     an admin to guess which of several "Featured" pills is the live one. */
+  const liveFeaturedId = coupons.find((c) => c.featured && c.active && !isExpired(c))?.id || null;
+
+  async function save(e) {
     e.preventDefault();
     setBusy(true);
     setMessage(null);
+    const payload = {
+      code: form.code,
+      type: form.type,
+      value: Number(form.value),
+      minOrder: Number(form.minOrder) || 0,
+      expiresAt: form.expiresAt ? new Date(form.expiresAt).toISOString() : null,
+      featured: form.featured,
+      promoImage: form.promoImage,
+      promoHeadline: form.promoHeadline,
+      promoSubtext: form.promoSubtext,
+      promoLink: form.promoLink,
+      promoCta: form.promoCta,
+    };
     try {
-      await api.admin.createCoupon(token, {
-        code: form.code,
-        type: form.type,
-        value: Number(form.value),
-        minOrder: Number(form.minOrder) || 0,
-        expiresAt: form.expiresAt ? new Date(form.expiresAt).toISOString() : null,
-        featured: form.featured,
-        promoImage: form.promoImage,
-        promoHeadline: form.promoHeadline,
-        promoSubtext: form.promoSubtext,
-        promoLink: form.promoLink,
-        promoCta: form.promoCta,
-      });
-      setForm(EMPTY);
-      setMessage({ type: 'success', text: 'Coupon created.' });
+      if (editing) {
+        await api.admin.updateCoupon(token, editing.id, payload);
+        setMessage({ type: 'success', text: `${form.code} updated.` });
+      } else {
+        await api.admin.createCoupon(token, payload);
+        setMessage({ type: 'success', text: 'Coupon created.' });
+      }
+      cancelEdit();
       load();
     } catch (err) {
       setMessage({ type: 'error', text: err.message });
     } finally {
       setBusy(false);
     }
+  }
+
+  /** Loads a coupon into the form. The date input wants YYYY-MM-DD, so the
+   *  stored ISO timestamp is cut at the T rather than run back through a Date
+   *  — going via local time can land the picker on the previous day. */
+  function startEdit(c) {
+    setEditing(c);
+    setForm({
+      code: c.code || '',
+      type: c.type || 'percent',
+      value: c.value ?? '',
+      minOrder: c.minOrder ?? '',
+      expiresAt: c.expiresAt ? String(c.expiresAt).slice(0, 10) : '',
+      featured: !!c.featured,
+      promoImage: c.promoImage || '',
+      promoHeadline: c.promoHeadline || '',
+      promoSubtext: c.promoSubtext || '',
+      promoLink: c.promoLink || '',
+      promoCta: c.promoCta || '',
+    });
+    setMessage(null);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function cancelEdit() {
+    setEditing(null);
+    setForm(EMPTY);
   }
 
   async function toggleActive(c) {
@@ -93,8 +135,14 @@ export default function AdminCoupons() {
 
       {message && <div className={`alert alert-${message.type}`}>{message.text}</div>}
 
-      <form className="admin-card" onSubmit={add}>
-        <h3>New coupon</h3>
+      <form className="admin-card" onSubmit={save}>
+        <h3>{editing ? `Editing ${editing.code}` : 'New coupon'}</h3>
+        {editing && (
+          <p className="muted" style={{ fontSize: '0.85rem', marginTop: -6 }}>
+            Changing the code stops the old one working — anyone already holding it,
+            and any festival handing it out, will need the new one.
+          </p>
+        )}
         <div className="form-grid">
           <div className="field">
             <label>Code</label>
@@ -154,6 +202,7 @@ export default function AdminCoupons() {
               value={form.promoImage}
               onChange={(url) => setForm({ ...form, promoImage: url })}
               label="Popup image (optional)"
+              allowClear
             />
             <div className="field">
               <label>Popup headline (optional)</label>
@@ -195,12 +244,22 @@ export default function AdminCoupons() {
           </div>
         )}
 
-        <button className="btn btn-gold btn-sm" disabled={busy}>{busy ? 'Saving…' : '+ Add coupon'}</button>
+        <div className="flex gap-1" style={{ alignItems: 'center' }}>
+          <button className="btn btn-gold btn-sm" disabled={busy}>
+            {busy ? 'Saving…' : editing ? 'Save changes' : '+ Add coupon'}
+          </button>
+          {editing && (
+            <button type="button" className="btn btn-outline btn-sm" onClick={cancelEdit} disabled={busy}>
+              Cancel
+            </button>
+          )}
+        </div>
       </form>
 
       <p className="muted" style={{ fontSize: '0.85rem' }}>
-        Only one featured coupon is shown at a time — mark the one you want advertised in the
-        homepage popup. If several are marked, the first active one found is used.
+        Only one featured coupon appears in the homepage popup. If several are marked, the
+        site uses the first one that is still enabled and in date — that one shows as
+        <b> Showing now</b> below, and any other featured coupon shows as <b>Not shown</b>.
       </p>
 
       <div className="admin-card">
@@ -219,14 +278,23 @@ export default function AdminCoupons() {
                 <td>{c.minOrder ? `₹${c.minOrder}` : '—'}</td>
                 <td>{c.expiresAt ? new Date(c.expiresAt).toLocaleDateString('en-IN') : 'Never'}</td>
                 <td>
-                  <span className={`pill status-${c.active ? 'placed' : 'cancelled'}`}>
-                    {c.active ? 'Active' : 'Disabled'}
+                  <span className={`pill status-${!c.active || isExpired(c) ? 'cancelled' : 'placed'}`}>
+                    {!c.active ? 'Disabled' : isExpired(c) ? 'Expired' : 'Active'}
                   </span>
                 </td>
                 <td>
-                  {c.featured ? <span className="pill status-placed">Featured</span> : <span className="muted">—</span>}
+                  {!c.featured ? (
+                    <span className="muted">—</span>
+                  ) : c.id === liveFeaturedId ? (
+                    <span className="pill status-placed">Showing now</span>
+                  ) : (
+                    <span className="pill status-cancelled" title="Marked featured, but not the one on the site">
+                      Not shown
+                    </span>
+                  )}
                 </td>
                 <td>
+                  <button className="link-btn" onClick={() => startEdit(c)}>edit</button>{' '}
                   <button className="link-btn" onClick={() => toggleActive(c)}>
                     {c.active ? 'disable' : 'enable'}
                   </button>{' '}

@@ -7,8 +7,13 @@ const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 const MAX_SIZE_MB = 10;
 
 /** File-upload field for a product/category image — uploads immediately on
- * selection and reports the resulting URL back via onChange. */
-export default function ImageUploadField({ value, onChange, label = 'Image' }) {
+ * selection and reports the resulting URL back via onChange.
+ *
+ * allowClear adds a Remove link. Opt-in rather than always on, because most
+ * places using this field want a picture and offering to delete it there is
+ * only a way to end up with a product showing a blank square. It is on for
+ * things where "no image" is a real answer, like the promo popup. */
+export default function ImageUploadField({ value, onChange, label = 'Image', allowClear = false }) {
   const { token } = useAuth();
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState('');
@@ -54,6 +59,15 @@ export default function ImageUploadField({ value, onChange, label = 'Image' }) {
             hidden
           />
         </label>
+        {allowClear && value && (
+          <button
+            type="button"
+            className="link-btn danger"
+            onClick={() => { setError(''); onChange(''); }}
+          >
+            Remove
+          </button>
+        )}
       </div>
       {error && <div className="field-error">{error}</div>}
     </div>

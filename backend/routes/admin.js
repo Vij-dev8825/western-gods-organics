@@ -1003,14 +1003,64 @@ router.post('/coupons', async (req, res, next) => {
   }
 });
 
-// PATCH /api/admin/coupons/:id  (e.g. { active: false })
+/**
+ * PATCH /api/admin/coupons/:id — edit a coupon, or flip one switch on it.
+ *
+ * Partial by design: the enable/disable and feature/unfeature links each send
+ * a single key, and the edit form sends the lot. Only listed fields are read,
+ * so a stray key in the body can no longer write itself into the record — this
+ * used to spread req.body wholesale, which let a value that would have been
+ * rejected on create arrive here unchecked.
+ *
+ * The discount is re-validated as a pair after merging, not field by field:
+ * switching a ₹500-flat coupon to percentage has to fail, and it only looks
+ * wrong once you see the new type next to the old value.
+ */
 router.patch('/coupons/:id', async (req, res, next) => {
   try {
     const existing = await db.get('coupons', req.params.id);
     if (!existing) return res.status(404).json({ success: false, message: 'Coupon not found.' });
-    const coupon = { ...existing, ...req.body, id: existing.id, code: existing.code };
-    await db.put('coupons', coupon);
-    res.json({ success: true, coupon });
+
+    const body = req.body || {};
+    const has = (k) => Object.prototype.hasOwnProperty.call(body, k);
+    const next_ = { ...existing };
+
+    if (has('code')) {
+      const code = String(body.code || '').trim().toUpperCase();
+      if (!code) return res.status(400).json({ success: false, message: 'Coupon code is required.' });
+      if (code !== existing.code) {
+        const clash = (await db.list('coupons')).some((c) => c.code === code && c.id !== existing.id);
+        if (clash) return res.status(409).json({ success: false, message: `Coupon "${code}" already exists.` });
+      }
+      next_.code = code;
+    }
+
+    if (has('type')) next_.type = body.type === 'flat' ? 'flat' : 'percent';
+    if (has('value')) next_.value = Number(body.value);
+    if (has('minOrder')) next_.minOrder = Math.max(0, Number(body.minOrder) || 0);
+    if (has('expiresAt')) next_.expiresAt = body.expiresAt || null;
+    if (has('active')) next_.active = !!body.active;
+    if (has('featured')) next_.featured = !!body.featured;
+    if (has('promoImage')) next_.promoImage = String(body.promoImage || '');
+    if (has('promoHeadline')) next_.promoHeadline = String(body.promoHeadline || '');
+    if (has('promoSubtext')) next_.promoSubtext = String(body.promoSubtext || '');
+    if (has('promoCta')) next_.promoCta = String(body.promoCta || '').trim().slice(0, 40);
+    if (has('promoLink')) {
+      // Same rule as on create: a path on this site or nothing. See the note
+      // there — this value ends up in an href.
+      const link = String(body.promoLink || '').trim();
+      next_.promoLink = /^\/[^/]/.test(link) ? link.slice(0, 200) : '';
+    }
+
+    if (!next_.value || next_.value <= 0) {
+      return res.status(400).json({ success: false, message: 'Discount value must be greater than 0.' });
+    }
+    if (next_.type === 'percent' && next_.value > 100) {
+      return res.status(400).json({ success: false, message: "Percentage discount can't exceed 100." });
+    }
+
+    await db.put('coupons', { ...next_, id: existing.id });
+    res.json({ success: true, coupon: next_ });
   } catch (err) {
     next(err);
   }
