@@ -228,8 +228,9 @@ export default function AdminCoupons() {
                 placeholder="e.g. /onam"
               />
               <p className="muted" style={{ fontSize: '0.8rem', marginTop: 4 }}>
-                A page on this site, starting with a slash — /onam for the pookalam,
-                /shop, /gifting. Leave blank for no button.
+                A page on this site — <b>/onam</b> for the pookalam, or /shop, /gifting.
+                Pasting the full address works too. <b>Leave this blank and no button
+                appears</b>, however you fill in the label below.
               </p>
             </div>
             <div className="field">

@@ -956,6 +956,38 @@ router.get('/coupons', async (req, res, next) => {
   }
 });
 
+/**
+ * Works out where a promo popup's button should point, or says why it can't.
+ *
+ * The first version of this quietly blanked anything it did not like, which
+ * meant typing "onam" instead of "/onam" lost the link with no complaint and
+ * no button on the site — a saved form that silently dropped a field. So it
+ * now fixes up the two things people actually type (a bare page name, and the
+ * site's own full URL pasted from the address bar) and returns an error for
+ * anything genuinely off-site rather than swallowing it.
+ *
+ * Blank stays blank: no button is a real choice, not a mistake.
+ */
+function normalisePromoLink(raw) {
+  const v = String(raw || '').trim();
+  if (!v) return { link: '' };
+
+  let candidate = v;
+  const own = /^https?:\/\/(?:www\.)?westerngodsorganic\.com(\/.*)?$/i.exec(v);
+  if (own) candidate = own[1] || '/';
+  else if (!v.startsWith('/') && /^[a-z0-9][a-z0-9\-/]*$/i.test(v)) candidate = '/' + v;
+
+  // Must end up a path on this site with something after the slash. Bare "/"
+  // is rejected too — a button from the homepage popup back to the homepage
+  // is not a destination.
+  if (!/^\/[^/]/.test(candidate)) {
+    return {
+      error: `"${v}" is not a page on this site. Use a path like /onam or /shop, or leave it blank for no button.`,
+    };
+  }
+  return { link: candidate.slice(0, 200) };
+}
+
 // POST /api/admin/coupons  { code, type: 'percent'|'flat', value, minOrder?, expiresAt? }
 router.post('/coupons', async (req, res, next) => {
   try {
@@ -970,6 +1002,9 @@ router.post('/coupons', async (req, res, next) => {
     if (coupons.some((c) => c.code === code)) {
       return res.status(409).json({ success: false, message: `Coupon "${code}" already exists.` });
     }
+
+    const promoLink = normalisePromoLink(req.body.promoLink);
+    if (promoLink.error) return res.status(400).json({ success: false, message: promoLink.error });
 
     const coupon = {
       id: uuid(),
@@ -988,9 +1023,7 @@ router.post('/coupons', async (req, res, next) => {
       // anywhere is a phishing surface, and every page worth sending someone
       // to from here is our own. Anything not starting with a single / is
       // dropped rather than saved half-valid.
-      promoLink: /^\/[^/]/.test(String(req.body.promoLink || '').trim())
-        ? String(req.body.promoLink).trim().slice(0, 200)
-        : '',
+      promoLink: promoLink.link,
       // Label for that button. Without one it reads "Take me there", which
       // tells a shopper nothing about what is on the other side.
       promoCta: String(req.body.promoCta || '').trim().slice(0, 40),
@@ -1046,10 +1079,9 @@ router.patch('/coupons/:id', async (req, res, next) => {
     if (has('promoSubtext')) next_.promoSubtext = String(body.promoSubtext || '');
     if (has('promoCta')) next_.promoCta = String(body.promoCta || '').trim().slice(0, 40);
     if (has('promoLink')) {
-      // Same rule as on create: a path on this site or nothing. See the note
-      // there — this value ends up in an href.
-      const link = String(body.promoLink || '').trim();
-      next_.promoLink = /^\/[^/]/.test(link) ? link.slice(0, 200) : '';
+      const link = normalisePromoLink(body.promoLink);
+      if (link.error) return res.status(400).json({ success: false, message: link.error });
+      next_.promoLink = link.link;
     }
 
     if (!next_.value || next_.value <= 0) {
