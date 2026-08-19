@@ -32,9 +32,26 @@ function when(iso) {
   return d.toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' });
 }
 
+/** Shortens a browser string to the part that identifies the device, which is
+ *  the part that matters when a fault turns out to be one version of one
+ *  browser missing an API. */
+function device(ua) {
+  if (!ua) return '—';
+  const os = ua.match(/iPhone OS (\d+[._]\d+)|Android (\d+)|Windows NT ([\d.]+)|Mac OS X (\d+[._]\d+)/);
+  const br = ua.match(/(Chrome|CriOS|Firefox|Edg|Version)\/(\d+)/);
+  const osName = os
+    ? os[1] ? `iOS ${os[1].replace('_', '.')}`
+      : os[2] ? `Android ${os[2]}`
+      : os[3] ? 'Windows' : `macOS ${String(os[4]).replace('_', '.')}`
+    : '';
+  const brName = br ? `${br[1] === 'Version' ? 'Safari' : br[1] === 'CriOS' ? 'Chrome' : br[1]} ${br[2]}` : '';
+  return [osName, brName].filter(Boolean).join(' · ') || ua.slice(0, 40);
+}
+
 export default function AdminAudit() {
   const { token } = useAuth();
   const [entries, setEntries] = useState(null);
+  const [errors, setErrors] = useState(null);
   const [error, setError] = useState('');
   const [open, setOpen] = useState(null);
 
@@ -43,12 +60,68 @@ export default function AdminAudit() {
       .auditLog(token)
       .then((d) => setEntries(d.entries || []))
       .catch((err) => setError(err.message));
+    api.admin
+      .clientErrors(token)
+      .then((d) => setErrors(d.errors || []))
+      .catch(() => setErrors([])); // never let this hide the activity log
   }, [token]);
 
   if (error) return <div className="alert alert-error">{error}</div>;
 
   return (
     <div>
+      <div className="section-head">
+        <div>
+          <span className="eyebrow">Health</span>
+          <h2>What broke for customers</h2>
+        </div>
+      </div>
+      <p className="muted" style={{ marginTop: -8, maxWidth: '64ch' }}>
+        Script errors caught in real browsers, grouped so the same fault is one
+        row however often it happens. An empty table is the good outcome.
+      </p>
+
+      {!errors && <p className="muted">Loading…</p>}
+      {errors && errors.length === 0 && (
+        <p className="muted">
+          Nothing reported. This only sees faults that happen after it was
+          switched on, so it will read empty until something actually breaks.
+        </p>
+      )}
+      {errors && errors.length > 0 && (
+        <div style={{ overflowX: 'auto', marginBottom: 32 }}>
+          <table className="admin-table">
+            <thead>
+              <tr>
+                <th>Last seen</th>
+                <th>Error</th>
+                <th>Page</th>
+                <th>Device</th>
+                <th>Times</th>
+              </tr>
+            </thead>
+            <tbody>
+              {errors.map((e) => (
+                <tr key={e.id}>
+                  <td style={{ whiteSpace: 'nowrap' }}>{when(e.lastSeen)}</td>
+                  <td style={{ maxWidth: 380 }}>
+                    <div>{e.message}</div>
+                    {e.source && (
+                      <div className="muted" style={{ fontSize: '0.75rem' }}>
+                        {e.source}{e.line ? `:${e.line}` : ''}
+                      </div>
+                    )}
+                  </td>
+                  <td className="muted">{e.path || '—'}</td>
+                  <td className="muted" style={{ fontSize: '0.8rem' }}>{device(e.userAgent)}</td>
+                  <td style={{ fontVariantNumeric: 'tabular-nums' }}>{e.count}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
       <div className="section-head">
         <div>
           <span className="eyebrow">Records</span>

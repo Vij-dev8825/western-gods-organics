@@ -51,6 +51,7 @@ const { cancelGiftCard } = require('../utils/giftCards');
 const { generateUniqueAffiliateCode, getCommissionSummary, recordPayout, creditCommissionForOrder, reverseCommissionForOrder } = require('../utils/affiliates');
 const { getSummary: getSellerSummary, recordPayout: recordSellerPayout, creditSellerEarningsForOrder, reverseSellerEarningsForOrder } = require('../utils/sellers');
 const { auditAdminMutations, listAuditLog } = require('../utils/auditLog');
+const { listClientErrors } = require('../utils/clientErrors');
 
 /** Undoes everything a delivery credited — the customer's points, the
  * referring affiliate's commission and each seller's share — when that sale
@@ -1593,6 +1594,16 @@ router.delete('/festivals/:id', async (req, res, next) => {
   try {
     await db.del('festivals', req.params.id);
     res.json({ success: true });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET /api/admin/client-errors — what broke in customers' browsers.
+router.get('/client-errors', async (req, res, next) => {
+  try {
+    const errors = await listClientErrors({ limit: req.query.limit });
+    res.json({ success: true, count: errors.length, errors });
   } catch (err) {
     next(err);
   }

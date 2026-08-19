@@ -9,6 +9,11 @@ import { WishlistProvider } from './context/WishlistContext';
 import { ToastProvider } from './context/ToastContext';
 import { CurrencyProvider } from './context/CurrencyContext';
 import { LanguageProvider } from './i18n';
+import { installErrorReporter } from './utils/errorReporter';
+
+// Before anything renders, so a crash during startup is still reported —
+// which is exactly the crash you would otherwise never hear about.
+installErrorReporter();
 
 // Registered unconditionally (not just when a customer opts into push, see
 // utils/pushNotifications.js) so the installability criteria for "Add to

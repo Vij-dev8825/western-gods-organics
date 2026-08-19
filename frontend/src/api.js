@@ -313,6 +313,7 @@ export const api = {
 
     procurement: (token) => request('/admin/procurement', { token }),
     auditLog: (token, limit) => request(`/admin/audit-log${limit ? `?limit=${limit}` : ''}`, { token }),
+    clientErrors: (token, limit) => request(`/admin/client-errors${limit ? `?limit=${limit}` : ''}`, { token }),
 
     listProspects: (token) => request('/admin/trade-prospects', { token }),
     createProspect: (token, body) => request('/admin/trade-prospects', { method: 'POST', body, token }),

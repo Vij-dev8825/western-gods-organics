@@ -32,6 +32,7 @@ const { processDeliveryUnboxingNudges } = require('./utils/deliveryUnboxingNudge
 const feedbackRoutes = require('./routes/feedback');
 const whatsappBaileys = require('./utils/whatsappBaileys');
 const mediaRoutes = require('./routes/media');
+const clientErrorRoutes = require('./routes/clientErrors');
 const catalogRoutes = require('./routes/catalog');
 const botMeta = require('./utils/botMeta');
 const blogRoutes = require('./routes/blog');
@@ -113,6 +114,7 @@ app.use('/api/subscriptions', subscriptionRoutes);
 app.use('/api/loyalty', loyaltyRoutes);
 app.use('/api/impact', impactRoutes);
 app.use('/api/media', mediaRoutes);
+app.use('/api/client-errors', clientErrorRoutes);
 app.use('/api/catalog', catalogRoutes);
 app.use('/api/blog', blogRoutes);
 app.use('/api/page-banners', pageBannerRoutes);

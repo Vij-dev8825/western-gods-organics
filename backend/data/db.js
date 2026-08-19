@@ -61,6 +61,7 @@ const COLLECTIONS = [
   'festivals',
   'trade-prospects',
   'audit-log',
+  'client-errors',
 ];
 
 let mode = 'json';
