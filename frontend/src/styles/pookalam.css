@@ -1,0 +1,1460 @@
+/* ===========================================================================
+ * Pookalam — the Onam flower game at /onam
+ *
+ * This page wears a festival costume instead of the shop's green: warm paper,
+ * ochre rules, terracotta buttons, serif display type, and every control
+ * docked in a tabbed tray under the mat. Every token lives on `.onam` rather
+ * than :root, so one page changes clothes without the storefront or the admin
+ * panel noticing.
+ *
+ * Kept out of global.css deliberately. It is a thousand lines serving exactly
+ * one route, and because that route is lazy-loaded, importing the stylesheet
+ * from the page module means Vite emits it as its own chunk — a shopper who
+ * never opens /onam never downloads any of this.
+ * ======================================================================== */
+
+.onam {
+  /* Paper and ink */
+  --on-paper: #fff8e8;
+  --on-paper-2: #f7e9c7;
+  --on-card: #fffdf6;
+  --on-ink: #18382c;
+  --on-ink-soft: #5b6651;
+  --on-line: rgba(24, 56, 44, 0.16);
+  --on-line-2: rgba(24, 56, 44, 0.09);
+
+  /* Festival accents */
+  --on-ochre: #e4a52b;
+  --on-ochre-d: #a76a0a;
+  --on-olive: #608d51;
+  --on-olive-d: #28593f;
+  --on-terra: #bf3d2e;
+  --on-terra-d: #8f281d;
+  --on-leaf: #9fc66c;
+  --on-green: #174d3a;
+
+  --on-r-sm: 10px;
+  --on-r-md: 16px;
+  --on-r-lg: 24px;
+  --on-r-xl: 32px;
+
+  position: relative;
+  padding: 0 0 40px;
+  color: var(--on-ink);
+  /* The topbar's arch bows out past the container edges, which on a narrow
+     window is wider than the window. Clipped rather than hidden so this never
+     quietly becomes a scroll container. */
+  overflow-x: clip;
+  background:
+    radial-gradient(ellipse 760px 400px at 50% 0%, rgba(228, 165, 43, 0.2), transparent 62%),
+    linear-gradient(180deg, var(--on-paper) 0%, var(--on-paper) 58%, var(--on-paper-2) 100%);
+}
+
+.onam-shell {
+  max-width: 1060px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+/* ---------------------------------------------------------------------------
+ * Topbar — brand on the left, game actions on the right. Not a second navbar:
+ * the shop's own header sits above this, so this band only carries the game.
+ * ------------------------------------------------------------------------ */
+.onam-topbar {
+  position: relative;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 22px 2px 18px;
+}
+
+.onam-topbar::before {
+  content: '';
+  position: absolute;
+  z-index: 0;
+  left: -11vw;
+  right: -11vw;
+  bottom: -16px;
+  height: 32px;
+  border-bottom: 1px solid rgba(191, 145, 37, 0.42);
+  border-radius: 0 0 50% 50%;
+  pointer-events: none;
+}
+
+.onam-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.onam-brand-mark {
+  flex: 0 0 auto;
+  display: block;
+  line-height: 0;
+}
+
+.onam-brand-txt {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.1;
+  min-width: 0;
+}
+
+.onam-brand-name {
+  font-family: var(--font-display);
+  font-size: 26px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: #174832;
+}
+
+.onam-brand-tag {
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--on-terra);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.onam-topnav {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Icon-and-label buttons in the topbar: quieter than the dock buttons. */
+.onam-iconbtn {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  border: 1px solid transparent;
+  background: transparent;
+  border-radius: var(--on-r-sm);
+  padding: 7px 10px;
+  color: var(--on-ink-soft);
+  cursor: pointer;
+  transition: color 0.16s ease, border-color 0.16s ease, background 0.16s ease;
+}
+
+.onam-iconbtn svg { width: 18px; height: 18px; }
+
+.onam-iconbtn span {
+  font-size: 8.5px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.onam-iconbtn:hover {
+  color: var(--on-ink);
+  border-color: var(--on-line-2);
+  background: rgba(255, 253, 246, 0.7);
+}
+
+.onam-iconbtn:focus-visible {
+  outline: 3px solid rgba(228, 165, 43, 0.55);
+  outline-offset: 2px;
+}
+
+.onam-burger { display: none; }
+
+/* ---------------------------------------------------------------------------
+ * Hero
+ * ------------------------------------------------------------------------ */
+.onam-hero {
+  position: relative;
+  text-align: center;
+  padding: 26px 0 4px;
+}
+
+.onam-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 9px;
+  font-family: var(--font-display);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  color: #a5690f;
+}
+
+.onam-eyebrow::before,
+.onam-eyebrow::after {
+  content: '';
+  width: 28px;
+  height: 1px;
+  background: #c18a22;
+  opacity: 0.75;
+}
+
+/* Block, so it never shares a line with the inline-flex eyebrow above it. */
+.onam-hero h1 {
+  display: block;
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(32px, 4.2vw, 52px);
+  line-height: 1.05;
+  font-weight: 600;
+  letter-spacing: -0.025em;
+  color: var(--on-green);
+}
+
+/* The inner span shrinks to the words, which is what the fleurons hang off —
+   anchored to the full-width h1 they would sit out at the container edges. */
+.onam-hero h1 span {
+  position: relative;
+  display: inline-block;
+}
+
+.onam-hero h1 span::before,
+.onam-hero h1 span::after {
+  position: absolute;
+  top: 48%;
+  font-family: var(--font-display);
+  font-size: 36px;
+  font-weight: 400;
+  line-height: 1;
+  color: #d59a23;
+}
+
+.onam-hero h1 span::before {
+  content: '❧';
+  right: calc(100% + 18px);
+  transform: translateY(-50%) scaleX(-1);
+}
+
+.onam-hero h1 span::after {
+  content: '❧';
+  left: calc(100% + 18px);
+  transform: translateY(-50%);
+}
+
+.onam-rule {
+  display: block;
+  margin: 9px auto 0;
+  width: min(260px, 52vw);
+  height: 14px;
+  color: var(--on-ochre);
+}
+
+.onam-lede {
+  max-width: 54ch;
+  margin: 12px auto 0;
+  font-size: 15px;
+  letter-spacing: 0.02em;
+  color: #465f4a;
+}
+
+.onam-note {
+  margin: 8px auto 0;
+  font-size: 13px;
+  color: var(--on-ink-soft);
+}
+
+/* ---------------------------------------------------------------------------
+ * Counter bar — the budget, the score, the clock
+ * ------------------------------------------------------------------------ */
+.onam-counter {
+  position: relative;
+  z-index: 25;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 18px 0 6px;
+}
+
+.onam-stats {
+  display: flex;
+  align-items: center;
+  background: rgba(255, 253, 246, 0.72);
+  border: 1px solid var(--on-line-2);
+  border-radius: 999px;
+  padding: 8px 4px;
+}
+
+.onam-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0 16px;
+  min-width: 78px;
+  border-right: 1px solid var(--on-line-2);
+}
+
+.onam-stat:last-child { border-right: 0; }
+
+.onam-stat .n {
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 1;
+  color: var(--on-green);
+}
+
+.onam-stat .n small {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--on-ink-soft);
+}
+
+.onam-stat .l {
+  margin-top: 6px;
+  font-size: 8.5px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--on-ink-soft);
+  white-space: nowrap;
+}
+
+.onam-meter {
+  width: min(300px, 68vw);
+  height: 4px;
+  margin: 0 auto;
+  border-radius: 999px;
+  background: rgba(24, 56, 44, 0.1);
+  overflow: hidden;
+}
+
+.onam-meter span {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--on-ochre), var(--on-terra));
+  transition: width 0.3s ease;
+}
+
+/* The timed-challenge clock. Goes terracotta under a minute so the pressure is
+   visible without a sound cue. */
+.onam-clock {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid rgba(191, 145, 37, 0.5);
+  background: rgba(255, 253, 246, 0.85);
+  border-radius: 999px;
+  padding: 8px 14px;
+}
+
+.onam-clock .t {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 15px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  color: var(--on-ochre-d);
+  font-variant-numeric: tabular-nums;
+}
+
+.onam-clock.is-urgent .t { color: var(--on-terra); }
+
+.onam-clock.is-urgent { border-color: rgba(191, 61, 46, 0.5); }
+
+/* ---------------------------------------------------------------------------
+ * The mat
+ * ------------------------------------------------------------------------ */
+.onam-stage {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 14px;
+}
+
+.onam-canvasWrap {
+  position: relative;
+  width: min(92vw, 560px);
+  aspect-ratio: 1 / 1;
+  /* Placing and dragging flowers are pointer gestures, so the browser must not
+     claim them for scrolling — without this, dragging across the mat on a
+     phone scrolls the page and lays nothing. */
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  filter: drop-shadow(0 16px 20px rgba(23, 77, 58, 0.14));
+}
+
+.onam-board {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: var(--on-card);
+  cursor: crosshair;
+}
+
+.onam-canvasWrap.is-panning .onam-board { cursor: grabbing; }
+.onam-canvasWrap.is-sketching .onam-board { cursor: crosshair; }
+.onam-canvasWrap.is-erasing .onam-board { cursor: cell; }
+
+.onam-mat-ring {
+  fill: none;
+  stroke: rgba(228, 165, 43, 0.55);
+  stroke-width: 0.7;
+}
+
+.onam-mat-inner {
+  fill: rgba(228, 165, 43, 0.05);
+}
+
+.onam-grid {
+  fill: none;
+  stroke: rgba(24, 56, 44, 0.14);
+  stroke-width: 0.35;
+  pointer-events: none;
+}
+
+.onam-sketch-path {
+  fill: none;
+  stroke: rgba(191, 61, 46, 0.55);
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  pointer-events: none;
+}
+
+/* A placed bloom. The settle animation is scoped to the group's own box so it
+   grows in place instead of flying in from the mat's centre. */
+.onam-bloom-g {
+  cursor: grab;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.onam-bloom-g.is-new {
+  animation: onam-settle 0.28s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+@keyframes onam-settle {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.onam-bloom-g.is-selected { cursor: grabbing; }
+
+.onam-sel-ring {
+  fill: none;
+  stroke: var(--on-terra);
+  stroke-width: 0.9;
+  stroke-dasharray: 3 2.4;
+  pointer-events: none;
+}
+
+.onam-ghost {
+  pointer-events: none;
+  opacity: 0.45;
+}
+
+/* Zoom cluster, bottom-right of the mat. */
+.onam-zoom {
+  position: absolute;
+  right: 4px;
+  bottom: 10px;
+  display: flex;
+  gap: 4px;
+  background: rgba(255, 253, 246, 0.92);
+  border: 1px solid var(--on-line-2);
+  border-radius: 999px;
+  padding: 4px;
+  box-shadow: 0 6px 16px rgba(24, 56, 44, 0.1);
+}
+
+.onam-zoom button {
+  width: 30px;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  background: transparent;
+  border-radius: 50%;
+  color: var(--on-ink-soft);
+  cursor: pointer;
+  transition: background 0.16s ease, color 0.16s ease;
+}
+
+.onam-zoom button svg { width: 15px; height: 15px; }
+.onam-zoom button:hover { background: rgba(228, 165, 43, 0.16); color: var(--on-ink); }
+.onam-zoom button:disabled { opacity: 0.32; pointer-events: none; }
+
+.onam-zoom .pct {
+  align-self: center;
+  padding: 0 6px;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--on-ink-soft);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Sketch and eraser are sticky modes: while one is on, tapping the mat does not
+   lay a flower. The only other cue is the cursor, which does not exist on a
+   phone — without this badge you tap the mat, nothing appears, and the game
+   looks broken. Tapping the badge is also the way out. */
+.onam-mode {
+  position: absolute;
+  z-index: 4;
+  left: 50%;
+  top: 10px;
+  transform: translateX(-50%);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border-radius: 999px;
+  padding: 7px 8px 7px 14px;
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  border: 1px solid var(--on-ochre);
+  background: rgba(255, 245, 215, 0.96);
+  color: var(--on-ochre-d);
+  box-shadow: 0 6px 16px rgba(24, 56, 44, 0.14);
+  cursor: pointer;
+  animation: onam-pop 0.2s ease;
+}
+
+.onam-mode.is-erase {
+  border-color: var(--on-terra);
+  background: rgba(255, 236, 232, 0.96);
+  color: var(--on-terra-d);
+}
+
+.onam-mode svg { width: 13px; height: 13px; }
+
+.onam-mode i {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: rgba(24, 56, 44, 0.1);
+}
+
+.onam-mode i svg { width: 11px; height: 11px; }
+.onam-mode:hover i { background: rgba(24, 56, 44, 0.2); }
+
+.onam-panhint {
+  position: absolute;
+  left: 50%;
+  bottom: 14px;
+  transform: translateX(-50%) translateY(6px);
+  opacity: 0;
+  font-size: 8.5px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--on-ink-soft);
+  background: rgba(255, 253, 246, 0.9);
+  border-radius: 999px;
+  padding: 5px 12px;
+  pointer-events: none;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.onam-canvasWrap.is-zoomed .onam-panhint {
+  opacity: 1;
+  transform: translateX(-50%);
+}
+
+/* The empty state sits over the mat until the first flower lands. */
+.onam-empty {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 0 12%;
+  text-align: center;
+  pointer-events: none;
+}
+
+.onam-empty h2 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(18px, 2.6vw, 23px);
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  color: var(--on-green);
+}
+
+.onam-empty p {
+  margin: 0 0 8px;
+  font-size: 13px;
+  color: var(--on-ink-soft);
+}
+
+.onam-empty .onam-row { pointer-events: auto; }
+
+/* Selected-flower toolbar, docked under the mat. */
+.onam-selbar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 14px;
+  background: var(--on-card);
+  border: 1px solid var(--on-line-2);
+  border-radius: 999px;
+  padding: 5px;
+  box-shadow: 0 8px 20px rgba(24, 56, 44, 0.1);
+  animation: onam-pop 0.2s ease;
+}
+
+@keyframes onam-pop {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+
+.onam-selbar button {
+  width: 34px;
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  background: transparent;
+  border-radius: 50%;
+  color: var(--on-ink-soft);
+  cursor: pointer;
+  transition: background 0.16s ease, color 0.16s ease;
+}
+
+.onam-selbar button svg { width: 16px; height: 16px; }
+.onam-selbar button:hover { background: rgba(228, 165, 43, 0.18); color: var(--on-ink); }
+.onam-selbar button.is-danger:hover { background: rgba(191, 61, 46, 0.12); color: var(--on-terra); }
+.onam-selbar .sep { width: 1px; height: 20px; background: var(--on-line-2); margin: 0 3px; }
+
+/* ---------------------------------------------------------------------------
+ * Docked tool tray
+ * ------------------------------------------------------------------------ */
+.onam-dock {
+  max-width: 940px;
+  margin: 32px auto 0;
+  border-radius: 22px;
+  background: var(--on-card);
+  box-shadow: 0 14px 32px rgba(24, 56, 44, 0.12);
+  overflow: hidden;
+}
+
+.onam-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 7px 9px 0;
+  background: var(--on-paper-2);
+  border-bottom: 1px solid var(--on-line-2);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.onam-tabs::-webkit-scrollbar { display: none; }
+
+.onam-tab {
+  flex: 1 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border: 0;
+  background: transparent;
+  border-radius: 12px 12px 0 0;
+  padding: 13px 14px 11px;
+  font-family: var(--font-body);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #58725a;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 0.18s ease, color 0.18s ease;
+}
+
+.onam-tab svg { width: 15px; height: 15px; flex: 0 0 auto; }
+.onam-tab:hover { color: var(--on-ink); }
+
+.onam-tab.is-active {
+  background: var(--on-card);
+  color: var(--on-green);
+}
+
+.onam-tab:focus-visible {
+  outline: 3px solid rgba(228, 165, 43, 0.55);
+  outline-offset: -3px;
+}
+
+.onam-panel {
+  padding: 22px 26px 24px;
+  animation: onam-fade 0.22s ease;
+}
+
+@keyframes onam-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.onam-panel h4 {
+  margin: 0 0 12px;
+  font-family: var(--font-body);
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--on-olive-d);
+}
+
+.onam-panel h4 + h4 { margin-top: 22px; }
+
+.onam-sub {
+  margin: 22px 0 12px;
+  font-family: var(--font-body);
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--on-olive-d);
+}
+
+.onam-hint {
+  max-width: 64ch;
+  margin: 14px 0 0;
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--on-ink-soft);
+}
+
+.onam-hint b { color: var(--on-ink); }
+
+/* Flower picker. Scrolls sideways on a phone rather than reflowing into a wall
+   of cards that pushes the mat off the screen. */
+.onam-flowers {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 2px 2px 10px;
+  scrollbar-width: thin;
+}
+
+.onam-fcard {
+  flex: 0 0 auto;
+  width: 84px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  padding: 9px 6px 8px;
+  border: 1px solid var(--on-line);
+  border-radius: var(--on-r-md);
+  background: var(--on-paper);
+  cursor: pointer;
+  transition: border-color 0.18s ease, background 0.18s ease, box-shadow 0.18s ease,
+    transform 0.18s ease;
+}
+
+.onam-fcard:hover { border-color: var(--on-ink); transform: translateY(-2px); }
+
+.onam-fcard.is-active {
+  border-color: #d99b21;
+  background: #fff5d7;
+  box-shadow: inset 0 0 0 1px #d99b21;
+}
+
+.onam-fcard:focus-visible {
+  outline: 3px solid rgba(228, 165, 43, 0.55);
+  outline-offset: 2px;
+}
+
+.onam-fcard svg { display: block; width: 46px; height: 46px; pointer-events: none; }
+
+.onam-fcard .nm {
+  font-size: 8.5px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--on-ink);
+  text-align: center;
+  line-height: 1.25;
+}
+
+.onam-fcard .gl {
+  font-size: 8px;
+  color: var(--on-ink-soft);
+  text-align: center;
+  line-height: 1.2;
+}
+
+/* Colour family chips. */
+.onam-swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.onam-swatch {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--on-line);
+  background: transparent;
+  border-radius: 999px;
+  padding: 7px 13px 7px 8px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--on-ink);
+  cursor: pointer;
+  transition: border-color 0.16s ease, background 0.16s ease;
+}
+
+.onam-swatch i {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 1px solid rgba(24, 56, 44, 0.2);
+  flex: 0 0 auto;
+}
+
+.onam-swatch:hover { border-color: var(--on-ink); }
+
+.onam-swatch.is-active {
+  border-color: var(--on-ochre);
+  background: rgba(228, 165, 43, 0.16);
+  color: var(--on-ochre-d);
+}
+
+/* Template cards. */
+.onam-templates {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(132px, 1fr));
+  gap: 10px;
+}
+
+.onam-tcard {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+  border: 1px solid var(--on-line);
+  border-radius: var(--on-r-md);
+  background: var(--on-paper);
+  padding: 13px 14px;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.18s ease, background 0.18s ease, transform 0.18s ease;
+}
+
+.onam-tcard:hover {
+  border-color: var(--on-ochre);
+  background: #fff5d7;
+  transform: translateY(-2px);
+}
+
+.onam-tcard .tl {
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--on-green);
+}
+
+.onam-tcard .tn {
+  font-size: 8.5px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--on-ink-soft);
+}
+
+/* Symmetry chips get a wider tap target than a plain toggle. */
+.onam-folds {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.onam-field {
+  display: block;
+  margin-bottom: 12px;
+}
+
+.onam-field span {
+  display: block;
+  margin-bottom: 5px;
+  font-size: 8.5px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--on-ink-soft);
+}
+
+.onam-field input {
+  width: 100%;
+  max-width: 340px;
+  border: 1px solid var(--on-line);
+  border-radius: var(--on-r-sm);
+  background: var(--on-paper);
+  padding: 11px 13px;
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: var(--on-ink);
+}
+
+.onam-field input:focus-visible {
+  outline: 2px solid var(--on-ochre);
+  outline-offset: 1px;
+}
+
+/* ---------------------------------------------------------------------------
+ * Buttons
+ * ------------------------------------------------------------------------ */
+.onam-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 1px solid var(--on-line);
+  background: transparent;
+  border-radius: 999px;
+  padding: 11px 17px;
+  font-family: var(--font-body);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+  color: var(--on-ink);
+  white-space: nowrap;
+  cursor: pointer;
+  transition: border-color 0.16s ease, background 0.16s ease, color 0.16s ease,
+    transform 0.16s ease, box-shadow 0.16s ease;
+}
+
+.onam-btn svg { width: 15px; height: 15px; flex: 0 0 auto; }
+
+.onam-btn:hover {
+  border-color: var(--on-ink);
+  background: rgba(201, 146, 46, 0.1);
+}
+
+.onam-btn:focus-visible {
+  outline: 3px solid rgba(228, 165, 43, 0.55);
+  outline-offset: 2px;
+}
+
+.onam-btn:disabled { opacity: 0.35; pointer-events: none; }
+
+/* The chunky pressed-key primary from the reference: a hard shadow the button
+   sinks into rather than a soft blur. */
+.onam-btn.is-primary {
+  background: var(--on-terra);
+  border-color: var(--on-terra);
+  color: #fcfaf4;
+  box-shadow: 0 4px 0 0 var(--on-terra-d);
+}
+
+.onam-btn.is-primary:hover {
+  background: var(--on-terra-d);
+  border-color: var(--on-terra-d);
+  color: #fcfaf4;
+  box-shadow: 0 3px 0 0 var(--on-terra-d);
+  transform: translateY(1px);
+}
+
+.onam-btn.is-primary:active {
+  box-shadow: 0 0 0 0 var(--on-terra-d);
+  transform: translateY(4px);
+}
+
+.onam-btn.is-gold {
+  background: var(--on-ochre);
+  border-color: var(--on-ochre);
+  color: #35240a;
+  box-shadow: 0 4px 0 0 var(--on-ochre-d);
+}
+
+.onam-btn.is-gold:hover {
+  background: #d1962a;
+  border-color: #d1962a;
+  color: #35240a;
+  box-shadow: 0 3px 0 0 var(--on-ochre-d);
+  transform: translateY(1px);
+}
+
+.onam-btn.is-gold:active {
+  box-shadow: 0 0 0 0 var(--on-ochre-d);
+  transform: translateY(4px);
+}
+
+.onam-btn.is-danger { color: var(--on-terra); }
+
+.onam-btn.is-danger:hover {
+  border-color: var(--on-terra);
+  background: rgba(192, 73, 46, 0.08);
+}
+
+.onam-btn.is-ghost { border-color: transparent; }
+.onam-btn.is-ghost:hover { border-color: var(--on-line); }
+
+.onam-btn.is-on {
+  background: rgba(201, 146, 46, 0.18);
+  border-color: var(--on-ochre);
+  color: var(--on-ochre-d);
+}
+
+.onam-btn.is-big { padding: 14px 22px; font-size: 12px; }
+.onam-btn.is-wide { flex: 1 1 auto; }
+
+.onam-row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.onam-row.is-center { justify-content: center; }
+
+/* ---------------------------------------------------------------------------
+ * Modals
+ * ------------------------------------------------------------------------ */
+.onam-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(24, 40, 30, 0.5);
+  backdrop-filter: blur(3px);
+  animation: onam-fade 0.2s ease;
+}
+
+.onam-modal {
+  position: relative;
+  width: 100%;
+  max-width: 520px;
+  max-height: 88vh;
+  overflow-y: auto;
+  background: var(--on-card);
+  border: 1px solid rgba(228, 165, 43, 0.4);
+  border-radius: var(--on-r-lg);
+  padding: 30px 28px 28px;
+  box-shadow: 0 24px 60px rgba(20, 38, 27, 0.35);
+  animation: onam-rise 0.28s cubic-bezier(0.32, 0.72, 0, 1);
+  text-align: center;
+  color: var(--on-ink);
+}
+
+.onam-modal.is-wide { max-width: 620px; }
+
+@keyframes onam-rise {
+  from { opacity: 0; transform: translateY(14px) scale(0.98); }
+  to { opacity: 1; transform: none; }
+}
+
+.onam-modal h2 {
+  margin: 0 0 6px;
+  font-family: var(--font-display);
+  font-size: clamp(22px, 3.4vw, 30px);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--on-green);
+}
+
+.onam-modal h3 {
+  margin: 20px 0 10px;
+  font-family: var(--font-body);
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--on-olive-d);
+}
+
+.onam-modal p { margin: 0 0 4px; font-size: 14px; color: var(--on-ink-soft); }
+
+.onam-modal .onam-hint { margin-left: auto; margin-right: auto; }
+
+.onam-x {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 34px;
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  background: transparent;
+  border-radius: 50%;
+  color: var(--on-ink-soft);
+  cursor: pointer;
+  transition: background 0.16s ease, color 0.16s ease;
+}
+
+.onam-x svg { width: 17px; height: 17px; }
+.onam-x:hover { background: rgba(24, 56, 44, 0.07); color: var(--on-ink); }
+
+.onam-steps {
+  margin: 0;
+  padding: 0;
+  text-align: left;
+  counter-reset: onam-step;
+  /* global.css resets `ul` but not `ol`, so without this the browser's own
+     numbers sit next to the counter drawn in ::before. */
+  list-style: none;
+}
+
+.onam-steps li {
+  position: relative;
+  padding: 0 0 10px 30px;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--on-ink-soft);
+  counter-increment: onam-step;
+}
+
+.onam-steps li::before {
+  content: counter(onam-step);
+  position: absolute;
+  left: 0;
+  top: 1px;
+  width: 20px;
+  height: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba(228, 165, 43, 0.2);
+  color: var(--on-ochre-d);
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.onam-steps li b { color: var(--on-ink); }
+
+.onam-keys {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  justify-content: flex-start;
+  text-align: left;
+  font-size: 12px;
+  color: var(--on-ink-soft);
+}
+
+.onam-keys span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.onam-keys kbd {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 10px;
+  font-weight: 500;
+  border: 1px solid var(--on-line);
+  border-bottom-width: 2px;
+  border-radius: 5px;
+  background: var(--on-paper);
+  padding: 2px 6px;
+  color: var(--on-ink);
+}
+
+/* Full Bloom preview + reward. */
+.onam-preview {
+  display: block;
+  width: min(100%, 300px);
+  margin: 14px auto 6px;
+  border-radius: var(--on-r-md);
+  border: 1px solid var(--on-line-2);
+  box-shadow: 0 10px 26px rgba(24, 56, 44, 0.16);
+}
+
+.onam-scorebar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin: 12px 0 4px;
+}
+
+.onam-scorebar .track {
+  width: min(200px, 50%);
+  height: 5px;
+  border-radius: 999px;
+  background: rgba(24, 56, 44, 0.1);
+  overflow: hidden;
+}
+
+.onam-scorebar .track i {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--on-ochre), var(--on-terra));
+}
+
+.onam-scorebar .v {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--on-green);
+}
+
+.onam-code {
+  display: inline-block;
+  margin: 12px 0 4px;
+  padding: 12px 24px;
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 1.35rem;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  border: 2px dashed var(--on-ochre);
+  border-radius: 14px;
+  background: rgba(228, 165, 43, 0.08);
+  color: var(--on-ochre-d);
+  cursor: pointer;
+  transition: background 0.16s ease, transform 0.16s ease;
+}
+
+.onam-code:hover {
+  background: rgba(228, 165, 43, 0.16);
+  transform: translateY(-1px);
+}
+
+/* Saved designs list. */
+.onam-designs {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 12px;
+  margin-top: 6px;
+}
+
+.onam-design {
+  border: 1px solid var(--on-line);
+  border-radius: var(--on-r-md);
+  background: var(--on-paper);
+  padding: 8px;
+  text-align: left;
+}
+
+.onam-design img {
+  width: 100%;
+  border-radius: var(--on-r-sm);
+  background: var(--on-card);
+}
+
+.onam-design .dn {
+  display: block;
+  margin: 7px 0 1px;
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--on-green);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.onam-design .dm {
+  display: block;
+  font-size: 8.5px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--on-ink-soft);
+}
+
+.onam-design .drow {
+  display: flex;
+  gap: 5px;
+  margin-top: 8px;
+}
+
+.onam-design .drow button {
+  flex: 1 1 auto;
+  border: 1px solid var(--on-line);
+  background: transparent;
+  border-radius: 999px;
+  padding: 6px 8px;
+  font-family: var(--font-body);
+  font-size: 8.5px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--on-ink);
+  cursor: pointer;
+}
+
+.onam-design .drow button:hover { border-color: var(--on-ink); }
+.onam-design .drow button.is-danger { color: var(--on-terra); flex: 0 0 auto; }
+
+.onam-empty-note {
+  margin: 16px 0;
+  font-size: 13px;
+  color: var(--on-ink-soft);
+}
+
+/* ---------------------------------------------------------------------------
+ * Page footer CTA
+ * ------------------------------------------------------------------------ */
+.onam-foot {
+  max-width: 940px;
+  margin: 34px auto 0;
+  text-align: center;
+}
+
+.onam-footcard {
+  background: var(--on-card);
+  border: 1px solid rgba(228, 165, 43, 0.38);
+  border-radius: var(--on-r-lg);
+  padding: 26px 24px 28px;
+  box-shadow: 0 12px 28px rgba(24, 56, 44, 0.1);
+}
+
+.onam-footcard h2 {
+  margin: 0 0 6px;
+  font-family: var(--font-display);
+  font-size: clamp(20px, 2.8vw, 26px);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--on-green);
+}
+
+.onam-footcard p {
+  max-width: 50ch;
+  margin: 0 auto 16px;
+  font-size: 14px;
+  color: var(--on-ink-soft);
+}
+
+.onam-fineprint {
+  margin: 18px 0 0;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: var(--on-ink-soft);
+}
+
+/* ---------------------------------------------------------------------------
+ * Mobile
+ * ------------------------------------------------------------------------ */
+@media (max-width: 760px) {
+  .onam-topnav { display: none; }
+  .onam-burger { display: inline-flex; }
+}
+
+@media (max-width: 640px) {
+  .onam { padding-bottom: 28px; }
+  .onam-shell { padding: 0 14px; }
+  .onam-topbar { padding: 16px 0 14px; }
+  .onam-brand-name { font-size: 22px; }
+  .onam-hero { padding-top: 22px; }
+  /* No room to hang fleurons off a headline that already fills the line. */
+  .onam-hero h1 span::before,
+  .onam-hero h1 span::after { display: none; }
+  .onam-lede { font-size: 14px; }
+  .onam-stat { padding: 0 12px; min-width: 68px; }
+  .onam-stat .n { font-size: 18px; }
+  .onam-canvasWrap { width: min(94vw, 460px); }
+  .onam-dock { border-radius: 18px; margin-top: 26px; }
+  .onam-tab { padding: 11px 11px 9px; letter-spacing: 0.1em; }
+  .onam-tab span { display: none; }
+  .onam-tab.is-active span { display: inline; }
+  .onam-panel { padding: 18px 16px 20px; }
+  .onam-templates { grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); }
+  .onam-modal { padding: 26px 18px 22px; border-radius: 20px; }
+  .onam-code { font-size: 1.1rem; padding: 10px 18px; }
+  .onam-footcard { padding: 22px 16px 24px; border-radius: 20px; }
+}
+
+/* The drawer only exists on small screens; it is the topnav in a sheet. */
+.onam-drawer {
+  position: fixed;
+  inset: 0;
+  z-index: 1300;
+  display: flex;
+  justify-content: flex-end;
+  background: rgba(24, 40, 30, 0.5);
+  backdrop-filter: blur(3px);
+  animation: onam-fade 0.2s ease;
+}
+
+.onam-drawer-sheet {
+  width: min(86vw, 320px);
+  height: 100%;
+  overflow-y: auto;
+  background: var(--on-card);
+  padding: 22px 20px;
+  box-shadow: -12px 0 40px rgba(20, 38, 27, 0.3);
+  animation: onam-slide 0.26s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+@keyframes onam-slide {
+  from { transform: translateX(24px); opacity: 0.4; }
+  to { transform: none; opacity: 1; }
+}
+
+.onam-drawer-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.onam-drawer-head span {
+  font-family: var(--font-body);
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--on-olive-d);
+}
+
+.onam-drawer-sheet .onam-btn {
+  width: 100%;
+  justify-content: flex-start;
+  margin-bottom: 8px;
+}
+
+/* ---------------------------------------------------------------------------
+ * Reduce Motion. The game must still be fully playable, just without anything
+ * moving — the user's own phone had this on, which is exactly the case that
+ * matters.
+ * ------------------------------------------------------------------------ */
+@media (prefers-reduced-motion: reduce) {
+  .onam-bloom-g.is-new,
+  .onam-selbar,
+  .onam-panel,
+  .onam-scrim,
+  .onam-modal,
+  .onam-drawer,
+  .onam-drawer-sheet {
+    animation: none;
+  }
+  .onam-btn,
+  .onam-fcard,
+  .onam-tcard,
+  .onam-tab,
+  .onam-code,
+  .onam-swatch,
+  .onam-iconbtn,
+  .onam-zoom button,
+  .onam-selbar button,
+  .onam-meter span,
+  .onam-panhint {
+    transition: none;
+  }
+  .onam-btn:hover,
+  .onam-btn:active,
+  .onam-fcard:hover,
+  .onam-tcard:hover,
+  .onam-code:hover {
+    transform: none;
+  }
+}
