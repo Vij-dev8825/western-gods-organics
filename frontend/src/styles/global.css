@@ -10152,17 +10152,23 @@ body.has-cookie-bar .install-prompt { bottom: calc(var(--cookie-bar-height, 0px)
 /* ---------------------------------------------------------------------------
  * Pookalam — the Onam flower carpet at /onam
  *
- * Petals are SVG paths, so all the sizing is handled by the viewBox and the
- * only job here is colour, touch targets and the settling animation. The
- * carpet is capped rather than fluid: past about 420px the petals get large
- * enough that the whole thing stops reading as a flower carpet.
+ * The flowers are cut-out photographs placed at fixed slots, so nearly all the
+ * geometry lives in the SVG and the only jobs here are the mat, the touch
+ * targets and the palette.
+ *
+ * Note for anyone editing: do not put a CSS `transform` on a positioned SVG
+ * element here. An earlier version set `transform-box: fill-box` on the laid
+ * petals, which reinterpreted their `transform="rotate(...)"` attribute about
+ * each petal's own box instead of the carpet's centre and stacked the whole
+ * pookalam into a column. Anything that needs to move should animate opacity,
+ * or be wrapped in a group that carries no transform attribute of its own.
  * ------------------------------------------------------------------------ */
 .pookalam-wrap {
-  max-width: 420px;
+  max-width: 440px;
   margin: 18px auto 14px;
-  /* Placing petals is a drag gesture, so the browser must not claim it for
-     scrolling — without this, dragging across the carpet on a phone scrolls
-     the page and lays nothing. */
+  /* Laying flowers is a drag gesture, so the browser must not claim it for
+     scrolling — without this, dragging across the carpet scrolls the page
+     and lays nothing. */
   touch-action: none;
 }
 
@@ -10172,11 +10178,72 @@ body.has-cookie-bar .install-prompt { bottom: calc(var(--cookie-bar-height, 0px)
   display: block;
 }
 
-.pookalam-ground {
-  fill: rgba(0, 0, 0, 0.045);
+/* A dark ground, because these are bright flowers photographed on white and
+   they need something to sit against. Matches the saved image exactly. */
+.pookalam-mat { fill: #2B1B12; }
+.pookalam-ground { fill: rgba(255, 255, 255, 0.05); }
+
+.pookalam-empty {
+  fill: rgba(255, 255, 255, 0.09);
+  pointer-events: none;
 }
 
-/* The mirror control and the row of actions under the palette. */
+.pookalam-bloom {
+  pointer-events: none;
+  animation: pookalam-settle 0.28s ease-out;
+}
+
+@keyframes pookalam-settle {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Invisible, sits above everything, and is the only thing that takes a tap —
+   so a flower half-covered by its neighbour is still reachable. */
+.pookalam-hit {
+  fill: transparent;
+  cursor: pointer;
+}
+
+.pookalam-palette {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: 6px;
+  max-width: 460px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.pookalam-swatch {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  background: rgba(0, 0, 0, 0.04);
+  cursor: pointer;
+  padding: 2px;
+  display: grid;
+  place-items: center;
+  transition: transform 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+}
+
+.pookalam-swatch img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+.pookalam-swatch:hover { transform: scale(1.08); }
+
+.pookalam-swatch.is-active {
+  border-color: var(--gold, #C9A227);
+  background: rgba(201, 162, 39, 0.16);
+  transform: scale(1.1);
+}
+
 .pookalam-folds {
   display: flex;
   gap: 6px;
@@ -10213,61 +10280,6 @@ body.has-cookie-bar .install-prompt { bottom: calc(var(--cookie-bar-height, 0px)
   flex-wrap: wrap;
 }
 
-.pookalam-petal {
-  fill: rgba(0, 0, 0, 0.06);
-  stroke: rgba(255, 255, 255, 0.5);
-  stroke-width: 0.3;
-  cursor: pointer;
-  transition: fill 0.18s ease;
-}
-
-.pookalam-petal:hover {
-  fill: rgba(0, 0, 0, 0.12);
-}
-
-/* Each petal settles as it is laid, the way a real one is dropped into place.
-   Scoped to the petal's own origin so it grows outward from the centre. */
-.pookalam-petal.is-laid {
-  animation: pookalam-settle 0.32s cubic-bezier(0.32, 0.72, 0, 1);
-  transform-box: fill-box;
-  transform-origin: center;
-}
-
-@keyframes pookalam-settle {
-  from { opacity: 0.25; }
-  to { opacity: 1; }
-}
-
-.pookalam-lamp {
-  fill: var(--gold, #C9A227);
-  pointer-events: none;
-}
-
-.pookalam-palette {
-  display: flex;
-  gap: 10px;
-  justify-content: center;
-  flex-wrap: wrap;
-  margin-top: 6px;
-}
-
-.pookalam-swatch {
-  width: 38px;
-  height: 38px;
-  border-radius: 50%;
-  border: 2px solid rgba(0, 0, 0, 0.12);
-  cursor: pointer;
-  padding: 0;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
-}
-
-.pookalam-swatch:hover { transform: scale(1.08); }
-
-.pookalam-swatch.is-active {
-  transform: scale(1.14);
-  box-shadow: 0 0 0 2px var(--bg, #fff), 0 0 0 4px var(--gold, #C9A227);
-}
-
 .pookalam-done {
   margin-top: 20px;
   animation: pookalam-bloom 0.5s cubic-bezier(0.32, 0.72, 0, 1);
@@ -10291,14 +10303,17 @@ body.has-cookie-bar .install-prompt { bottom: calc(var(--cookie-bar-height, 0px)
   cursor: pointer;
 }
 
+@media (max-width: 420px) {
+  .pookalam-swatch { width: 42px; height: 42px; }
+}
+
 /* The user's own phone had Reduce Motion on, which is exactly the case that
    matters: the carpet must still be layable, just without anything moving. */
 @media (prefers-reduced-motion: reduce) {
-  .pookalam-petal.is-laid,
+  .pookalam-bloom,
   .pookalam-done {
     animation: none;
   }
-  .pookalam-petal,
   .pookalam-swatch,
   .pookalam-fold {
     transition: none;
@@ -10308,6 +10323,7 @@ body.has-cookie-bar .install-prompt { bottom: calc(var(--cookie-bar-height, 0px)
     transform: none;
   }
 }
+
 
 /* The promo popup's "go here" button. Sits under the code, above "No thanks",
  * so the order down the card is: what you get, the code, where to use it. */
