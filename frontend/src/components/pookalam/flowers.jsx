@@ -501,8 +501,20 @@ export function flowerDefs(flower) {
    a darker version of the flower. Shared by all three chethis. */
 const CORYMB_SHADOW = '#2c3a22';
 
-/** Every gradient in the set, for a board that may hold any flower. */
+/** Every gradient in the set.
+ *
+ *  Empty while the blooms are photographs: these gradients exist only to fill
+ *  the drawn petals, and emitting them anyway would put a few hundred unused
+ *  nodes in the board and in every exported file. `drawnFlowerDefs` still has
+ *  them for anything that goes back to the drawn art. */
 export function allFlowerDefs() {
+  return [];
+}
+
+/* Not exported: nothing references it while every flower is a photograph, so
+   the bundler drops the gradients rather than shipping them unused. The source
+   stays here for whoever puts the drawn art back. */
+function drawnFlowerDefs() {
   return FLOWERS.flatMap(flowerDefs);
 }
 
@@ -1184,7 +1196,93 @@ const BUILDERS = { pompon, ray, trumpet, corymb, pea, sprig, globe, star, face, 
  * standalone SVG it rasterises for the PNG, so the picture you download is
  * drawn from the same call as the one on screen.
  */
+/* ==========================================================================
+ * Photographs
+ *
+ * The drawn art above is kept, and everything below it is unused by the board
+ * — the shop supplied fifteen photographs of the real flowers, one per id in
+ * FLOWERS, and a photograph of a chendumalli beats any drawing of one. The
+ * builders are left in place rather than deleted because they are the only
+ * record of how each species is constructed, and because a flower added later
+ * without a photograph can still fall back to being drawn.
+ *
+ * The sprites are cut-outs on transparency, square, sized to the same
+ * -50..50 box the drawn blooms occupy.
+ * ======================================================================== */
+
+/** Cut-out photograph for a flower id. Served as a static file, so the browser
+ *  caches one copy however many times it appears on the mat. */
+export function spriteUrl(id) {
+  return `/flowers/${id}.webp`;
+}
+
+/* Data-URI copies, for the export only. A `<image href="/flowers/x.webp">`
+ * inside a serialised SVG never loads: the exporter turns its SVG into a
+ * data: URI, which is its own origin and may not fetch from ours, so the
+ * saved picture would come out as an empty mat. Inlining the bytes is the
+ * only thing that survives that trip. Kept out of the on-screen art because
+ * sixty base64 strings in the DOM is a different kind of waste. */
+const inlined = new Map();
+let priming = null;
+
+/** Fetch every sprite once and keep it as a data URI. Cheap after the first
+ *  call, and cheap on the first call too — the board has already pulled these
+ *  through the browser cache by the time anyone exports. */
+export function primeSpriteDataUris() {
+  if (priming) return priming;
+  priming = Promise.all(
+    FLOWERS.map(async (f) => {
+      try {
+        const res = await fetch(spriteUrl(f.id));
+        if (!res.ok) return;
+        const blob = await res.blob();
+        const uri = await new Promise((resolve, reject) => {
+          const fr = new FileReader();
+          fr.onload = () => resolve(fr.result);
+          fr.onerror = reject;
+          fr.readAsDataURL(blob);
+        });
+        inlined.set(f.id, uri);
+      } catch {
+        /* A sprite that will not load simply stays a URL; the export loses
+           that one flower rather than throwing away the whole picture. */
+      }
+    })
+  ).then(() => inlined);
+  return priming;
+}
+
+function spriteShape(f, href) {
+  return [{
+    tag: 'image',
+    href,
+    x: -50,
+    y: -50,
+    width: 100,
+    height: 100,
+    preserveAspectRatio: 'xMidYMid meet',
+  }];
+}
+
+/** What the board draws for one bloom. */
 export function bloomChildren(flower) {
+  const f = typeof flower === 'string' ? flowerById(flower) : flower;
+  if (!f) return [];
+  return spriteShape(f, spriteUrl(f.id));
+}
+
+/** The same bloom for the export, with the photograph inlined. Falls back to
+ *  the URL if priming has not run, which yields a blank rather than a crash. */
+export function bloomChildrenInline(flower) {
+  const f = typeof flower === 'string' ? flowerById(flower) : flower;
+  if (!f) return [];
+  return spriteShape(f, inlined.get(f.id) || spriteUrl(f.id));
+}
+
+/* How a bloom used to be drawn — see the note on drawnFlowerDefs. Kept in
+   source, kept out of the bundle. */
+// eslint-disable-next-line no-unused-vars
+function drawnBloomChildren(flower) {
   const f = typeof flower === 'string' ? flowerById(flower) : flower;
   if (!f) return [];
   const build = BUILDERS[f.kind];
@@ -1223,7 +1321,6 @@ export function Bloom({ flowerId, size = 40, className, title }) {
       role="img"
       aria-label={title || `${flower.label} (${flower.gloss})`}
     >
-      <defs>{shapesToElements(flowerDefs(flower), 'd')}</defs>
       {shapesToElements(bloomChildren(flower), 'b')}
     </svg>
   );

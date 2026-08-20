@@ -28,9 +28,9 @@ import {
   Bloom,
   FAMILIES,
   FLOWERS,
-  bloomChildren,
+  bloomChildrenInline,
+  primeSpriteDataUris,
   flowerById,
-  flowerDefs,
 } from '../components/pookalam/flowers';
 import { TEMPLATES, surprise } from '../components/pookalam/templates';
 import {
@@ -211,6 +211,10 @@ function readWelcomed() {
     return true; // storage blocked: do not nag on every load
   }
 }
+
+/* Photographs need no gradient definitions, and the exporter would otherwise
+   write one unused set per flower into every file it produces. */
+const noDefs = () => [];
 
 export default function Pookalam() {
   const { showToast } = useToast();
@@ -437,6 +441,12 @@ export default function Pookalam() {
   }, []);
 
   /* --- the Full Bloom preview image ------------------------------------ */
+  /* Pull the photographs in as data URIs in the background. The export
+     serialises its SVG to a data: URI, which cannot reach back to our origin
+     for the sprite files, so they have to be inlined — doing it now means the
+     first Save is not the thing that waits for it. */
+  useEffect(() => { primeSpriteDataUris(); }, []);
+
   useEffect(() => {
     if ((modal !== 'bloom' && modal !== 'enter') || !state.blooms.length) return undefined;
     let url = null;
@@ -445,9 +455,9 @@ export default function Pookalam() {
       try {
         const blob = await renderPookalam({
           blooms: state.blooms,
-          bloomChildren,
+          bloomChildren: bloomChildrenInline,
           flowerById,
-          flowerDefs,
+          flowerDefs: noDefs,
           format: modal === 'enter' ? 'post' : format,
           title: title.trim() || 'My Onam Pookalam',
           creator: creator.trim(),
@@ -532,9 +542,9 @@ export default function Pookalam() {
     try {
       const thumbnail = await makeThumbnail({
         blooms: state.blooms,
-        bloomChildren,
+        bloomChildren: bloomChildrenInline,
         flowerById,
-        flowerDefs,
+        flowerDefs: noDefs,
       });
       saveDesign({
         title: title.trim() || 'My Onam Pookalam',
@@ -572,9 +582,9 @@ export default function Pookalam() {
             ? preview.blob
             : await renderPookalam({
                 blooms: state.blooms,
-                bloomChildren,
+                bloomChildren: bloomChildrenInline,
                 flowerById,
-                flowerDefs,
+                flowerDefs: noDefs,
                 format,
                 title: title.trim() || 'My Onam Pookalam',
                 creator: creator.trim(),
@@ -697,9 +707,9 @@ export default function Pookalam() {
          a mix of squares and tall stories makes that grid unreadable. */
       const blob = await renderPookalam({
         blooms: state.blooms,
-        bloomChildren,
+        bloomChildren: bloomChildrenInline,
         flowerById,
-        flowerDefs,
+        flowerDefs: noDefs,
         format: 'post',
         title: title.trim() || 'My Onam Pookalam',
         creator: entryName.trim() || creator.trim(),
