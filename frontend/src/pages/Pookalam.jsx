@@ -22,6 +22,7 @@ import { Link } from 'react-router-dom';
 import { api } from '../api';
 import SeoMeta from '../components/SeoMeta';
 import { useToast } from '../context/ToastContext';
+import { useAuth } from '../context/AuthContext';
 import Board from '../components/pookalam/Board';
 import {
   Bloom,
@@ -51,6 +52,7 @@ import {
   saveDesign,
   shareOrDownload,
 } from '../components/pookalam/exporter';
+import { loadGallery, loadMyEntries, submitEntry } from '../components/pookalam/contest';
 import * as sound from '../components/pookalam/sound';
 import {
   IconCheck,
@@ -82,7 +84,9 @@ import {
   IconTimer,
   IconTools,
   IconTrash,
+  IconTrophy,
   IconUndo,
+  IconWhatsApp,
   IconZoomFit,
   IconZoomIn,
   IconZoomOut,
@@ -142,6 +146,64 @@ function serialOf(blooms) {
   return `WG-${String(Math.abs(h) % 100000).padStart(5, '0')}`;
 }
 
+/** Save a blob to the device. Used when the picture must land on disk rather
+ *  than go through the share sheet — see doExport's `download` option. */
+function downloadBlob(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+/**
+ * Can this browser share an actual file?
+ *
+ * Only mobile Safari/Chrome really can. Probed once with a throwaway file
+ * because `navigator.share` existing says nothing about whether it accepts
+ * `files` — desktop Chrome has the method and rejects the payload. Getting this
+ * wrong means a button labelled "Share picture" that silently downloads.
+ */
+function probeFileShare() {
+  try {
+    if (!navigator.canShare) return false;
+    const probe = new File([new Blob(['x'])], 'probe.png', { type: 'image/png' });
+    return navigator.canShare({ files: [probe] });
+  } catch {
+    return false;
+  }
+}
+
+const STATUS_COPY = {
+  pending: { label: 'Being checked', cls: 'is-pending' },
+  approved: { label: 'Posted', cls: 'is-approved' },
+  rejected: { label: 'Not posted', cls: 'is-rejected' },
+};
+
+/** One of the entrant's own entries: where it got to, and the prize if it won. */
+function MyEntry({ entry }) {
+  const status = STATUS_COPY[entry.status] || STATUS_COPY.pending;
+  return (
+    <div className="onam-mine">
+      {entry.image ? <img src={entry.image} alt={entry.title || 'Your pookalam'} /> : null}
+      <span className="mt">
+        <b>{entry.title || 'Your pookalam'}</b>
+        <span>
+          {entry.blooms} flowers · {entry.score} pts
+          {entry.prize?.couponCode ? ` · code ${entry.prize.couponCode}` : ''}
+          {entry.prize?.giftNote ? ` · ${entry.prize.giftNote}` : ''}
+        </span>
+      </span>
+      <span className={`onam-badge ${entry.winner ? 'is-winner' : status.cls}`}>
+        {entry.winner ? 'Winner' : status.label}
+      </span>
+    </div>
+  );
+}
+
 function readWelcomed() {
   try {
     return !!localStorage.getItem(WELCOMED_KEY);
@@ -181,6 +243,16 @@ export default function Pookalam() {
   /* --- shop data ------------------------------------------------------- */
   const [onam, setOnam] = useState(null);
   const [claimed, setClaimed] = useState(false);
+
+  /* --- contest --------------------------------------------------------- */
+  const { token, user } = useAuth();
+  const [gallery, setGallery] = useState([]);
+  const [myEntries, setMyEntries] = useState([]);
+  const [entryName, setEntryName] = useState('');
+  const [entryPhone, setEntryPhone] = useState('');
+  const [entryConsent, setEntryConsent] = useState(false);
+  const [entryError, setEntryError] = useState('');
+  const canShareFiles = useMemo(probeFileShare, []);
 
   const used = state.blooms.length;
   const remaining = BUDGET - used;
@@ -366,7 +438,7 @@ export default function Pookalam() {
 
   /* --- the Full Bloom preview image ------------------------------------ */
   useEffect(() => {
-    if (modal !== 'bloom' || !state.blooms.length) return undefined;
+    if ((modal !== 'bloom' && modal !== 'enter') || !state.blooms.length) return undefined;
     let url = null;
     let alive = true;
     (async () => {
@@ -376,7 +448,7 @@ export default function Pookalam() {
           bloomChildren,
           flowerById,
           flowerDefs,
-          format,
+          format: modal === 'enter' ? 'post' : format,
           title: title.trim() || 'My Onam Pookalam',
           creator: creator.trim(),
           code: serialOf(state.blooms),
@@ -479,8 +551,16 @@ export default function Pookalam() {
     }
   }, [state.blooms, title, creator, score, showToast]);
 
+  /**
+   * Turn the mat into a file and get it off the page.
+   *
+   * `mode` names the button that asked, so the right one shows a spinner.
+   * `download` forces the file to disk instead of offering the native share
+   * sheet — the WhatsApp route needs the picture actually saved, because no
+   * share-intent URL can carry a file and the person has to attach it.
+   */
   const doExport = useCallback(
-    async (mode) => {
+    async (mode, { download = false } = {}) => {
       if (!state.blooms.length) {
         showToast('Lay a few flowers first.');
         return;
@@ -502,13 +582,14 @@ export default function Pookalam() {
                 score,
               });
         if (!blob) throw new Error('no image');
-        const res = await shareOrDownload(
-          blob,
-          `pookalam-${format}.png`,
-          'My Onam pookalam'
-        );
-        if (res.ok && res.method === 'download') showToast('Image saved to your device');
-        else if (!res.ok) showToast('Could not save the image — try a screenshot instead');
+        if (download) {
+          downloadBlob(blob, `pookalam-${format}.png`);
+          showToast('Image saved — attach it in WhatsApp');
+        } else {
+          const res = await shareOrDownload(blob, `pookalam-${format}.png`, 'My Onam pookalam');
+          if (res.ok && res.method === 'download') showToast('Image saved to your device');
+          else if (!res.ok) showToast('Could not save the image — try a screenshot instead');
+        }
       } catch {
         showToast('Could not build the image — try a screenshot instead');
       } finally {
@@ -576,6 +657,97 @@ export default function Pookalam() {
         : null;
 
   const coupon = claimed && onam?.couponCode ? onam.couponCode : null;
+
+  /* --- contest --------------------------------------------------------- */
+
+  /* The gallery is public and the entries list is per-person, so both are
+     reloaded together whenever either could have changed. */
+  const refreshContest = useCallback(() => {
+    loadGallery().then(setGallery).catch(() => setGallery([]));
+    loadMyEntries(token).then(setMyEntries).catch(() => setMyEntries([]));
+  }, [token]);
+
+  useEffect(() => {
+    refreshContest();
+  }, [refreshContest]);
+
+  /* Prefill from the account when there is one, so a logged-in customer is not
+     asked to retype what the shop already has. */
+  useEffect(() => {
+    if (user?.name) setEntryName((n) => n || user.name);
+    if (user?.phone) setEntryPhone((p) => p || user.phone);
+  }, [user]);
+
+  const myWin = useMemo(() => myEntries.find((e) => e.winner && e.prize) || null, [myEntries]);
+
+  /** Build the picture once and hand it to the contest. */
+  const doEnterContest = useCallback(async () => {
+    setEntryError('');
+    if (!state.blooms.length) {
+      setEntryError('Lay some flowers first — there is nothing to enter yet.');
+      return;
+    }
+    if (!entryConsent) {
+      setEntryError('Please tick the box so we know we may post your pookalam.');
+      return;
+    }
+    setBusy('enter');
+    try {
+      /* Always the 1:1 crop for entries: the admin reviews them in a grid and
+         a mix of squares and tall stories makes that grid unreadable. */
+      const blob = await renderPookalam({
+        blooms: state.blooms,
+        bloomChildren,
+        flowerById,
+        flowerDefs,
+        format: 'post',
+        title: title.trim() || 'My Onam Pookalam',
+        creator: entryName.trim() || creator.trim(),
+        code: serialOf(state.blooms),
+        score,
+      });
+      await submitEntry({
+        blob,
+        title: title.trim(),
+        name: entryName.trim(),
+        phone: entryPhone.trim(),
+        score,
+        blooms: state.blooms.length,
+        token,
+      });
+      setModal(null);
+      setEntryConsent(false);
+      refreshContest();
+      showToast('Entry received. We will post it once it has been checked.');
+    } catch (err) {
+      setEntryError(err?.message || 'Could not send your entry. Please try again.');
+    } finally {
+      setBusy('');
+    }
+  }, [
+    state.blooms, entryConsent, entryName, entryPhone, title, creator, score, token,
+    refreshContest, showToast,
+  ]);
+
+  /**
+   * WhatsApp cannot be handed a picture through a link — no share-intent URL
+   * carries a file. So the honest flow is two steps, in this order: save the
+   * image, then open WhatsApp with the words already written. The person
+   * attaches the picture themselves, which is what they would have done anyway.
+   */
+  const doWhatsApp = useCallback(async () => {
+    const caption = captionFor({
+      title: title.trim() || 'My Onam Pookalam',
+      creator: creator.trim(),
+      score,
+    });
+    await doExport('whatsapp', { download: true });
+    window.open(
+      `https://api.whatsapp.com/send?text=${encodeURIComponent(caption)}`,
+      '_blank',
+      'noopener'
+    );
+  }, [title, creator, score, doExport]);
 
   /* Clicking the dark surround dismisses. Guarded on the target so a click that
      started inside the card and drifted onto the scrim does not close it. */
@@ -1348,30 +1520,61 @@ export default function Pookalam() {
                   </button>
                 ))}
               </div>
-              <div className="onam-row" style={{ marginTop: 10 }}>
+              <div className="onam-share">
                 <button
                   type="button"
-                  className="onam-btn is-primary"
+                  className="onam-sharebtn"
                   onClick={() => doExport('share')}
                   disabled={!used || !!busy}
                 >
                   <IconShare />
-                  {busy === 'share' ? 'Working…' : 'Save or share'}
+                  {busy === 'share' ? 'Working…' : canShareFiles ? 'Share picture' : 'Download'}
                 </button>
                 <button
                   type="button"
-                  className="onam-btn"
+                  className="onam-sharebtn is-whatsapp"
+                  onClick={doWhatsApp}
+                  disabled={!used || !!busy}
+                >
+                  <IconWhatsApp />
+                  {busy === 'whatsapp' ? 'Saving…' : 'WhatsApp'}
+                </button>
+                <button
+                  type="button"
+                  className="onam-sharebtn"
+                  onClick={doCaption}
+                  disabled={!used}
+                >
+                  <IconCopy />
+                  Copy caption
+                </button>
+                <button
+                  type="button"
+                  className="onam-sharebtn"
                   onClick={doSave}
                   disabled={!used || !!busy}
                 >
                   <IconSave />
-                  {busy === 'save' ? 'Saving…' : 'Keep on this device'}
-                </button>
-                <button type="button" className="onam-btn" onClick={doCaption} disabled={!used}>
-                  <IconCopy />
-                  Copy caption
+                  {busy === 'save' ? 'Saving…' : 'Keep on device'}
                 </button>
               </div>
+
+              <p className="onam-sub">Enter the contest</p>
+              <div className="onam-row">
+                <button
+                  type="button"
+                  className="onam-btn is-gold"
+                  onClick={() => {
+                    setEntryError('');
+                    setModal('enter');
+                  }}
+                  disabled={!used || !!busy}
+                >
+                  <IconTrophy />
+                  Enter this pookalam
+                </button>
+              </div>
+              {myEntries.length > 0 && myEntries.map((e) => <MyEntry key={e.id} entry={e} />)}
 
               {coupon && (
                 <>
@@ -1388,9 +1591,12 @@ export default function Pookalam() {
               )}
 
               <p className="onam-hint">
-                Saving keeps a copy on this device only — nothing about your
-                pookalam is uploaded anywhere. The image is drawn fresh at full
-                size, so it holds up as a post.
+                <b>Keep on device</b> stores the design in this browser only —
+                nothing is uploaded. Entering the contest does upload the
+                picture, so we can post it and judge it.{' '}
+                {canShareFiles
+                  ? 'Share picture opens your phone’s share sheet with the image attached.'
+                  : 'Your browser cannot attach a picture to a share sheet, so Share downloads it instead.'}
               </p>
             </div>
           )}
@@ -1415,11 +1621,51 @@ export default function Pookalam() {
               </Link>
             </div>
             <p className="onam-fineprint">
-              Everything in this game runs in your browser. Your designs never
-              leave this device.
+              The game itself runs entirely in your browser. Nothing is uploaded
+              unless you enter the contest.
             </p>
           </div>
         </div>
+
+        {/* --- contest gallery ---------------------------------------- */}
+        {/* Only ever approved entries — the server does that filtering, so an
+            unreviewed submission cannot reach the storefront even by mistake. */}
+        {gallery.length > 0 && (
+          <div className="onam-gallery-wrap">
+            <p className="onam-eyebrow">Contest</p>
+            <h2
+              style={{
+                fontFamily: 'var(--font-display)',
+                fontSize: 'clamp(20px, 2.8vw, 26px)',
+                fontWeight: 600,
+                letterSpacing: '-0.02em',
+                color: 'var(--on-green)',
+                margin: '0 0 4px',
+              }}
+            >
+              Pookalams people have laid
+            </h2>
+            <p className="onam-hint" style={{ margin: '0 auto', maxWidth: '52ch' }}>
+              {gallery.some((e) => e.winner)
+                ? 'The winner is picked by us and gets an offer or a gift from the mill.'
+                : 'Enter yours from the Finish tab. We pick a winner and send them an offer or a gift.'}
+            </p>
+            <div className="onam-gallery">
+              {gallery.map((e) => (
+                <figure className={`onam-gcard${e.winner ? ' is-winner' : ''}`} key={e.id}>
+                  {e.winner && <span className="crown">Winner</span>}
+                  <img src={e.image} alt={e.title || 'A pookalam'} loading="lazy" />
+                  <figcaption>
+                    <span className="gt">{e.title || 'Untitled'}</span>
+                    <span className="gm">
+                      {e.name} · {e.blooms} flowers
+                    </span>
+                  </figcaption>
+                </figure>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* --- mobile drawer --------------------------------------------- */}
@@ -1685,6 +1931,108 @@ export default function Pookalam() {
         </div>
       )}
 
+      {modal === 'enter' && (
+        <div
+          className="onam-scrim"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Enter the contest"
+          onClick={scrimClose}
+        >
+          <div className="onam-modal">
+            <button
+              type="button"
+              className="onam-x"
+              onClick={() => setModal(null)}
+              aria-label="Close"
+            >
+              <IconClose />
+            </button>
+            <p className="onam-eyebrow">Onam contest</p>
+            <h2>Enter your pookalam</h2>
+            <p>
+              We check every entry before posting it. Pick a winner&apos;s worth of
+              flowers and you could win an offer or a gift from the mill.
+            </p>
+
+            {/* Drawing the 1080px picture takes a second or two. Saying so beats
+                a silent gap where the image is about to appear. */}
+            {preview?.url ? (
+              <img className="onam-preview" src={preview.url} alt="Your pookalam" />
+            ) : (
+              <p className="onam-empty-note">Drawing your picture…</p>
+            )}
+
+            <div style={{ textAlign: 'left', marginTop: 16 }}>
+              <label className="onam-field">
+                <span>Pookalam name</span>
+                <input
+                  type="text"
+                  value={title}
+                  maxLength={60}
+                  placeholder="My Onam Pookalam"
+                  onChange={(e) => setTitle(e.target.value)}
+                />
+              </label>
+              <label className="onam-field">
+                <span>Your name</span>
+                <input
+                  type="text"
+                  value={entryName}
+                  maxLength={40}
+                  placeholder="The name to post it under"
+                  onChange={(e) => setEntryName(e.target.value)}
+                />
+              </label>
+              <label className="onam-field">
+                <span>Mobile number</span>
+                <input
+                  type="tel"
+                  inputMode="numeric"
+                  value={entryPhone}
+                  maxLength={14}
+                  placeholder="10-digit mobile"
+                  onChange={(e) => setEntryPhone(e.target.value)}
+                />
+              </label>
+              <label className="onam-consent">
+                <input
+                  type="checkbox"
+                  checked={entryConsent}
+                  onChange={(e) => setEntryConsent(e.target.checked)}
+                />
+                <span>
+                  You may post my pookalam and my first name on this site, and
+                  contact me on this number if I win.
+                </span>
+              </label>
+            </div>
+
+            {entryError && <p className="onam-formerr">{entryError}</p>}
+
+            <div className="onam-row is-center" style={{ marginTop: 18 }}>
+              <button
+                type="button"
+                className="onam-btn is-primary is-big"
+                onClick={doEnterContest}
+                disabled={busy === 'enter'}
+              >
+                <IconTrophy />
+                {busy === 'enter' ? 'Sending…' : 'Send my entry'}
+              </button>
+              <button type="button" className="onam-btn is-ghost" onClick={() => setModal(null)}>
+                Not now
+              </button>
+            </div>
+            <p className="onam-hint" style={{ textAlign: 'center' }}>
+              {token
+                ? 'Because you are signed in, a prize coupon would be locked to your account.'
+                : 'Entering as a guest is fine. Sign in first and any prize coupon can be locked to your account.'}
+            </p>
+          </div>
+        </div>
+      )}
+
       {modal === 'bloom' && (
         <div className="onam-scrim" role="dialog" aria-modal="true" aria-label="Full bloom" onClick={scrimClose}>
           <div className="onam-modal is-wide">
@@ -1761,7 +2109,30 @@ export default function Pookalam() {
               </button>
             </div>
             <div className="onam-row is-center" style={{ marginTop: 10 }}>
-              <Link className="onam-btn is-gold" to="/shop">
+              <button
+                type="button"
+                className="onam-btn is-gold"
+                onClick={() => {
+                  setEntryError('');
+                  setModal('enter');
+                }}
+              >
+                <IconTrophy />
+                Enter the contest
+              </button>
+              <button
+                type="button"
+                className="onam-sharebtn is-whatsapp"
+                style={{ flexDirection: 'row', gap: 8, padding: '11px 17px', borderRadius: 999 }}
+                onClick={doWhatsApp}
+                disabled={!!busy}
+              >
+                <IconWhatsApp />
+                {busy === 'whatsapp' ? 'Saving…' : 'WhatsApp'}
+              </button>
+            </div>
+            <div className="onam-row is-center" style={{ marginTop: 10 }}>
+              <Link className="onam-btn" to="/shop">
                 Shop the season
               </Link>
               <button type="button" className="onam-btn is-ghost" onClick={doReset}>

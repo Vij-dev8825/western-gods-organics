@@ -31,6 +31,7 @@ const { processReviewRequests } = require('./utils/reviewRequests');
 const { checkShopHealth } = require('./utils/shopHealth');
 const { processDeliveryUnboxingNudges } = require('./utils/deliveryUnboxingNudge');
 const feedbackRoutes = require('./routes/feedback');
+const pookalamRoutes = require('./routes/pookalam');
 const whatsappBaileys = require('./utils/whatsappBaileys');
 const mediaRoutes = require('./routes/media');
 const clientErrorRoutes = require('./routes/clientErrors');
@@ -131,6 +132,7 @@ app.use('/api/gift-cards', giftCardRoutes);
 app.use('/api/affiliates', affiliateRoutes);
 app.use('/api/seller', sellerPortalRoutes);
 app.use('/api/feedback', feedbackRoutes);
+app.use('/api/pookalam', pookalamRoutes);
 
 // Uploaded banner videos/images
 app.use('/uploads', express.static(UPLOADS_DIR, { maxAge: '7d' }));

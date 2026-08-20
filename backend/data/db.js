@@ -63,6 +63,7 @@ const COLLECTIONS = [
   'audit-log',
   'client-errors',
   'shop-health',
+  'pookalam-entries',
 ];
 
 let mode = 'json';

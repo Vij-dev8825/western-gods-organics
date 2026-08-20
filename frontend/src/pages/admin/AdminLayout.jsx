@@ -28,6 +28,7 @@ const links = [
   { to: '/admin/shipping', label: 'Domestic Shipping' },
   { to: '/admin/pressings', label: 'Scheduled Pressings' },
   { to: '/admin/festivals', label: 'Festival Calendar' },
+  { to: '/admin/pookalam', label: 'Pookalam Contest' },
   { to: '/admin/trade', label: 'Trade & Wholesale' },
   { to: '/admin/share', label: 'Share & Promote' },
   { to: '/admin/invoice', label: 'Invoice Details' },

@@ -28,6 +28,7 @@ const { listAll: listAllPressings, countReserved } = require('../utils/pressings
 const { imageUpload, storeUploadedFile } = require('../utils/imageUploadHandler');
 const { buildBatchLabelPdf } = require('../utils/batchLabels');
 const { buildProfitReport } = require('../utils/profit');
+const pookalamContest = require('../utils/pookalam');
 const { sendInvoiceForOrder } = require('../utils/sendInvoice');
 const { buildProcurementPlan } = require('../utils/procurement');
 const { listAll: listAllFestivals, DEFAULT_LEAD_DAYS: FESTIVAL_LEAD_DAYS } = require('../utils/festivals');
@@ -3382,6 +3383,80 @@ router.delete('/pressings/:id/video', async (req, res, next) => {
       cloudinary.destroyFile(pressing.videoPublicId, 'video').catch(() => {});
     }
     await db.put('pressings', { ...pressing, videoUrl: '', videoPublicId: null });
+    res.json({ success: true });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/* --------------------------- Pookalam contest ----------------------------- */
+/* Moderation and prize-giving for the Onam pookalam contest at /onam. The
+   entrant-facing half is routes/pookalam.js; these live here so they inherit
+   the requireAdmin gate and the audit log applied at the top of this file. */
+
+router.get('/pookalam/entries', async (req, res, next) => {
+  try {
+    const entries = await pookalamContest.allEntries();
+    res.json({
+      success: true,
+      entries: entries.map(pookalamContest.toAdmin),
+      maxPerPhone: pookalamContest.MAX_ENTRIES_PER_PHONE,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.post('/pookalam/entries/:id/status', async (req, res, next) => {
+  try {
+    const entry = await pookalamContest.setStatus(req.params.id, req.body.status);
+    if (!entry) return res.status(404).json({ success: false, message: 'Entry not found.' });
+    res.json({ success: true, entry: pookalamContest.toAdmin(entry) });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/* Awards the prize AND marks the winner. A coupon prize mints a real code into
+   the coupons collection; a gift prize records what to send. The response
+   carries `notified` so the admin page can say whether the winner was actually
+   reachable in-app, and tell the admin to message a guest by hand when not. */
+router.post('/pookalam/entries/:id/award', async (req, res, next) => {
+  try {
+    const result = await pookalamContest.awardPrize(req.params.id, {
+      kind: req.body.kind,
+      type: req.body.type,
+      value: req.body.value,
+      minOrder: req.body.minOrder,
+      expiresAt: req.body.expiresAt || null,
+      giftNote: req.body.giftNote,
+    });
+    if (!result) return res.status(404).json({ success: false, message: 'Entry not found.' });
+    res.json({
+      success: true,
+      entry: pookalamContest.toAdmin(result.entry),
+      coupon: result.coupon,
+      notified: result.entry.notified,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.post('/pookalam/entries/:id/clear-winner', async (req, res, next) => {
+  try {
+    const entry = await pookalamContest.clearWinner(req.params.id);
+    if (!entry) return res.status(404).json({ success: false, message: 'Entry not found.' });
+    res.json({ success: true, entry: pookalamContest.toAdmin(entry) });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.delete('/pookalam/entries/:id', async (req, res, next) => {
+  try {
+    const entry = await pookalamContest.removeEntry(req.params.id);
+    if (!entry) return res.status(404).json({ success: false, message: 'Entry not found.' });
     res.json({ success: true });
   } catch (err) {
     next(err);

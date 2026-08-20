@@ -105,6 +105,7 @@ const AdminFeedback = lazy(() => import('./pages/admin/AdminFeedback'));
 const AdminMargins = lazy(() => import('./pages/admin/AdminMargins'));
 const Feedback = lazy(() => import('./pages/Feedback'));
 const AdminFestivals = lazy(() => import('./pages/admin/AdminFestivals'));
+const AdminPookalam = lazy(() => import('./pages/admin/AdminPookalam'));
 const AdminTrade = lazy(() => import('./pages/admin/AdminTrade'));
 const AdminToday = lazy(() => import('./pages/admin/Today'));
 const AdminPressings = lazy(() => import('./pages/admin/AdminPressings'));
@@ -288,6 +289,7 @@ export default function App() {
         <Route path="feedback" element={<AdminFeedback />} />
         <Route path="margins" element={<AdminMargins />} />
         <Route path="festivals" element={<AdminFestivals />} />
+        <Route path="pookalam" element={<AdminPookalam />} />
         <Route path="trade" element={<AdminTrade />} />
         <Route path="today" element={<AdminToday />} />
         <Route path="pressings" element={<AdminPressings />} />

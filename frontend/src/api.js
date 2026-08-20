@@ -286,6 +286,19 @@ export const api = {
 
   getPressingCalendar: () => request('/products/pressings/calendar'),
   getFestivals: () => request('/products/festivals'),
+
+  /* --- Onam pookalam contest -------------------------------------------- */
+  /** Approved entries only. Public, no token. */
+  pookalamGallery: () => request('/pookalam/gallery'),
+  /** Multipart: the picture is a ~1 MB PNG, too close to the 2 MB JSON body
+   *  ceiling to send as base64. `token` is optional — guests may enter. */
+  submitPookalam: (formData, token) =>
+    request('/pookalam/entries', { method: 'POST', formData, token }),
+  /** The caller's own entries: by claim token for a guest, by JWT for a member. */
+  myPookalamEntries: ({ token, claimToken } = {}) =>
+    request(`/pookalam/entries/mine${claimToken ? `?token=${encodeURIComponent(claimToken)}` : ''}`, {
+      token,
+    }),
   getOpenPressings: (productId) =>
     request(`/products/pressings/open${productId ? `?productId=${encodeURIComponent(productId)}` : ''}`),
 
@@ -327,6 +340,16 @@ export const api = {
     createFestival: (token, body) => request('/admin/festivals', { method: 'POST', body, token }),
     updateFestival: (token, id, body) => request(`/admin/festivals/${id}`, { method: 'PUT', body, token }),
     deleteFestival: (token, id) => request(`/admin/festivals/${id}`, { method: 'DELETE', token }),
+
+    listPookalamEntries: (token) => request('/admin/pookalam/entries', { token }),
+    setPookalamStatus: (token, id, status) =>
+      request(`/admin/pookalam/entries/${id}/status`, { method: 'POST', body: { status }, token }),
+    awardPookalamPrize: (token, id, prize) =>
+      request(`/admin/pookalam/entries/${id}/award`, { method: 'POST', body: prize, token }),
+    clearPookalamWinner: (token, id) =>
+      request(`/admin/pookalam/entries/${id}/clear-winner`, { method: 'POST', token }),
+    deletePookalamEntry: (token, id) =>
+      request(`/admin/pookalam/entries/${id}`, { method: 'DELETE', token }),
 
     profit: (token, days = 30) => request(`/admin/profit?days=${days}`, { token }),
     catalogMargins: (token) => request('/admin/catalog-margins', { token }),
