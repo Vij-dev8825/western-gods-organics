@@ -1677,6 +1677,10 @@ function readFestival(body, existing = {}) {
       // frontend, and an id that no longer exists simply falls back to matching
       // on the name rather than erroring on a save.
       theme: String(body.theme || '').trim().toLowerCase().slice(0, 24),
+      // Which weather falls for this one. Blank means the effect is chosen
+      // from the design, which is right nearly always — this is here for the
+      // shop that wants crackers on a day the code would have given glints.
+      effect: String(body.effect || '').trim().toLowerCase().slice(0, 16),
       active: body.active !== false,
     },
   };
@@ -2141,6 +2145,41 @@ router.put('/sale-banner', async (req, res, next) => {
       endDate: req.body.endDate || '',
     };
     await db.put('sale-banner', settings);
+    res.json({ success: true, settings });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/* ---------------------------- Festival animation --------------------------- */
+
+const ANIMATION_DEFAULTS = { id: 'main', enabled: true, scope: 'all', intensity: 'normal' };
+
+// GET /api/admin/festival-animation
+router.get('/festival-animation', async (req, res, next) => {
+  try {
+    const settings = await db.get('festival-animation', 'main');
+    res.json({ success: true, settings: settings || ANIMATION_DEFAULTS });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// PUT /api/admin/festival-animation  { enabled, scope, intensity }
+router.put('/festival-animation', async (req, res, next) => {
+  try {
+    const settings = {
+      id: 'main',
+      enabled: req.body.enabled !== false,
+      // Whether the weather follows people around the shop or stays on the
+      // front page. Anything unrecognised falls back rather than 400s: this is
+      // presentation, and a bad value should not stop the form saving.
+      scope: ['all', 'home'].includes(req.body.scope) ? req.body.scope : 'all',
+      intensity: ['subtle', 'normal', 'lively'].includes(req.body.intensity)
+        ? req.body.intensity
+        : 'normal',
+    };
+    await db.put('festival-animation', settings);
     res.json({ success: true, settings });
   } catch (err) {
     next(err);

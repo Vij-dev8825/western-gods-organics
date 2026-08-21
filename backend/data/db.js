@@ -37,6 +37,7 @@ const COLLECTIONS = [
   'page-banners',
   'sale-banner',
   'announcements',
+  'festival-animation',
   'currency-overrides',
   'media',
   'push-subscriptions',

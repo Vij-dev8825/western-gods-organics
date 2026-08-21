@@ -442,8 +442,17 @@ router.get('/festivals', async (req, res, next) => {
   try {
     const [festivals, products] = await Promise.all([listUpcomingFestivals(), db.list('products')]);
     const byId = Object.fromEntries(products.map((p) => [p.id, p]));
+    // Carried on this response rather than a route of its own: every page
+    // already fetches the festival list, and the animation cannot be decided
+    // without it anyway.
+    const anim = await db.get('festival-animation', 'main');
     res.json({
       success: true,
+      animation: {
+        enabled: anim?.enabled !== false,
+        scope: ['all', 'home'].includes(anim?.scope) ? anim.scope : 'all',
+        intensity: ['subtle', 'normal', 'lively'].includes(anim?.intensity) ? anim.intensity : 'normal',
+      },
       festivals: festivals.map((f) => ({
         id: f.id,
         name: f.name,
@@ -472,6 +481,7 @@ router.get('/festivals', async (req, res, next) => {
         // Both drive the home page band, so both have to reach the client.
         celebrate: f.celebrate !== false,
         theme: f.theme || '',
+        effect: f.effect || '',
         products: (f.productIds || [])
           .map((id) => byId[id])
           .filter(Boolean)

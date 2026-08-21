@@ -139,7 +139,9 @@ function NotFound() {
 // Kept entirely separate from the admin area, which has its own shell.
 function StoreLayout() {
   const { t } = useLang();
-  const { theme: festivalTheme } = useNearestFestival();
+  const { theme: festivalTheme, festival, animation } = useNearestFestival();
+  // Only needed so "home page only" can mean the whole home page.
+  const onHome = useLocation().pathname === '/';
   // The floating buttons step aside while the page scrolls down; here rather
   // than in each button so all three move together and there's one listener.
   useFabAutoHide();
@@ -149,7 +151,7 @@ function StoreLayout() {
           Fixed to the viewport and painted behind everything, so it drifts
           past the shop without ever getting between a customer and what they
           are reading. Renders nothing out of season or under Reduce Motion. */}
-      <FestivalAtmosphere theme={festivalTheme} />
+      <FestivalAtmosphere theme={festivalTheme} festival={festival} animation={animation} onHome={onHome} />
       <SaleCountdown />
       <AnnounceTicker />
       <Navbar />

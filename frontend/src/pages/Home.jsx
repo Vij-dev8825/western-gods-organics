@@ -81,7 +81,7 @@ const WEBSITE_SCHEMA = {
 };
 
 export default function Home() {
-  const { theme: festivalTheme } = useNearestFestival();
+  const { theme: festivalTheme, festival: nearFestival, animation: festivalAnimation } = useNearestFestival();
   const { t, lang } = useLang();
   const { isLoggedIn, token } = useAuth();
   const [products, setProducts] = useState([]);
@@ -223,7 +223,12 @@ export default function Home() {
         <div className="hero-overlay" />
         {/* The hero hangs its own, because the app-wide layer sits behind the
             page and this hero's video is opaque — it would be invisible here. */}
-        <FestivalAtmosphere theme={festivalTheme} variant="hero" />
+        <FestivalAtmosphere
+          theme={festivalTheme}
+          festival={nearFestival}
+          animation={festivalAnimation}
+          variant="hero"
+        />
         <div className="hero-video-content container">
           <span className="eyebrow light">{t('heroEyebrow')}</span>
           <h1>{heroTitle}</h1>

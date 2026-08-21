@@ -113,16 +113,31 @@ function usePrefersReducedMotion() {
  *            hero video is opaque and paints over anything at z-index -1 —
  *            so the home page hangs its own.
  */
-export default function FestivalAtmosphere({ theme, variant = 'ambient' }) {
+export default function FestivalAtmosphere({ theme, festival, animation, onHome = false, variant = 'ambient' }) {
   const reduced = usePrefersReducedMotion();
   if (reduced || !theme) return null;
 
-  const kind = WEATHER[theme.id];
-  if (!kind) return null;
+  /* Admin switches, all of them failing open: an absent settings record means
+     a shop that has never opened the page, and it should still get the
+     animation rather than a silently blank festival. */
+  if (animation?.enabled === false) return null;
+  /* "Home page only" has to mean the whole home page, not just its hero —
+     otherwise scrolling past the fold on the one page it is switched on for
+     turns it off, which is not what the setting says. The hero variant only
+     ever exists on the home page, so it always passes. */
+  if (animation?.scope === 'home' && variant !== 'hero' && !onHome) return null;
+
+  /* The festival's own choice outranks the one implied by its design, for the
+     shop that wants crackers on a day the code would have given glints. */
+  const kind = festival?.effect || WEATHER[theme.id];
+  if (!kind || kind === 'none') return null;
 
   /* Crackers are bursts, not particles — four going off at different moments
      reads as a sky, and more reads as a wall. */
-  const count = kind === 'crackers' ? 5 : kind === 'colour' ? 9 : 14;
+  const base = kind === 'crackers' ? 5 : kind === 'colour' ? 9 : 14;
+  const scale = { subtle: 0.5, normal: 1, lively: 1.6 }[animation?.intensity] ?? 1;
+  // Never below two, or "subtle" on crackers would be a single lonely burst.
+  const count = Math.max(2, Math.round(base * scale));
 
   return (
     <div className={`fest-weather fest-weather-${variant} fest-weather-${kind}`} aria-hidden="true">

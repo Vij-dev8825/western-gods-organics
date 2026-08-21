@@ -6,7 +6,7 @@ import { useToast } from '../../context/ToastContext';
 
 const BLANK = {
   name: '', date: '', note: '', productIds: [], leadDays: 5, couponCode: '',
-  startsDaysBefore: 0, endsDaysAfter: 0,
+  startsDaysBefore: 0, endsDaysAfter: 0, effect: '',
   celebrate: true, theme: '', active: true,
 };
 
@@ -28,6 +28,8 @@ export default function AdminFestivals() {
   const [form, setForm] = useState(BLANK);
   const [editingId, setEditingId] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [anim, setAnim] = useState({ enabled: true, scope: 'all', intensity: 'normal' });
+  const [savingAnim, setSavingAnim] = useState(false);
   const [loading, setLoading] = useState(true);
 
   async function load() {
@@ -42,6 +44,30 @@ export default function AdminFestivals() {
     }
   }
   useEffect(() => { load(); }, []);
+
+  useEffect(() => {
+    api.admin
+      .getFestivalAnimation(token)
+      .then((d) => setAnim({
+        enabled: d.settings?.enabled !== false,
+        scope: d.settings?.scope || 'all',
+        intensity: d.settings?.intensity || 'normal',
+      }))
+      .catch(() => {});
+  }, [token]);
+
+  async function saveAnim() {
+    setSavingAnim(true);
+    setMessage(null);
+    try {
+      await api.admin.saveFestivalAnimation(token, anim);
+      setMessage({ type: 'success', text: 'Animation settings saved.' });
+    } catch (err) {
+      setMessage({ type: 'error', text: err.message });
+    } finally {
+      setSavingAnim(false);
+    }
+  }
 
   function reset() {
     setForm(BLANK);
@@ -75,6 +101,7 @@ export default function AdminFestivals() {
       productIds: f.productIds || [], leadDays: f.leadDays ?? 5,
       couponCode: f.couponCode || '',
       startsDaysBefore: f.startsDaysBefore ?? 0, endsDaysAfter: f.endsDaysAfter ?? 0,
+      effect: f.effect || '',
       celebrate: f.celebrate !== false, theme: f.theme || '',
       active: f.active !== false,
     });
@@ -112,6 +139,42 @@ export default function AdminFestivals() {
         that would be wrong every second year. <b>Pongal and Tamil New Year barely move; Aadi,
         Karthigai and Deepavali do.</b>
       </p>
+
+      <div className="card" style={{ padding: 18, margin: '18px 0', maxWidth: 640 }}>
+        <h4 style={{ marginTop: 0 }}>Animation</h4>
+        <p className="muted" style={{ fontSize: '0.85rem', marginTop: -4 }}>
+          The flowers, crackers and sparks that drift across the site while a festival
+          is on. Nothing shows outside a festival, and nothing shows for a visitor whose
+          device asks for reduced motion — that is their choice, not a setting here.
+        </p>
+        <div className="form-grid">
+          <div className="field">
+            <label>Where it shows</label>
+            <select value={anim.scope} onChange={(e) => setAnim({ ...anim, scope: e.target.value })}>
+              <option value="all">Every page</option>
+              <option value="home">Home page only</option>
+            </select>
+          </div>
+          <div className="field">
+            <label>How much</label>
+            <select value={anim.intensity} onChange={(e) => setAnim({ ...anim, intensity: e.target.value })}>
+              <option value="subtle">Subtle</option>
+              <option value="normal">Normal</option>
+              <option value="lively">Lively</option>
+            </select>
+          </div>
+        </div>
+        <label className="check-row">
+          <input type="checkbox" checked={anim.enabled}
+            onChange={(e) => setAnim({ ...anim, enabled: e.target.checked })} />
+          Show the animation
+        </label>
+        <div className="btn-row">
+          <button type="button" className="btn btn-gold btn-sm" disabled={savingAnim} onClick={saveAnim}>
+            {savingAnim ? 'Saving…' : 'Save animation settings'}
+          </button>
+        </div>
+      </div>
 
       <form className="card" style={{ padding: 18, margin: '18px 0', maxWidth: 640 }} onSubmit={submit}>
         <h4 style={{ marginTop: 0 }}>{editingId ? 'Edit festival' : 'Add a festival'}</h4>
@@ -192,6 +255,22 @@ export default function AdminFestivals() {
           <p className="muted" style={{ fontSize: '0.8rem', marginTop: 4 }}>
             Leave on automatic unless the name will not be recognised — calling
             Deepavali "Festival of Lights" would otherwise get the plain kolam.
+          </p>
+        </div>
+        <div className="field">
+          <label>Animation</label>
+          <select value={form.effect} onChange={(e) => setForm({ ...form, effect: e.target.value })}>
+            <option value="">Match the design automatically</option>
+            <option value="petals">Falling flowers</option>
+            <option value="crackers">Crackers</option>
+            <option value="embers">Rising sparks</option>
+            <option value="colour">Drifting colour</option>
+            <option value="sparkle">Slow glints</option>
+            <option value="none">Nothing</option>
+          </select>
+          <p className="muted" style={{ fontSize: '0.8rem', marginTop: 4 }}>
+            Automatic is nearly always right — flowers for Onam, crackers for Deepavali,
+            sparks for Karthigai. Change it for a day you want treated differently.
           </p>
         </div>
         <div className="field">

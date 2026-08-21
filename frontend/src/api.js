@@ -406,6 +406,10 @@ export const api = {
 
     getAnnouncements: (token) => request('/admin/announcements', { token }),
 
+    getFestivalAnimation: (token) => request('/admin/festival-animation', { token }),
+
+    saveFestivalAnimation: (token, body) => request('/admin/festival-animation', { method: 'PUT', body, token }),
+
     saveAnnouncements: (token, body) => request('/admin/announcements', { method: 'PUT', body, token }),
     updateSaleBanner: (token, settings) => request('/admin/sale-banner', { method: 'PUT', body: settings, token }),
     getPaymentMethods: (token) => request('/admin/payment-methods', { token }),
