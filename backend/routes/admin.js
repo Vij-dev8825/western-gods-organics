@@ -1659,6 +1659,18 @@ function readFestival(body, existing = {}) {
       // festival with no offer simply has none rather than a fake one. Must
       // match a real coupon; nothing here creates one.
       couponCode: String(body.couponCode || '').trim().toUpperCase().slice(0, 24),
+      // Whether the home page dresses itself for this one. A festival can be
+      // worth listing on the calendar — so the "order by" date is somewhere a
+      // customer can find it — without taking over the front of the shop.
+      celebrate: body.celebrate !== false,
+      // Which design to use. Normally left blank and matched from the name,
+      // which is what makes adding a festival a one-field job. Set it when the
+      // name will not match: a shop calling Deepavali "Festival of Lights" gets
+      // the generic kolam otherwise, and this is the way to say what it is.
+      // Not validated against the design list here — the list lives in the
+      // frontend, and an id that no longer exists simply falls back to matching
+      // on the name rather than erroring on a save.
+      theme: String(body.theme || '').trim().toLowerCase().slice(0, 24),
       active: body.active !== false,
     },
   };

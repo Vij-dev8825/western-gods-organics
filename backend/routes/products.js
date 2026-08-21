@@ -461,6 +461,9 @@ router.get('/festivals', async (req, res, next) => {
         // on an offer are the ones set on the coupon itself: expiry, minimum
         // order, per-customer use.
         couponCode: f.couponCode || '',
+        // Both drive the home page band, so both have to reach the client.
+        celebrate: f.celebrate !== false,
+        theme: f.theme || '',
         products: (f.productIds || [])
           .map((id) => byId[id])
           .filter(Boolean)

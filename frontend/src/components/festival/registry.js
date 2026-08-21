@@ -435,6 +435,16 @@ export function themeFor(festival) {
   /* Mourning and solemn observance: no band, no offer, no confetti. */
   if (SOLEMN.test(festival.name)) return null;
 
+  /* An admin who has picked a design outranks the name match. This is the
+     escape hatch for a festival called something the patterns below will never
+     recognise — "Festival of Lights" instead of Deepavali, or a house name for
+     a local temple day. An id that no longer exists falls through to matching
+     rather than breaking the band. */
+  if (festival.theme) {
+    const chosen = FESTIVALS.find((f) => f.id === festival.theme);
+    if (chosen) return chosen;
+  }
+
   const found = FESTIVALS.find((f) => f.match.test(festival.name));
   if (found) return found;
 
@@ -456,3 +466,8 @@ export function themeFor(festival) {
  *  Three weeks: long enough to matter to the mill's lead times, short enough
  *  that the home page is not permanently in festival dress. */
 export const SHOW_WITHIN_DAYS = 21;
+
+
+/** The designs an admin can pick from, for the festival form's Design select.
+ *  Derived from the registry so the two can never drift apart. */
+export const DESIGN_CHOICES = FESTIVALS.map((f) => ({ id: f.id, label: f.label }));

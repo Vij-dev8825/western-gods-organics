@@ -62,8 +62,11 @@ export default function FestivalCelebration() {
       .then((d) => {
         if (!alive) return;
         /* listUpcoming already sorts soonest-first and drops anything past, so
-           the first entry is the one to celebrate. */
-        const next = (d.festivals || [])[0] || null;
+           the first entry is normally the one to celebrate — unless the admin
+           has taken it off the home page, in which case skip to the next one
+           that is still wanted here. A festival can be worth a place on the
+           calendar without dressing the whole shop. */
+        const next = (d.festivals || []).find((f) => f.celebrate !== false) || null;
         setFestival(next && next.daysAway <= SHOW_WITHIN_DAYS ? next : null);
       })
       .catch(() => {

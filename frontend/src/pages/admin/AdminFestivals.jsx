@@ -1,9 +1,13 @@
 import { useEffect, useState } from 'react';
+import { DESIGN_CHOICES } from '../../components/festival/registry';
 import { api } from '../../api';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 
-const BLANK = { name: '', date: '', note: '', productIds: [], leadDays: 5, couponCode: '', active: true };
+const BLANK = {
+  name: '', date: '', note: '', productIds: [], leadDays: 5, couponCode: '',
+  celebrate: true, theme: '', active: true,
+};
 
 const fmt = (iso) => new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
 
@@ -68,7 +72,9 @@ export default function AdminFestivals() {
     setForm({
       name: f.name, date: f.date, note: f.note || '',
       productIds: f.productIds || [], leadDays: f.leadDays ?? 5,
-      couponCode: f.couponCode || '', active: f.active !== false,
+      couponCode: f.couponCode || '',
+      celebrate: f.celebrate !== false, theme: f.theme || '',
+      active: f.active !== false,
     });
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
@@ -107,6 +113,27 @@ export default function AdminFestivals() {
 
       <form className="card" style={{ padding: 18, margin: '18px 0', maxWidth: 640 }} onSubmit={submit}>
         <h4 style={{ marginTop: 0 }}>{editingId ? 'Edit festival' : 'Add a festival'}</h4>
+        {!editingId && (
+          <div className="field">
+            <label>Start from a known festival</label>
+            <div className="chip-list">
+              {DESIGN_CHOICES.filter((d) => d.id !== 'generic').map((d) => (
+                <button
+                  type="button"
+                  key={d.id}
+                  className="pill selectable"
+                  onClick={() => setForm({ ...form, name: d.label, theme: d.id })}
+                >
+                  {d.label}
+                </button>
+              ))}
+            </div>
+            <p className="muted" style={{ fontSize: '0.8rem', marginTop: 4 }}>
+              Fills in the name and picks the matching home page design. You still
+              set the date — see the note above about why these are not calculated.
+            </p>
+          </div>
+        )}
         <div className="field">
           <label>Name</label>
           <input required maxLength={80} value={form.name} placeholder="e.g. Karthigai Deepam"
@@ -136,6 +163,19 @@ export default function AdminFestivals() {
           </p>
         </div>
         <div className="field">
+          <label>Home page design</label>
+          <select value={form.theme} onChange={(e) => setForm({ ...form, theme: e.target.value })}>
+            <option value="">Match the name automatically</option>
+            {DESIGN_CHOICES.map((d) => (
+              <option key={d.id} value={d.id}>{d.label}</option>
+            ))}
+          </select>
+          <p className="muted" style={{ fontSize: '0.8rem', marginTop: 4 }}>
+            Leave on automatic unless the name will not be recognised — calling
+            Deepavali "Festival of Lights" would otherwise get the plain kolam.
+          </p>
+        </div>
+        <div className="field">
           <label>What to say about it (optional)</label>
           <textarea rows={2} maxLength={400} value={form.note}
             placeholder="e.g. Lamps are lit with sesame oil through the evening — a litre lasts most households the week."
@@ -156,6 +196,15 @@ export default function AdminFestivals() {
             ))}
           </div>
         </div>
+        <label className="check-row">
+          <input type="checkbox" checked={form.celebrate}
+            onChange={(e) => setForm({ ...form, celebrate: e.target.checked })} />
+          Dress the home page for it
+        </label>
+        <p className="muted" style={{ fontSize: '0.8rem', margin: '-6px 0 10px 26px' }}>
+          Off keeps it on the calendar with its order-by date, but leaves the home
+          page alone — useful for a day you want listed but not celebrated.
+        </p>
         <label className="check-row">
           <input type="checkbox" checked={form.active}
             onChange={(e) => setForm({ ...form, active: e.target.checked })} />
