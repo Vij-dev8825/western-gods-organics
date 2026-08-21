@@ -10,6 +10,8 @@ import GoogleReviewsWidget from '../components/GoogleReviewsWidget';
 import UgcGallery from '../components/UgcGallery';
 import ImpactBanner from '../components/ImpactBanner';
 import FestivalCelebration from '../components/festival/FestivalCelebration';
+import FestivalAtmosphere from '../components/festival/FestivalAtmosphere';
+import { useNearestFestival } from '../components/festival/useFestival';
 import StructuredData from '../components/StructuredData';
 import SeoMeta from '../components/SeoMeta';
 import { getProductImage } from '../utils/productImages';
@@ -79,6 +81,7 @@ const WEBSITE_SCHEMA = {
 };
 
 export default function Home() {
+  const { theme: festivalTheme } = useNearestFestival();
   const { t, lang } = useLang();
   const { isLoggedIn, token } = useAuth();
   const [products, setProducts] = useState([]);
@@ -218,6 +221,10 @@ export default function Home() {
           )
         )}
         <div className="hero-overlay" />
+        {/* Petals through Onam, embers through Deepavali. Sits above the video
+            and below the headline, and renders nothing out of season or under
+            Reduce Motion. */}
+        <FestivalAtmosphere theme={festivalTheme} />
         <div className="hero-video-content container">
           <span className="eyebrow light">{t('heroEyebrow')}</span>
           <h1>{heroTitle}</h1>

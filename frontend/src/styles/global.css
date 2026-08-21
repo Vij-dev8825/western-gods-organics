@@ -10271,3 +10271,117 @@ body.has-cookie-bar .install-prompt { bottom: calc(var(--cookie-bar-height, 0px)
   }
   .ticker-run + .ticker-run { display: none; }
 }
+
+/* ---------------------------------------------------------------------------
+ * Festival weather over the hero
+ *
+ * Petals for Onam, embers for Deepavali, colour for Holi. Everything here
+ * animates transform and opacity only — both compositor properties — so a
+ * dozen particles cost the main thread nothing and never trigger layout.
+ *
+ * The layer is inert: it sits above the hero video and below its text, takes
+ * no pointer events and is aria-hidden, so it can be neither clicked through
+ * to nor read out.
+ * ------------------------------------------------------------------------ */
+.fest-weather {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.fest-petal,
+.fest-ember,
+.fest-puff {
+  position: absolute;
+  top: -12%;
+  animation-name: fest-fall;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  will-change: transform, opacity;
+}
+
+.fest-petal {
+  width: 34px;
+  height: 34px;
+  object-fit: contain;
+  /* Slightly held back, so the petals read as behind the headline rather than
+     stuck to the glass in front of it. */
+  opacity: 0.85;
+  filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.25));
+}
+
+/* Embers go the other way: up off a lamp, not down off a tree. */
+.fest-ember {
+  top: auto;
+  bottom: -8%;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  animation-name: fest-rise;
+  filter: blur(0.4px);
+  box-shadow: 0 0 8px currentColor;
+}
+
+.fest-puff {
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  opacity: 0.16;
+  filter: blur(22px);
+  animation-name: fest-hang;
+}
+
+@keyframes fest-fall {
+  from {
+    transform: translate3d(0, 0, 0) rotate(0deg) scale(var(--scale, 1));
+    opacity: 0;
+  }
+  8%   { opacity: 0.85; }
+  92%  { opacity: 0.85; }
+  to {
+    transform: translate3d(var(--drift, 0), 118vh, 0) rotate(var(--spin, 180deg)) scale(var(--scale, 1));
+    opacity: 0;
+  }
+}
+
+@keyframes fest-rise {
+  from {
+    transform: translate3d(0, 0, 0) scale(var(--scale, 1));
+    opacity: 0;
+  }
+  15%  { opacity: 0.9; }
+  85%  { opacity: 0.5; }
+  to {
+    transform: translate3d(var(--drift, 0), -110vh, 0) scale(calc(var(--scale, 1) * 0.4));
+    opacity: 0;
+  }
+}
+
+@keyframes fest-hang {
+  from {
+    transform: translate3d(0, 10vh, 0) scale(var(--scale, 1));
+    opacity: 0;
+  }
+  20%  { opacity: 0.18; }
+  80%  { opacity: 0.18; }
+  to {
+    transform: translate3d(var(--drift, 0), -30vh, 0) scale(calc(var(--scale, 1) * 1.5));
+    opacity: 0;
+  }
+}
+
+/* Fewer and smaller on a phone: the hero is a third of the width and the same
+   count reads as a swarm. */
+@media (max-width: 640px) {
+  .fest-petal { width: 24px; height: 24px; }
+  .fest-puff { width: 64px; height: 64px; }
+  .fest-weather > :nth-child(n + 8) { display: none; }
+}
+
+/* The component already returns null under Reduce Motion so the sprites are
+   never fetched. This is the backstop for anywhere that forgets to check. */
+@media (prefers-reduced-motion: reduce) {
+  .fest-weather { display: none; }
+}
