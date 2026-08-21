@@ -5,6 +5,7 @@ import { api } from './api';
 import { CANONICAL_ORIGIN } from './utils/site';
 import { captureAffiliateCode } from './utils/affiliateAttribution';
 import { configureAnalytics, initAnalytics, trackPageView } from './utils/analytics';
+import AnnounceTicker from './components/AnnounceTicker';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -95,6 +96,7 @@ const AdminChat = lazy(() => import('./pages/admin/AdminChat'));
 const AdminBlog = lazy(() => import('./pages/admin/AdminBlog'));
 const AdminPageBanners = lazy(() => import('./pages/admin/AdminPageBanners'));
 const AdminSaleBanner = lazy(() => import('./pages/admin/AdminSaleBanner'));
+const AdminAnnouncements = lazy(() => import('./pages/admin/AdminAnnouncements'));
 const AdminPaymentMethods = lazy(() => import('./pages/admin/AdminPaymentMethods'));
 const AdminShipping = lazy(() => import('./pages/admin/AdminShipping'));
 const AdminProfit = lazy(() => import('./pages/admin/AdminProfit'));
@@ -141,7 +143,7 @@ function StoreLayout() {
   return (
     <div className="app-shell">
       <SaleCountdown />
-      <div className="announce-bar">{t('announcement')}</div>
+      <AnnounceTicker />
       <Navbar />
       <main className="app-main">
         {/* Own Suspense boundary, not the app-wide one — a lazy page loading
@@ -280,6 +282,7 @@ export default function App() {
         <Route path="blog" element={<AdminBlog />} />
         <Route path="page-banners" element={<AdminPageBanners />} />
         <Route path="sale-banner" element={<AdminSaleBanner />} />
+        <Route path="announcements" element={<AdminAnnouncements />} />
         <Route path="payment-methods" element={<AdminPaymentMethods />} />
         <Route path="shipping" element={<AdminShipping />} />
         <Route path="profit" element={<AdminProfit />} />

@@ -10156,3 +10156,97 @@ body.has-cookie-bar .install-prompt { bottom: calc(var(--cookie-bar-height, 0px)
   margin-top: 14px;
   text-decoration: none;
 }
+
+/* ---------------------------------------------------------------------------
+ * Announcement ticker
+ *
+ * The track holds two identical copies of the message list and slides by
+ * exactly half its own width, so the second copy arrives where the first
+ * started and the loop has no seam. Duration is set inline from the measured
+ * width — see AnnounceTicker.jsx — so the pace does not depend on how much
+ * there is to say.
+ * ------------------------------------------------------------------------ */
+.announce-bar.ticker {
+  padding: 0;
+  overflow: hidden;
+  /* The bar is one line of text; a fixed height stops the page shifting while
+     the font loads and the track is measured. */
+  height: 34px;
+  display: flex;
+  align-items: center;
+}
+
+.ticker-track {
+  display: flex;
+  width: max-content;
+  animation-name: ticker-slide;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  will-change: transform;
+}
+
+.ticker-track:hover,
+.ticker-track:focus-visible {
+  animation-play-state: paused;
+}
+
+/* It takes focus so it can be paused from the keyboard, but it is a strip of
+   text, not a control — no focus ring, just the pause. */
+.ticker-track:focus { outline: none; }
+.ticker-track:focus-visible { outline: 2px solid rgba(250, 246, 236, 0.5); outline-offset: -2px; }
+
+.ticker-run {
+  display: flex;
+  align-items: center;
+  flex: 0 0 auto;
+}
+
+.ticker-item {
+  padding: 0 26px;
+  font-size: 0.78rem;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+/* A separator after every message, drawn rather than typed so no message has
+   to carry a trailing pipe of its own.
+   
+   Deliberately on every item including the last, rather than only between
+   them. An in-between rule made the second copy one separator wider than the
+   first, and since the loop slides by exactly half the track, that asymmetry
+   put a nine-pixel jump in the seam on every pass. Identical copies are the
+   whole trick; nothing here may treat first or last differently. */
+.ticker-item::after {
+  content: '';
+  display: inline-block;
+  width: 1px;
+  height: 11px;
+  margin-left: 26px;
+  vertical-align: -1px;
+  background: currentColor;
+  opacity: 0.35;
+}
+
+@keyframes ticker-slide {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+
+@media (max-width: 640px) {
+  .announce-bar.ticker { height: 30px; }
+  .ticker-item { padding: 0 18px; font-size: 0.72rem; }
+  .ticker-item::after { margin-left: 18px; }
+}
+
+/* A permanent horizontal crawl is one of the worst things on a page for
+   anyone with a vestibular disorder, and this copy is too useful to simply
+   hide. So it stops moving and becomes a strip you scroll yourself — the
+   duplicate copy is dropped so the same promise is not there twice. */
+@media (prefers-reduced-motion: reduce) {
+  .announce-bar.ticker { overflow-x: auto; }
+  .ticker-track {
+    animation: none;
+    width: auto;
+  }
+  .ticker-run + .ticker-run { display: none; }
+}

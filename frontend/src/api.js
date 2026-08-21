@@ -286,6 +286,7 @@ export const api = {
 
   getPressingCalendar: () => request('/products/pressings/calendar'),
   getFestivals: () => request('/products/festivals'),
+  getAnnouncements: () => request('/announcements'),
 
   /* --- Onam pookalam contest -------------------------------------------- */
   /** Approved entries only. Public, no token. */
@@ -402,6 +403,10 @@ export const api = {
       request(`/admin/page-banners/${page}`, { method: 'PUT', body: settings, token }),
 
     getSaleBanner: (token) => request('/admin/sale-banner', { token }),
+
+    getAnnouncements: (token) => request('/admin/announcements', { token }),
+
+    saveAnnouncements: (token, body) => request('/admin/announcements', { method: 'PUT', body, token }),
     updateSaleBanner: (token, settings) => request('/admin/sale-banner', { method: 'PUT', body: settings, token }),
     getPaymentMethods: (token) => request('/admin/payment-methods', { token }),
     updatePaymentMethods: (token, methods) => request('/admin/payment-methods', { method: 'PUT', body: methods, token }),

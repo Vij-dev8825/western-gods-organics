@@ -2141,6 +2141,45 @@ router.put('/sale-banner', async (req, res, next) => {
   }
 });
 
+/* ------------------------------ Scrolling notices -------------------------- */
+
+// GET /api/admin/announcements
+router.get('/announcements', async (req, res, next) => {
+  try {
+    const settings = await db.get('announcements', 'main');
+    res.json({
+      success: true,
+      settings: settings || { id: 'main', active: true, messages: [], speed: 60 },
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// PUT /api/admin/announcements  { active, messages: [], speed }
+router.put('/announcements', async (req, res, next) => {
+  try {
+    const settings = {
+      id: 'main',
+      active: req.body.active !== false,
+      // Trimmed and de-blanked here rather than in the ticker: an empty line
+      // in a loop shows up as a gap that reads like a rendering fault.
+      messages: (Array.isArray(req.body.messages) ? req.body.messages : [])
+        .map((m) => String(m || '').trim().slice(0, 200))
+        .filter(Boolean)
+        .slice(0, 12),
+      // Pixels a second. Clamped because the field is a free number input and
+      // 2000 would be a strobe, which is a genuine accessibility problem
+      // rather than just an ugly one.
+      speed: Math.min(Math.max(Math.round(Number(req.body.speed) || 60), 10), 200),
+    };
+    await db.put('announcements', settings);
+    res.json({ success: true, settings });
+  } catch (err) {
+    next(err);
+  }
+});
+
 /* --------------------------- Homepage reviews showcase --------------------- */
 
 // GET /api/admin/homepage-reviews
