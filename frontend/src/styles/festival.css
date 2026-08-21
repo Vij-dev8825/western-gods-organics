@@ -358,7 +358,9 @@
 .fest-dancers {
   display: block;
   width: 100%;
-  max-width: 260px;
+  /* Two figures rather than three, and wider: at 80px a cartoon face is a
+     smudge, and the face is most of what these are for. */
+  max-width: 300px;
   height: auto;
   margin: 14px auto 0;
 }
