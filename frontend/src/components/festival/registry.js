@@ -262,6 +262,33 @@ export const FESTIVALS = [
     },
   },
 
+  /* ---------------- The one about oil ---------------- */
+  {
+    /* Ayudha Puja falls on the ninth night, so it shares the golu's steps and
+       its season. It gets its own entry rather than being folded into Navratri
+       because it is the one day in the year whose whole ritual is oiling the
+       thing you work with — for a mill that presses oil, that is not a
+       coincidence worth glossing over. */
+    id: 'ayudha',
+    match: /ayudha|ayutha|aayudha|astra\s*puja|vishwakarma/i,
+    label: 'Ayudha Puja',
+    eyebrow: 'Ayudha Puja · The tools rest',
+    greeting: 'Ayudha Puja nalvazhthukkal',
+    lede: 'Everything that works for you is washed, oiled and garlanded — the lathe, the lorry, the grinding stone.',
+    action: 'Tap to garland one',
+    doneLine: 'All of them anointed.',
+    steps: 5,
+    Motif: GoluSteps,
+    palette: {
+      ink: '#2a2410',
+      paper: '#fdf8e6',
+      paper2: '#f3ecd4',
+      accent: '#c8862f',
+      accentDeep: '#6d4415',
+      glow: '#f2cf6b',
+    },
+  },
+
   /* ---------------- Thread ---------------- */
   {
     id: 'rakhi',

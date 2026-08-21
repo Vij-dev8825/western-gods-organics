@@ -909,7 +909,11 @@ export function GoluSteps({ steps = 5, filled = 0, onStep, theme }) {
           fill="rgba(42,26,18,0.5)"
           style={{ font: '600 11px var(--font-body, sans-serif)', letterSpacing: '0.16em' }}
         >
-          TAP TO SET THE GOLU
+          {/* Taken from the theme rather than fixed, because these steps now
+              serve Ayudha Puja as well as the golu, and a caption telling you
+              to set the golu while the band asks you to garland the tools is
+              two instructions for one gesture. */}
+          {(theme.action || 'Tap to set a tier').toUpperCase()}
         </text>
       )}
     </svg>
