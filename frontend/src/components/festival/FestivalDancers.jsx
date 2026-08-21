@@ -1,26 +1,30 @@
 /**
- * A frieze of dancers along the foot of the festival band.
+ * The festival troupe: full-colour cartoon figures dancing along the foot of
+ * the band.
  *
- * Deliberately silhouettes rather than cartoon characters. A detailed cartoon
- * has to be drawn well or it looks like clip art, and clip art on a shop
- * selling cold-pressed oil at a premium costs more than it adds. A silhouette
- * carries the festival on its shape alone — an umbrella and a round belly is
- * Maveli to anyone in Kerala, two sticks is dandiya, a bull with painted horns
- * is Mattu Pongal — and it cannot be drawn badly in the way a face can.
+ * These were flat silhouettes first. A silhouette was the safe choice — it
+ * cannot be drawn badly the way a face can — but the shop asked for the
+ * characters people actually picture at a festival, so these are drawn:
+ * Maveli with his crown and muthukuda, a girl carrying pookalam flowers, a
+ * chenda drummer, the pulikali tiger. Drawn here rather than taken from stock
+ * art, because a shop cannot put an unlicensed illustration on its front page.
  *
- * One rig, several costumes. Every figure is the same head, torso, two arms
- * and two legs; what changes is the prop, the stance and which limbs move. It
- * is the difference between five characters to draw and five to describe.
+ * ONE RIG. Every figure is the same skeleton — two legs, a body group that
+ * bobs, two arms on shoulder joints — and differs in colour, costume and
+ * props. That is what keeps ten characters to about the length of two.
  *
- * ANIMATION. Each limb is a nested <g> that carries no transform attribute of
- * its own — its parent does the positioning — so the CSS rotation that makes
- * it dance cannot reinterpret a placement transform. Getting that wrong once
- * stacked an entire pookalam into a vertical column, and the same trap is one
- * careless `transform-box` away here.
+ * ANIMATION. Every moving part is a nested <g> carrying no transform attribute
+ * of its own; its parent places the joint. A CSS rotation applied to a group
+ * that already has a transform attribute reinterprets that attribute — it once
+ * stacked an entire pookalam into a vertical column — so placement and
+ * animation never share an element here.
+ *
+ * LAYER ORDER is the only depth these figures have: legs before the body so
+ * clothing falls over them, and the far arm before the torso so it sits
+ * behind it.
  */
 
-/** Deterministic per-figure variation, so the row is not in lockstep and does
- *  not re-roll on every render. */
+/** Deterministic per-figure variation, so the row is not in lockstep. */
 function rnd(i) {
   let x = Math.imul(i ^ 0x9e3779b9, 0x85ebca6b);
   x ^= x >>> 13;
@@ -29,177 +33,412 @@ function rnd(i) {
   return (x >>> 0) / 4294967296;
 }
 
-/* Which figures come out for which festival. Anything not listed gets none —
-   a generic dancer at a solemn observance would be worse than an empty strip. */
+const SKIN = '#E9A87A';
+const SKIN_2 = '#CE8B5F';
+const HAIR = '#2A1A12';
+const GOLD = '#E8B22B';
+const GOLD_2 = '#B4820F';
+const MUNDU = '#FFF7E8';
+/* White-on-cream is invisible on a pale festival ground, and most of these
+   grounds are pale. Every white garment carries a soft warm edge so the figure
+   still reads without a hard cartoon keyline. */
+const EDGE = '#C9B48A';
+const RED = '#D8342B';
+const GREEN = '#2E7D4F';
+const TEAL = '#1E8A85';
+const ORANGE = '#F0762B';
+const PINK = '#DB4F86';
+const TIGER = '#F0A32B';
+
+/* Who comes out for which festival. A festival with nothing written gets none
+   — a generic dancer at a solemn observance is worse than an empty strip. */
 const TROUPE = {
-  onam: ['maveli', 'clap', 'clap'],
-  vishu: ['clap', 'clap'],
-  karthigai: ['lamp', 'clap'],
-  deepavali: ['sparkler', 'clap', 'sparkler'],
+  onam: ['maveli', 'girl', 'tiger'],
+  vishu: ['girl', 'drummer'],
+  karthigai: ['lampgirl', 'drummer'],
+  deepavali: ['sparkler', 'girl', 'sparkler'],
   navratri: ['dandiya', 'dandiya'],
-  ayudha: ['clap', 'clap'],
-  pongal: ['bull', 'pot'],
-  holi: ['throw', 'throw', 'clap'],
-  bihu: ['clap', 'clap'],
-  newyear: ['pot', 'clap'],
+  ayudha: ['drummer', 'girl'],
+  pongal: ['bull', 'potgirl'],
+  holi: ['holi', 'holi'],
+  bihu: ['drummer', 'girl'],
+  newyear: ['potgirl', 'drummer'],
+  vinayagar: ['drummer', 'girl'],
 };
 
-/**
- * One dancer. The whole figure lives in a 60x100 box with its feet on y=100,
- * so a row of them stands on one line however tall each is.
- */
-function Dancer({ kind, i, ink, glow }) {
-  /* Two arms, two legs and a bob, each on its own nested group. The delay is
-     hashed per figure so the row moves like people rather than a machine. */
-  const delay = `${-(rnd(i * 3 + 1) * 1.8).toFixed(2)}s`;
-  const beat = `${(1.5 + rnd(i * 3 + 2) * 0.5).toFixed(2)}s`;
-  const style = { animationDelay: delay, animationDuration: beat };
+/* ==========================================================================
+ * Shared parts
+ * ======================================================================== */
 
-  if (kind === 'bull') {
-    /* Mattu Pongal: the bull is washed, its horns painted and belled. It does
-       not dance — it tosses its head, which is the whole character of it. */
-    return (
-      <g className="fdn" style={style}>
-        <g className="fdn-bob" style={style}>
-          {/* Barrel body, four legs, a dewlap and a tail. The first attempt
-              was one blob with two stubs and read as a beetle. */}
-          <path d="M 8 56 q 22 -9 40 0 q 4 10 0 20 q -20 7 -40 0 q -4 -10 0 -20 z" fill={ink} />
-          <path d="M 13 74 l -2 26" stroke={ink} strokeWidth="5" strokeLinecap="round" />
-          <path d="M 21 74 l -1 26" stroke={ink} strokeWidth="5" strokeLinecap="round" />
-          <path d="M 39 74 l 1 26" stroke={ink} strokeWidth="5" strokeLinecap="round" />
-          <path d="M 46 74 l 2 26" stroke={ink} strokeWidth="5" strokeLinecap="round" />
-          <path d="M 8 58 q -8 6 -6 20" stroke={ink} strokeWidth="2.5" fill="none" strokeLinecap="round" />
-          <g transform="translate(50, 52)">
-            <g className="fdn-head" style={style}>
-              <path d="M 0 0 q 11 1 12 10 q 1 9 -8 10 q -9 1 -12 -8 q -2 -9 8 -12 z" fill={ink} />
-              {/* Painted, belled horns — the part everyone recognises. */}
-              <path d="M 1 0 q -3 -13 6 -16" stroke={glow} strokeWidth="3.2" fill="none" strokeLinecap="round" />
-              <path d="M 10 2 q 6 -12 15 -11" stroke={glow} strokeWidth="3.2" fill="none" strokeLinecap="round" />
-              <circle cx="3" cy="14" r="2.2" fill={glow} />
-            </g>
-          </g>
-        </g>
-      </g>
-    );
-  }
-
-  const props = {
-    /* Maveli: umbrella, crown, and the belly he is always drawn with. */
-    maveli: {
-      belly: true,
-      crown: true,
-      rightArm: <path d="M 0 0 l 10 -22" stroke={ink} strokeWidth="5" strokeLinecap="round" fill="none" />,
-      /* Above the raised hand, not on his head. The first version put the
-         canopy at the same height as the face and it read as a hat pulled
-         over his eyes. The lifted arm ends at (48,14); the shaft starts
-         there and the canopy clears the crown. */
-      extra: (
-        <g transform="translate(48, 3)">
-          <path d="M -15 0 q 15 -13 30 0 q -8 -3 -15 -3 q -7 0 -15 3 z" fill={glow} />
-          <path d="M 0 0 v 12" stroke={ink} strokeWidth="2.2" strokeLinecap="round" />
-        </g>
-      ),
-    },
-    /* Dandiya: the sticks, and arms crossing to strike them. */
-    dandiya: {
-      rightArm: <path d="M 0 0 l 14 -12" stroke={ink} strokeWidth="5" strokeLinecap="round" fill="none" />,
-      leftArm: <path d="M 0 0 l -14 -12" stroke={ink} strokeWidth="5" strokeLinecap="round" fill="none" />,
-      extra: (
-        <>
-          <path d="M 44 36 l 10 -8" stroke={glow} strokeWidth="3.5" strokeLinecap="round" />
-          <path d="M 16 36 l -10 -8" stroke={glow} strokeWidth="3.5" strokeLinecap="round" />
-        </>
-      ),
-    },
-    sparkler: {
-      rightArm: <path d="M 0 0 l 12 -18" stroke={ink} strokeWidth="5" strokeLinecap="round" fill="none" />,
-      extra: (
-        <g className="fdn-spark" style={style}>
-          <circle cx="46" cy="22" r="3" fill={glow} />
-          <path d="M 46 22 l 6 -6 M 46 22 l -5 -6 M 46 22 l 7 4" stroke={glow} strokeWidth="1.6" strokeLinecap="round" />
-        </g>
-      ),
-    },
-    lamp: {
-      rightArm: <path d="M 0 0 l 10 -10" stroke={ink} strokeWidth="5" strokeLinecap="round" fill="none" />,
-      extra: (
-        <g transform="translate(44, 44)">
-          <path d="M -7 0 q 7 6 14 0 q -2 5 -7 5 q -5 0 -7 -5 z" fill={ink} />
-          <g className="fdn-flame" style={style}>
-            <path d="M 0 -2 q 3 -6 0 -10 q -3 4 0 10 z" fill={glow} />
-          </g>
-        </g>
-      ),
-    },
-    /* Holi: a hand flung open, and the colour already leaving it. */
-    throw: {
-      rightArm: <path d="M 0 0 l 16 -14" stroke={ink} strokeWidth="5" strokeLinecap="round" fill="none" />,
-      extra: (
-        <g className="fdn-throw" style={style}>
-          <circle cx="52" cy="26" r="4" fill={glow} opacity="0.85" />
-          <circle cx="58" cy="20" r="2.4" fill={glow} opacity="0.6" />
-          <circle cx="56" cy="32" r="2" fill={glow} opacity="0.5" />
-        </g>
-      ),
-    },
-    /* A pot carried on the hip — Pongal, and the new year. */
-    pot: {
-      leftArm: <path d="M 0 0 l -8 6" stroke={ink} strokeWidth="5" strokeLinecap="round" fill="none" />,
-      extra: (
-        <g transform="translate(14, 52)">
-          <path d="M -8 0 q -3 12 8 12 q 11 0 8 -12 z" fill={glow} />
-          <rect x="-9" y="-3" width="18" height="4" rx="2" fill={ink} />
-        </g>
-      ),
-    },
-    clap: {},
-  }[kind] || {};
-
+/** Two legs with feet, drawn before the body so clothing falls over them. */
+function Legs({ style, skin = SKIN }) {
   return (
-    <g className="fdn" style={style}>
-      <g className="fdn-bob" style={style}>
-        {/* Head, and a crown for the one who needs one. */}
-        <circle cx="30" cy="20" r="9" fill={ink} />
-        {props.crown && <path d="M 21 12 l 3 -8 l 6 5 l 6 -5 l 3 8 z" fill={glow} />}
-
-        {/* Torso — rounder for Maveli, because that is how he is drawn. */}
-        {props.belly ? (
-          <path d="M 30 29 q 17 4 15 24 q -2 13 -15 13 q -13 0 -15 -13 q -2 -20 15 -24 z" fill={ink} />
-        ) : (
-          <path d="M 30 29 q 10 3 9 18 q -1 12 -9 12 q -8 0 -9 -12 q -1 -15 9 -18 z" fill={ink} />
-        )}
-
-        {/* Arms. The outer group puts the shoulder in place; the inner one
-            carries no transform of its own, so CSS can swing it freely. */}
-        <g transform="translate(38, 36)">
-          <g className="fdn-arm-r" style={style}>
-            {props.rightArm || <path d="M 0 0 l 8 14" stroke={ink} strokeWidth="5" strokeLinecap="round" fill="none" />}
-          </g>
-        </g>
-        <g transform="translate(22, 36)">
-          <g className="fdn-arm-l" style={style}>
-            {props.leftArm || <path d="M 0 0 l -8 14" stroke={ink} strokeWidth="5" strokeLinecap="round" fill="none" />}
-          </g>
-        </g>
-      </g>
-
-      {/* Legs stay outside the bob, so the feet keep the line while the body
-          rises and falls above them. */}
-      <g transform="translate(26, 62)">
+    <>
+      <g transform="translate(26, 72)">
         <g className="fdn-leg-l" style={style}>
-          <path d="M 0 0 l -3 38" stroke={ink} strokeWidth="5.5" strokeLinecap="round" fill="none" />
+          <path d="M 0 0 l -2 22" stroke={skin} strokeWidth="7" strokeLinecap="round" fill="none" />
+          <ellipse cx="-3" cy="24" rx="5.5" ry="3" fill={HAIR} />
         </g>
       </g>
-      <g transform="translate(34, 62)">
+      <g transform="translate(34, 72)">
         <g className="fdn-leg-r" style={style}>
-          <path d="M 0 0 l 3 38" stroke={ink} strokeWidth="5.5" strokeLinecap="round" fill="none" />
+          <path d="M 0 0 l 2 22" stroke={skin} strokeWidth="7" strokeLinecap="round" fill="none" />
+          <ellipse cx="3" cy="24" rx="5.5" ry="3" fill={HAIR} />
         </g>
       </g>
+    </>
+  );
+}
 
-      {props.extra}
+/** Eyes, brows, a smile, and a mustache where one belongs. */
+function Face({ mustache }) {
+  return (
+    <>
+      <circle cx="26.4" cy="15" r="1.5" fill={HAIR} />
+      <circle cx="33.6" cy="15" r="1.5" fill={HAIR} />
+      <path d="M 24.4 11.8 q 2 -1.4 4 -0.2" stroke={HAIR} strokeWidth="1.1" fill="none" strokeLinecap="round" />
+      <path d="M 31.6 11.6 q 2 -1.2 4 0.2" stroke={HAIR} strokeWidth="1.1" fill="none" strokeLinecap="round" />
+      <circle cx="23.2" cy="18.6" r="2" fill={RED} opacity="0.22" />
+      <circle cx="36.8" cy="18.6" r="2" fill={RED} opacity="0.22" />
+      {mustache ? (
+        <path d="M 23.5 19.4 q 6.5 3.6 13 0 q -2 5.6 -6.5 5.6 q -4.5 0 -6.5 -5.6 z" fill={HAIR} />
+      ) : (
+        <path d="M 27 20.6 q 3 2.6 6 0" stroke={HAIR} strokeWidth="1.2" fill="none" strokeLinecap="round" />
+      )}
+    </>
+  );
+}
+
+/** A shoulder joint. `l` is the far arm and is drawn before the torso. */
+function Arm({ side, style, skin = SKIN, children }) {
+  return (
+    <g transform={`translate(${side === 'r' ? 39 : 21}, 38)`}>
+      <g className={side === 'r' ? 'fdn-arm-r' : 'fdn-arm-l'} style={style}>
+        {children || (
+          <path
+            d={side === 'r' ? 'M 0 0 l 8 15' : 'M 0 0 l -8 15'}
+            stroke={skin}
+            strokeWidth="6"
+            strokeLinecap="round"
+            fill="none"
+          />
+        )}
+      </g>
     </g>
   );
 }
+
+/* ==========================================================================
+ * The characters
+ * ======================================================================== */
+
+/** Maveli — crown, curled mustache, the belly, the umbrella held over him. */
+function Maveli({ style }) {
+  return (
+    <g className="fdn" style={style}>
+      <Legs style={style} />
+      <g className="fdn-bob" style={style}>
+        <Arm side="l" style={style} />
+
+        <path d="M 15 54 q 15 -5 30 0 l 4 22 q -19 5 -38 0 z" fill={MUNDU} stroke={EDGE} strokeWidth="0.9" />
+        <path d="M 11 74 q 19 5 38 0 l 1 5 q -20 5 -40 0 z" fill={GOLD} />
+
+        <path d="M 30 25 q 17 3 16 20 q -1 12 -16 12 q -15 0 -16 -12 q -1 -17 16 -20 z" fill={SKIN} />
+        <path d="M 22 45 q 8 4 16 0" stroke={SKIN_2} strokeWidth="1.1" fill="none" strokeLinecap="round" />
+
+        {/* Angavastram across the chest. */}
+        <path d="M 18 30 q 12 7 24 1 l 3 7 q -15 6 -29 -2 z" fill={ORANGE} />
+        <path d="M 18 30 q 12 7 24 1" stroke={GOLD_2} strokeWidth="1.1" fill="none" />
+
+        <circle cx="30" cy="16" r="10.5" fill={SKIN} />
+        <ellipse cx="19.6" cy="17" rx="2" ry="2.6" fill={SKIN} />
+        <ellipse cx="40.4" cy="17" rx="2" ry="2.6" fill={SKIN} />
+        <Face mustache />
+
+        <path d="M 20 8.5 l 2.5 -8 l 7.5 5 l 7.5 -5 l 2.5 8 z" fill={GOLD} />
+        <rect x="19.5" y="8.4" width="21" height="2.8" rx="1" fill={GOLD_2} />
+        <circle cx="30" cy="4.4" r="1.9" fill={RED} />
+
+        <Arm side="r" style={style}>
+          <path d="M 0 0 l 10 -24" stroke={SKIN} strokeWidth="6" strokeLinecap="round" fill="none" />
+          {/* The fist closed round the shaft. Without it the umbrella read as
+              floating above him rather than held. */}
+          <circle cx="10" cy="-24" r="3.4" fill={SKIN} />
+          <circle cx="10" cy="-24" r="3.4" fill="none" stroke={SKIN_2} strokeWidth="0.8" />
+        </Arm>
+      </g>
+
+      {/* The muthukuda, clear of the crown and above the raised hand. */}
+      <g transform="translate(49, 2)">
+        <path d="M -17 0 q 17 -15 34 0 z" fill={GOLD_2} />
+        <path d="M -17 0 q 17 -15 34 0 q -9 3 -17 3 q -8 0 -17 -3 z" fill={GOLD} />
+        <path d="M -8 -0.8 v -8 M 0 -1.8 v -10 M 8 -0.8 v -8" stroke={GOLD_2} strokeWidth="0.8" opacity="0.7" />
+        {/* Runs all the way down past the fist, so the join is unmistakable. */}
+        <path d="M 0 0 v 17" stroke="#7A4A1E" strokeWidth="2.2" strokeLinecap="round" />
+      </g>
+    </g>
+  );
+}
+
+/** A girl in a pavada. `carry` swaps her basket for a lamp or a pongal pot. */
+function Girl({ style, top = TEAL, skirt = ORANGE, carry = 'basket' }) {
+  return (
+    <g className="fdn" style={style}>
+      <Legs style={style} />
+      <g className="fdn-bob" style={style}>
+        <Arm side="l" style={style} />
+
+        <path d="M 22 48 q 8 -3 16 0 l 8 28 q -16 5 -32 0 z" fill={skirt} />
+        <path d="M 14 74 q 16 5 32 0 l 1 5 q -17 5 -34 0 z" fill={GOLD} />
+
+        <path d="M 30 26 q 10 3 9 15 q -1 9 -9 9 q -8 0 -9 -9 q -1 -12 9 -15 z" fill={top} />
+        <path d="M 21.5 38 q 8.5 4 17 0" stroke={GOLD} strokeWidth="1.2" fill="none" />
+
+        <circle cx="30" cy="16" r="10" fill={SKIN} />
+        <path d="M 20 14 q 2 -12 10 -12 q 8 0 10 12 q -3 -6 -10 -6 q -7 0 -10 6 z" fill={HAIR} />
+        <path d="M 39.5 15 q 5 8 1 17 q -3.5 -9 -3.5 -14 z" fill={HAIR} />
+        <circle cx="21.4" cy="10" r="2.4" fill={PINK} />
+        <circle cx="21.4" cy="10" r="0.9" fill={GOLD} />
+        <Face />
+
+        <Arm side="r" style={style}>
+          <path d="M 0 0 l 7 13" stroke={SKIN} strokeWidth="6" strokeLinecap="round" fill="none" />
+        </Arm>
+      </g>
+
+      {/* Carried on the hip, outside the bob so it does not swing. */}
+      {carry === 'basket' && (
+        <g transform="translate(48, 58)">
+          <path d="M -8 0 q 8 -3 16 0 l -2 12 q -6 2 -12 0 z" fill={GOLD_2} />
+          <circle cx="-4" cy="-1.4" r="3" fill={ORANGE} />
+          <circle cx="1" cy="-2.8" r="3.2" fill={GOLD} />
+          <circle cx="5.6" cy="-1.4" r="2.8" fill={RED} />
+          <circle cx="-1" cy="-5" r="2.4" fill={PINK} />
+        </g>
+      )}
+      {carry === 'lamp' && (
+        <g transform="translate(48, 60)">
+          <path d="M -8 0 q 8 6 16 0 q -3 6 -8 6 q -5 0 -8 -6 z" fill={GOLD_2} />
+          <ellipse cx="0" cy="0" rx="8" ry="2.4" fill={GOLD} />
+          <g className="fdn-flame" style={style}>
+            <path d="M 5 -2 q 3.5 -7 0 -12 q -3.5 5 0 12 z" fill="#FFD34A" />
+            <path d="M 5 -3 q 1.8 -4 0 -7 q -1.8 3 0 7 z" fill="#FFF3C4" />
+          </g>
+        </g>
+      )}
+      {carry === 'pot' && (
+        <g transform="translate(47, 58)">
+          <path d="M -9 0 q -4 14 9 14 q 13 0 9 -14 z" fill={RED} />
+          <rect x="-10.5" y="-4" width="21" height="4.5" rx="2.2" fill={GOLD} />
+          {/* Boiling over, which is the whole point of Pongal. */}
+          <path d="M -6 -4 q 3 -7 6 -3 q 3 -5 6 1 q -6 3 -12 2 z" fill={MUNDU} />
+        </g>
+      )}
+    </g>
+  );
+}
+
+/** A chenda drummer, both hands over the drum head. */
+function Drummer({ style }) {
+  return (
+    <g className="fdn" style={style}>
+      <Legs style={style} />
+      <g className="fdn-bob" style={style}>
+        <path d="M 15 54 q 15 -5 30 0 l 4 22 q -19 5 -38 0 z" fill={MUNDU} stroke={EDGE} strokeWidth="0.9" />
+        <path d="M 11 74 q 19 5 38 0 l 1 5 q -20 5 -40 0 z" fill={GOLD} />
+
+        <path d="M 30 26 q 11 3 10 16 q -1 10 -10 10 q -9 0 -10 -10 q -1 -13 10 -16 z" fill={SKIN} />
+        <path d="M 20 29 q 11 6 21 1 l 2 6 q -13 6 -25 -1 z" fill={RED} />
+
+        <circle cx="30" cy="16" r="10" fill={SKIN} />
+        <path d="M 20 13 q 3 -11 10 -11 q 7 0 10 11 q -4 -5 -10 -5 q -6 0 -10 5 z" fill={HAIR} />
+        <Face mustache />
+
+        <Arm side="l" style={style}>
+          <path d="M 0 0 l -6 -12" stroke={SKIN} strokeWidth="6" strokeLinecap="round" fill="none" />
+          <path d="M -6 -12 l -4 -7" stroke="#9A6A3A" strokeWidth="2.2" strokeLinecap="round" />
+        </Arm>
+        <Arm side="r" style={style}>
+          <path d="M 0 0 l 6 -12" stroke={SKIN} strokeWidth="6" strokeLinecap="round" fill="none" />
+          <path d="M 6 -12 l 4 -7" stroke="#9A6A3A" strokeWidth="2.2" strokeLinecap="round" />
+        </Arm>
+      </g>
+
+      <g transform="translate(30, 58)">
+        <rect x="-13" y="-2" width="26" height="16" rx="3" fill="#8A4B22" />
+        <ellipse cx="0" cy="-2" rx="13" ry="4.4" fill={MUNDU} />
+        <ellipse cx="0" cy="-2" rx="13" ry="4.4" fill="none" stroke={GOLD_2} strokeWidth="1.2" />
+        <path d="M -13 4 h 26 M -13 8 h 26" stroke={GOLD_2} strokeWidth="1" opacity="0.6" />
+      </g>
+    </g>
+  );
+}
+
+/** Pulikali — the painted tiger of the Onam parade, dancing on two legs. */
+function Tiger({ style }) {
+  return (
+    <g className="fdn" style={style}>
+      <Legs style={style} skin={TIGER} />
+      <g className="fdn-bob" style={style}>
+        <Arm side="l" style={style} skin={TIGER} />
+
+        <path d="M 30 26 q 15 3 14 22 q -1 13 -14 13 q -13 0 -14 -13 q -1 -19 14 -22 z" fill={TIGER} />
+        <ellipse cx="30" cy="46" rx="8" ry="10" fill="#FFE1A8" />
+        <path d="M 18 34 q 5 3 4 8 M 42 34 q -5 3 -4 8 M 19 48 q 5 2 4 7 M 41 48 q -5 2 -4 7"
+              stroke={HAIR} strokeWidth="2.2" fill="none" strokeLinecap="round" />
+
+        <circle cx="30" cy="16" r="11" fill={TIGER} />
+        <path d="M 20 7.5 l -2.5 -9.5 l 10 4 z" fill={TIGER} />
+        <path d="M 40 7.5 l 2.5 -9.5 l -10 4 z" fill={TIGER} />
+        <path d="M 20.5 5.5 l -1.4 -5 l 5.4 2.2 z" fill="#E08A6A" />
+        <path d="M 39.5 5.5 l 1.4 -5 l -5.4 2.2 z" fill="#E08A6A" />
+        <ellipse cx="30" cy="19.5" rx="6.8" ry="5" fill="#FFE1A8" />
+        <circle cx="26.2" cy="14.2" r="1.8" fill={HAIR} />
+        <circle cx="33.8" cy="14.2" r="1.8" fill={HAIR} />
+        <path d="M 30 17.4 l -2.4 2.4 h 4.8 z" fill={HAIR} />
+        <path d="M 23.5 21 h -5.5 M 36.5 21 h 5.5" stroke={HAIR} strokeWidth="1.4" strokeLinecap="round" />
+        {/* Stripes on the brow — without them it is a cat, not a tiger. */}
+        <path d="M 26 7.5 q 1 3 0.5 5 M 30 6.6 q 0 3.4 0 5.4 M 34 7.5 q -1 3 -0.5 5"
+              stroke={HAIR} strokeWidth="1.7" fill="none" strokeLinecap="round" />
+        <path d="M 21 13 q 3 1 4.5 0.6 M 39 13 q -3 1 -4.5 0.6"
+              stroke={HAIR} strokeWidth="1.7" fill="none" strokeLinecap="round" />
+        {/* The grin every parade mask has. */}
+        <path d="M 26 22.6 q 4 3.4 8 0" stroke={HAIR} strokeWidth="1.4" fill="none" strokeLinecap="round" />
+        <path d="M 27.2 23.2 v 2.4 M 32.8 23.2 v 2.4" stroke={MUNDU} strokeWidth="1.6" strokeLinecap="round" />
+
+        <Arm side="r" style={style} skin={TIGER}>
+          <path d="M 0 0 l 10 -9" stroke={TIGER} strokeWidth="6" strokeLinecap="round" fill="none" />
+        </Arm>
+      </g>
+    </g>
+  );
+}
+
+/** The Mattu Pongal bull: washed, horns painted, a bell at the neck. */
+function Bull({ style }) {
+  return (
+    <g className="fdn" style={style}>
+      <g className="fdn-bob" style={style}>
+        <path d="M 8 54 q 22 -10 40 0 q 5 11 0 22 q -20 8 -40 0 q -5 -11 0 -22 z" fill="#C9885A" />
+        <ellipse cx="28" cy="70" rx="16" ry="6" fill="#E3B189" />
+        <path d="M 13 74 l -2 26" stroke="#C9885A" strokeWidth="5.5" strokeLinecap="round" />
+        <path d="M 21 74 l -1 26" stroke="#B57848" strokeWidth="5.5" strokeLinecap="round" />
+        <path d="M 39 74 l 1 26" stroke="#B57848" strokeWidth="5.5" strokeLinecap="round" />
+        <path d="M 46 74 l 2 26" stroke="#C9885A" strokeWidth="5.5" strokeLinecap="round" />
+        <path d="M 8 56 q -9 7 -7 22" stroke="#C9885A" strokeWidth="2.6" fill="none" strokeLinecap="round" />
+        <g transform="translate(50, 50)">
+          <g className="fdn-head" style={style}>
+            <path d="M 0 0 q 12 1 13 11 q 1 10 -9 11 q -10 1 -13 -9 q -2 -10 9 -13 z" fill="#C9885A" />
+            <ellipse cx="7" cy="15" rx="6" ry="4.5" fill="#E3B189" />
+            <circle cx="0" cy="7" r="1.5" fill={HAIR} />
+            <circle cx="8" cy="19" r="1" fill={HAIR} />
+            <path d="M 0 0 q -4 -14 6 -17" stroke={GOLD} strokeWidth="3.4" fill="none" strokeLinecap="round" />
+            <path d="M 10 2 q 7 -13 16 -11" stroke={GOLD} strokeWidth="3.4" fill="none" strokeLinecap="round" />
+            <circle cx="6" cy="-17" r="1.8" fill={RED} />
+            <circle cx="26" cy="-9" r="1.8" fill={RED} />
+            <circle cx="-2" cy="16" r="2.6" fill={GOLD} />
+          </g>
+        </g>
+      </g>
+    </g>
+  );
+}
+
+/** A dandiya dancer, sticks crossing overhead. */
+function Dandiya({ style, i }) {
+  const skirt = i % 2 ? PINK : GREEN;
+  return (
+    <g className="fdn" style={style}>
+      <Legs style={style} />
+      <g className="fdn-bob" style={style}>
+        <path d="M 22 48 q 8 -3 16 0 l 9 28 q -17 5 -34 0 z" fill={skirt} />
+        <path d="M 13 74 q 17 5 34 0 l 1 5 q -18 5 -36 0 z" fill={GOLD} />
+        <path d="M 30 26 q 10 3 9 15 q -1 9 -9 9 q -8 0 -9 -9 q -1 -12 9 -15 z" fill={GOLD} />
+        <circle cx="30" cy="16" r="10" fill={SKIN} />
+        <path d="M 20 14 q 2 -12 10 -12 q 8 0 10 12 q -3 -6 -10 -6 q -7 0 -10 6 z" fill={HAIR} />
+        <Face />
+        <Arm side="l" style={style}>
+          <path d="M 0 0 l -12 -11" stroke={SKIN} strokeWidth="6" strokeLinecap="round" fill="none" />
+          <path d="M -12 -11 l -8 -6" stroke={ORANGE} strokeWidth="3.4" strokeLinecap="round" />
+        </Arm>
+        <Arm side="r" style={style}>
+          <path d="M 0 0 l 12 -11" stroke={SKIN} strokeWidth="6" strokeLinecap="round" fill="none" />
+          <path d="M 12 -11 l 8 -6" stroke={ORANGE} strokeWidth="3.4" strokeLinecap="round" />
+        </Arm>
+      </g>
+    </g>
+  );
+}
+
+/** A child with a sparkler, which is most of what Deepavali looks like. */
+function Sparkler({ style }) {
+  return (
+    <g className="fdn" style={style}>
+      <Legs style={style} />
+      <g className="fdn-bob" style={style}>
+        <Arm side="l" style={style} />
+        <path d="M 20 48 q 10 -3 20 0 l 4 28 q -14 4 -28 0 z" fill={TEAL} />
+        <path d="M 30 26 q 10 3 9 15 q -1 9 -9 9 q -8 0 -9 -9 q -1 -12 9 -15 z" fill={RED} />
+        <circle cx="30" cy="16" r="10" fill={SKIN} />
+        <path d="M 20 13 q 3 -11 10 -11 q 7 0 10 11 q -4 -5 -10 -5 q -6 0 -10 5 z" fill={HAIR} />
+        <Face />
+        <Arm side="r" style={style}>
+          <path d="M 0 0 l 11 -17" stroke={SKIN} strokeWidth="6" strokeLinecap="round" fill="none" />
+          <path d="M 11 -17 l 6 -9" stroke="#6E6E6E" strokeWidth="2" strokeLinecap="round" />
+          <g className="fdn-spark" style={style}>
+            <circle cx="17" cy="-26" r="7" fill={GOLD} opacity="0.28" />
+            <circle cx="17" cy="-26" r="3.4" fill="#FFF3C4" />
+            <path d="M 17 -26 l 7 -6 M 17 -26 l -6 -5 M 17 -26 l 8 4 M 17 -26 l -5 7 M 17 -26 l 2 -9"
+                  stroke={GOLD} strokeWidth="1.6" strokeLinecap="round" />
+          </g>
+        </Arm>
+      </g>
+    </g>
+  );
+}
+
+/** Holi: a fistful of gulal already leaving the hand, and colour on the kurta. */
+function Holi({ style, i }) {
+  const kurta = i % 2 ? '#3FA9F5' : '#8B5CF6';
+  return (
+    <g className="fdn" style={style}>
+      <Legs style={style} />
+      <g className="fdn-bob" style={style}>
+        <Arm side="l" style={style} />
+        <path d="M 18 50 q 12 -4 24 0 l 3 26 q -15 5 -30 0 z" fill={MUNDU} stroke={EDGE} strokeWidth="0.9" />
+        <path d="M 30 26 q 11 3 10 16 q -1 10 -10 10 q -9 0 -10 -10 q -1 -13 10 -16 z" fill={kurta} />
+        <circle cx="24.5" cy="40" r="3" fill={PINK} opacity="0.75" />
+        <circle cx="35.5" cy="46" r="2.4" fill={GOLD} opacity="0.75" />
+        <circle cx="27" cy="58" r="2.6" fill="#22C55E" opacity="0.55" />
+        <circle cx="30" cy="16" r="10" fill={SKIN} />
+        <path d="M 20 13 q 3 -11 10 -11 q 7 0 10 11 q -4 -5 -10 -5 q -6 0 -10 5 z" fill={HAIR} />
+        <circle cx="23.5" cy="9" r="2.2" fill={PINK} opacity="0.8" />
+        <Face />
+        <Arm side="r" style={style}>
+          <path d="M 0 0 l 15 -13" stroke={SKIN} strokeWidth="6" strokeLinecap="round" fill="none" />
+          <g className="fdn-throw" style={style}>
+            <circle cx="21" cy="-18" r="4.4" fill={PINK} opacity="0.85" />
+            <circle cx="27" cy="-24" r="2.6" fill={GOLD} opacity="0.7" />
+            <circle cx="26" cy="-13" r="2.2" fill="#22C55E" opacity="0.6" />
+          </g>
+        </Arm>
+      </g>
+    </g>
+  );
+}
+
+const CAST = {
+  maveli: Maveli,
+  girl: Girl,
+  drummer: Drummer,
+  tiger: Tiger,
+  bull: Bull,
+  dandiya: Dandiya,
+  sparkler: Sparkler,
+  holi: Holi,
+  lampgirl: (p) => <Girl {...p} carry="lamp" top={RED} skirt={GOLD_2} />,
+  potgirl: (p) => <Girl {...p} carry="pot" top={GREEN} skirt={RED} />,
+};
 
 export default function FestivalDancers({ theme, animation }) {
   if (!theme) return null;
@@ -208,31 +447,37 @@ export default function FestivalDancers({ theme, animation }) {
   const troupe = TROUPE[theme.id];
   if (!troupe?.length) return null;
 
-  const { accentDeep, glow, accent } = theme.palette;
-  const W = 60;
+  const W = 62;
 
   return (
     <svg
       className="fest-dancers"
-      /* Sixteen units of headroom above the figures. Maveli's umbrella reaches
-         well over his crown and was being clipped by a box that started at
-         zero — anything a costume holds up needs room to be held up in. */
-      viewBox={`0 -16 ${W * troupe.length} 120`}
+      /* Headroom above the figures. Maveli's umbrella and the dandiya sticks
+         both reach well over their heads, and a box starting at zero clipped
+         them — anything a costume holds up needs room to be held up in. */
+      viewBox={`0 -18 ${W * troupe.length} 122`}
       role="img"
       aria-label={`${theme.label} dancers`}
       preserveAspectRatio="xMidYMax meet"
     >
-      {troupe.map((kind, i) => (
-        <g key={i} transform={`translate(${i * W}, 0)`}>
-          <Dancer kind={kind} i={i} ink={accentDeep || accent} glow={glow} />
-        </g>
-      ))}
-      {/* The ground they stand on. */}
+      {troupe.map((kind, i) => {
+        const Who = CAST[kind];
+        if (!Who) return null;
+        const style = {
+          animationDelay: `${-(rnd(i * 3 + 1) * 1.8).toFixed(2)}s`,
+          animationDuration: `${(1.5 + rnd(i * 3 + 2) * 0.5).toFixed(2)}s`,
+        };
+        return (
+          <g key={i} transform={`translate(${i * W}, 0)`}>
+            <Who style={style} i={i} />
+          </g>
+        );
+      })}
       <path
-        d={`M 6 101 H ${W * troupe.length - 6}`}
-        stroke={accentDeep || accent}
-        strokeOpacity="0.25"
-        strokeWidth="1.5"
+        d={`M 8 100 H ${W * troupe.length - 8}`}
+        stroke={theme.palette.accentDeep || theme.palette.accent}
+        strokeOpacity="0.22"
+        strokeWidth="1.6"
         strokeLinecap="round"
       />
     </svg>
