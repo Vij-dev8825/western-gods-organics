@@ -10166,6 +10166,27 @@ body.has-cookie-bar .install-prompt { bottom: calc(var(--cookie-bar-height, 0px)
  * width — see AnnounceTicker.jsx — so the pace does not depend on how much
  * there is to say.
  * ------------------------------------------------------------------------ */
+/* In season the bar takes the festival's own deep tone and highlight, set as
+   custom properties from the theme — the one piece of festival dress that
+   reaches every page, since the band only lives on the home page. Out of
+   season nothing is set and the forest green below stands. */
+.announce-bar.ticker.is-festive {
+  background: var(--ticker-bg);
+  color: var(--ticker-fg);
+}
+
+.announce-bar.ticker.is-festive .ticker-item::after {
+  background: var(--ticker-rule);
+  opacity: 0.55;
+}
+
+/* The greeting leads the loop, so it carries the festival's highlight colour
+   and a little more weight than the shipping promises behind it. */
+.announce-bar.ticker.is-festive .ticker-item:first-child {
+  color: var(--ticker-rule);
+  font-weight: 600;
+}
+
 .announce-bar.ticker {
   padding: 0;
   overflow: hidden;
