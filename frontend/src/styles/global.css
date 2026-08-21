@@ -10385,3 +10385,105 @@ body.has-cookie-bar .install-prompt { bottom: calc(var(--cookie-bar-height, 0px)
 @media (prefers-reduced-motion: reduce) {
   .fest-weather { display: none; }
 }
+
+/* ---------------------------------------------------------------------------
+ * Crackers — Deepavali
+ *
+ * A burst is one point with twelve streaks flying out of it. The container
+ * blinks on its own loop; each streak carries the angle it travels along, so
+ * the whole thing is two keyframes and no JavaScript.
+ * ------------------------------------------------------------------------ */
+.fest-burst {
+  position: absolute;
+  width: 0;
+  height: 0;
+  animation-name: fest-burstcycle;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+
+/* The flash at the heart of the burst. */
+.fest-burst b {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 16px;
+  height: 16px;
+  margin: -8px 0 0 -8px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #fff 0%, currentColor 40%, transparent 70%);
+  animation-name: fest-flash;
+  animation-duration: inherit;
+  animation-timing-function: ease-out;
+  animation-iteration-count: infinite;
+}
+
+@keyframes fest-flash {
+  0%   { opacity: 0; transform: scale(0.2); }
+  5%   { opacity: 1; transform: scale(1.3); }
+  22%  { opacity: 0; transform: scale(1.8); }
+  100% { opacity: 0; transform: scale(1.8); }
+}
+
+.fest-burst i {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 4px;
+  height: 4px;
+  margin: -2px 0 0 -2px;
+  border-radius: 50%;
+  /* currentColor, so the whole burst is one colour set once on the parent. */
+  background: currentColor;
+  /* Two shadows: a tight bright core and a wide halo, so a 4px dot still
+     reads against the hero photograph behind it. */
+  box-shadow: 0 0 5px currentColor, 0 0 14px currentColor;
+  animation-name: fest-spark;
+  animation-duration: inherit;
+  animation-timing-function: cubic-bezier(0.15, 0.7, 0.3, 1);
+  animation-iteration-count: infinite;
+}
+
+/* The container only exists to time the burst; the flash is the streaks. */
+@keyframes fest-burstcycle {
+  0%, 100% { opacity: 1; }
+}
+
+@keyframes fest-spark {
+  0% {
+    transform: rotate(var(--a)) translateX(0) scale(var(--scale, 1));
+    opacity: 0;
+  }
+  6%  { opacity: 1; }
+  /* Out along its own angle, then gone — a real streak dims well before it
+     stops, rather than winking out at full brightness. */
+  55% { opacity: 0.85; }
+  100% {
+    transform: rotate(var(--a)) translateX(var(--d)) scale(calc(var(--scale, 1) * 0.35));
+    opacity: 0;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+ * Glints — the days whose character is light rather than noise
+ * ------------------------------------------------------------------------ */
+.fest-glint {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  animation-name: fest-twinkle;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+  box-shadow: 0 0 10px currentColor;
+}
+
+@keyframes fest-twinkle {
+  0%, 100% { opacity: 0; transform: scale(calc(var(--scale, 1) * 0.4)); }
+  50%      { opacity: 0.9; transform: scale(var(--scale, 1)); }
+}
+
+@media (max-width: 640px) {
+  /* Two bursts is a sky on a phone; five is a wall. */
+  .fest-weather-crackers > :nth-child(n + 4) { display: none; }
+}

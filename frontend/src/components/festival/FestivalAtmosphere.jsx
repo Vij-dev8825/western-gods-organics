@@ -39,17 +39,52 @@ const PETALS = [
   'vadamalli', 'golden-hibiscus', 'shankhupushpam',
 ];
 
-/** Which weather each festival gets. Anything not listed gets none, which is
- *  the right answer — a generic shimmer on a festival nobody designed for
- *  looks like a rendering fault. */
+/**
+ * What falls, rises or bursts for each festival.
+ *
+ * Every entry in the registry has one, so no festival arrives with a bare
+ * hero. They are drawn from five effects rather than eighteen bespoke ones —
+ * the point is that the sky matches the day, not that each has its own
+ * engine — and each festival is mapped to the one that is true of it:
+ * flowers where flowers are laid, sparks where lamps are lit, crackers where
+ * crackers are let off, colour at Holi, and a quiet glint for the days whose
+ * character is light rather than noise.
+ */
 const WEATHER = {
+  /* Flowers are laid, so flowers fall. */
   onam: 'petals',
   vishu: 'petals',
-  deepavali: 'embers',
+  bihu: 'petals',
+  newyear: 'petals',
+
+  /* Deepavali is the one night of the year the sky is full of them. */
+  deepavali: 'crackers',
+
+  /* Lamps and fires: sparks going up, not down. */
   karthigai: 'embers',
-  holi: 'colour',
+  gurpurab: 'embers',
+  chhath: 'embers',
   pongal: 'embers',
+
+  holi: 'colour',
+
+  /* Days of light and ceremony rather than noise — a slow glint is enough,
+     and anything busier would be putting fireworks over a prayer. */
+  vinayagar: 'sparkle',
+  navratri: 'sparkle',
+  ayudha: 'sparkle',
+  rakhi: 'sparkle',
+  eid: 'sparkle',
+  christmas: 'sparkle',
+  shivratri: 'sparkle',
+  krishna: 'sparkle',
+  aadi: 'sparkle',
+  generic: 'sparkle',
 };
+
+/** Firework colours. Deliberately not the festival palette: a cracker is not
+ *  brand-coloured, and a sky of nothing but marigold reads as a bug. */
+const SPARK_COLOURS = ['#FFD24A', '#FF6A2B', '#FF3D6E', '#5EC8FF', '#B57BFF', '#8CFF6A'];
 
 const GULAL = ['#FF2D8A', '#FF8A00', '#22C55E', '#2E7DF7', '#8B5CF6', '#F5D90A'];
 
@@ -74,7 +109,9 @@ export default function FestivalAtmosphere({ theme }) {
   const kind = WEATHER[theme.id];
   if (!kind) return null;
 
-  const count = kind === 'colour' ? 9 : 14;
+  /* Crackers are bursts, not particles — four going off at different moments
+     reads as a sky, and more reads as a wall. */
+  const count = kind === 'crackers' ? 5 : kind === 'colour' ? 9 : 14;
 
   return (
     <div className={`fest-weather fest-weather-${kind}`} aria-hidden="true">
@@ -116,6 +153,47 @@ export default function FestivalAtmosphere({ theme }) {
                  in the hero. Decoration must fail invisibly — one petal fewer
                  is nothing, a broken icon over the headline is a defect. */
               onError={(e) => { e.currentTarget.style.display = 'none'; }}
+            />
+          );
+        }
+
+        if (kind === 'crackers') {
+          /* A burst is a point with twelve streaks flying out of it. The
+             container blinks on its own cycle; the streaks inside carry the
+             angle they travel along. */
+          return (
+            <span
+              key={i}
+              className="fest-burst"
+              style={{
+                left: `${8 + rnd(i * 4 + 1) * 84}%`,
+                top: `${6 + rnd(i * 4 + 2) * 45}%`,
+                animationDuration: `${2.6 + rnd(i * 4 + 3) * 2.4}s`,
+                animationDelay: `${-rnd(i * 4 + 4) * 4}s`,
+                color: SPARK_COLOURS[i % SPARK_COLOURS.length],
+                '--scale': 0.7 + rnd(i * 4 + 5) * 0.7,
+              }}
+            >
+              {/* The flash the streaks come out of. Without it a burst reads
+                  as a ring of dots rather than something that went off. */}
+              <b />
+              {Array.from({ length: 12 }, (_, k) => (
+                <i key={k} style={{ '--a': `${k * 30}deg`, '--d': `${52 + rnd(i * 13 + k) * 34}px` }} />
+              ))}
+            </span>
+          );
+        }
+
+        if (kind === 'sparkle') {
+          return (
+            <span
+              key={i}
+              className="fest-glint"
+              style={{
+                ...style,
+                top: `${5 + rnd(i * 4 + 7) * 80}%`,
+                background: theme.palette.glow,
+              }}
             />
           );
         }
