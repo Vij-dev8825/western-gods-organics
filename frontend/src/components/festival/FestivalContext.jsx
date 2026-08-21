@@ -16,19 +16,20 @@ import { useNearestFestival } from './useFestival';
 const FestivalContext = createContext({ festival: null, theme: null, productIds: new Set() });
 
 export function FestivalProvider({ children }) {
-  const { festival, theme, animation, flowers } = useNearestFestival();
+  const { festival, theme, animation, flowers, characters } = useNearestFestival();
 
   const value = useMemo(() => ({
     festival,
     theme,
     animation,
     flowers,
+    characters,
     /* Which products this season actually calls for. The festival record has
        carried this list all along; nothing outside the home page band had ever
        been told about it, so an oil the shop had marked as the one for Onam
        looked exactly like every other oil on the shop page. */
     productIds: new Set((festival?.products || []).map((p) => p.id)),
-  }), [festival, theme, animation, flowers]);
+  }), [festival, theme, animation, flowers, characters]);
 
   return <FestivalContext.Provider value={value}>{children}</FestivalContext.Provider>;
 }

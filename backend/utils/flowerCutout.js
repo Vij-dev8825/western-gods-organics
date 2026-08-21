@@ -36,7 +36,7 @@ const MAX_KEPT = 0.97;
  * @returns {Promise<{ buffer: Buffer, keptPct: number, width: number, height: number }>}
  * @throws  {Error} with a message written for the person who uploaded it
  */
-async function cutOutFlower(input) {
+async function cutOutFlower(input, { size = SIZE, fit = 'contain' } = {}) {
   const { data, info } = await sharp(input)
     // Big camera files would make the flood fill needlessly slow; nothing here
     // needs more than a couple of megapixels to find an edge.
@@ -122,11 +122,60 @@ async function cutOutFlower(input) {
 
   const buffer = await sharp(data, { raw: { width: w, height: h, channels: c } })
     .extract({ left: minX, top: minY, width: maxX - minX + 1, height: maxY - minY + 1 })
-    .resize(SIZE, SIZE, { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 } })
+    /* Flowers stay square-padded: the pookalam places them in fixed square
+       slots. A figure uses 'inside' instead, because a person padded into a
+       square is a person standing in a lot of empty air. */
+    .resize(size, size, fit === 'contain'
+      ? { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 } }
+      : { fit: 'inside' })
     .webp({ quality: 86, alphaQuality: 90, effort: 6 })
     .toBuffer();
 
   return { buffer, keptPct, width: maxX - minX + 1, height: maxY - minY + 1 };
 }
 
-module.exports = { cutOutFlower, SIZE };
+/**
+ * True when the image already carries real transparency.
+ *
+ * Artwork bought or commissioned usually arrives as a PNG that has already
+ * been cut out. Running the flood fill over it would be pointless at best and
+ * destructive at worst — the "background" it would look for is not there, and
+ * the corner samples it takes its ground colour from are fully transparent.
+ * Sampled rather than exhaustive: a hundred thousand pixels is plenty to know
+ * whether a picture has a transparent corner.
+ */
+async function hasTransparency(input) {
+  const meta = await sharp(input).metadata();
+  if (!meta.hasAlpha) return false;
+  const { data, info } = await sharp(input)
+    .resize(320, 320, { fit: 'inside', withoutEnlargement: true })
+    .ensureAlpha()
+    .raw()
+    .toBuffer({ resolveWithObject: true });
+  let clear = 0;
+  for (let i = 3; i < data.length; i += info.channels) if (data[i] < 16) clear++;
+  // A stray anti-aliased pixel is not a cut-out; a real one is mostly air.
+  return clear / (data.length / info.channels) > 0.05;
+}
+
+/**
+ * Prepares a supplied figure — a character, a mascot, anything that is not a
+ * flower — for use as a sprite.
+ *
+ * Taller than the flower size because these are whole figures rather than
+ * blooms, and passed straight through when the file is already transparent.
+ */
+async function prepareCharacter(input, { size = 340 } = {}) {
+  if (await hasTransparency(input)) {
+    const buffer = await sharp(input)
+      .trim({ threshold: 1 })
+      .resize(size, size, { fit: 'inside', withoutEnlargement: true })
+      .webp({ quality: 88, alphaQuality: 92, effort: 6 })
+      .toBuffer();
+    return { buffer, keptPct: 1, alreadyCut: true };
+  }
+  const cut = await cutOutFlower(input, { size, fit: 'inside' });
+  return { ...cut, alreadyCut: false };
+}
+
+module.exports = { cutOutFlower, prepareCharacter, hasTransparency, SIZE };

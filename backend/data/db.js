@@ -39,6 +39,7 @@ const COLLECTIONS = [
   'announcements',
   'festival-animation',
   'pookalam-flowers',
+  'festival-characters',
   'currency-overrides',
   'media',
   'push-subscriptions',

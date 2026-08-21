@@ -25,15 +25,17 @@ function loadFestivals() {
     cached = Promise.all([
       api.getFestivals().catch(() => ({})),
       api.getFlowers().catch(() => ({})),
+      api.getFestivalCharacters().catch(() => ({})),
     ])
-      .then(([d, f]) => ({
+      .then(([d, f, c]) => ({
         festivals: d.festivals || [],
         animation: d.animation || {},
         flowers: f.flowers || [],
+        characters: c.characters || [],
       }))
       // A failure here must never be visible. Both callers treat "no festival"
       // as the ordinary state, because eleven months of the year it is.
-      .catch(() => ({ festivals: [], animation: {}, flowers: [] }));
+      .catch(() => ({ festivals: [], animation: {}, flowers: [], characters: [] }));
   }
   return cached;
 }
@@ -46,17 +48,17 @@ function loadFestivals() {
  * Returns the theme alongside, since every caller wants the palette.
  */
 export function useNearestFestival() {
-  const [state, setState] = useState({ festival: null, theme: null, animation: null, flowers: [] });
+  const [state, setState] = useState({ festival: null, theme: null, animation: null, flowers: [], characters: [] });
 
   useEffect(() => {
     let alive = true;
-    loadFestivals().then(({ festivals, animation, flowers }) => {
+    loadFestivals().then(({ festivals, animation, flowers, characters }) => {
       if (!alive) return;
       const next = festivals.find((f) => f.celebrate !== false) || null;
       const near =
         next && (next.running || (next.daysToStart ?? next.daysAway) <= SHOW_WITHIN_DAYS);
       const festival = near ? next : null;
-      setState({ festival, theme: festival ? themeFor(festival) : null, animation, flowers });
+      setState({ festival, theme: festival ? themeFor(festival) : null, animation, flowers, characters });
     });
     return () => { alive = false; };
   }, []);

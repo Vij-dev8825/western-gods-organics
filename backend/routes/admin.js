@@ -26,7 +26,7 @@ const { translateProductText } = require('../utils/translateProduct');
 const { suggestProductAnswer } = require('../utils/aiAnswerSuggestion');
 const { listAll: listAllPressings, countReserved } = require('../utils/pressings');
 const { imageUpload, storeUploadedFile } = require('../utils/imageUploadHandler');
-const { cutOutFlower } = require('../utils/flowerCutout');
+const { cutOutFlower, prepareCharacter } = require('../utils/flowerCutout');
 const { buildBatchLabelPdf } = require('../utils/batchLabels');
 const { buildProfitReport } = require('../utils/profit');
 const pookalamContest = require('../utils/pookalam');
@@ -2286,6 +2286,88 @@ router.post('/flowers/:id/photo', imageUpload.single('file'), async (req, res, n
 router.delete('/flowers/:id', async (req, res, next) => {
   try {
     await db.remove('pookalam-flowers', req.params.id);
+    res.json({ success: true });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/* ----------------------------- Festival characters ------------------------- */
+
+/**
+ * The figures that dance along the foot of the festival band.
+ *
+ * The site draws its own, and they are fine, but a shop with licensed artwork
+ * will always have better. Upload one here and it replaces the drawn figures
+ * for that festival — a supplied picture cannot swing its arms, so it bobs and
+ * sways as a whole instead, which is what a printed frieze does anyway.
+ */
+router.get('/festival-characters', async (req, res, next) => {
+  try {
+    const characters = (await db.list('festival-characters'))
+      .sort((a, b) => (a.order ?? 0) - (b.order ?? 0) || String(a.createdAt).localeCompare(String(b.createdAt)));
+    res.json({ success: true, characters });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.post('/festival-characters', imageUpload.single('file'), async (req, res, next) => {
+  try {
+    if (!req.file) return res.status(400).json({ success: false, message: 'Choose an image to upload.' });
+    const label = String(req.body.label || '').trim().slice(0, 40);
+    if (!label) return res.status(400).json({ success: false, message: 'Give the character a name.' });
+    const festival = String(req.body.festival || '').trim().toLowerCase().slice(0, 24);
+    if (!festival) return res.status(400).json({ success: false, message: 'Choose which festival it belongs to.' });
+
+    const fs = require('fs');
+    let prepared;
+    try {
+      prepared = await prepareCharacter(fs.readFileSync(req.file.path));
+    } catch (err) {
+      return res.status(400).json({ success: false, message: err.message });
+    } finally {
+      fs.unlink(req.file.path, () => {});
+    }
+
+    const url = await compressAndStore(prepared.buffer, { preserveAlpha: true });
+    const existing = await db.list('festival-characters');
+    const character = {
+      id: `${festival}-${Date.now().toString(36)}`,
+      label,
+      festival,
+      url,
+      order: existing.filter((c) => c.festival === festival).length,
+      active: true,
+      createdAt: new Date().toISOString(),
+    };
+    await db.put('festival-characters', character);
+    res.status(201).json({ success: true, character, alreadyCut: prepared.alreadyCut });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.patch('/festival-characters/:id', async (req, res, next) => {
+  try {
+    const existing = await db.get('festival-characters', req.params.id);
+    if (!existing) return res.status(404).json({ success: false, message: 'Character not found.' });
+    const has = (k) => Object.prototype.hasOwnProperty.call(req.body, k);
+    const next_ = { ...existing };
+    if (has('label')) next_.label = String(req.body.label || '').trim().slice(0, 40) || existing.label;
+    if (has('festival')) next_.festival = String(req.body.festival || '').trim().toLowerCase().slice(0, 24) || existing.festival;
+    if (has('active')) next_.active = !!req.body.active;
+    if (has('order')) next_.order = Math.max(0, Math.round(Number(req.body.order) || 0));
+    await db.put('festival-characters', next_);
+    res.json({ success: true, character: next_ });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.delete('/festival-characters/:id', async (req, res, next) => {
+  try {
+    await db.remove('festival-characters', req.params.id);
     res.json({ success: true });
   } catch (err) {
     next(err);

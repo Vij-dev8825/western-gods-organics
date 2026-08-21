@@ -1,0 +1,198 @@
+/**
+ * The shop's own festival artwork.
+ *
+ * The site draws its own dancers and they are a reasonable default, but
+ * commissioned or licensed artwork will always beat them. Upload figures for a
+ * festival here and they replace the drawn ones for that festival entirely —
+ * half drawn and half painted would look like a mistake rather than a choice.
+ */
+import { useEffect, useRef, useState } from 'react';
+import { api } from '../../api';
+import { useAuth } from '../../context/AuthContext';
+import { DESIGN_CHOICES } from '../../components/festival/registry';
+
+export default function AdminCharacters() {
+  const { token } = useAuth();
+  const [characters, setCharacters] = useState([]);
+  const [label, setLabel] = useState('');
+  const [festival, setFestival] = useState('onam');
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState(null);
+  const [editing, setEditing] = useState(null);
+  const fileRef = useRef(null);
+
+  function load() {
+    api.admin.getFestivalCharacters(token).then((d) => setCharacters(d.characters || [])).catch(() => {});
+  }
+  useEffect(load, [token]);
+
+  async function upload(e) {
+    e.preventDefault();
+    const file = fileRef.current?.files?.[0];
+    if (!file) { setMessage({ type: 'error', text: 'Choose an image first.' }); return; }
+    setBusy(true);
+    setMessage(null);
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      fd.append('label', label);
+      fd.append('festival', festival);
+      const d = await api.admin.uploadFestivalCharacter(token, fd);
+      setMessage({
+        type: 'success',
+        text: d.alreadyCut
+          ? `${d.character.label} added — it was already cut out, so it was used as it is.`
+          : `${d.character.label} added — the background was removed for you.`,
+      });
+      setLabel('');
+      if (fileRef.current) fileRef.current.value = '';
+      load();
+    } catch (err) {
+      setMessage({ type: 'error', text: err.message });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function patch(id, body) {
+    try {
+      await api.admin.updateFestivalCharacter(token, id, body);
+      setEditing(null);
+      load();
+    } catch (err) {
+      setMessage({ type: 'error', text: err.message });
+    }
+  }
+
+  async function remove(c) {
+    if (!window.confirm(`Remove ${c.label}? The drawn figures come back if nothing is left for that festival.`)) return;
+    try {
+      await api.admin.deleteFestivalCharacter(token, c.id);
+      load();
+    } catch (err) {
+      setMessage({ type: 'error', text: err.message });
+    }
+  }
+
+  const nameOf = (id) => DESIGN_CHOICES.find((d) => d.id === id)?.label || id;
+  const byFestival = characters.reduce((acc, c) => {
+    (acc[c.festival] ||= []).push(c);
+    return acc;
+  }, {});
+
+  return (
+    <>
+      <div className="admin-head">
+        <h1>Festival characters</h1>
+      </div>
+
+      <p className="muted" style={{ maxWidth: 680, fontSize: '0.85rem' }}>
+        The figures that dance along the foot of the festival band on the home page.
+        The site draws its own; anything uploaded here <b>replaces</b> them for that
+        festival.
+        <br /><br />
+        <b>One character per image, standing, facing the front.</b> A transparent PNG is
+        used exactly as it is. Anything on a plain flat background — white, or the one
+        colour behind a stock cartoon — has that background removed automatically. A
+        picture with a scene behind it will be refused rather than cut badly.
+        <br /><br />
+        A flat picture cannot swing its arms, so an uploaded character <b>bobs, leans
+        and sways as a whole figure</b> rather than moving its limbs.
+      </p>
+
+      {message && <div className={`alert alert-${message.type}`}>{message.text}</div>}
+
+      <form className="card" style={{ padding: 18, margin: '18px 0', maxWidth: 680 }} onSubmit={upload}>
+        <h4 style={{ marginTop: 0 }}>Add a character</h4>
+        <div className="form-grid">
+          <div className="field">
+            <label>Name</label>
+            <input value={label} maxLength={40} required placeholder="e.g. Maveli"
+              onChange={(e) => setLabel(e.target.value)} />
+          </div>
+          <div className="field">
+            <label>Festival</label>
+            <select value={festival} onChange={(e) => setFestival(e.target.value)}>
+              {DESIGN_CHOICES.filter((d) => d.id !== 'generic').map((d) => (
+                <option key={d.id} value={d.id}>{d.label}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+        <div className="field">
+          <label>Image</label>
+          <input type="file" accept="image/jpeg,image/png,image/webp" ref={fileRef} />
+        </div>
+        <div className="btn-row">
+          <button className="btn btn-gold btn-sm" disabled={busy}>
+            {busy ? 'Preparing…' : 'Add character'}
+          </button>
+        </div>
+      </form>
+
+      {Object.keys(byFestival).length === 0 && (
+        <div className="admin-card">
+          <p className="muted" style={{ margin: 0 }}>
+            Nothing uploaded yet — every festival is using the figures the site draws.
+          </p>
+        </div>
+      )}
+
+      {Object.entries(byFestival).map(([fid, list]) => (
+        <div className="admin-card" key={fid}>
+          <h4 style={{ marginTop: 0 }}>
+            {nameOf(fid)}{' '}
+            <span className="muted" style={{ fontWeight: 400, fontSize: '0.82rem' }}>
+              — {list.filter((c) => c.active !== false).length
+                ? `showing ${Math.min(list.filter((c) => c.active !== false).length, 4)} of these instead of the drawn figures`
+                : 'all hidden, so the drawn figures are showing'}
+            </span>
+          </h4>
+          <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap' }}>
+            {list.map((c) => (
+              <div key={c.id} style={{ width: 150 }}>
+                {/* On the band's own pale ground, which is where a bad cut-out
+                    shows first. */}
+                <div style={{
+                  background: '#FDF6E7', borderRadius: 10, padding: 8, height: 130,
+                  display: 'grid', placeItems: 'end center',
+                  opacity: c.active === false ? 0.42 : 1,
+                }}>
+                  <img src={c.url} alt="" style={{ maxWidth: '100%', maxHeight: 112, objectFit: 'contain' }} />
+                </div>
+                {editing === c.id ? (
+                  <input
+                    autoFocus
+                    defaultValue={c.label}
+                    maxLength={40}
+                    style={{ width: '100%', marginTop: 6 }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') patch(c.id, { label: e.currentTarget.value });
+                      if (e.key === 'Escape') setEditing(null);
+                    }}
+                    onBlur={(e) => patch(c.id, { label: e.currentTarget.value })}
+                  />
+                ) : (
+                  <div style={{ marginTop: 6, fontWeight: 600, fontSize: '0.86rem' }}>{c.label}</div>
+                )}
+                <div style={{ marginTop: 2, fontSize: '0.78rem' }}>
+                  <button className="link-btn" onClick={() => setEditing(c.id)}>edit</button>{' '}
+                  <button className="link-btn" onClick={() => patch(c.id, { active: !(c.active !== false) })}>
+                    {c.active !== false ? 'hide' : 'show'}
+                  </button>{' '}
+                  <button className="link-btn danger" onClick={() => remove(c)}>remove</button>
+                </div>
+              </div>
+            ))}
+          </div>
+          {list.filter((c) => c.active !== false).length > 4 && (
+            <p className="muted" style={{ fontSize: '0.8rem', marginBottom: 0 }}>
+              Only the first four are shown on the page — more than that and each one
+              is too small to see.
+            </p>
+          )}
+        </div>
+      ))}
+    </>
+  );
+}

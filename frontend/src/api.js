@@ -288,6 +288,7 @@ export const api = {
   getFestivals: () => request('/products/festivals'),
   getAnnouncements: () => request('/announcements'),
   getFlowers: () => request('/flowers'),
+  getFestivalCharacters: () => request('/flowers/characters'),
 
   /* --- Onam pookalam contest -------------------------------------------- */
   /** Approved entries only. Public, no token. */
@@ -416,6 +417,20 @@ export const api = {
     updateFlower: (token, id, body) => request(`/admin/flowers/${id}`, { method: 'PATCH', body, token }),
 
     deleteFlower: (token, id) => request(`/admin/flowers/${id}`, { method: 'DELETE', token }),
+
+    getFestivalCharacters: (token) => request('/admin/festival-characters', { token }),
+
+    uploadFestivalCharacter: (token, formData) =>
+
+      request('/admin/festival-characters', { method: 'POST', formData, token }),
+
+    updateFestivalCharacter: (token, id, body) =>
+
+      request(`/admin/festival-characters/${id}`, { method: 'PATCH', body, token }),
+
+    deleteFestivalCharacter: (token, id) =>
+
+      request(`/admin/festival-characters/${id}`, { method: 'DELETE', token }),
 
     replaceFlowerPhoto: (token, id, formData) =>
 

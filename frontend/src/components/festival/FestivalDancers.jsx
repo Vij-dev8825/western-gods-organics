@@ -494,6 +494,60 @@ function Holi({ style, i }) {
   );
 }
 
+/**
+ * The shop's own artwork.
+ *
+ * A supplied picture is one flat image — its arms are painted on, so nothing
+ * can swing them. It bobs, sways and tilts as a whole figure instead, which is
+ * how a printed frieze reads anyway, and at a glance is indistinguishable from
+ * a jointed puppet doing the same thing slowly.
+ *
+ * Each is given the same footprint and hung from the same baseline, so a tall
+ * character and a short one still stand on one line.
+ */
+function SuppliedTroupe({ theme, characters }) {
+  const W = 92;
+  return (
+    <svg
+      className="fest-dancers"
+      viewBox={`0 0 ${W * characters.length} 116`}
+      role="img"
+      aria-label={`${theme.label} characters`}
+      preserveAspectRatio="xMidYMax meet"
+    >
+      {characters.map((c, i) => (
+        <g key={c.id} transform={`translate(${i * W}, 0)`}>
+          <g
+            className="fdn-figure"
+            style={{
+              animationDelay: `${-(rnd(i * 3 + 1) * 1.8).toFixed(2)}s`,
+              animationDuration: `${(1.6 + rnd(i * 3 + 2) * 0.7).toFixed(2)}s`,
+            }}
+          >
+            {/* Anchored to the bottom of its box so figures of different
+                heights share a floor rather than a centre line. */}
+            <image
+              href={c.url}
+              x="4"
+              y="0"
+              width={W - 8}
+              height="104"
+              preserveAspectRatio="xMidYMax meet"
+            />
+          </g>
+        </g>
+      ))}
+      <path
+        d={`M 10 106 H ${W * characters.length - 10}`}
+        stroke={theme.palette.accentDeep || theme.palette.accent}
+        strokeOpacity="0.2"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
 const CAST = {
   maveli: Maveli,
   girl: Girl,
@@ -507,9 +561,15 @@ const CAST = {
   potgirl: (p) => <Girl {...p} carry="pot" top={GREEN} topDark={GREEN_2} skirt={RED} skirtDark={RED_2} />,
 };
 
-export default function FestivalDancers({ theme, animation }) {
+export default function FestivalDancers({ theme, animation, characters }) {
   if (!theme) return null;
   if (animation?.enabled === false) return null;
+
+  /* Artwork the shop has supplied for this festival wins outright. The drawn
+     figures are a decent default, not something to mix with a commissioned
+     illustration — half drawn and half painted looks like a mistake. */
+  const supplied = (characters || []).filter((c) => c.festival === theme.id && c.url);
+  if (supplied.length) return <SuppliedTroupe theme={theme} characters={supplied.slice(0, 4)} />;
 
   const troupe = TROUPE[theme.id];
   if (!troupe?.length) return null;

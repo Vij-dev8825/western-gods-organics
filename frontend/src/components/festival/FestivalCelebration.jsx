@@ -55,7 +55,7 @@ const shortDate = (d) =>
 export default function FestivalCelebration() {
   /* Only for the admin's animation switch — this component keeps its own
      festival state, which predates the context. */
-  const { animation } = useFestivalContext();
+  const { animation, characters } = useFestivalContext();
   const { showToast } = useToast();
   const [festival, setFestival] = useState(null);
   const [filled, setFilled] = useState(0);
@@ -209,7 +209,7 @@ export default function FestivalCelebration() {
           {/* A frieze under the motif, not over the page. Silhouettes, and
               only for the festivals that actually have a dance or a figure
               everyone would recognise. */}
-          <FestivalDancers theme={theme} animation={animation} />
+          <FestivalDancers theme={theme} animation={animation} characters={characters} />
         </div>
       </div>
     </section>

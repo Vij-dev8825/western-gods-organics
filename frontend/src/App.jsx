@@ -101,6 +101,7 @@ const AdminPageBanners = lazy(() => import('./pages/admin/AdminPageBanners'));
 const AdminSaleBanner = lazy(() => import('./pages/admin/AdminSaleBanner'));
 const AdminAnnouncements = lazy(() => import('./pages/admin/AdminAnnouncements'));
 const AdminFlowers = lazy(() => import('./pages/admin/AdminFlowers'));
+const AdminCharacters = lazy(() => import('./pages/admin/AdminCharacters'));
 const AdminPaymentMethods = lazy(() => import('./pages/admin/AdminPaymentMethods'));
 const AdminShipping = lazy(() => import('./pages/admin/AdminShipping'));
 const AdminProfit = lazy(() => import('./pages/admin/AdminProfit'));
@@ -298,6 +299,7 @@ export default function App() {
         <Route path="sale-banner" element={<AdminSaleBanner />} />
         <Route path="announcements" element={<AdminAnnouncements />} />
         <Route path="flowers" element={<AdminFlowers />} />
+        <Route path="characters" element={<AdminCharacters />} />
         <Route path="payment-methods" element={<AdminPaymentMethods />} />
         <Route path="shipping" element={<AdminShipping />} />
         <Route path="profit" element={<AdminProfit />} />
