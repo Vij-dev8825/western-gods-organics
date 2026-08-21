@@ -451,20 +451,50 @@
  * feet, which is what stops a lean reading as a slide.
  * ------------------------------------------------------------------------ */
 .fdn-figure {
+  /* Pivot at the feet. A lean from the centre reads as a slide; a lean from
+     the floor reads as weight shifting, which is what dancing is. */
   transform-box: fill-box;
   transform-origin: 50% 100%;
-  animation-name: fdn-figure-dance;
   animation-timing-function: ease-in-out;
   animation-iteration-count: infinite;
 }
 
-@keyframes fdn-figure-dance {
+/* Bob and lean, weight going side to side. The default for a person. */
+.fdn-dance { animation-name: fdn-dance; }
+@keyframes fdn-dance {
   0%, 100% { transform: translateY(0) rotate(-2.5deg) scale(1, 1); }
   25%      { transform: translateY(-4px) rotate(0deg) scale(0.99, 1.01); }
   50%      { transform: translateY(0) rotate(2.5deg) scale(1.01, 0.99); }
   75%      { transform: translateY(-4px) rotate(0deg) scale(0.99, 1.01); }
 }
 
+/* Wider lean, no lift — a slower, statelier figure. */
+.fdn-sway { animation-name: fdn-sway; }
+@keyframes fdn-sway {
+  0%, 100% { transform: rotate(-4deg) translateX(-1px); }
+  50%      { transform: rotate(4deg) translateX(1px); }
+}
+
+/* Off the floor and squashing on landing, which is what sells a hop. */
+.fdn-hop { animation-name: fdn-hop; }
+@keyframes fdn-hop {
+  0%, 100% { transform: translateY(0) scale(1.04, 0.96); }
+  20%      { transform: translateY(-9px) scale(0.97, 1.03); }
+  45%      { transform: translateY(0) scale(1.04, 0.96); }
+  70%      { transform: translateY(-3px) scale(0.99, 1.01); }
+}
+
+/* For anything that is not a person. A sadya on a banana leaf should breathe,
+   not dance — an object doing a jig is the quickest way to look thoughtless. */
+.fdn-float { animation-name: fdn-float; }
+@keyframes fdn-float {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50%      { transform: translateY(-3px) scale(1.015); }
+}
+
+/* Deliberately motionless, for a figure that should simply be there. */
+.fdn-still { animation: none; }
+
 @media (prefers-reduced-motion: reduce) {
-  .fdn-figure { animation: none; }
+  .fdn-figure { animation: none !important; }
 }

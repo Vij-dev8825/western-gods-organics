@@ -48,7 +48,7 @@ router.get('/characters', async (req, res, next) => {
     const characters = (await db.list('festival-characters'))
       .filter((c) => c.active !== false && c.url)
       .sort((a, b) => (a.order ?? 0) - (b.order ?? 0) || String(a.createdAt).localeCompare(String(b.createdAt)))
-      .map((c) => ({ id: c.id, label: c.label || '', festival: c.festival || '', url: c.url }));
+      .map((c) => ({ id: c.id, label: c.label || '', festival: c.festival || '', url: c.url, motion: c.motion || '' }));
     res.json({ success: true, characters });
   } catch (err) {
     next(err);

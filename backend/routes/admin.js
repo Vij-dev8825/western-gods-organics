@@ -2294,6 +2294,12 @@ router.delete('/flowers/:id', async (req, res, next) => {
 
 /* ----------------------------- Festival characters ------------------------- */
 
+/** Ways a supplied figure can move. Empty means "let the row decide", which is
+ *  what most characters should be. `still` matters more than it looks: a sadya
+ *  on a banana leaf is an object, and an object that dances like a person is
+ *  the single quickest way to make a page look thoughtless. */
+const MOTIONS = ['dance', 'sway', 'hop', 'float', 'still'];
+
 /**
  * The figures that dance along the foot of the festival band.
  *
@@ -2337,6 +2343,9 @@ router.post('/festival-characters', imageUpload.single('file'), async (req, res,
       label,
       festival,
       url,
+      // How it moves. Blank means the row picks for it, alternating so four
+      // figures do not perform one identical motion side by side.
+      motion: MOTIONS.includes(req.body.motion) ? req.body.motion : '',
       order: existing.filter((c) => c.festival === festival).length,
       active: true,
       createdAt: new Date().toISOString(),
@@ -2357,6 +2366,7 @@ router.patch('/festival-characters/:id', async (req, res, next) => {
     if (has('label')) next_.label = String(req.body.label || '').trim().slice(0, 40) || existing.label;
     if (has('festival')) next_.festival = String(req.body.festival || '').trim().toLowerCase().slice(0, 24) || existing.festival;
     if (has('active')) next_.active = !!req.body.active;
+    if (has('motion')) next_.motion = MOTIONS.includes(req.body.motion) ? req.body.motion : '';
     if (has('order')) next_.order = Math.max(0, Math.round(Number(req.body.order) || 0));
     await db.put('festival-characters', next_);
     res.json({ success: true, character: next_ });

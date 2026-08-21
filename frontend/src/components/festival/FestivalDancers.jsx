@@ -505,6 +505,11 @@ function Holi({ style, i }) {
  * Each is given the same footprint and hung from the same baseline, so a tall
  * character and a short one still stand on one line.
  */
+/* What a figure does when the shop has not said. Cycled rather than fixed so
+   a row of four is not one motion performed four times — the thing that makes
+   a frieze look mechanical is everyone moving alike, not everyone moving. */
+const AUTO_MOTION = ['dance', 'sway', 'hop', 'dance'];
+
 function SuppliedTroupe({ theme, characters }) {
   const W = 92;
   return (
@@ -518,7 +523,7 @@ function SuppliedTroupe({ theme, characters }) {
       {characters.map((c, i) => (
         <g key={c.id} transform={`translate(${i * W}, 0)`}>
           <g
-            className="fdn-figure"
+            className={`fdn-figure fdn-${c.motion || AUTO_MOTION[i % AUTO_MOTION.length]}`}
             style={{
               animationDelay: `${-(rnd(i * 3 + 1) * 1.8).toFixed(2)}s`,
               animationDuration: `${(1.6 + rnd(i * 3 + 2) * 0.7).toFixed(2)}s`,

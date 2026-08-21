@@ -11,11 +11,23 @@ import { api } from '../../api';
 import { useAuth } from '../../context/AuthContext';
 import { DESIGN_CHOICES } from '../../components/festival/registry';
 
+/** How a figure moves. Blank lets the row choose, alternating so a row of
+ *  four does not perform one identical motion four times over. */
+const MOTIONS = [
+  ['', 'Pick for me'],
+  ['dance', 'Dance — bob and lean'],
+  ['sway', 'Sway — slower, no lift'],
+  ['hop', 'Hop'],
+  ['float', 'Float — for things, not people'],
+  ['still', 'Stand still'],
+];
+
 export default function AdminCharacters() {
   const { token } = useAuth();
   const [characters, setCharacters] = useState([]);
   const [label, setLabel] = useState('');
   const [festival, setFestival] = useState('onam');
+  const [motion, setMotion] = useState('');
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState(null);
   const [editing, setEditing] = useState(null); // { id, label, festival }
@@ -38,6 +50,7 @@ export default function AdminCharacters() {
       fd.append('file', file);
       fd.append('label', label);
       fd.append('festival', festival);
+      fd.append('motion', motion);
       const d = await api.admin.uploadFestivalCharacter(token, fd);
       setMessage({
         type: 'success',
@@ -66,9 +79,9 @@ export default function AdminCharacters() {
   }
 
   async function saveEdit() {
-    const { id, label: l, festival: f } = editing;
+    const { id, label: l, festival: f, motion: m } = editing;
     if (!l.trim()) { setMessage({ type: 'error', text: 'A character needs a name.' }); return; }
-    await patch(id, { label: l.trim(), festival: f });
+    await patch(id, { label: l.trim(), festival: f, motion: m });
   }
 
   async function swapImage(id, file) {
@@ -152,6 +165,16 @@ export default function AdminCharacters() {
           <label>Image</label>
           <input type="file" accept="image/jpeg,image/png,image/webp" ref={fileRef} />
         </div>
+        <div className="field">
+          <label>How it moves</label>
+          <select value={motion} onChange={(e) => setMotion(e.target.value)} style={{ maxWidth: 280 }}>
+            {MOTIONS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+          </select>
+          <p className="muted" style={{ fontSize: '0.8rem', marginTop: 4 }}>
+            Use <b>Float</b> or <b>Stand still</b> for anything that is not a person —
+            a sadya on a banana leaf doing a jig looks like a mistake.
+          </p>
+        </div>
         <div className="btn-row">
           <button className="btn btn-gold btn-sm" disabled={busy}>
             {busy ? 'Preparing…' : 'Add character'}
@@ -212,6 +235,12 @@ export default function AdminCharacters() {
                         <option key={d.id} value={d.id}>{d.label}</option>
                       ))}
                     </select>
+                    <select
+                      value={editing.motion}
+                      onChange={(e) => setEditing({ ...editing, motion: e.target.value })}
+                    >
+                      {MOTIONS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+                    </select>
                     <div style={{ fontSize: '0.78rem' }}>
                       <button className="link-btn" onClick={saveEdit}>save</button>{' '}
                       <button className="link-btn" onClick={() => setEditing(null)}>cancel</button>
@@ -220,10 +249,13 @@ export default function AdminCharacters() {
                 ) : (
                   <>
                     <div style={{ marginTop: 6, fontWeight: 600, fontSize: '0.86rem' }}>{c.label}</div>
+                    <div className="muted" style={{ fontSize: '0.74rem' }}>
+                      {(MOTIONS.find(([v]) => v === (c.motion || ''))?.[1] || '').split(' —')[0]}
+                    </div>
                     <div style={{ marginTop: 2, fontSize: '0.78rem' }}>
                       <button
                         className="link-btn"
-                        onClick={() => setEditing({ id: c.id, label: c.label || '', festival: c.festival })}
+                        onClick={() => setEditing({ id: c.id, label: c.label || '', festival: c.festival, motion: c.motion || '' })}
                       >
                         edit
                       </button>{' '}
