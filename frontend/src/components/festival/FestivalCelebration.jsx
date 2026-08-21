@@ -67,7 +67,11 @@ export default function FestivalCelebration() {
            that is still wanted here. A festival can be worth a place on the
            calendar without dressing the whole shop. */
         const next = (d.festivals || []).find((f) => f.celebrate !== false) || null;
-        setFestival(next && next.daysAway <= SHOW_WITHIN_DAYS ? next : null);
+        /* A festival that has started stays up for the whole of its run, however
+           long that is. Otherwise the window is counted to the first day, not
+           the named one — a ten-day Onam should dress the shop from Atham. */
+        const near = next && (next.running || next.daysToStart <= SHOW_WITHIN_DAYS);
+        setFestival(near ? next : null);
       })
       .catch(() => {
         /* The home page must not depend on this. Silence is the right failure. */
@@ -111,10 +115,17 @@ export default function FestivalCelebration() {
   const { Motif, palette } = theme;
   const pct = Math.round((filled / theme.steps) * 100);
 
-  const countdown =
-    festival.daysAway > 1
-      ? `${festival.daysAway} days to go`
-      : festival.daysAway === 1
+  /* Once a multi-day festival has begun, where you are in it is the useful
+     thing to say — "day 3 of 10" beats a countdown to a day that may already
+     have gone by. Before it starts, count down to the first day rather than
+     the named one, because that is when the house needs to be ready. */
+  const countdown = festival.running
+    ? festival.runDays > 1
+      ? `Day ${festival.dayOfRun} of ${festival.runDays}`
+      : 'Today'
+    : festival.daysToStart > 1
+      ? `${festival.daysToStart} days to go`
+      : festival.daysToStart === 1
         ? 'Tomorrow'
         : 'Today';
 

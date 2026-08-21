@@ -450,6 +450,14 @@ router.get('/festivals', async (req, res, next) => {
         date: f.date,
         note: f.note,
         daysAway: f.daysAway,
+        // The run, so the page can say "day 3 of 10" and keep celebrating
+        // after the named day has gone by.
+        startDate: f.startDate,
+        endDate: f.endDate,
+        runDays: f.runDays,
+        daysToStart: f.daysToStart,
+        running: f.running,
+        dayOfRun: f.dayOfRun,
         orderBy: f.orderBy,
         orderingClosed: f.orderingClosed,
         // Public on purpose. A coupon code is meant to be handed out, and the

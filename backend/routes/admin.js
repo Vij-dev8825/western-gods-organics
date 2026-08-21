@@ -1654,6 +1654,12 @@ function readFestival(body, existing = {}) {
       // pricing effect — this is a reading list, not a bundle.
       productIds: Array.isArray(body.productIds) ? body.productIds.filter(Boolean).slice(0, 12) : [],
       leadDays: Math.min(Math.max(Math.round(Number(body.leadDays) || FESTIVAL_LEAD_DAYS), 0), 60),
+      // How long the celebration runs, described around the day it is named
+      // for. Onam is nine days before Thiruvonam and none after; Pongal is
+      // none before Thai Pongal and three after. Both default to zero, which
+      // is a single-day festival and what every existing entry becomes.
+      startsDaysBefore: Math.min(Math.max(Math.round(Number(body.startsDaysBefore) || 0), 0), 30),
+      endsDaysAfter: Math.min(Math.max(Math.round(Number(body.endsDaysAfter) || 0), 0), 30),
       // An offer code to hand out for this season, if there is one. Public by
       // design — a coupon code is meant to be given away — but optional, so a
       // festival with no offer simply has none rather than a fake one. Must

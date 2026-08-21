@@ -6,6 +6,7 @@ import { useToast } from '../../context/ToastContext';
 
 const BLANK = {
   name: '', date: '', note: '', productIds: [], leadDays: 5, couponCode: '',
+  startsDaysBefore: 0, endsDaysAfter: 0,
   celebrate: true, theme: '', active: true,
 };
 
@@ -73,6 +74,7 @@ export default function AdminFestivals() {
       name: f.name, date: f.date, note: f.note || '',
       productIds: f.productIds || [], leadDays: f.leadDays ?? 5,
       couponCode: f.couponCode || '',
+      startsDaysBefore: f.startsDaysBefore ?? 0, endsDaysAfter: f.endsDaysAfter ?? 0,
       celebrate: f.celebrate !== false, theme: f.theme || '',
       active: f.active !== false,
     });
@@ -143,6 +145,23 @@ export default function AdminFestivals() {
           <label>Date this year</label>
           <input type="date" required value={form.date}
             onChange={(e) => setForm({ ...form, date: e.target.value })} />
+        </div>
+        <div className="field">
+          <label>How long it runs</label>
+          <div className="flex gap-1" style={{ alignItems: 'center', flexWrap: 'wrap' }}>
+            <input type="number" min={0} max={30} value={form.startsDaysBefore} style={{ width: 90 }}
+              onChange={(e) => setForm({ ...form, startsDaysBefore: e.target.value })} />
+            <span className="muted" style={{ fontSize: '0.85rem' }}>days before,</span>
+            <input type="number" min={0} max={30} value={form.endsDaysAfter} style={{ width: 90 }}
+              onChange={(e) => setForm({ ...form, endsDaysAfter: e.target.value })} />
+            <span className="muted" style={{ fontSize: '0.85rem' }}>days after</span>
+          </div>
+          <p className="muted" style={{ fontSize: '0.8rem', marginTop: 4 }}>
+            The date above is the day the festival is <b>named</b> for — Thiruvonam,
+            Deepavali, Thai Pongal. Onam is <b>9 before, 0 after</b>. Pongal is
+            <b> 0 before, 3 after</b>. Navaratri is <b>0 before, 8 after</b>. Leave both
+            at 0 for a single day. The shop stays dressed for the whole run.
+          </p>
         </div>
         <div className="field">
           <label>Days needed to deliver</label>

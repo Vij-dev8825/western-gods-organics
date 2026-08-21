@@ -43,16 +43,57 @@ const asUtc = (value) => Date.parse(`${ymd(value)}T00:00:00Z`);
 const daysBetween = (a, b) => Math.round((asUtc(a) - asUtc(b)) / 86400000);
 const shiftDays = (value, days) => ymd(new Date(asUtc(value) - days * 86400000).toISOString());
 
-/** A festival with everything the page needs derived: how far off it is, and
- *  the last day to order for it. */
+const clampSpan = (v) => Math.min(Math.max(Math.round(Number(v) || 0), 0), 30);
+
+/**
+ * A festival with everything the page needs derived: how far off it is, how
+ * long it runs, and the last day to order for it.
+ *
+ * Most festivals here are not a day. Onam is ten, from Atham to Thiruvonam.
+ * Pongal is four. Navaratri is nine. The date the admin enters is the day the
+ * festival is *named* for — Thiruvonam, Deepavali, Thai Pongal — because that
+ * is the one everybody knows, and the run is described around it: how many
+ * days before it starts, how many after it ends. Onam is nine before and none
+ * after; Pongal is none before and three after.
+ *
+ * Both default to zero, so every festival entered before this existed stays
+ * exactly a single day and nothing about it changes.
+ */
 function describe(festival, now = Date.now()) {
   const leadDays = Number.isFinite(Number(festival.leadDays)) ? Number(festival.leadDays) : DEFAULT_LEAD_DAYS;
+  const startsDaysBefore = clampSpan(festival.startsDaysBefore);
+  const endsDaysAfter = clampSpan(festival.endsDaysAfter);
+
+  const startDate = shiftDays(festival.date, startsDaysBefore);
+  const endDate = shiftDays(festival.date, -endsDaysAfter);
+
+  // Counted back from the first day, not the named one. For a ten-day Onam the
+  // oil has to be there before Atham, not before Thiruvonam — a deadline aimed
+  // at the last day would arrive nine days into the celebration.
+  const orderBy = shiftDays(startDate, leadDays);
+
   const daysAway = daysBetween(festival.date, now);
-  const orderBy = shiftDays(festival.date, leadDays);
+  const daysToStart = daysBetween(startDate, now);
+  const daysToEnd = daysBetween(endDate, now);
+  const running = daysToStart <= 0 && daysToEnd >= 0;
+  const runDays = startsDaysBefore + endsDaysAfter + 1;
+
   return {
     ...festival,
     leadDays,
+    startsDaysBefore,
+    endsDaysAfter,
+    startDate,
+    endDate,
+    runDays,
+    // Days away from the named day, which is what a countdown should say even
+    // once the celebration has begun: during Onam, Thiruvonam is still coming.
     daysAway,
+    daysToStart,
+    // On now, somewhere between the first day and the last.
+    running,
+    // Which day of the run, 1-based, for "day 3 of 10". Null when not running.
+    dayOfRun: running ? startsDaysBefore + endsDaysAfter + 1 - daysToEnd : null,
     orderBy,
     // Distinct from "it's passed": a festival two days off can still be
     // celebrated, it just can't be ordered for any more, and telling someone
@@ -67,7 +108,10 @@ async function listUpcoming({ limit = null } = {}) {
   const all = await db.list('festivals');
   const now = Date.now();
   const upcoming = all
-    .filter((f) => f.active !== false && daysBetween(f.date, now) >= 0)
+    // Kept until the run is over rather than until the named day. A ten-day
+    // Onam that vanished on Thiruvonam morning would go dark for the nine days
+    // people are actually celebrating.
+    .filter((f) => f.active !== false && daysBetween(shiftDays(f.date, -clampSpan(f.endsDaysAfter)), now) >= 0)
     .map((f) => describe(f, now))
     .sort((a, b) => a.daysAway - b.daysAway);
   return limit ? upcoming.slice(0, limit) : upcoming;
