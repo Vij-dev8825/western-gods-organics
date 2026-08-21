@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { flushSync } from 'react-dom';
 import { Link, useNavigate } from 'react-router-dom';
 import { api } from '../api';
+import { useIsFestivalProduct } from './festival/FestivalContext';
 import { getProductImage, getProductImageSrcSet } from '../utils/productImages';
 import { useWishlist } from '../context/WishlistContext';
 import { useCart } from '../context/CartContext';
@@ -24,6 +25,7 @@ const MAX_STAGGER_INDEX = 7;
 const STAGGER_STEP_MS = 60;
 
 export default function ProductCard({ product, index }) {
+  const { isFestival, theme, festival } = useIsFestivalProduct(product?.id);
   const { ref: revealRef, visible: revealed } = useReveal();
   const { productIds, toggleWishlist } = useWishlist();
   const { addItem } = useCart();
@@ -243,6 +245,18 @@ export default function ProductCard({ product, index }) {
         </div>
       </div>
       <div className="product-body">
+        {/* Marked because the festival calendar says this season calls for it.
+            In the body rather than the badge stack over the image: that stack
+            positions each badge with a hand-tuned `top`, so adding a fourth
+            means re-tuning three. */}
+        {isFestival && theme && (
+          <span
+            className="fest-pick"
+            style={{ '--pick-ink': theme.palette.accentDeep, '--pick-glow': theme.palette.glow }}
+          >
+            For {festival.name}
+          </span>
+        )}
         <h3>{displayName}</h3>
         {/* The whole card is already an <a>, so this can't be a nested Link —
             navigate programmatically instead of producing invalid markup. */}

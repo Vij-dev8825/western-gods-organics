@@ -8,6 +8,7 @@ import { configureAnalytics, initAnalytics, trackPageView } from './utils/analyt
 import AnnounceTicker from './components/AnnounceTicker';
 import FestivalAtmosphere from './components/festival/FestivalAtmosphere';
 import { useNearestFestival } from './components/festival/useFestival';
+import { FestivalProvider } from './components/festival/FestivalContext';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -147,6 +148,7 @@ function StoreLayout() {
   // than in each button so all three move together and there's one listener.
   useFabAutoHide();
   return (
+    <FestivalProvider>
     <div className="app-shell">
       {/* Festival weather, on every page rather than only the home page.
           Fixed to the viewport and painted behind everything, so it drifts
@@ -174,6 +176,7 @@ function StoreLayout() {
       <PushOptIn />
       <InstallPrompt />
     </div>
+    </FestivalProvider>
   );
 }
 

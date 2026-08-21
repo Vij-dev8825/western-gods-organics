@@ -95,6 +95,11 @@ function describe(festival, now = Date.now()) {
     // Which day of the run, 1-based, for "day 3 of 10". Null when not running.
     dayOfRun: running ? startsDaysBefore + endsDaysAfter + 1 - daysToEnd : null,
     orderBy,
+    // Days left to order, derived here with the same UTC-midnight arithmetic
+    // as everything else in this file. Deliberately not left to the client: a
+    // browser subtracting local dates lands a day out for half the country,
+    // and a deadline stated wrongly is the one number here that must not be.
+    daysToOrderBy: daysBetween(orderBy, now),
     // Distinct from "it's passed": a festival two days off can still be
     // celebrated, it just can't be ordered for any more, and telling someone
     // to order for it would be selling them a parcel that arrives too late.

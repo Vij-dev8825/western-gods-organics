@@ -468,6 +468,7 @@ router.get('/festivals', async (req, res, next) => {
         running: f.running,
         dayOfRun: f.dayOfRun,
         orderBy: f.orderBy,
+        daysToOrderBy: f.daysToOrderBy,
         orderingClosed: f.orderingClosed,
         // Public on purpose. A coupon code is meant to be handed out, and the
         // pookalam at /onam is a celebration rather than a lock — anyone who

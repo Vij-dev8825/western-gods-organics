@@ -14,6 +14,7 @@ import { getEffectivePrice } from '../utils/pricing';
 import { getAttributedAffiliateCode } from '../utils/affiliateAttribution';
 import { STORE_LOCATIONS, directionsUrl } from '../data/storeLocations';
 import ChakkiWheel from '../components/ChakkiWheel';
+import { useFestivalContext } from '../components/festival/FestivalContext';
 import AddressForm, { PhoneField } from '../components/AddressForm';
 import CodPhoneVerify from '../components/CodPhoneVerify';
 import CheckoutLoginPrompt from '../components/CheckoutLoginPrompt';
@@ -36,6 +37,7 @@ function validateContactInfo(name, email) {
 }
 
 export default function Cart() {
+  const { festival: nearFestival, theme: festivalTheme } = useFestivalContext();
   const { items, addItem, updateQuantity, removeItem, clearCart } = useCart();
   const { isLoggedIn, token, user, login, updateUser } = useAuth();
   const { showToast } = useToast();
@@ -722,6 +724,26 @@ export default function Cart() {
           {!freeShipping && isDomesticAddress && effectiveShippingChoice === 'shipping' && subtotal > 0 && shipping === 0 && (
             <div className="free-ship-nudge earned">
               <p><b>Delivery is free on this order.</b></p>
+            </div>
+          )}
+          {/* The deadline, at the one moment it changes a decision.
+              It lived on the home page and the calendar, which is to say
+              nowhere near the person deciding whether to order today. Hidden
+              once ordering has closed rather than shown in red: at that point
+              it is not a nudge, it is bad news about an order they have not
+              placed yet, and the shop would rather sell them the oil anyway. */}
+          {nearFestival && festivalTheme && !nearFestival.orderingClosed && (
+            <div
+              className={`fest-deadline${nearFestival.daysToOrderBy <= 2 ? ' is-urgent' : ''}`}
+              style={{ '--fest-ink': festivalTheme.palette.accentDeep, '--fest-glow': festivalTheme.palette.glow }}
+            >
+              <b>{nearFestival.name}</b> — order by{' '}
+              <b>{new Date(nearFestival.orderBy).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</b>
+              {nearFestival.daysToOrderBy === 0
+                ? ' — that is today'
+                : nearFestival.daysToOrderBy === 1
+                  ? ' — that is tomorrow'
+                  : ` — ${nearFestival.daysToOrderBy} days left`}
             </div>
           )}
           <div className="summary-row"><span>Subtotal</span><span>₹{subtotal}</span></div>

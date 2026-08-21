@@ -10514,3 +10514,60 @@ body.has-cookie-bar .install-prompt { bottom: calc(var(--cookie-bar-height, 0px)
   /* Two bursts is a sky on a phone; five is a wall. */
   .fest-weather-crackers > :nth-child(n + 4) { display: none; }
 }
+
+/* ---------------------------------------------------------------------------
+ * The festival reaching the shop floor
+ *
+ * Two small things, and neither is decoration: a mark on the products this
+ * season actually calls for, and the ordering deadline where somebody is
+ * deciding whether to order. Both take their colour from the festival theme.
+ * ------------------------------------------------------------------------ */
+.fest-pick {
+  display: inline-block;
+  margin-bottom: 5px;
+  padding: 2px 9px;
+  border-radius: 999px;
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--pick-ink, #6d4415);
+  background: var(--pick-glow, #f2cf6b);
+  /* A slow breath rather than a flash. It is pointing at a product, not
+     competing with it, and a tag that blinks on a shop grid of twenty cards
+     is a strobe. */
+  animation: fest-pick-breathe 3.6s ease-in-out infinite;
+}
+
+@keyframes fest-pick-breathe {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(0, 0, 0, 0); }
+  50%      { box-shadow: 0 0 0 4px color-mix(in srgb, var(--pick-glow, #f2cf6b) 35%, transparent); }
+}
+
+.fest-deadline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: baseline;
+  margin-bottom: 12px;
+  padding: 9px 12px;
+  border-radius: 9px;
+  font-size: 0.84rem;
+  color: var(--fest-ink, #6d4415);
+  background: color-mix(in srgb, var(--fest-glow, #f2cf6b) 26%, transparent);
+  border: 1px solid color-mix(in srgb, var(--fest-glow, #f2cf6b) 55%, transparent);
+}
+
+/* The last two days. Weight and a warmer ground rather than red — this is a
+   reason to order now, not an error. */
+.fest-deadline.is-urgent {
+  font-weight: 600;
+  background: color-mix(in srgb, var(--fest-glow, #f2cf6b) 45%, transparent);
+  border-color: var(--fest-glow, #f2cf6b);
+}
+
+/* Both are ornament on top of information that is already in the text, so
+   under Reduce Motion they simply stop moving and say the same thing. */
+@media (prefers-reduced-motion: reduce) {
+  .fest-pick { animation: none; }
+}
