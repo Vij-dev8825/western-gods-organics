@@ -19,6 +19,11 @@ export default function AdminFlowers() {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState(null);
   const fileRef = useRef(null);
+  /* Edited in the row rather than in a dialog: the thing you are checking your
+     new name against is the picture two columns to the left. */
+  const [editing, setEditing] = useState(null);   // { id, label, gloss }
+  const [swapping, setSwapping] = useState(null); // id whose photo is uploading
+  const swapRef = useRef(null);
 
   function load() {
     api.admin.getFlowers(token).then((d) => setFlowers(d.flowers || [])).catch(() => {});
@@ -58,6 +63,41 @@ export default function AdminFlowers() {
       load();
     } catch (err) {
       setMessage({ type: 'error', text: err.message });
+    }
+  }
+
+  async function saveEdit() {
+    const { id, label, gloss } = editing;
+    if (!label.trim()) { setMessage({ type: 'error', text: 'A flower needs a name.' }); return; }
+    try {
+      await api.admin.updateFlower(token, id, { label: label.trim(), gloss: gloss.trim() });
+      setEditing(null);
+      load();
+    } catch (err) {
+      setMessage({ type: 'error', text: err.message });
+    }
+  }
+
+  async function swapPhoto(id, file) {
+    if (!file) return;
+    setSwapping(id);
+    setMessage(null);
+    try {
+      const d = await api.admin.replaceFlowerPhoto(token, id, (() => {
+        const fd = new FormData();
+        fd.append('file', file);
+        return fd;
+      })());
+      setMessage({
+        type: 'success',
+        text: `New photo for ${d.flower.label} — the flower filled ${d.keptPct}% of it.`,
+      });
+      load();
+    } catch (err) {
+      setMessage({ type: 'error', text: err.message });
+    } finally {
+      setSwapping(null);
+      if (swapRef.current) swapRef.current.value = '';
     }
   }
 
@@ -147,8 +187,36 @@ export default function AdminFlowers() {
                   </span>
                 </td>
                 <td>
-                  <b>{f.label}</b>
-                  {f.gloss && <div className="muted" style={{ fontSize: '0.8rem' }}>{f.gloss}</div>}
+                  {editing?.id === f.id ? (
+                    <div style={{ display: 'grid', gap: 6, maxWidth: 240 }}>
+                      <input
+                        value={editing.label}
+                        maxLength={40}
+                        autoFocus
+                        placeholder="Name"
+                        onChange={(e) => setEditing({ ...editing, label: e.target.value })}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') { e.preventDefault(); saveEdit(); }
+                          if (e.key === 'Escape') setEditing(null);
+                        }}
+                      />
+                      <input
+                        value={editing.gloss}
+                        maxLength={40}
+                        placeholder="Also called"
+                        onChange={(e) => setEditing({ ...editing, gloss: e.target.value })}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') { e.preventDefault(); saveEdit(); }
+                          if (e.key === 'Escape') setEditing(null);
+                        }}
+                      />
+                    </div>
+                  ) : (
+                    <>
+                      <b>{f.label}</b>
+                      {f.gloss && <div className="muted" style={{ fontSize: '0.8rem' }}>{f.gloss}</div>}
+                    </>
+                  )}
                 </td>
                 <td>
                   <button className="link-btn" onClick={() => patch(f.id, { petal: !f.petal })}>
@@ -161,10 +229,35 @@ export default function AdminFlowers() {
                   </span>
                 </td>
                 <td>
-                  <button className="link-btn" onClick={() => patch(f.id, { active: !(f.active !== false) })}>
-                    {f.active !== false ? 'hide' : 'show'}
-                  </button>{' '}
-                  <button className="link-btn danger" onClick={() => remove(f)}>remove</button>
+                  {editing?.id === f.id ? (
+                    <>
+                      <button className="link-btn" onClick={saveEdit}>save</button>{' '}
+                      <button className="link-btn" onClick={() => setEditing(null)}>cancel</button>
+                    </>
+                  ) : (
+                    <>
+                      <button
+                        className="link-btn"
+                        onClick={() => setEditing({ id: f.id, label: f.label || '', gloss: f.gloss || '' })}
+                      >
+                        edit
+                      </button>{' '}
+                      <label className="link-btn" style={{ cursor: 'pointer' }}>
+                        {swapping === f.id ? 'cutting…' : 'new photo'}
+                        <input
+                          type="file"
+                          accept="image/jpeg,image/png,image/webp"
+                          hidden
+                          ref={swapping === f.id ? swapRef : null}
+                          onChange={(e) => swapPhoto(f.id, e.target.files?.[0])}
+                        />
+                      </label>{' '}
+                      <button className="link-btn" onClick={() => patch(f.id, { active: !(f.active !== false) })}>
+                        {f.active !== false ? 'hide' : 'show'}
+                      </button>{' '}
+                      <button className="link-btn danger" onClick={() => remove(f)}>remove</button>
+                    </>
+                  )}
                 </td>
               </tr>
             ))}

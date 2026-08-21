@@ -417,6 +417,10 @@ export const api = {
 
     deleteFlower: (token, id) => request(`/admin/flowers/${id}`, { method: 'DELETE', token }),
 
+    replaceFlowerPhoto: (token, id, formData) =>
+
+      request(`/admin/flowers/${id}/photo`, { method: 'POST', formData, token }),
+
     saveFestivalAnimation: (token, body) => request('/admin/festival-animation', { method: 'PUT', body, token }),
 
     saveAnnouncements: (token, body) => request('/admin/announcements', { method: 'PUT', body, token }),

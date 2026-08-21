@@ -2245,6 +2245,43 @@ router.patch('/flowers/:id', async (req, res, next) => {
   }
 });
 
+/**
+ * POST /api/admin/flowers/:id/photo — swap the photograph, keep everything else.
+ *
+ * Separate from PATCH because it carries a file, and worth having at all
+ * because a disappointing cut-out is the likeliest reason to edit a flower.
+ * Re-uploading through the add form instead would mean losing its name, its
+ * place in the order and its switches.
+ */
+router.post('/flowers/:id/photo', imageUpload.single('file'), async (req, res, next) => {
+  try {
+    const existing = await db.get('pookalam-flowers', req.params.id);
+    if (!existing) return res.status(404).json({ success: false, message: 'Flower not found.' });
+    if (!req.file) return res.status(400).json({ success: false, message: 'Choose an image to upload.' });
+
+    const fs = require('fs');
+    let cut;
+    try {
+      cut = await cutOutFlower(fs.readFileSync(req.file.path));
+    } catch (err) {
+      return res.status(400).json({ success: false, message: err.message });
+    } finally {
+      fs.unlink(req.file.path, () => {});
+    }
+
+    // The old sprite is left in the media store rather than deleted. It is a
+    // few kilobytes, and anything that has already been drawn with it — an
+    // exported pookalam someone saved — should not turn into a broken image
+    // because the shop swapped the photo.
+    const url = await compressAndStore(cut.buffer, { preserveAlpha: true });
+    const flower = { ...existing, url };
+    await db.put('pookalam-flowers', flower);
+    res.json({ success: true, flower, keptPct: Math.round(cut.keptPct * 100) });
+  } catch (err) {
+    next(err);
+  }
+});
+
 // DELETE /api/admin/flowers/:id
 router.delete('/flowers/:id', async (req, res, next) => {
   try {
