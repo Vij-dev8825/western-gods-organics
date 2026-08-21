@@ -287,6 +287,7 @@ export const api = {
   getPressingCalendar: () => request('/products/pressings/calendar'),
   getFestivals: () => request('/products/festivals'),
   getAnnouncements: () => request('/announcements'),
+  getFlowers: () => request('/flowers'),
 
   /* --- Onam pookalam contest -------------------------------------------- */
   /** Approved entries only. Public, no token. */
@@ -407,6 +408,14 @@ export const api = {
     getAnnouncements: (token) => request('/admin/announcements', { token }),
 
     getFestivalAnimation: (token) => request('/admin/festival-animation', { token }),
+
+    getFlowers: (token) => request('/admin/flowers', { token }),
+
+    uploadFlower: (token, formData) => request('/admin/flowers', { method: 'POST', formData, token }),
+
+    updateFlower: (token, id, body) => request(`/admin/flowers/${id}`, { method: 'PATCH', body, token }),
+
+    deleteFlower: (token, id) => request(`/admin/flowers/${id}`, { method: 'DELETE', token }),
 
     saveFestivalAnimation: (token, body) => request('/admin/festival-animation', { method: 'PUT', body, token }),
 

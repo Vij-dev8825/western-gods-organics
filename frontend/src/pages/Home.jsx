@@ -81,7 +81,7 @@ const WEBSITE_SCHEMA = {
 };
 
 export default function Home() {
-  const { theme: festivalTheme, festival: nearFestival, animation: festivalAnimation } = useNearestFestival();
+  const { theme: festivalTheme, festival: nearFestival, animation: festivalAnimation, flowers: shopFlowers } = useNearestFestival();
   const { t, lang } = useLang();
   const { isLoggedIn, token } = useAuth();
   const [products, setProducts] = useState([]);
@@ -227,6 +227,7 @@ export default function Home() {
           theme={festivalTheme}
           festival={nearFestival}
           animation={festivalAnimation}
+          flowers={shopFlowers}
           variant="hero"
         />
         <div className="hero-video-content container">

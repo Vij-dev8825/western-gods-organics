@@ -28,6 +28,8 @@ import {
   Bloom,
   FAMILIES,
   FLOWERS,
+  registerShopFlowers,
+  shopFlowerList,
   bloomChildrenInline,
   primeSpriteDataUris,
   flowerById,
@@ -222,6 +224,27 @@ export default function Pookalam() {
 
   /* --- editor UI ------------------------------------------------------- */
   const [tab, setTab] = useState('flowers');
+  /* The shop's own uploads, added to the fifteen that ship with the site.
+     Registered into the flower module rather than only held here, because
+     the board, the exporter and the picker all resolve a flower through
+     flowerById and spriteUrl — register once and every one of them can draw
+     an uploaded flower without knowing it is one. */
+  const [shopFlowers, setShopFlowers] = useState([]);
+  useEffect(() => {
+    let alive = true;
+    api
+      .getFlowers()
+      .then((d) => {
+        if (!alive) return;
+        registerShopFlowers(d.flowers || []);
+        setShopFlowers(shopFlowerList());
+      })
+      .catch(() => {});
+    return () => { alive = false; };
+  }, []);
+
+  const allFlowers = useMemo(() => [...FLOWERS, ...shopFlowers], [shopFlowers]);
+
   const [activeFlower, setActiveFlower] = useState(FLOWERS[0].id);
   const [activeSize, setActiveSize] = useState(13);
   const [tool, setTool] = useState('place');
@@ -266,8 +289,11 @@ export default function Pookalam() {
   const full = remaining <= 0;
 
   const visibleFlowers = useMemo(
-    () => (state.family === 'all' ? FLOWERS : FLOWERS.filter((f) => f.family === state.family)),
-    [state.family]
+    () => (state.family === 'all' ? allFlowers : allFlowers.filter((f) => f.family === state.family)),
+    // allFlowers has to be here: it grows when the shop's own uploads arrive,
+    // and a memo that only watched the family filter would keep serving the
+    // fifteen built-ins for the life of the page.
+    [state.family, allFlowers]
   );
 
   const flowerIds = useMemo(() => visibleFlowers.map((f) => f.id), [visibleFlowers]);
@@ -482,7 +508,7 @@ export default function Pookalam() {
 
   const loadTemplate = useCallback(
     (tpl) => {
-      const ids = flowerIds.length ? flowerIds : FLOWERS.map((f) => f.id);
+      const ids = flowerIds.length ? flowerIds : allFlowers.map((f) => f.id);
       dispatch({ type: 'loadBlooms', blooms: tpl.build(ids) });
       setView({ zoom: 1, pan: { x: 0, y: 0 } });
       setTool('place');
@@ -493,13 +519,13 @@ export default function Pookalam() {
   );
 
   const doSurprise = useCallback(() => {
-    const ids = flowerIds.length ? flowerIds : FLOWERS.map((f) => f.id);
+    const ids = flowerIds.length ? flowerIds : allFlowers.map((f) => f.id);
     // Seeded from the clock so each press differs, but the generator itself
     // stays pure and replayable given the same seed.
     dispatch({ type: 'loadBlooms', blooms: surprise(ids, Date.now() % 100000) });
     setView({ zoom: 1, pan: { x: 0, y: 0 } });
     cue('pattern');
-  }, [flowerIds, cue]);
+  }, [flowerIds, cue, allFlowers]);
 
   const doSketchFill = useCallback(
     (mode) => {
@@ -507,7 +533,7 @@ export default function Pookalam() {
         showToast('Draw something first — turn on Sketch mode and trace on the mat.');
         return;
       }
-      const ids = flowerIds.length ? flowerIds : FLOWERS.map((f) => f.id);
+      const ids = flowerIds.length ? flowerIds : allFlowers.map((f) => f.id);
       const placements =
         mode === 'inside'
           ? fillInside(state.sketch, ids, remaining)

@@ -99,6 +99,7 @@ const AdminBlog = lazy(() => import('./pages/admin/AdminBlog'));
 const AdminPageBanners = lazy(() => import('./pages/admin/AdminPageBanners'));
 const AdminSaleBanner = lazy(() => import('./pages/admin/AdminSaleBanner'));
 const AdminAnnouncements = lazy(() => import('./pages/admin/AdminAnnouncements'));
+const AdminFlowers = lazy(() => import('./pages/admin/AdminFlowers'));
 const AdminPaymentMethods = lazy(() => import('./pages/admin/AdminPaymentMethods'));
 const AdminShipping = lazy(() => import('./pages/admin/AdminShipping'));
 const AdminProfit = lazy(() => import('./pages/admin/AdminProfit'));
@@ -139,7 +140,7 @@ function NotFound() {
 // Kept entirely separate from the admin area, which has its own shell.
 function StoreLayout() {
   const { t } = useLang();
-  const { theme: festivalTheme, festival, animation } = useNearestFestival();
+  const { theme: festivalTheme, festival, animation, flowers } = useNearestFestival();
   // Only needed so "home page only" can mean the whole home page.
   const onHome = useLocation().pathname === '/';
   // The floating buttons step aside while the page scrolls down; here rather
@@ -151,7 +152,7 @@ function StoreLayout() {
           Fixed to the viewport and painted behind everything, so it drifts
           past the shop without ever getting between a customer and what they
           are reading. Renders nothing out of season or under Reduce Motion. */}
-      <FestivalAtmosphere theme={festivalTheme} festival={festival} animation={animation} onHome={onHome} />
+      <FestivalAtmosphere theme={festivalTheme} festival={festival} animation={animation} flowers={flowers} onHome={onHome} />
       <SaleCountdown />
       <AnnounceTicker />
       <Navbar />
@@ -293,6 +294,7 @@ export default function App() {
         <Route path="page-banners" element={<AdminPageBanners />} />
         <Route path="sale-banner" element={<AdminSaleBanner />} />
         <Route path="announcements" element={<AdminAnnouncements />} />
+        <Route path="flowers" element={<AdminFlowers />} />
         <Route path="payment-methods" element={<AdminPaymentMethods />} />
         <Route path="shipping" element={<AdminShipping />} />
         <Route path="profit" element={<AdminProfit />} />

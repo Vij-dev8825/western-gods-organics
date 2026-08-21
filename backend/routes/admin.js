@@ -26,6 +26,7 @@ const { translateProductText } = require('../utils/translateProduct');
 const { suggestProductAnswer } = require('../utils/aiAnswerSuggestion');
 const { listAll: listAllPressings, countReserved } = require('../utils/pressings');
 const { imageUpload, storeUploadedFile } = require('../utils/imageUploadHandler');
+const { cutOutFlower } = require('../utils/flowerCutout');
 const { buildBatchLabelPdf } = require('../utils/batchLabels');
 const { buildProfitReport } = require('../utils/profit');
 const pookalamContest = require('../utils/pookalam');
@@ -2146,6 +2147,109 @@ router.put('/sale-banner', async (req, res, next) => {
     };
     await db.put('sale-banner', settings);
     res.json({ success: true, settings });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/* ------------------------------- Pookalam flowers -------------------------- */
+
+/** A readable id from the name, so /flowers/manja-chethi.webp style urls and
+ *  the admin list both stay legible. Falls back to a timestamp for a name
+ *  with nothing latin in it at all. */
+function flowerSlug(label) {
+  const base = String(label || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 40);
+  return base || `flower-${Date.now()}`;
+}
+
+// GET /api/admin/flowers
+router.get('/flowers', async (req, res, next) => {
+  try {
+    const flowers = (await db.list('pookalam-flowers'))
+      .sort((a, b) => (a.order ?? 0) - (b.order ?? 0) || String(a.createdAt).localeCompare(String(b.createdAt)));
+    res.json({ success: true, flowers });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
+ * POST /api/admin/flowers — upload a photograph and cut it out.
+ *
+ * The cut happens here rather than being asked of the shop. What they have is
+ * a photo of a flower on a white background; what the pookalam needs is the
+ * same flower on transparency, and nobody should have to own Photoshop to
+ * bridge that.
+ */
+router.post('/flowers', imageUpload.single('file'), async (req, res, next) => {
+  try {
+    if (!req.file) return res.status(400).json({ success: false, message: 'Choose an image to upload.' });
+    const label = String(req.body.label || '').trim().slice(0, 40);
+    if (!label) return res.status(400).json({ success: false, message: 'Give the flower a name.' });
+
+    const fs = require('fs');
+    let cut;
+    try {
+      cut = await cutOutFlower(fs.readFileSync(req.file.path));
+    } catch (err) {
+      // The cutter's messages are written for whoever uploaded the photo, so
+      // they are passed straight through rather than replaced with a 500.
+      return res.status(400).json({ success: false, message: err.message });
+    } finally {
+      fs.unlink(req.file.path, () => {});
+    }
+
+    const url = await compressAndStore(cut.buffer, { preserveAlpha: true });
+
+    const existing = await db.list('pookalam-flowers');
+    let id = flowerSlug(label);
+    if (existing.some((f) => f.id === id)) id = `${id}-${existing.length + 1}`;
+
+    const flower = {
+      id,
+      label,
+      gloss: String(req.body.gloss || '').trim().slice(0, 40),
+      url,
+      petal: req.body.petal !== 'false' && req.body.petal !== false,
+      order: existing.length,
+      active: true,
+      createdAt: new Date().toISOString(),
+    };
+    await db.put('pookalam-flowers', flower);
+    res.status(201).json({ success: true, flower, keptPct: Math.round(cut.keptPct * 100) });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// PATCH /api/admin/flowers/:id  { label, gloss, petal, active, order }
+router.patch('/flowers/:id', async (req, res, next) => {
+  try {
+    const existing = await db.get('pookalam-flowers', req.params.id);
+    if (!existing) return res.status(404).json({ success: false, message: 'Flower not found.' });
+    const has = (k) => Object.prototype.hasOwnProperty.call(req.body, k);
+    const next_ = { ...existing };
+    if (has('label')) next_.label = String(req.body.label || '').trim().slice(0, 40) || existing.label;
+    if (has('gloss')) next_.gloss = String(req.body.gloss || '').trim().slice(0, 40);
+    if (has('petal')) next_.petal = !!req.body.petal;
+    if (has('active')) next_.active = !!req.body.active;
+    if (has('order')) next_.order = Math.max(0, Math.round(Number(req.body.order) || 0));
+    await db.put('pookalam-flowers', next_);
+    res.json({ success: true, flower: next_ });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// DELETE /api/admin/flowers/:id
+router.delete('/flowers/:id', async (req, res, next) => {
+  try {
+    await db.remove('pookalam-flowers', req.params.id);
+    res.json({ success: true });
   } catch (err) {
     next(err);
   }

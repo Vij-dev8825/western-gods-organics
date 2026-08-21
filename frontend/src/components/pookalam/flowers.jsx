@@ -396,6 +396,8 @@ FLOWERS.find((f) => f.id === 'marigold').c.light = '#fbd45a';
 const BY_ID = new Map(FLOWERS.map((f) => [f.id, f]));
 
 export function flowerById(id) {
+  const own = shopFlowers.get(id);
+  if (own) return own;
   return BY_ID.get(id) || null;
 }
 
@@ -1212,7 +1214,37 @@ const BUILDERS = { pompon, ray, trumpet, corymb, pea, sprig, globe, star, face, 
 
 /** Cut-out photograph for a flower id. Served as a static file, so the browser
  *  caches one copy however many times it appears on the mat. */
+/* Flowers the shop uploaded, keyed by id. Registered once at page load and
+   read by spriteUrl and flowerById, so a shop flower behaves exactly like a
+   built-in one everywhere downstream — the board, the picker and the exporter
+   all go through those two and none of them need to know the difference. */
+const shopFlowers = new Map();
+
+export function registerShopFlowers(list) {
+  shopFlowers.clear();
+  for (const f of list || []) {
+    if (!f?.id || !f.url) continue;
+    shopFlowers.set(f.id, {
+      id: f.id,
+      label: f.label || 'Flower',
+      gloss: f.gloss || '',
+      family: 'all',
+      url: f.url,
+      /* Colour is only used by the family filter and the drawn art, neither of
+         which applies to an uploaded photograph. A neutral entry keeps every
+         consumer from having to null-check. */
+      c: { deep: '#5b6651', mid: '#8a9a7d', light: '#c9d6bb', ctr: '#6d7a63', accent: '#e8e3d2' },
+    });
+  }
+}
+
+export function shopFlowerList() {
+  return [...shopFlowers.values()];
+}
+
 export function spriteUrl(id) {
+  const own = shopFlowers.get(id);
+  if (own) return own.url;
   return `/flowers/${id}.webp`;
 }
 

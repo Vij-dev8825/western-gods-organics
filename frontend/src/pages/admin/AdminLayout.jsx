@@ -25,6 +25,7 @@ const links = [
   { to: '/admin/page-banners', label: 'Page Banners' },
   { to: '/admin/sale-banner', label: 'Sale Banner' },
   { to: '/admin/announcements', label: 'Announcement Bar' },
+  { to: '/admin/flowers', label: 'Flowers' },
   { to: '/admin/payment-methods', label: 'Payment Methods' },
   { to: '/admin/shipping', label: 'Domestic Shipping' },
   { to: '/admin/pressings', label: 'Scheduled Pressings' },

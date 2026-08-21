@@ -113,7 +113,7 @@ function usePrefersReducedMotion() {
  *            hero video is opaque and paints over anything at z-index -1 —
  *            so the home page hangs its own.
  */
-export default function FestivalAtmosphere({ theme, festival, animation, onHome = false, variant = 'ambient' }) {
+export default function FestivalAtmosphere({ theme, festival, animation, flowers, onHome = false, variant = 'ambient' }) {
   const reduced = usePrefersReducedMotion();
   if (reduced || !theme) return null;
 
@@ -139,6 +139,14 @@ export default function FestivalAtmosphere({ theme, festival, animation, onHome 
   // Never below two, or "subtle" on crackers would be a single lonely burst.
   const count = Math.max(2, Math.round(base * scale));
 
+  /* Anything the shop has added and marked as a petal joins the built-in
+     seven. Added rather than replacing them, so uploading one flower does not
+     leave the sky falling with nothing but that one. */
+  const petalSources = [
+    ...PETALS.map((id) => `/flowers/${id}.webp`),
+    ...(flowers || []).filter((f) => f.petal !== false && f.url).map((f) => f.url),
+  ];
+
   return (
     <div className={`fest-weather fest-weather-${variant} fest-weather-${kind}`} aria-hidden="true">
       {Array.from({ length: count }, (_, i) => {
@@ -160,12 +168,11 @@ export default function FestivalAtmosphere({ theme, festival, animation, onHome 
         };
 
         if (kind === 'petals') {
-          const flower = PETALS[i % PETALS.length];
           return (
             <img
               key={i}
               className="fest-petal"
-              src={`/flowers/${flower}.webp`}
+              src={petalSources[i % petalSources.length]}
               alt=""
               /* Eager: these are in the hero, above the fold and visible on
                  arrival. Lazy-loading them only delays the one moment they

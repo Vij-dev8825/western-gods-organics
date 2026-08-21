@@ -18,12 +18,22 @@ let cached = null;
 
 function loadFestivals() {
   if (!cached) {
-    cached = api
-      .getFestivals()
-      .then((d) => ({ festivals: d.festivals || [], animation: d.animation || {} }))
+    /* Two calls, one cache. The flower list is small, static between deploys
+       and wanted by both the petals and the pookalam, so it rides along here
+       rather than being fetched again by each. A failure on either side
+       resolves empty — neither is worth a broken page. */
+    cached = Promise.all([
+      api.getFestivals().catch(() => ({})),
+      api.getFlowers().catch(() => ({})),
+    ])
+      .then(([d, f]) => ({
+        festivals: d.festivals || [],
+        animation: d.animation || {},
+        flowers: f.flowers || [],
+      }))
       // A failure here must never be visible. Both callers treat "no festival"
       // as the ordinary state, because eleven months of the year it is.
-      .catch(() => ({ festivals: [], animation: {} }));
+      .catch(() => ({ festivals: [], animation: {}, flowers: [] }));
   }
   return cached;
 }
@@ -36,17 +46,17 @@ function loadFestivals() {
  * Returns the theme alongside, since every caller wants the palette.
  */
 export function useNearestFestival() {
-  const [state, setState] = useState({ festival: null, theme: null, animation: null });
+  const [state, setState] = useState({ festival: null, theme: null, animation: null, flowers: [] });
 
   useEffect(() => {
     let alive = true;
-    loadFestivals().then(({ festivals, animation }) => {
+    loadFestivals().then(({ festivals, animation, flowers }) => {
       if (!alive) return;
       const next = festivals.find((f) => f.celebrate !== false) || null;
       const near =
         next && (next.running || (next.daysToStart ?? next.daysAway) <= SHOW_WITHIN_DAYS);
       const festival = near ? next : null;
-      setState({ festival, theme: festival ? themeFor(festival) : null, animation });
+      setState({ festival, theme: festival ? themeFor(festival) : null, animation, flowers });
     });
     return () => { alive = false; };
   }, []);
