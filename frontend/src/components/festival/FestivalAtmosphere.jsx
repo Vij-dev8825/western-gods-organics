@@ -36,7 +36,7 @@ function rnd(i) {
  *  tumbling past the hero looks like a bug, not a blessing. */
 const PETALS = [
   'chendumalli', 'jamanthi', 'red-chethi', 'mulla',
-  'vadamalli', 'manja-chembarathi', 'shankhupushpam',
+  'vadamalli', 'golden-hibiscus', 'shankhupushpam',
 ];
 
 /** Which weather each festival gets. Anything not listed gets none, which is
@@ -104,11 +104,18 @@ export default function FestivalAtmosphere({ theme }) {
               className="fest-petal"
               src={`/flowers/${flower}.webp`}
               alt=""
-              loading="lazy"
+              /* Eager: these are in the hero, above the fold and visible on
+                 arrival. Lazy-loading them only delays the one moment they
+                 are meant to be seen, and pops them in afterwards. */
+              loading="eager"
               decoding="async"
               width="34"
               height="34"
               style={style}
+              /* A name that does not match a file put two broken-image squares
+                 in the hero. Decoration must fail invisibly — one petal fewer
+                 is nothing, a broken icon over the headline is a defect. */
+              onError={(e) => { e.currentTarget.style.display = 'none'; }}
             />
           );
         }
