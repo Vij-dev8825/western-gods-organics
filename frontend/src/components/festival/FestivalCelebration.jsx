@@ -25,6 +25,8 @@ import { Link } from 'react-router-dom';
 import { api } from '../../api';
 import { useToast } from '../../context/ToastContext';
 import { SHOW_WITHIN_DAYS, themeFor } from './registry';
+import FestivalDancers from './FestivalDancers';
+import { useFestivalContext } from './FestivalContext';
 import '../../styles/festival.css';
 
 const DONE_KEY = 'wg_festival_done';
@@ -51,6 +53,9 @@ const shortDate = (d) =>
   new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
 
 export default function FestivalCelebration() {
+  /* Only for the admin's animation switch — this component keeps its own
+     festival state, which predates the context. */
+  const { animation } = useFestivalContext();
   const { showToast } = useToast();
   const [festival, setFestival] = useState(null);
   const [filled, setFilled] = useState(0);
@@ -201,6 +206,10 @@ export default function FestivalCelebration() {
         <div className="fest-stage">
           <Motif steps={theme.steps} filled={filled} onStep={step} theme={theme} />
           {complete && <span className="fest-seal">{theme.label}</span>}
+          {/* A frieze under the motif, not over the page. Silhouettes, and
+              only for the festivals that actually have a dance or a figure
+              everyone would recognise. */}
+          <FestivalDancers theme={theme} animation={animation} />
         </div>
       </div>
     </section>

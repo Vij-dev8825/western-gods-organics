@@ -345,3 +345,97 @@
   }
   .fest-code:hover { transform: none; }
 }
+
+/* ---------------------------------------------------------------------------
+ * The dancers along the foot of the band
+ *
+ * One rig, so one set of keyframes moves every costume. Each limb is a nested
+ * group with no transform attribute of its own — its parent placed it — which
+ * is what lets these rotations be pure CSS without disturbing the placement.
+ * Do not add `transform-box: fill-box` here; transform-origin is already in
+ * the limb's own coordinates because the parent translated to the joint.
+ * ------------------------------------------------------------------------ */
+.fest-dancers {
+  display: block;
+  width: 100%;
+  max-width: 260px;
+  height: auto;
+  margin: 14px auto 0;
+}
+
+.fdn-bob,
+.fdn-arm-l,
+.fdn-arm-r,
+.fdn-leg-l,
+.fdn-leg-r,
+.fdn-head,
+.fdn-flame,
+.fdn-spark,
+.fdn-throw {
+  animation-iteration-count: infinite;
+  animation-timing-function: ease-in-out;
+}
+
+/* The whole body rises and falls on the beat; the feet stay put. */
+.fdn-bob { animation-name: fdn-bob; }
+@keyframes fdn-bob {
+  0%, 100% { transform: translateY(0) rotate(-1.5deg); }
+  50%      { transform: translateY(-3px) rotate(1.5deg); }
+}
+
+/* Arms swing in opposition, which is the difference between dancing and
+   waving. Origin 0 0 is the shoulder, because the parent group is the joint. */
+.fdn-arm-r { transform-origin: 0 0; animation-name: fdn-arm-r; }
+.fdn-arm-l { transform-origin: 0 0; animation-name: fdn-arm-l; }
+@keyframes fdn-arm-r {
+  0%, 100% { transform: rotate(-16deg); }
+  50%      { transform: rotate(22deg); }
+}
+@keyframes fdn-arm-l {
+  0%, 100% { transform: rotate(16deg); }
+  50%      { transform: rotate(-22deg); }
+}
+
+/* A small step, opposite the arms. */
+.fdn-leg-r { transform-origin: 0 0; animation-name: fdn-leg-r; }
+.fdn-leg-l { transform-origin: 0 0; animation-name: fdn-leg-l; }
+@keyframes fdn-leg-r {
+  0%, 100% { transform: rotate(6deg); }
+  50%      { transform: rotate(-6deg); }
+}
+@keyframes fdn-leg-l {
+  0%, 100% { transform: rotate(-6deg); }
+  50%      { transform: rotate(6deg); }
+}
+
+/* The bull tosses its head rather than dancing. */
+.fdn-head { transform-origin: 0 0; animation-name: fdn-head; }
+@keyframes fdn-head {
+  0%, 100% { transform: rotate(-5deg); }
+  50%      { transform: rotate(7deg); }
+}
+
+.fdn-flame { transform-origin: 50% 100%; animation-name: fdn-flame; }
+@keyframes fdn-flame {
+  0%, 100% { transform: scaleY(1) scaleX(1); opacity: 1; }
+  50%      { transform: scaleY(1.25) scaleX(0.9); opacity: 0.85; }
+}
+
+.fdn-spark { animation-name: fdn-spark; }
+@keyframes fdn-spark {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%      { opacity: 0.45; transform: scale(1.35); }
+}
+
+.fdn-throw { animation-name: fdn-throw; }
+@keyframes fdn-throw {
+  0%   { opacity: 0; transform: translate(-6px, 4px) scale(0.6); }
+  35%  { opacity: 1; }
+  100% { opacity: 0; transform: translate(10px, -8px) scale(1.4); }
+}
+
+/* They are ornament. Standing still they still read as a festival frieze, so
+   under Reduce Motion they simply stop rather than disappear. */
+@media (prefers-reduced-motion: reduce) {
+  .fest-dancers * { animation: none !important; }
+}
