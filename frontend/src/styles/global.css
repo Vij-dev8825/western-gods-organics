@@ -10283,12 +10283,38 @@ body.has-cookie-bar .install-prompt { bottom: calc(var(--cookie-bar-height, 0px)
  * no pointer events and is aria-hidden, so it can be neither clicked through
  * to nor read out.
  * ------------------------------------------------------------------------ */
+/* Fixed to the viewport, not the page: this is weather, so it keeps falling
+   where you are looking rather than scrolling away with the first screen.
+   
+   z-index -1 puts it above the body's background gradient and behind every
+   piece of content, which is the whole reason it can be on a product page at
+   all — a petal drifting *over* a price is a distraction, one drifting behind
+   the page is atmosphere. Nothing here may raise that above 0. */
 .fest-weather {
-  position: absolute;
   inset: 0;
   overflow: hidden;
   pointer-events: none;
+}
+
+/* Everywhere. Fixed to the viewport rather than the page, so it keeps falling
+   where you are looking instead of scrolling away with the first screen, and
+   painted at -1 so it is above the body's gradient and behind every piece of
+   content. A petal drifting over a price is a distraction; one drifting behind
+   the page is atmosphere. Nothing may raise this above 0. */
+.fest-weather-ambient {
+  position: fixed;
+  z-index: -1;
+  --petal-opacity: 0.5;
+}
+
+/* The home page hero only. The ambient layer cannot be seen here — the hero's
+   video is opaque and paints over anything at -1 — so this one sits inside the
+   hero, above the video and below the headline, and can be bolder because the
+   ground behind it is dark. */
+.fest-weather-hero {
+  position: absolute;
   z-index: 1;
+  --petal-opacity: 0.85;
 }
 
 .fest-petal,
@@ -10306,10 +10332,11 @@ body.has-cookie-bar .install-prompt { bottom: calc(var(--cookie-bar-height, 0px)
   width: 34px;
   height: 34px;
   object-fit: contain;
-  /* Slightly held back, so the petals read as behind the headline rather than
-     stuck to the glass in front of it. */
-  opacity: 0.85;
-  filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.25));
+  /* Held well back. These were tuned over a dark hero video; the rest of the
+     site is cream, and at full strength a marigold crossing a product grid
+     stops being atmosphere and starts being in the way. */
+  opacity: var(--petal-opacity, 0.55);
+  filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.18));
 }
 
 /* Embers go the other way: up off a lamp, not down off a tree. */
@@ -10328,7 +10355,7 @@ body.has-cookie-bar .install-prompt { bottom: calc(var(--cookie-bar-height, 0px)
   width: 90px;
   height: 90px;
   border-radius: 50%;
-  opacity: 0.16;
+  opacity: 0.1;
   filter: blur(22px);
   animation-name: fest-hang;
 }
@@ -10338,8 +10365,8 @@ body.has-cookie-bar .install-prompt { bottom: calc(var(--cookie-bar-height, 0px)
     transform: translate3d(0, 0, 0) rotate(0deg) scale(var(--scale, 1));
     opacity: 0;
   }
-  8%   { opacity: 0.85; }
-  92%  { opacity: 0.85; }
+  8%   { opacity: var(--petal-opacity, 0.55); }
+  92%  { opacity: var(--petal-opacity, 0.55); }
   to {
     transform: translate3d(var(--drift, 0), 118vh, 0) rotate(var(--spin, 180deg)) scale(var(--scale, 1));
     opacity: 0;
@@ -10364,8 +10391,8 @@ body.has-cookie-bar .install-prompt { bottom: calc(var(--cookie-bar-height, 0px)
     transform: translate3d(0, 10vh, 0) scale(var(--scale, 1));
     opacity: 0;
   }
-  20%  { opacity: 0.18; }
-  80%  { opacity: 0.18; }
+  20%  { opacity: 0.1; }
+  80%  { opacity: 0.1; }
   to {
     transform: translate3d(var(--drift, 0), -30vh, 0) scale(calc(var(--scale, 1) * 1.5));
     opacity: 0;

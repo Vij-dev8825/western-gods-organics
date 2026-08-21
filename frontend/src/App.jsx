@@ -6,6 +6,8 @@ import { CANONICAL_ORIGIN } from './utils/site';
 import { captureAffiliateCode } from './utils/affiliateAttribution';
 import { configureAnalytics, initAnalytics, trackPageView } from './utils/analytics';
 import AnnounceTicker from './components/AnnounceTicker';
+import FestivalAtmosphere from './components/festival/FestivalAtmosphere';
+import { useNearestFestival } from './components/festival/useFestival';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -137,11 +139,17 @@ function NotFound() {
 // Kept entirely separate from the admin area, which has its own shell.
 function StoreLayout() {
   const { t } = useLang();
+  const { theme: festivalTheme } = useNearestFestival();
   // The floating buttons step aside while the page scrolls down; here rather
   // than in each button so all three move together and there's one listener.
   useFabAutoHide();
   return (
     <div className="app-shell">
+      {/* Festival weather, on every page rather than only the home page.
+          Fixed to the viewport and painted behind everything, so it drifts
+          past the shop without ever getting between a customer and what they
+          are reading. Renders nothing out of season or under Reduce Motion. */}
+      <FestivalAtmosphere theme={festivalTheme} />
       <SaleCountdown />
       <AnnounceTicker />
       <Navbar />

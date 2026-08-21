@@ -221,10 +221,9 @@ export default function Home() {
           )
         )}
         <div className="hero-overlay" />
-        {/* Petals through Onam, embers through Deepavali. Sits above the video
-            and below the headline, and renders nothing out of season or under
-            Reduce Motion. */}
-        <FestivalAtmosphere theme={festivalTheme} />
+        {/* The hero hangs its own, because the app-wide layer sits behind the
+            page and this hero's video is opaque — it would be invisible here. */}
+        <FestivalAtmosphere theme={festivalTheme} variant="hero" />
         <div className="hero-video-content container">
           <span className="eyebrow light">{t('heroEyebrow')}</span>
           <h1>{heroTitle}</h1>

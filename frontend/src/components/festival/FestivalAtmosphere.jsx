@@ -102,7 +102,18 @@ function usePrefersReducedMotion() {
   return reduced;
 }
 
-export default function FestivalAtmosphere({ theme }) {
+/**
+ * `variant` picks where this is being hung.
+ *
+ *   ambient  (default) fixed to the viewport and painted behind every page,
+ *            so the weather follows you around the shop. Held well back,
+ *            because most of the site is cream and reading happens on top.
+ *   hero     absolute inside the hero, above its video and below its
+ *            headline. The ambient layer cannot be seen there at all — the
+ *            hero video is opaque and paints over anything at z-index -1 —
+ *            so the home page hangs its own.
+ */
+export default function FestivalAtmosphere({ theme, variant = 'ambient' }) {
   const reduced = usePrefersReducedMotion();
   if (reduced || !theme) return null;
 
@@ -114,7 +125,7 @@ export default function FestivalAtmosphere({ theme }) {
   const count = kind === 'crackers' ? 5 : kind === 'colour' ? 9 : 14;
 
   return (
-    <div className={`fest-weather fest-weather-${kind}`} aria-hidden="true">
+    <div className={`fest-weather fest-weather-${variant} fest-weather-${kind}`} aria-hidden="true">
       {Array.from({ length: count }, (_, i) => {
         /* Four independent hashes per particle so size does not correlate with
            position — one seed reused would line them up on a diagonal. */
