@@ -9,6 +9,7 @@ import ChakkiWheel from '../components/ChakkiWheel';
 import GoogleReviewsWidget from '../components/GoogleReviewsWidget';
 import UgcGallery from '../components/UgcGallery';
 import ImpactBanner from '../components/ImpactBanner';
+import FestivalCelebration from '../components/festival/FestivalCelebration';
 import StructuredData from '../components/StructuredData';
 import SeoMeta from '../components/SeoMeta';
 import { getProductImage } from '../utils/productImages';
@@ -262,6 +263,12 @@ export default function Home() {
           ))}
         </div>
       </Reveal>
+
+      {/* ---------- Festival celebration ----------
+           Renders itself only when a festival is within three weeks, and
+           returns null otherwise — so this slot is empty for most of the year
+           rather than holding a permanent banner. */}
+      <FestivalCelebration />
 
       {/* ---------- Categories ---------- */}
       <Reveal as="section" className="section container">

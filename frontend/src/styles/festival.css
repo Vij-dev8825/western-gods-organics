@@ -1,0 +1,347 @@
+/* ===========================================================================
+ * The home page festival band.
+ *
+ * Every colour here comes from a --f-* custom property that
+ * FestivalCelebration.jsx sets from the festival's theme, so Deepavali and Holi
+ * share this entire stylesheet and differ only in six values. Adding a festival
+ * touches registry.js and nothing else.
+ *
+ * Loaded by the component rather than global.css: the band is one section on
+ * one route, and Home is the only page that mounts it.
+ * ======================================================================== */
+
+.fest {
+  --f-ink: #18382c;
+  --f-paper: #fff9ec;
+  --f-paper-2: #f4ecd8;
+  --f-accent: #6fae4f;
+  --f-accent-d: #2f6b33;
+  --f-glow: #9be89a;
+
+  position: relative;
+  /* Full-bleed: the band is a change of scene, and a change of scene that
+     stops at the container gutter reads as a widget instead. */
+  margin: 42px 0;
+  padding: 38px 0;
+  color: var(--f-ink);
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse 640px 300px at 78% 0%, color-mix(in srgb, var(--f-glow) 34%, transparent), transparent 66%),
+    linear-gradient(180deg, var(--f-paper) 0%, var(--f-paper-2) 100%);
+}
+
+/* A hairline of the festival's accent top and bottom, so the band is framed
+   without a heavy border. */
+.fest::before,
+.fest::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in srgb, var(--f-accent) 70%, transparent) 20%,
+    color-mix(in srgb, var(--f-accent) 70%, transparent) 80%,
+    transparent
+  );
+}
+
+.fest::before { top: 0; }
+.fest::after { bottom: 0; }
+
+.fest-inner {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 0.85fr);
+  gap: 34px;
+  align-items: center;
+}
+
+/* --- copy side ----------------------------------------------------------- */
+
+.fest-eyebrow {
+  margin: 0 0 8px;
+  font-family: var(--font-mono, monospace);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  color: var(--f-accent-d);
+}
+
+.fest h2 {
+  margin: 0 0 8px;
+  font-family: var(--font-display);
+  font-size: clamp(26px, 3.6vw, 40px);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.06;
+  color: var(--f-ink);
+}
+
+.fest-lede {
+  max-width: 46ch;
+  margin: 0 0 14px;
+  font-size: 15px;
+  line-height: 1.55;
+  color: color-mix(in srgb, var(--f-ink) 76%, transparent);
+}
+
+.fest-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.fest-chip {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 6px 13px;
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: #fff;
+  background: var(--f-accent-d);
+}
+
+.fest-chip.is-quiet {
+  color: var(--f-accent-d);
+  background: transparent;
+  border: 1px solid color-mix(in srgb, var(--f-accent-d) 45%, transparent);
+}
+
+.fest-action {
+  margin: 0 0 8px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--f-accent-d);
+}
+
+.fest-meter {
+  width: min(260px, 100%);
+  height: 4px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--f-ink) 12%, transparent);
+  overflow: hidden;
+}
+
+.fest-meter span {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--f-accent), var(--f-accent-d));
+  transition: width 0.3s ease;
+}
+
+.fest-reward {
+  animation: fest-rise 0.45s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.fest-done {
+  margin: 0 0 8px;
+  font-family: var(--font-display);
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--f-accent-d);
+}
+
+.fest-code {
+  font-family: var(--font-mono, monospace);
+  font-size: 1.25rem;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  padding: 10px 20px;
+  border: 2px dashed var(--f-accent);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--f-accent) 12%, transparent);
+  color: var(--f-accent-d);
+  cursor: pointer;
+  transition: background 0.16s ease, transform 0.16s ease;
+}
+
+.fest-code:hover {
+  background: color-mix(in srgb, var(--f-accent) 22%, transparent);
+  transform: translateY(-1px);
+}
+
+.fest-fine {
+  max-width: 42ch;
+  margin: 8px 0 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: color-mix(in srgb, var(--f-ink) 62%, transparent);
+}
+
+.fest-cta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 18px;
+}
+
+/* --- the motif ----------------------------------------------------------- */
+
+.fest-stage {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.fest-art {
+  display: block;
+  width: 100%;
+  max-width: 380px;
+  height: auto;
+  /* Every motif is tapped, so the browser must not claim the gesture. */
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+  filter: drop-shadow(0 12px 18px color-mix(in srgb, var(--f-ink) 16%, transparent));
+}
+
+.fest-art-round { max-width: 300px; }
+
+.fest-art-wall {
+  border-radius: 14px;
+  cursor: crosshair;
+}
+
+/* The whole-canvas motifs are one big button; the per-lamp ones have their own
+   hit rects. Both want the same affordance. */
+.fest-art[role='button'] { cursor: pointer; }
+.fest-hit { cursor: pointer; }
+
+.fest-art [role='button']:focus-visible,
+.fest-art:focus-visible {
+  outline: 3px solid var(--f-accent);
+  outline-offset: 3px;
+}
+
+.fest-seal {
+  position: absolute;
+  right: 4px;
+  bottom: -6px;
+  border-radius: 999px;
+  padding: 5px 13px;
+  font-size: 8.5px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #fff;
+  background: var(--f-accent-d);
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--f-ink) 30%, transparent);
+  animation: fest-pop 0.32s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+/* --- motion -------------------------------------------------------------- */
+
+/* A lamp flame never sits still. Staggered by --i so seven lamps do not
+   flicker in lockstep, which would read as a strobe rather than as fire. */
+.fest-flame {
+  transform-box: fill-box;
+  transform-origin: bottom center;
+  animation: fest-flicker 1.6s ease-in-out infinite;
+  animation-delay: calc(var(--i, 0) * -0.21s);
+}
+
+.fest-fire path {
+  transform-box: fill-box;
+  transform-origin: bottom center;
+  animation: fest-flicker 0.9s ease-in-out infinite;
+  animation-delay: calc(var(--i, 0) * -0.17s);
+}
+
+.fest-bubble {
+  animation: fest-bubble 1.5s ease-in-out infinite;
+  animation-delay: calc(var(--i, 0) * -0.28s);
+}
+
+.fest-boil { animation: fest-rise 0.4s ease; }
+
+.fest-splat {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: fest-splat 0.34s cubic-bezier(0.22, 1.4, 0.36, 1);
+}
+
+.fest-ring {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: fest-pop 0.36s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+@keyframes fest-flicker {
+  0%, 100% { transform: scaleY(1) scaleX(1); opacity: 1; }
+  35% { transform: scaleY(1.14) scaleX(0.94); opacity: 0.92; }
+  70% { transform: scaleY(0.94) scaleX(1.05); opacity: 1; }
+}
+
+@keyframes fest-bubble {
+  0%, 100% { transform: translateY(0); opacity: 0.9; }
+  50% { transform: translateY(-6px); opacity: 0.5; }
+}
+
+@keyframes fest-splat {
+  from { transform: scale(0.2); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+@keyframes fest-pop {
+  from { transform: scale(0.86); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+@keyframes fest-rise {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: none; }
+}
+
+/* --- narrow screens ------------------------------------------------------ */
+
+@media (max-width: 860px) {
+  .fest-inner {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+  /* The motif goes first on a phone: it is the reason to stop scrolling. */
+  .fest-stage { order: -1; }
+  .fest-art { max-width: 420px; margin: 0 auto; }
+  .fest-art-round { max-width: 260px; }
+  .fest-lede { max-width: none; }
+}
+
+@media (max-width: 640px) {
+  .fest { margin: 30px 0; padding: 28px 0; }
+  .fest-seal { right: 50%; transform: translateX(50%); }
+}
+
+/* --- reduced motion ------------------------------------------------------
+ * The band must stay fully playable, just still. Flames and fire lose their
+ * flicker rather than their flame — a lit lamp that does not move is still
+ * clearly lit, whereas hiding it would remove the feedback the tap exists for.
+ * ---------------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  .fest-flame,
+  .fest-fire path,
+  .fest-bubble,
+  .fest-boil,
+  .fest-splat,
+  .fest-ring,
+  .fest-reward,
+  .fest-seal {
+    animation: none;
+  }
+  .fest-meter span,
+  .fest-code {
+    transition: none;
+  }
+  .fest-code:hover { transform: none; }
+}
