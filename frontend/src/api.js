@@ -432,6 +432,10 @@ export const api = {
 
       request(`/admin/festival-characters/${id}`, { method: 'DELETE', token }),
 
+    replaceFestivalCharacterImage: (token, id, formData) =>
+
+      request(`/admin/festival-characters/${id}/image`, { method: 'POST', formData, token }),
+
     replaceFlowerPhoto: (token, id, formData) =>
 
       request(`/admin/flowers/${id}/photo`, { method: 'POST', formData, token }),

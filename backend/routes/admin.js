@@ -2365,6 +2365,43 @@ router.patch('/festival-characters/:id', async (req, res, next) => {
   }
 });
 
+/**
+ * POST /api/admin/festival-characters/:id/image — swap the picture, keep
+ * everything else.
+ *
+ * Separate from PATCH because it carries a file, and the likeliest edit of
+ * all: the shop finds a better drawing, or an illustrator sends a revision.
+ * Re-uploading through the add form instead would lose the character's name,
+ * its festival and its place in the row.
+ */
+router.post('/festival-characters/:id/image', imageUpload.single('file'), async (req, res, next) => {
+  try {
+    const existing = await db.get('festival-characters', req.params.id);
+    if (!existing) return res.status(404).json({ success: false, message: 'Character not found.' });
+    if (!req.file) return res.status(400).json({ success: false, message: 'Choose an image to upload.' });
+
+    const fs = require('fs');
+    let prepared;
+    try {
+      prepared = await prepareCharacter(fs.readFileSync(req.file.path));
+    } catch (err) {
+      return res.status(400).json({ success: false, message: err.message });
+    } finally {
+      fs.unlink(req.file.path, () => {});
+    }
+
+    // The old sprite stays in the media store. It is a few kilobytes, and
+    // anything already rendered with it should not break because the shop
+    // swapped the picture afterwards.
+    const url = await compressAndStore(prepared.buffer, { preserveAlpha: true });
+    const character = { ...existing, url };
+    await db.put('festival-characters', character);
+    res.json({ success: true, character, alreadyCut: prepared.alreadyCut });
+  } catch (err) {
+    next(err);
+  }
+});
+
 router.delete('/festival-characters/:id', async (req, res, next) => {
   try {
     await db.remove('festival-characters', req.params.id);

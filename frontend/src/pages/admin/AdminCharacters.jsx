@@ -18,7 +18,8 @@ export default function AdminCharacters() {
   const [festival, setFestival] = useState('onam');
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState(null);
-  const [editing, setEditing] = useState(null);
+  const [editing, setEditing] = useState(null); // { id, label, festival }
+  const [swapping, setSwapping] = useState(null);
   const fileRef = useRef(null);
 
   function load() {
@@ -61,6 +62,34 @@ export default function AdminCharacters() {
       load();
     } catch (err) {
       setMessage({ type: 'error', text: err.message });
+    }
+  }
+
+  async function saveEdit() {
+    const { id, label: l, festival: f } = editing;
+    if (!l.trim()) { setMessage({ type: 'error', text: 'A character needs a name.' }); return; }
+    await patch(id, { label: l.trim(), festival: f });
+  }
+
+  async function swapImage(id, file) {
+    if (!file) return;
+    setSwapping(id);
+    setMessage(null);
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      const d = await api.admin.replaceFestivalCharacterImage(token, id, fd);
+      setMessage({
+        type: 'success',
+        text: d.alreadyCut
+          ? `New picture for ${d.character.label} — it was already cut out.`
+          : `New picture for ${d.character.label} — the background was removed for you.`,
+      });
+      load();
+    } catch (err) {
+      setMessage({ type: 'error', text: err.message });
+    } finally {
+      setSwapping(null);
     }
   }
 
@@ -160,28 +189,60 @@ export default function AdminCharacters() {
                 }}>
                   <img src={c.url} alt="" style={{ maxWidth: '100%', maxHeight: 112, objectFit: 'contain' }} />
                 </div>
-                {editing === c.id ? (
-                  <input
-                    autoFocus
-                    defaultValue={c.label}
-                    maxLength={40}
-                    style={{ width: '100%', marginTop: 6 }}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') patch(c.id, { label: e.currentTarget.value });
-                      if (e.key === 'Escape') setEditing(null);
-                    }}
-                    onBlur={(e) => patch(c.id, { label: e.currentTarget.value })}
-                  />
+                {editing?.id === c.id ? (
+                  <div style={{ display: 'grid', gap: 6, marginTop: 6 }}>
+                    <input
+                      autoFocus
+                      value={editing.label}
+                      maxLength={40}
+                      placeholder="Name"
+                      onChange={(e) => setEditing({ ...editing, label: e.target.value })}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') { e.preventDefault(); saveEdit(); }
+                        if (e.key === 'Escape') setEditing(null);
+                      }}
+                    />
+                    {/* Moving a character between festivals used to mean deleting
+                        it and uploading the same file again. */}
+                    <select
+                      value={editing.festival}
+                      onChange={(e) => setEditing({ ...editing, festival: e.target.value })}
+                    >
+                      {DESIGN_CHOICES.filter((d) => d.id !== 'generic').map((d) => (
+                        <option key={d.id} value={d.id}>{d.label}</option>
+                      ))}
+                    </select>
+                    <div style={{ fontSize: '0.78rem' }}>
+                      <button className="link-btn" onClick={saveEdit}>save</button>{' '}
+                      <button className="link-btn" onClick={() => setEditing(null)}>cancel</button>
+                    </div>
+                  </div>
                 ) : (
-                  <div style={{ marginTop: 6, fontWeight: 600, fontSize: '0.86rem' }}>{c.label}</div>
+                  <>
+                    <div style={{ marginTop: 6, fontWeight: 600, fontSize: '0.86rem' }}>{c.label}</div>
+                    <div style={{ marginTop: 2, fontSize: '0.78rem' }}>
+                      <button
+                        className="link-btn"
+                        onClick={() => setEditing({ id: c.id, label: c.label || '', festival: c.festival })}
+                      >
+                        edit
+                      </button>{' '}
+                      <label className="link-btn" style={{ cursor: 'pointer' }}>
+                        {swapping === c.id ? 'preparing…' : 'new image'}
+                        <input
+                          type="file"
+                          accept="image/jpeg,image/png,image/webp"
+                          hidden
+                          onChange={(e) => swapImage(c.id, e.target.files?.[0])}
+                        />
+                      </label>{' '}
+                      <button className="link-btn" onClick={() => patch(c.id, { active: !(c.active !== false) })}>
+                        {c.active !== false ? 'hide' : 'show'}
+                      </button>{' '}
+                      <button className="link-btn danger" onClick={() => remove(c)}>remove</button>
+                    </div>
+                  </>
                 )}
-                <div style={{ marginTop: 2, fontSize: '0.78rem' }}>
-                  <button className="link-btn" onClick={() => setEditing(c.id)}>edit</button>{' '}
-                  <button className="link-btn" onClick={() => patch(c.id, { active: !(c.active !== false) })}>
-                    {c.active !== false ? 'hide' : 'show'}
-                  </button>{' '}
-                  <button className="link-btn danger" onClick={() => remove(c)}>remove</button>
-                </div>
               </div>
             ))}
           </div>
