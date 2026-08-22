@@ -57,6 +57,20 @@ const ROSE_DEEP = '#A82C58';
 const BRASS = '#D9A63E';
 const BRASS_DEEP = '#A9761F';
 const BRASS_DARK = '#7A5314';
+const BANANA_STEM = '#93B855';
+const BANANA_STEM_DEEP = '#6E8F37';
+const BANANA_LEAF = '#4C8C3B';
+const BANANA_LEAF_DEEP = '#356028';
+const BANANA_MIDRIB = '#C7E6A4';
+const BANANA_FLOWER = '#7A3350';
+const BANANA_FLOWER_DEEP = '#4E1F35';
+const COCONUT_TRUNK = '#B99257';
+const COCONUT_TRUNK_DEEP = '#8A6B3B';
+const COCONUT_FROND = '#3D8A4E';
+const COCONUT_FROND_LIGHT = '#4FA25E';
+const COCONUT_FROND_DEEP = '#2C6B3A';
+const COCONUT_NUT = '#7A5A34';
+const COCONUT_NUT_DEEP = '#54391E';
 
 /* ==========================================================================
  * Shapes shared across more than one variety
@@ -410,6 +424,130 @@ function BellsPendant() {
 }
 
 /* ==========================================================================
+ * Banana and coconut trees, flanking the garland
+ *
+ * Not a fourth variety — a real pandal ties a banana stem to each side of
+ * the entrance and strings the flowers between them, so these stand at the
+ * two ends of every variety rather than replacing any of them. Taller than
+ * anything else here on purpose: a flanking tree that stopped at the same
+ * height as the garland would read as another round on the string, not a
+ * pair of trees the garland is hung between.
+ * ======================================================================== */
+
+/** One broad banana leaf, fanned by `rot` from the crown. Wide rather than
+ *  lanceolate — the opposite ratio from a mango leaf — with a pale midrib
+ *  standing out against the blade, which is what a banana leaf actually
+ *  looks like and what tells the two trees apart at a glance. */
+function BananaLeaf({ rot, len }) {
+  const w = len * 0.34;
+  return (
+    <g transform={`rotate(${rot})`}>
+      <path
+        d={`M 0 0 Q ${w} ${len * 0.3} ${w * 0.32} ${len} Q 0 ${len * 1.06} ${-w * 0.32} ${len} Q ${-w} ${len * 0.3} 0 0 Z`}
+        fill={BANANA_LEAF}
+        stroke={BANANA_LEAF_DEEP}
+        strokeWidth="0.7"
+      />
+      <path d={`M 0 2 Q ${w * 0.1} ${len * 0.5} 0 ${len * 0.97}`} stroke={BANANA_MIDRIB} strokeWidth="1.6" fill="none" opacity="0.85" />
+    </g>
+  );
+}
+
+/** The stem, three leaves fanned up and out from the crown, and the
+ *  drooping maroon flower a banana stem is actually recognised by. */
+function BananaTree() {
+  const trunkTop = 84;
+  const trunkBottom = 178;
+  return (
+    <svg className="fest-toran-tree fest-toran-tree-banana" viewBox="0 0 74 190" aria-hidden="true">
+      <path
+        d={`M ${37 - 9} ${trunkBottom} Q ${37 - 8} ${(trunkTop + trunkBottom) / 2} ${37 - 6.4} ${trunkTop}
+            L ${37 + 6.4} ${trunkTop}
+            Q ${37 + 8} ${(trunkTop + trunkBottom) / 2} ${37 + 9} ${trunkBottom} Z`}
+        fill={BANANA_STEM}
+        stroke={BANANA_STEM_DEEP}
+        strokeWidth="0.8"
+      />
+      {/* Leaf-scar rings, the way a real pseudostem is banded. */}
+      {[118, 145, 165].map((y, i) => (
+        <path key={i} d={`M ${37 - 8 + i * 0.3} ${y} Q 37 ${y + 4} ${37 + 8 - i * 0.3} ${y}`} stroke={BANANA_STEM_DEEP} strokeWidth="0.8" fill="none" opacity="0.6" />
+      ))}
+      <g transform={`translate(37, ${trunkTop})`}>
+        <BananaLeaf rot={215} len={56} />
+        <BananaLeaf rot={180} len={62} />
+        <BananaLeaf rot={145} len={56} />
+        {/* The inflorescence — a maroon teardrop on its own short stalk,
+            the single most recognisable feature of a real banana stem. */}
+        <path d="M 0 0 L 3 22" stroke={BANANA_STEM_DEEP} strokeWidth="1.4" />
+        <path d="M 3 20 Q 11 26 8 40 Q 3 46 -1 38 Q -3 26 3 20 Z" fill={BANANA_FLOWER} stroke={BANANA_FLOWER_DEEP} strokeWidth="0.7" />
+      </g>
+    </svg>
+  );
+}
+
+/** One long, thin coconut frond fanned by `rot` from the crown — a blade a
+ *  fraction of a banana leaf's width, which is the whole difference between
+ *  the two silhouettes at this scale. */
+function CoconutFrond({ rot, len, colour }) {
+  const w = len * 0.12;
+  return (
+    <g transform={`rotate(${rot})`}>
+      <path
+        d={`M 0 0 Q ${w} ${len * 0.35} ${w * 0.4} ${len} Q 0 ${len * 1.04} ${-w * 0.4} ${len} Q ${-w} ${len * 0.35} 0 0 Z`}
+        fill={colour}
+        stroke={COCONUT_FROND_DEEP}
+        strokeWidth="0.5"
+      />
+    </g>
+  );
+}
+
+/** A slender, slightly leaning trunk, a starburst crown of fronds, and a
+ *  cluster of nuts tucked under it — the tall, thin silhouette that reads
+ *  as a coconut palm next to the banana tree's broad-leaved one. The trunk
+ *  is deliberately long: a coconut palm's whole character is height, and a
+ *  short one just reads as a shrub with a strange haircut.
+ *
+ *  The crown sits well clear of the viewBox's own top and side edges —
+ *  nested <svg> elements clip to their viewBox by default, and the first
+ *  pass put the fronds' own tips a good ten pixels past that edge, which
+ *  silently cut every frond off short rather than erroring anywhere. */
+function CoconutTree() {
+  const bottomX = 46;
+  const bottomY = 320;
+  const topX = 52;
+  const topY = 70;
+  return (
+    <svg className="fest-toran-tree fest-toran-tree-coconut" viewBox="0 0 104 330" aria-hidden="true">
+      <path
+        d={`M ${bottomX - 4} ${bottomY} Q ${bottomX - 3} ${(topY + bottomY) / 2} ${topX - 3} ${topY}
+            L ${topX + 3} ${topY}
+            Q ${bottomX + 3} ${(topY + bottomY) / 2} ${bottomX + 4} ${bottomY} Z`}
+        fill={COCONUT_TRUNK}
+        stroke={COCONUT_TRUNK_DEEP}
+        strokeWidth="0.7"
+      />
+      {[130, 190, 250].map((y, i) => {
+        const t = (y - topY) / (bottomY - topY);
+        const x = topX + (bottomX - topX) * t;
+        return <path key={i} d={`M ${x - 4} ${y + 3} L ${x + 4} ${y - 3}`} stroke={COCONUT_TRUNK_DEEP} strokeWidth="0.7" opacity="0.55" />;
+      })}
+      {/* Nuts tucked just under the crown before the fronds start. */}
+      <g transform={`translate(${topX}, ${topY + 9})`}>
+        <circle cx={-5} cy={4} r="4.4" fill={COCONUT_NUT} stroke={COCONUT_NUT_DEEP} strokeWidth="0.6" />
+        <circle cx={4} cy={6} r="4.4" fill={COCONUT_NUT} stroke={COCONUT_NUT_DEEP} strokeWidth="0.6" />
+        <circle cx={0} cy={-1} r="4.4" fill={COCONUT_NUT} stroke={COCONUT_NUT_DEEP} strokeWidth="0.6" />
+      </g>
+      <g transform={`translate(${topX}, ${topY})`}>
+        {[[128, 0.82], [155, 0.94], [182, 1], [209, 1], [236, 0.94], [263, 0.82]].map(([rot, s], i) => (
+          <CoconutFrond key={i} rot={rot} len={50 * s} colour={i % 2 ? COCONUT_FROND_LIGHT : COCONUT_FROND} />
+        ))}
+      </g>
+    </svg>
+  );
+}
+
+/* ==========================================================================
  * The three on offer
  * ======================================================================== */
 
@@ -431,11 +569,18 @@ export default function FestivalToran({ theme, animation, onHome }) {
 
   return (
     <div className="fest-toran" aria-hidden="true">
-      <div className="fest-toran-cord" />
-      <div className={`fest-toran-row ${rowClass}`}>
-        <Row />
+      <BananaTree />
+      <CoconutTree />
+      {/* Inset by the width of the two trees, so the row's own edge-to-edge
+          spacing does not land its first and last round directly under a
+          trunk. */}
+      <div className="fest-toran-garland">
+        <div className="fest-toran-cord" />
+        <div className={`fest-toran-row ${rowClass}`}>
+          <Row />
+        </div>
+        <Pendant />
       </div>
-      <Pendant />
     </div>
   );
 }

@@ -10532,6 +10532,33 @@ body.has-cookie-bar .install-prompt { bottom: calc(var(--cookie-bar-height, 0px)
   pointer-events: none;
 }
 
+/* Inset so the row's own edge-to-edge units don't land under a trunk. */
+.fest-toran-garland {
+  position: relative;
+  margin: 0 58px;
+}
+
+/* Taller than anything else in the toran on purpose — a flanking tree that
+   topped out at the same height as the garland would read as another round
+   on the string rather than a pair of trees the garland hangs between. */
+.fest-toran-tree {
+  position: absolute;
+  top: 0;
+  width: 52px;
+  height: auto;
+  transform-origin: 50% 0%;
+  filter: drop-shadow(0 3px 4px rgba(0, 0, 0, 0.18));
+  animation: fest-toran-sway 9s ease-in-out infinite;
+}
+.fest-toran-tree-banana {
+  left: 0;
+  animation-delay: -2.6s;
+}
+.fest-toran-tree-coconut {
+  right: 0;
+  animation-delay: -5.8s;
+}
+
 .fest-toran-cord {
   height: 2px;
   background: linear-gradient(90deg, transparent, #8a5a2e 4%, #8a5a2e 96%, transparent);
@@ -10612,10 +10639,12 @@ body.has-cookie-bar .install-prompt { bottom: calc(var(--cookie-bar-height, 0px)
   .fest-toran-row-jasmine > :nth-child(n + 20) { display: none; }
   .fest-toran-row-bells > :nth-child(n + 9) { display: none; }
   .fest-toran-lotus { width: 58px; }
+  .fest-toran-tree { width: 34px; }
+  .fest-toran-garland { margin: 0 38px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .fest-toran-unit, .fest-toran-lotus { animation: none; }
+  .fest-toran-unit, .fest-toran-lotus, .fest-toran-tree { animation: none; }
 }
 
 /* ---------------------------------------------------------------------------
