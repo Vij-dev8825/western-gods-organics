@@ -7,6 +7,7 @@ import { captureAffiliateCode } from './utils/affiliateAttribution';
 import { configureAnalytics, initAnalytics, trackPageView } from './utils/analytics';
 import AnnounceTicker from './components/AnnounceTicker';
 import FestivalAtmosphere from './components/festival/FestivalAtmosphere';
+import FestivalToran from './components/festival/FestivalToran';
 import { useNearestFestival } from './components/festival/useFestival';
 import { FestivalProvider } from './components/festival/FestivalContext';
 import Navbar from './components/Navbar';
@@ -151,6 +152,10 @@ function StoreLayout() {
   return (
     <FestivalProvider>
     <div className="app-shell">
+      {/* The garland at the door — first thing in the shell, above even the
+          sticky nav, so it is the first thing scrolled under rather than a
+          layer painted behind the page. */}
+      <FestivalToran theme={festivalTheme} animation={animation} onHome={onHome} />
       {/* Festival weather, on every page rather than only the home page.
           Fixed to the viewport and painted behind everything, so it drifts
           past the shop without ever getting between a customer and what they

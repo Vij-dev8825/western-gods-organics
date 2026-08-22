@@ -10516,6 +10516,96 @@ body.has-cookie-bar .install-prompt { bottom: calc(var(--cookie-bar-height, 0px)
 }
 
 /* ---------------------------------------------------------------------------
+ * The toran — a garland across the top of the site, every page, not just
+ * the home hero.
+ *
+ * It sits in ordinary document flow above the sticky nav rather than being
+ * fixed in place. A visitor scrolls under it once, the way they would walk
+ * under a real one at a doorway, and the nav's own opaque background is
+ * what holds the top of the screen from there — no z-index fight, because
+ * the toran has already scrolled out of the way by the time the nav sticks.
+ * ------------------------------------------------------------------------ */
+.fest-toran {
+  position: relative;
+  padding-top: 3px;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.fest-toran-cord {
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #8a5a2e 4%, #8a5a2e 96%, transparent);
+  opacity: 0.7;
+  /* A soft gold thread just under the cord — a plain brown line read as
+     string; real toran cord is wound with a bit of metallic thread. */
+  box-shadow: 0 2px 0 rgba(242, 162, 12, 0.4);
+}
+
+.fest-toran-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  width: 100%;
+  margin-top: -1px;
+}
+
+.fest-toran-unit {
+  flex: 0 0 auto;
+  width: 34px;
+  height: auto;
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.15));
+  transform-origin: 50% 0%;
+  animation: fest-toran-sway 7s ease-in-out infinite;
+  animation-delay: var(--delay, 0s);
+}
+
+/* Narrower than a marigold round — a bell and three threads take a fraction
+   of the width, which is what makes it read as an accent between rounds
+   rather than a round in its own right. */
+.fest-toran-tassel {
+  width: 20px;
+}
+
+.fest-toran-lotus {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 78px;
+  height: auto;
+  transform: translateX(-50%);
+  transform-origin: 50% 0%;
+  filter: drop-shadow(0 3px 5px rgba(0, 0, 0, 0.18));
+  animation: fest-toran-sway-centred 8s ease-in-out infinite;
+  animation-delay: -1.4s;
+}
+
+@keyframes fest-toran-sway {
+  0%, 100% { transform: rotate(-1.6deg); }
+  50%      { transform: rotate(1.6deg); }
+}
+
+/* The lotus's base transform already centres it with translateX(-50%); the
+   sway has to layer a rotation on top of that, not replace it, or every
+   swing snaps it back to the left edge for a frame. */
+@keyframes fest-toran-sway-centred {
+  0%, 100% { transform: translateX(-50%) rotate(-1.4deg); }
+  50%      { transform: translateX(-50%) rotate(1.4deg); }
+}
+
+@media (max-width: 640px) {
+  /* A phone doorway is narrower — fewer rounds, or they crowd into a wall
+     of orange rather than reading as a garland. */
+  .fest-toran-unit { width: 26px; }
+  .fest-toran-tassel { width: 15px; }
+  .fest-toran-row > :nth-child(n + 14) { display: none; }
+  .fest-toran-lotus { width: 58px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fest-toran-unit, .fest-toran-lotus { animation: none; }
+}
+
+/* ---------------------------------------------------------------------------
  * The festival reaching the shop floor
  *
  * Two small things, and neither is decoration: a mark on the products this
