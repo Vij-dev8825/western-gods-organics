@@ -59,12 +59,11 @@ export default function AdminFestivals() {
 
   async function saveAnim() {
     setSavingAnim(true);
-    setMessage(null);
     try {
       await api.admin.saveFestivalAnimation(token, anim);
-      setMessage({ type: 'success', text: 'Animation settings saved.' });
+      showToast('Animation settings saved.');
     } catch (err) {
-      setMessage({ type: 'error', text: err.message });
+      showToast(err.message, 'error');
     } finally {
       setSavingAnim(false);
     }
