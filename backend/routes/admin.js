@@ -2423,7 +2423,11 @@ router.delete('/festival-characters/:id', async (req, res, next) => {
 
 /* ---------------------------- Festival animation --------------------------- */
 
-const ANIMATION_DEFAULTS = { id: 'main', enabled: true, scope: 'all', intensity: 'normal' };
+const ANIMATION_DEFAULTS = { id: 'main', enabled: true, scope: 'all', intensity: 'normal', toranStyle: 'marigold' };
+// Kept here rather than derived from the frontend registry — this list has to
+// agree with the variety keys FestivalToran.jsx actually knows how to draw,
+// and the two files don't otherwise share an import.
+const TORAN_STYLES = ['marigold', 'jasmine', 'bells'];
 
 // GET /api/admin/festival-animation
 router.get('/festival-animation', async (req, res, next) => {
@@ -2435,7 +2439,7 @@ router.get('/festival-animation', async (req, res, next) => {
   }
 });
 
-// PUT /api/admin/festival-animation  { enabled, scope, intensity }
+// PUT /api/admin/festival-animation  { enabled, scope, intensity, toranStyle }
 router.put('/festival-animation', async (req, res, next) => {
   try {
     const settings = {
@@ -2448,6 +2452,7 @@ router.put('/festival-animation', async (req, res, next) => {
       intensity: ['subtle', 'normal', 'lively'].includes(req.body.intensity)
         ? req.body.intensity
         : 'normal',
+      toranStyle: TORAN_STYLES.includes(req.body.toranStyle) ? req.body.toranStyle : 'marigold',
     };
     await db.put('festival-animation', settings);
     res.json({ success: true, settings });

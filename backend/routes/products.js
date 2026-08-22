@@ -452,6 +452,9 @@ router.get('/festivals', async (req, res, next) => {
         enabled: anim?.enabled !== false,
         scope: ['all', 'home'].includes(anim?.scope) ? anim.scope : 'all',
         intensity: ['subtle', 'normal', 'lively'].includes(anim?.intensity) ? anim.intensity : 'normal',
+        // Which of the toran's three drawn varieties is hanging across the
+        // top of the site — see FestivalToran.jsx for what each looks like.
+        toranStyle: ['marigold', 'jasmine', 'bells'].includes(anim?.toranStyle) ? anim.toranStyle : 'marigold',
       },
       festivals: festivals.map((f) => ({
         id: f.id,

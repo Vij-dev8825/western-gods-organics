@@ -1,7 +1,7 @@
 /**
- * The toran hung at the door: a marigold-and-mango-leaf garland across the
- * very top of the site, with a lotus bunch at the centre — the decoration a
- * shop actually hangs across its entrance for a festival, not a banner about
+ * The toran hung at the door: a garland across the very top of the site,
+ * with a flower or bell bunch at the centre — the decoration a shop
+ * actually hangs across its entrance for a festival, not a banner about
  * one. The big shopping apps dress their whole header this way for a
  * festival, not just the landing page, so this sits above the nav on every
  * route rather than only in the home hero.
@@ -12,10 +12,18 @@
  * the top of the screen from there. Fixing it in place so it followed you
  * around the shop would turn a doorway into wallpaper.
  *
- * Marigold and mango leaf are not brand colours and do not take the festival
- * palette — a real garland is marigold-orange and leaf-green regardless of
- * which festival it is hung for, the same reasoning FestivalAtmosphere
- * already uses for its cracker colours.
+ * THREE VARIETIES, chosen by the admin (see AdminFestivals.jsx), because
+ * one fixed garland forever is what makes a shop's decoration look like it
+ * was set once and forgotten:
+ *
+ *   marigold  orange rounds and gold tassels, mango leaf fans, lotus centre
+ *   jasmine   a dense white string, barely any gap, a rose bunch centre
+ *   bells     brass bells and mango leaf, no flowers at all
+ *
+ * None of the three take the festival's own palette — a real garland is
+ * whatever colour that flower or metal actually is regardless of which
+ * festival it is hung for, the same reasoning FestivalAtmosphere already
+ * uses for its cracker colours.
  */
 
 /* Deterministic per-unit jitter, so the row is not a mechanical repeat.
@@ -41,11 +49,22 @@ const LOTUS = '#E85D9A';
 const LOTUS_DEEP = '#C23D77';
 const LOTUS_CORE = '#F2B927';
 const SEPAL = '#4E8A3E';
+const JASMINE = '#FFFDF6';
+const JASMINE_SHADE = '#F0E7CE';
+const CALYX = '#5E9A4A';
+const ROSE = '#E24E7E';
+const ROSE_DEEP = '#A82C58';
+const BRASS = '#D9A63E';
+const BRASS_DEEP = '#A9761F';
+const BRASS_DARK = '#7A5314';
+
+/* ==========================================================================
+ * Shapes shared across more than one variety
+ * ======================================================================== */
 
 /** A round flower head built from a rosette of petal-blobs — the same
  *  ring-of-ellipses trick the pookalam rings use, at marigold scale. */
-function MarigoldBall({ cx, cy, r, colour, dark }) {
-  const n = 8;
+function RoundBloom({ cx, cy, r, colour, dark, n = 8 }) {
   return (
     <g>
       {Array.from({ length: n }, (_, k) => {
@@ -87,10 +106,69 @@ function MangoLeaf({ x, y, rot, len, colour }) {
   );
 }
 
+/** The standard mango leaf fan, five wide with the longest centred — used
+ *  under a garland round in every variety that carries leaves at all. */
+function LeafFan({ y, len, i0 = 0 }) {
+  return (
+    <>
+      {[[-50, 0.72], [-24, 0.9], [0, 1], [24, 0.9], [50, 0.72]].map(([rot, s], i) => (
+        <MangoLeaf
+          key={i0 + i}
+          x={27}
+          y={y}
+          rot={rot}
+          len={len * s}
+          colour={i % 2 ? LEAF_LIGHT : LEAF}
+        />
+      ))}
+    </>
+  );
+}
+
+/** A flower built from pointed, single-layer petals rather than a round
+ *  pom-pom — the shape every variety's centrepiece uses, so "this is the
+ *  special one in the middle" reads the same way regardless of which
+ *  garland is hanging above it. Colour is the only thing that changes. */
+function PetalFanBloom({ r, colour, dark, core, n = 7 }) {
+  return (
+    <g>
+      {Array.from({ length: n }, (_, k) => (
+        <path
+          key={k}
+          transform={`rotate(${(k * 360) / n})`}
+          d={`M 0 0 Q ${r * 0.3} ${r * 0.5} 0 ${r} Q ${-r * 0.3} ${r * 0.5} 0 0 Z`}
+          fill={k % 2 ? colour : dark}
+        />
+      ))}
+      <path d="M -4 -1 Q 0 -6 4 -1 Z" fill={SEPAL} />
+      <circle r={r * 0.2} fill={core} />
+    </g>
+  );
+}
+
+/** Three heads on three threads, the flanking pair shorter than the centre
+ *  — the shape every variety's pendant hangs in, only the head differs. */
+function ThreeUpPendant({ className, viewBox, Head }) {
+  return (
+    <svg className={className} viewBox={viewBox} aria-hidden="true">
+      <path d="M 20 0 L 20 30" stroke={THREAD} strokeWidth="1.1" />
+      <path d="M 76 0 L 76 30" stroke={THREAD} strokeWidth="1.1" />
+      <path d="M 48 0 L 48 54" stroke={THREAD} strokeWidth="1.2" />
+      <g transform="translate(20, 42)"><Head r={15} /></g>
+      <g transform="translate(76, 42)"><Head r={15} /></g>
+      <g transform="translate(48, 76)"><Head r={22} /></g>
+    </svg>
+  );
+}
+
+/* ==========================================================================
+ * Marigold & mango leaf
+ * ======================================================================== */
+
 /** One repeat of the garland: a thread off the cord, a two-tone marigold
  *  pair, and a leaf tuft hanging under it. Every fourth is a little larger,
  *  a real string of hand-tied rounds is never perfectly even. */
-function ToranUnit({ seed }) {
+function MarigoldUnit({ seed }) {
   const big = seed % 4 === 0;
   const drop = 15 + wob(seed) * 3 + (big ? 4 : 0);
   const r1 = big ? 14 : 11.5;
@@ -108,21 +186,12 @@ function ToranUnit({ seed }) {
       aria-hidden="true"
     >
       <path d={`M 27 0 L 27 ${drop - r1 * 0.6}`} stroke={THREAD} strokeWidth="1.1" />
-      <MarigoldBall cx={27} cy={drop} r={r1} colour={MARIGOLD} dark={MARIGOLD_DEEP} />
-      <MarigoldBall cx={27} cy={drop + r1 * 0.55} r={r2} colour={GOLD} dark={GOLD_DEEP} />
+      <RoundBloom cx={27} cy={drop} r={r1} colour={MARIGOLD} dark={MARIGOLD_DEEP} />
+      <RoundBloom cx={27} cy={drop + r1 * 0.55} r={r2} colour={GOLD} dark={GOLD_DEEP} />
       {/* A wide fan, longest leaf centred, the way a real hand of mango
           leaves is tied — four leaves this close together at a narrow
           spread once fused into a single dark spike rather than a fan. */}
-      {[[-50, 0.72], [-24, 0.9], [0, 1], [24, 0.9], [50, 0.72]].map(([rot, s], i) => (
-        <MangoLeaf
-          key={i}
-          x={27}
-          y={leafY}
-          rot={rot}
-          len={leafLen * s}
-          colour={i % 2 ? LEAF_LIGHT : LEAF}
-        />
-      ))}
+      <LeafFan y={leafY} len={leafLen} />
     </svg>
   );
 }
@@ -146,7 +215,7 @@ function Tassel({ seed }) {
       {/* Outlined in the thread's own brown, not a darker gold — gold-on-gold
          reads fine against a dark hero but almost vanishes against the
          page's own pale ground, which is what this hangs over everywhere
-         except the few pixels where the lotus dips into the hero below. */}
+         except the few pixels where a pendant dips into the hero below. */}
       <circle cx="14" cy={bellY} r="4.4" fill={GOLD} stroke={THREAD} strokeWidth="0.9" />
       <circle cx="12.6" cy={bellY - 1.3} r="1.1" fill="#fff" opacity="0.55" />
       {[-3.4, 0, 3.4].map((dx, i) => {
@@ -163,52 +232,192 @@ function Tassel({ seed }) {
   );
 }
 
-/** A single lotus head: pointed petals fanned from a point, unlike the
- *  marigold's round pom-pom, so the centrepiece reads as a different
- *  flower rather than a bigger marigold. */
-function LotusBloom({ r }) {
-  const n = 7;
-  return (
-    <g>
-      {Array.from({ length: n }, (_, k) => (
-        <path
-          key={k}
-          transform={`rotate(${(k * 360) / n})`}
-          d={`M 0 0 Q ${r * 0.3} ${r * 0.5} 0 ${r} Q ${-r * 0.3} ${r * 0.5} 0 0 Z`}
-          fill={k % 2 ? LOTUS : LOTUS_DEEP}
-        />
-      ))}
-      <path d="M -4 -1 Q 0 -6 4 -1 Z" fill={SEPAL} />
-      <circle r={r * 0.2} fill={LOTUS_CORE} />
-    </g>
-  );
-}
-
-/** The centrepiece: three lotus heads hanging lower than the garland either
- *  side of it, the way the flanking rounds in a real toran always hang
- *  shorter than the middle one. */
-function LotusPendant() {
-  return (
-    <svg className="fest-toran-lotus" viewBox="0 0 96 118" aria-hidden="true">
-      <path d="M 20 0 L 20 30" stroke={THREAD} strokeWidth="1.1" />
-      <path d="M 76 0 L 76 30" stroke={THREAD} strokeWidth="1.1" />
-      <path d="M 48 0 L 48 54" stroke={THREAD} strokeWidth="1.2" />
-      <g transform="translate(20, 42)"><LotusBloom r={15} /></g>
-      <g transform="translate(76, 42)"><LotusBloom r={15} /></g>
-      <g transform="translate(48, 76)"><LotusBloom r={22} /></g>
-    </svg>
-  );
-}
-
 const MARIGOLD_COUNT = 14;
 
 /* One flat list, marigold and tassel already interleaved, rather than two
    arrays merged at render time — simplest to get right, and there is
    exactly one place a key could go missing instead of two. */
-const GARLAND_ITEMS = Array.from({ length: MARIGOLD_COUNT }, (_, i) => i).flatMap((i) => [
+const MARIGOLD_ITEMS = Array.from({ length: MARIGOLD_COUNT }, (_, i) => i).flatMap((i) => [
   { kind: 'marigold', seed: i },
   { kind: 'tassel', seed: i },
 ]);
+
+function MarigoldRow() {
+  return MARIGOLD_ITEMS.map((it) =>
+    it.kind === 'marigold' ? (
+      <MarigoldUnit key={`m${it.seed}`} seed={it.seed} />
+    ) : (
+      <Tassel key={`t${it.seed}`} seed={it.seed} />
+    )
+  );
+}
+
+function LotusHead({ r }) {
+  return <PetalFanBloom r={r} colour={LOTUS} dark={LOTUS_DEEP} core={LOTUS_CORE} />;
+}
+
+function MarigoldPendant() {
+  return <ThreeUpPendant className="fest-toran-lotus" viewBox="0 0 96 118" Head={LotusHead} />;
+}
+
+/* ==========================================================================
+ * Jasmine string
+ *
+ * A mullapoo string is dense and nearly leafless — the opposite rhythm from
+ * marigold's spaced, leaf-heavy rounds — so the row here is smaller units
+ * packed close, and only the odd one in three carries a leaf sprig at all.
+ * ======================================================================== */
+
+/** A posy of small overlapping buds rather than one bigger bloom — a single
+ *  jasmine flower is tiny, so what a string actually shows is a cluster. */
+/** White-on-cream is a colour that is only ever wrong for this site — the
+ *  page it hangs over is cream itself, so an unbordered white bud vanishes
+ *  into the very ground it is meant to stand on. A green outline (the same
+ *  green as its own calyx, not a second colour to introduce) is what a
+ *  drop-shadow alone could not give it: a crisp edge regardless of what is
+ *  behind it. */
+function JasmineBud({ cx, cy, r }) {
+  const offsets = [[0, -r * 0.4], [r * 0.55, r * 0.15], [-r * 0.55, r * 0.15], [0, r * 0.55]];
+  return (
+    <g>
+      {offsets.map(([dx, dy], i) => (
+        <circle
+          key={i}
+          cx={cx + dx}
+          cy={cy + dy}
+          r={r * 0.5}
+          fill={i % 2 ? JASMINE_SHADE : JASMINE}
+          stroke={CALYX}
+          strokeWidth={r * 0.09}
+        />
+      ))}
+      <path d={`M ${cx - 2.4} ${cy - r - 1} Q ${cx} ${cy - r - 4.4} ${cx + 2.4} ${cy - r - 1} Z`} fill={CALYX} />
+    </g>
+  );
+}
+
+function JasmineUnit({ seed }) {
+  const drop = 10 + wob(seed) * 2;
+  const r1 = 7.6;
+  const r2 = 6.2;
+  const y2 = drop + r1 * 1.15;
+  const hasSprig = seed % 3 === 0;
+
+  return (
+    <svg
+      className="fest-toran-unit fest-toran-jasmine-unit"
+      viewBox="0 0 32 62"
+      width="32"
+      height="62"
+      style={{ '--i': seed, '--delay': `${(wob(seed + 30) * 1.3).toFixed(2)}s` }}
+      aria-hidden="true"
+    >
+      <path d={`M 16 0 L 16 ${drop - r1 * 0.7}`} stroke={THREAD} strokeWidth="0.8" />
+      <JasmineBud cx={16} cy={drop} r={r1} />
+      <JasmineBud cx={16} cy={y2} r={r2} />
+      {hasSprig && (
+        <>
+          <MangoLeaf x={16} y={y2 + r2 * 0.7} rot={-26} len={13} colour={LEAF} />
+          <MangoLeaf x={16} y={y2 + r2 * 0.7} rot={22} len={13} colour={LEAF_LIGHT} />
+        </>
+      )}
+    </svg>
+  );
+}
+
+const JASMINE_COUNT = 26;
+
+function JasmineRow() {
+  return Array.from({ length: JASMINE_COUNT }, (_, i) => <JasmineUnit key={i} seed={i} />);
+}
+
+function RoseHead({ r }) {
+  return <PetalFanBloom r={r} colour={ROSE} dark={ROSE_DEEP} core={GOLD} n={8} />;
+}
+
+function JasminePendant() {
+  return <ThreeUpPendant className="fest-toran-lotus" viewBox="0 0 96 118" Head={RoseHead} />;
+}
+
+/* ==========================================================================
+ * Bells & mango leaf
+ *
+ * No flowers at all — brass rounds and leaf only, for a shop that wants the
+ * doorway dressed without it reading as any one flower's colour.
+ * ======================================================================== */
+
+/** A temple bell: a flared skirt, a rim, and a clapper hanging just below
+ *  it — not a circle standing in for a bell, which reads as a bauble. */
+function Bell({ cx, cy, r }) {
+  const top = cy - r;
+  const bottom = cy + r * 0.55;
+  const w = r * 0.85;
+  return (
+    <g>
+      <path d="M 0 0 Q 0 -3 0 -5" transform={`translate(${cx}, ${top})`} stroke={THREAD} strokeWidth="1" />
+      <circle cx={cx} cy={top - 5.5} r="1.6" fill="none" stroke={BRASS_DARK} strokeWidth="1" />
+      <path
+        d={`M ${cx - w * 0.35} ${top} Q ${cx - w} ${cy} ${cx - w * 0.9} ${bottom}
+            Q ${cx} ${bottom + r * 0.22} ${cx + w * 0.9} ${bottom}
+            Q ${cx + w} ${cy} ${cx + w * 0.35} ${top} Z`}
+        fill={BRASS}
+        stroke={BRASS_DARK}
+        strokeWidth="0.7"
+      />
+      <path d={`M ${cx - w * 0.9} ${bottom} Q ${cx} ${bottom + r * 0.22} ${cx + w * 0.9} ${bottom}`} fill={BRASS_DEEP} />
+      <ellipse cx={cx - w * 0.25} cy={cy - r * 0.2} rx={w * 0.22} ry={r * 0.5} fill="#fff" opacity="0.28" />
+      <path d={`M ${cx} ${bottom} L ${cx} ${bottom + r * 0.5}`} stroke={THREAD} strokeWidth="0.8" />
+      <circle cx={cx} cy={bottom + r * 0.6} r={r * 0.16} fill={BRASS_DARK} />
+    </g>
+  );
+}
+
+function BellUnit({ seed }) {
+  const big = seed % 4 === 0;
+  const drop = 16 + wob(seed) * 3 + (big ? 3 : 0);
+  const r = big ? 8.5 : 7;
+  const leafLen = big ? 20 : 16;
+  const leafY = drop + r * 1.5;
+
+  return (
+    <svg
+      className="fest-toran-unit"
+      viewBox="0 0 46 80"
+      width="46"
+      height="80"
+      style={{ '--i': seed, '--delay': `${(wob(seed + 60) * 1.4).toFixed(2)}s` }}
+      aria-hidden="true"
+    >
+      <path d={`M 23 0 L 23 ${drop - r}`} stroke={THREAD} strokeWidth="1" />
+      <Bell cx={23} cy={drop} r={r} />
+      <LeafFan y={leafY} len={leafLen} />
+    </svg>
+  );
+}
+
+const BELL_COUNT = 16;
+
+function BellRow() {
+  return Array.from({ length: BELL_COUNT }, (_, i) => <BellUnit key={i} seed={i} />);
+}
+
+function BigBellHead({ r }) {
+  return <Bell cx={0} cy={r * 0.15} r={r * 0.85} />;
+}
+
+function BellsPendant() {
+  return <ThreeUpPendant className="fest-toran-lotus" viewBox="0 0 96 118" Head={BigBellHead} />;
+}
+
+/* ==========================================================================
+ * The three on offer
+ * ======================================================================== */
+
+const VARIETIES = {
+  marigold: { Row: MarigoldRow, Pendant: MarigoldPendant, rowClass: '' },
+  jasmine: { Row: JasmineRow, Pendant: JasminePendant, rowClass: 'fest-toran-row-jasmine' },
+  bells: { Row: BellRow, Pendant: BellsPendant, rowClass: 'fest-toran-row-bells' },
+};
 
 export default function FestivalToran({ theme, animation, onHome }) {
   if (!theme) return null;
@@ -217,22 +426,16 @@ export default function FestivalToran({ theme, animation, onHome }) {
   if (animation?.enabled === false) return null;
   if (animation?.scope === 'home' && !onHome) return null;
 
+  const variety = VARIETIES[animation?.toranStyle] || VARIETIES.marigold;
+  const { Row, Pendant, rowClass } = variety;
+
   return (
     <div className="fest-toran" aria-hidden="true">
       <div className="fest-toran-cord" />
-      <div className="fest-toran-row">
-        {/* A tassel between every round, not just marigold after marigold —
-            the alternation is what keeps a long row from reading as one
-            stamp repeated down the page. */}
-        {GARLAND_ITEMS.map((it) =>
-          it.kind === 'marigold' ? (
-            <ToranUnit key={`m${it.seed}`} seed={it.seed} />
-          ) : (
-            <Tassel key={`t${it.seed}`} seed={it.seed} />
-          )
-        )}
+      <div className={`fest-toran-row ${rowClass}`}>
+        <Row />
       </div>
-      <LotusPendant />
+      <Pendant />
     </div>
   );
 }

@@ -10566,6 +10566,12 @@ body.has-cookie-bar .install-prompt { bottom: calc(var(--cookie-bar-height, 0px)
   width: 20px;
 }
 
+/* A jasmine string is dense and small-flowered — a marigold-width unit
+   here would space the buds out into a wall of gaps instead of a rope. */
+.fest-toran-jasmine-unit {
+  width: 18px;
+}
+
 .fest-toran-lotus {
   position: absolute;
   top: 0;
@@ -10594,10 +10600,17 @@ body.has-cookie-bar .install-prompt { bottom: calc(var(--cookie-bar-height, 0px)
 
 @media (max-width: 640px) {
   /* A phone doorway is narrower — fewer rounds, or they crowd into a wall
-     of orange rather than reading as a garland. */
+     of orange rather than reading as a garland. How many to keep depends
+     on the variety: jasmine's units are already small enough to keep more
+     of them, bells are wide enough that even nine reads as a full row. */
   .fest-toran-unit { width: 26px; }
   .fest-toran-tassel { width: 15px; }
-  .fest-toran-row > :nth-child(n + 14) { display: none; }
+  .fest-toran-jasmine-unit { width: 13px; }
+  .fest-toran-row:not(.fest-toran-row-jasmine):not(.fest-toran-row-bells) > :nth-child(n + 14) {
+    display: none;
+  }
+  .fest-toran-row-jasmine > :nth-child(n + 20) { display: none; }
+  .fest-toran-row-bells > :nth-child(n + 9) { display: none; }
   .fest-toran-lotus { width: 58px; }
 }
 

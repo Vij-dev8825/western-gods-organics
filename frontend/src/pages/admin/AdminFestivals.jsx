@@ -28,7 +28,7 @@ export default function AdminFestivals() {
   const [form, setForm] = useState(BLANK);
   const [editingId, setEditingId] = useState(null);
   const [saving, setSaving] = useState(false);
-  const [anim, setAnim] = useState({ enabled: true, scope: 'all', intensity: 'normal' });
+  const [anim, setAnim] = useState({ enabled: true, scope: 'all', intensity: 'normal', toranStyle: 'marigold' });
   const [savingAnim, setSavingAnim] = useState(false);
   const [loading, setLoading] = useState(true);
 
@@ -52,6 +52,7 @@ export default function AdminFestivals() {
         enabled: d.settings?.enabled !== false,
         scope: d.settings?.scope || 'all',
         intensity: d.settings?.intensity || 'normal',
+        toranStyle: d.settings?.toranStyle || 'marigold',
       }))
       .catch(() => {});
   }, [token]);
@@ -143,9 +144,10 @@ export default function AdminFestivals() {
       <div className="card" style={{ padding: 18, margin: '18px 0', maxWidth: 640 }}>
         <h4 style={{ marginTop: 0 }}>Animation</h4>
         <p className="muted" style={{ fontSize: '0.85rem', marginTop: -4 }}>
-          The flowers, crackers and sparks that drift across the site while a festival
-          is on. Nothing shows outside a festival, and nothing shows for a visitor whose
-          device asks for reduced motion — that is their choice, not a setting here.
+          The flowers, crackers and sparks that drift across the site, and the garland
+          hung above the nav, while a festival is on. Nothing shows outside a festival,
+          and nothing shows for a visitor whose device asks for reduced motion — that is
+          their choice, not a setting here.
         </p>
         <div className="form-grid">
           <div className="field">
@@ -163,6 +165,18 @@ export default function AdminFestivals() {
               <option value="lively">Lively</option>
             </select>
           </div>
+        </div>
+        <div className="field">
+          <label>Garland across the top of the site</label>
+          <select value={anim.toranStyle} onChange={(e) => setAnim({ ...anim, toranStyle: e.target.value })}>
+            <option value="marigold">Marigold, mango leaf &amp; lotus</option>
+            <option value="jasmine">Jasmine string &amp; rose</option>
+            <option value="bells">Brass bells &amp; mango leaf</option>
+          </select>
+          <p className="muted" style={{ fontSize: '0.8rem', marginTop: 4 }}>
+            The toran hung above the nav on every page while a festival is on. One at a
+            time — swap it for the day rather than layering several.
+          </p>
         </div>
         <label className="check-row">
           <input type="checkbox" checked={anim.enabled}
