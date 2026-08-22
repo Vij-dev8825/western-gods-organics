@@ -143,15 +143,19 @@ function Tassel({ seed }) {
       aria-hidden="true"
     >
       <path d={`M 14 0 L 14 ${drop}`} stroke={THREAD} strokeWidth="1" />
-      <circle cx="14" cy={bellY} r="4.4" fill={GOLD} stroke={GOLD_DEEP} strokeWidth="0.8" />
+      {/* Outlined in the thread's own brown, not a darker gold — gold-on-gold
+         reads fine against a dark hero but almost vanishes against the
+         page's own pale ground, which is what this hangs over everywhere
+         except the few pixels where the lotus dips into the hero below. */}
+      <circle cx="14" cy={bellY} r="4.4" fill={GOLD} stroke={THREAD} strokeWidth="0.9" />
       <circle cx="12.6" cy={bellY - 1.3} r="1.1" fill="#fff" opacity="0.55" />
       {[-3.4, 0, 3.4].map((dx, i) => {
         const len = 15 + (i === 1 ? 5 : 0) + wob(seed * 3 + i) * 2;
         const y0 = bellY + 3.6;
         return (
           <g key={i}>
-            <path d={`M ${14 + dx} ${y0} L ${14 + dx} ${y0 + len}`} stroke={GOLD_DEEP} strokeWidth="0.8" />
-            <circle cx={14 + dx} cy={y0 + len} r="1.7" fill={GOLD_DEEP} />
+            <path d={`M ${14 + dx} ${y0} L ${14 + dx} ${y0 + len}`} stroke={THREAD} strokeWidth="0.9" />
+            <circle cx={14 + dx} cy={y0 + len} r="1.7" fill={GOLD_DEEP} stroke={THREAD} strokeWidth="0.6" />
           </g>
         );
       })}
