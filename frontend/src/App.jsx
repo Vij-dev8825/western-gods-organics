@@ -58,6 +58,7 @@ const ContactUs = lazy(() => import('./pages/ContactUs'));
 const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'));
 const RefundPolicy = lazy(() => import('./pages/RefundPolicy'));
 const TermsAndConditions = lazy(() => import('./pages/TermsAndConditions'));
+const WhatsNew = lazy(() => import('./pages/WhatsNew'));
 const SustainabilityImpact = lazy(() => import('./pages/SustainabilityImpact'));
 const Sourcing = lazy(() => import('./pages/Sourcing'));
 const PressingCalendar = lazy(() => import('./pages/PressingCalendar'));
@@ -426,6 +427,7 @@ export default function App() {
         <Route path="/policy" element={<PrivacyPolicy />} />
         <Route path="/refund-policy" element={<RefundPolicy />} />
         <Route path="/terms" element={<TermsAndConditions />} />
+        <Route path="/whats-new" element={<WhatsNew />} />
         <Route path="/impact" element={<SustainabilityImpact />} />
         <Route path="/sourcing" element={<Sourcing />} />
         <Route path="/pressings" element={<PressingCalendar />} />
