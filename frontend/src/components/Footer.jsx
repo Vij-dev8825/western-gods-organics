@@ -141,6 +141,7 @@ export default function Footer() {
               <li><Link to="/subscriptions">{t('footerSubscriptions')}</Link></li>
               <li><Link to="/wishlist">{t('footerWishlist')}</Link></li>
               <li><Link to="/guides">Usage Guides</Link></li>
+              <li><Link to="/guide">Which Oil Should I Buy?</Link></li>
               <li><Link to="/sellers">Meet the Makers</Link></li>
               <li><Link to="/gift-cards">Gift Cards</Link></li>
               <li><Link to="/gifting">Corporate & Festival Gifting</Link></li>
@@ -176,6 +177,7 @@ export default function Footer() {
               <li><Link to="/combos">{t('navCombos')}</Link></li>
               <li><Link to="/blog">{t('navBlog')}</Link></li>
               <li><Link to="/guides">Usage Guides</Link></li>
+              <li><Link to="/guide">Which Oil Should I Buy?</Link></li>
               <li><Link to="/gift-cards">Gift Cards</Link></li>
               <li><Link to="/gifting">Corporate & Festival Gifting</Link></li>
               <li><Link to="/bulk-enquiry">{t('footerBulk')}</Link></li>
