@@ -4767,6 +4767,23 @@ input:focus-visible + .filter-radio { outline: 2px solid var(--gold-2); outline-
 .promo-ribbon-close:hover { color: var(--paper); }
 .promo-ribbon:hover { background: var(--forest-deep); }
 
+/* A deadline that only appears once, in a dialog most people close in a
+   second, is barely a deadline — this shows in the popup and stays visible
+   in the ribbon after it's dismissed, which is what actually keeps the
+   pressure on. */
+.promo-countdown {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--gold-1);
+  margin: 4px 0 4px;
+}
+.promo-ribbon-open .promo-countdown {
+  font-size: 0.68rem;
+  color: var(--gold-4);
+  margin: 2px 0 0;
+}
+
 @media (max-width: 640px) {
   .promo-popup-card { padding: 26px 20px; }
 }
@@ -9839,6 +9856,23 @@ input:focus-visible + .filter-radio { outline: 2px solid var(--gold-2); outline-
 }
 .promo-ribbon-close:hover { color: var(--paper); }
 .promo-ribbon:hover { background: var(--forest-deep); }
+
+/* A deadline that only appears once, in a dialog most people close in a
+   second, is barely a deadline — this shows in the popup and stays visible
+   in the ribbon after it's dismissed, which is what actually keeps the
+   pressure on. */
+.promo-countdown {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--gold-1);
+  margin: 4px 0 4px;
+}
+.promo-ribbon-open .promo-countdown {
+  font-size: 0.68rem;
+  color: var(--gold-4);
+  margin: 2px 0 0;
+}
 
 @media (max-width: 640px) {
   .promo-popup-card { padding: 26px 20px; }

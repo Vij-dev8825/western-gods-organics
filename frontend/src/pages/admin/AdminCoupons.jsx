@@ -198,6 +198,13 @@ export default function AdminCoupons() {
 
         {form.featured && (
           <div className="form-grid" style={{ marginTop: 4 }}>
+            {form.expiresAt && (
+              <p className="muted" style={{ fontSize: '0.8rem', gridColumn: '1 / -1', margin: 0 }}>
+                Since this one's featured, the "Expires on" date above now shows as a live
+                countdown in the popup and its reminder tab — not just a cutoff nobody sees
+                coming.
+              </p>
+            )}
             <ImageUploadField
               value={form.promoImage}
               onChange={(url) => setForm({ ...form, promoImage: url })}

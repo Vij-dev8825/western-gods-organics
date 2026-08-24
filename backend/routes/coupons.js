@@ -35,6 +35,10 @@ router.get('/featured', async (req, res, next) => {
           ? String(coupon.promoLink).trim()
           : '',
         promoCta: coupon.promoCta || '',
+        // A deadline that's only enforced at checkout and never shown is not
+        // urgency, it's a trap — this is what lets the popup say "ends in
+        // 2d 6h" instead of just "get 20% off".
+        expiresAt: coupon.expiresAt || null,
       },
     });
   } catch (err) {

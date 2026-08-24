@@ -6,6 +6,33 @@ import { getProductImage } from '../utils/productImages';
 const SESSION_KEY = 'yo_promo_popup_seen';
 const RIBBON_DISMISSED_KEY = 'yo_promo_ribbon_dismissed';
 
+/** Same shape as SaleCountdown's own timeLeft — a deadline shown nowhere
+ *  reads as no deadline at all, which is the difference between an offer
+ *  and a fact people can put off acting on. */
+function timeLeft(endDate) {
+  const diff = Math.max(0, new Date(endDate).getTime() - Date.now());
+  return {
+    days: Math.floor(diff / 86400000),
+    hours: Math.floor((diff / 3600000) % 24),
+    mins: Math.floor((diff / 60000) % 60),
+    over: diff <= 0,
+  };
+}
+
+function CountdownLine({ endDate }) {
+  const [left, setLeft] = useState(() => timeLeft(endDate));
+  useEffect(() => {
+    const id = setInterval(() => setLeft(timeLeft(endDate)), 30000);
+    return () => clearInterval(id);
+  }, [endDate]);
+  if (left.over) return null;
+  const parts = [];
+  if (left.days) parts.push(`${left.days}d`);
+  if (left.days || left.hours) parts.push(`${left.hours}h`);
+  parts.push(`${left.mins}m`);
+  return <span className="promo-countdown">⏰ Ends in {parts.join(' ')}</span>;
+}
+
 /** Homepage promo popup advertising whichever coupon an admin has marked
  * "featured". Auto-opens once per browser session; after it's closed, a
  * small ribbon tab stays stuck to the screen edge so the offer isn't lost —
@@ -56,6 +83,10 @@ export default function PromoPopup() {
       <div className="promo-ribbon">
         <button className="promo-ribbon-open" onClick={() => setVisible(true)} type="button">
           Get {offLabel}
+          {/* The ribbon is what actually stays on screen after the popup is
+              closed — a deadline that only shows once, in a dialog most
+              people dismiss in a second, is barely a deadline at all. */}
+          {coupon.expiresAt && <CountdownLine endDate={coupon.expiresAt} />}
         </button>
         <button className="promo-ribbon-close" onClick={dismissRibbon} type="button" aria-label="Dismiss offer">
           ×
@@ -80,6 +111,7 @@ export default function PromoPopup() {
           <span className="promo-popup-badge">🌿 Special offer</span>
           <h3>{headline}</h3>
           <p className="muted">{subtext}</p>
+          {coupon.expiresAt && <CountdownLine endDate={coupon.expiresAt} />}
           <button className="promo-popup-code" onClick={copyCode} type="button">
             {coupon.code}
             <span className="promo-popup-copy-hint">{copied ? 'Copied!' : 'Tap to copy'}</span>
