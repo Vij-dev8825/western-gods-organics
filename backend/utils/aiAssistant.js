@@ -25,6 +25,13 @@ const RECENT_ORDERS_SHOWN = 5;
 // differently; GEMINI_THINKING_LEVEL=off skips the field entirely.
 const THINKING_LEVEL = process.env.GEMINI_THINKING_LEVEL || 'minimal';
 
+// Without this, a Gemini call that never gets a response — a dropped
+// connection, a network path that just doesn't answer — hangs the request
+// forever: no error, so none of the fallback/apology logic below ever runs,
+// and the customer is left staring at the typing dots indefinitely. Bounding
+// it turns that into a real (if disappointing) answer within a bounded time.
+const GEMINI_TIMEOUT_MS = Number(process.env.GEMINI_TIMEOUT_MS) || 20_000;
+
 // Forces Gemini to return { message, productIds } instead of free text, so
 // the frontend can render real product cards (image, price, add-to-cart)
 // instead of the customer having to navigate to the Shop page themselves.
@@ -238,6 +245,7 @@ async function callGemini(path, body) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-goog-api-key': process.env.GEMINI_API_KEY },
       body: JSON.stringify(payload),
+      signal: AbortSignal.timeout(GEMINI_TIMEOUT_MS),
     });
 
   let res = await send(body);
@@ -382,6 +390,10 @@ async function streamAssistant(message, history = [], user = null, onText = () =
     // real answer; only if that fails too does the apology go out.
     console.error('[AI:gemini:stream:error] falling back to non-streaming —', err.message);
     if (sent) return FAILED; // half a reply is already on screen; don't double up
+    // A timeout means Gemini never answered at all — the non-streaming retry
+    // would make the exact same call and time out again, doubling the wait
+    // for a customer who's already waited GEMINI_TIMEOUT_MS for nothing.
+    if (err.name === 'AbortError' || err.name === 'TimeoutError') return FAILED;
     const result = await askAssistant(message, history, user);
     onText(result.reply);
     return result;
