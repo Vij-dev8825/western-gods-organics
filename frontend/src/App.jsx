@@ -60,6 +60,7 @@ const RefundPolicy = lazy(() => import('./pages/RefundPolicy'));
 const TermsAndConditions = lazy(() => import('./pages/TermsAndConditions'));
 const WhatsNew = lazy(() => import('./pages/WhatsNew'));
 const OilGuide = lazy(() => import('./pages/OilGuide'));
+const OurStory = lazy(() => import('./pages/OurStory'));
 const SustainabilityImpact = lazy(() => import('./pages/SustainabilityImpact'));
 const Sourcing = lazy(() => import('./pages/Sourcing'));
 const PressingCalendar = lazy(() => import('./pages/PressingCalendar'));
@@ -430,6 +431,7 @@ export default function App() {
         <Route path="/terms" element={<TermsAndConditions />} />
         <Route path="/whats-new" element={<WhatsNew />} />
         <Route path="/guide" element={<OilGuide />} />
+        <Route path="/our-story" element={<OurStory />} />
         <Route path="/impact" element={<SustainabilityImpact />} />
         <Route path="/sourcing" element={<Sourcing />} />
         <Route path="/pressings" element={<PressingCalendar />} />

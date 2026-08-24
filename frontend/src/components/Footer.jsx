@@ -127,6 +127,7 @@ export default function Footer() {
               {MILL_NAME},<br />{MILL_ADDRESS}
             </p>
             <ul style={{ marginTop: 10 }}>
+              <li><Link to="/our-story">Our Story</Link></li>
               <li><Link to="/whats-new">What's New</Link></li>
               <li><Link to="/pressings">What We're Pressing</Link></li>
               <li><Link to="/sourcing">Our Sourcing</Link></li>
@@ -171,6 +172,7 @@ export default function Footer() {
           <FooterAccordion title={t('footerSitemap')} isOpen={openSection === 'sitemap'} onToggle={() => toggle('sitemap')}>
             <ul>
               <li><Link to="/">{t('navHome')}</Link></li>
+              <li><Link to="/our-story">Our Story</Link></li>
               <li><Link to="/whats-new">What's New</Link></li>
               <li><Link to="/shop">{t('navShop')}</Link></li>
               <li><Link to="/categories">{t('navCategories')}</Link></li>
