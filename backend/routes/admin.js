@@ -30,6 +30,7 @@ const { cutOutFlower, prepareCharacter } = require('../utils/flowerCutout');
 const { buildBatchLabelPdf } = require('../utils/batchLabels');
 const { buildProfitReport } = require('../utils/profit');
 const pookalamContest = require('../utils/pookalam');
+const shopBrain = require('../utils/shopBrain');
 const { sendInvoiceForOrder } = require('../utils/sendInvoice');
 const { buildProcurementPlan } = require('../utils/procurement');
 const { listAll: listAllFestivals, DEFAULT_LEAD_DAYS: FESTIVAL_LEAD_DAYS } = require('../utils/festivals');
@@ -3829,6 +3830,105 @@ router.delete('/pookalam/entries/:id', async (req, res, next) => {
     const entry = await pookalamContest.removeEntry(req.params.id);
     if (!entry) return res.status(404).json({ success: false, message: 'Entry not found.' });
     res.json({ success: true });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/* --------------------------- Assistant health ----------------------------- */
+/* The shop's own assistant (utils/shopBrain.js) answers by default: no key, no
+   quota, no outage. Gemini sits in front of it only when USE_GEMINI=1 and a key
+   is set — for freer conversation — and even then, anything Gemini fails to
+   answer falls straight through to the shop's own assistant rather than to an
+   apology (see routes/aiAssistant.js). This says plainly which mode is active,
+   and — if a key is present — what Google actually replies when called, so a
+   failure reads as "your key is invalid" instead of "sorry, I'm having trouble
+   right now". */
+
+router.get('/ai-assistant/health', async (req, res, next) => {
+  try {
+    const brain = await shopBrain.health();
+
+    const key = process.env.GEMINI_API_KEY;
+    const model = process.env.GEMINI_MODEL || 'gemini-flash-latest';
+    const wantsGemini = process.env.USE_GEMINI === '1';
+    const active = wantsGemini && key ? 'gemini (falls back to shop-brain)' : 'shop-brain';
+    let gemini;
+
+    if (!key) {
+      gemini = {
+        configured: false,
+        note: wantsGemini
+          ? 'USE_GEMINI=1 is set but there is no GEMINI_API_KEY, so Gemini cannot start — the shop assistant is answering instead.'
+          : 'No GEMINI_API_KEY set. Not a problem — the assistant answers from the shop’s own data.',
+      };
+    } else if (!wantsGemini) {
+      gemini = {
+        configured: true,
+        inUse: false,
+        note: 'A GEMINI_API_KEY is set but USE_GEMINI is not "1", so it is not being called. The shop assistant is answering. Set USE_GEMINI=1 to turn Gemini on in front of it.',
+      };
+    } else {
+      /* Ask Google about the model itself. Cheap, quota-free, and it
+         distinguishes the three failures that all look identical from the
+         customer's side: bad key, wrong model name, exhausted quota. */
+      try {
+        const r = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}`,
+          { headers: { 'x-goog-api-key': key } },
+        );
+        const body = await r.json().catch(() => ({}));
+        gemini = {
+          configured: true,
+          model,
+          ok: r.ok,
+          status: r.status,
+          detail: r.ok
+            ? `Model "${model}" resolves. Gemini is reachable with this key.`
+            : body?.error?.message || `HTTP ${r.status}`,
+          diagnosis: r.ok
+            ? null
+            : r.status === 404
+              ? `Google does not recognise the model name "${model}". Set GEMINI_MODEL to a current one (for example gemini-2.5-flash) and restart.`
+              : r.status === 400 || r.status === 403
+                ? 'The API key was rejected — it may be invalid, revoked, or restricted to other referrers/IPs.'
+                : r.status === 429
+                  ? 'Quota exhausted for today on this key.'
+                  : 'Gemini returned an error. The message above is what Google said.',
+        };
+      } catch (err) {
+        gemini = {
+          configured: true,
+          model,
+          ok: false,
+          status: 0,
+          detail: err.message,
+          diagnosis: "Could not reach Google at all — check the server's outbound network access.",
+        };
+      }
+    }
+
+    res.json({ success: true, assistant: active, brain, gemini });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/* Ask the assistant a question as the admin, to see what a customer would get. */
+router.post('/ai-assistant/try', async (req, res, next) => {
+  try {
+    const message = String(req.body?.message || '').trim();
+    if (!message) return res.status(400).json({ success: false, message: 'Type a question.' });
+    const started = Date.now();
+    const result = await shopBrain.answer(message, [], null);
+    res.json({
+      success: true,
+      reply: result.reply,
+      productIds: result.productIds || [],
+      suggestions: result.suggestions || [],
+      unmatched: !!result.unmatched,
+      ms: Date.now() - started,
+    });
   } catch (err) {
     next(err);
   }

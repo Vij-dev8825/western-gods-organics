@@ -1,15 +1,29 @@
 const express = require('express');
+const shopBrain = require('../utils/shopBrain');
 const { askAssistant, streamAssistant } = require('../utils/aiAssistant');
+
+/**
+ * Gemini is off unless someone deliberately turns it on.
+ *
+ * The shop's own assistant answers by default: no key, no quota, no outage, and
+ * it never dead-ends. Set USE_GEMINI=1 (with a working GEMINI_API_KEY) to put
+ * Gemini in front of it for freer-form conversation — and even then, anything
+ * Gemini fails to answer falls through to the local assistant rather than to an
+ * apology. Admin > Chat Assistant reports which is actually in use.
+ */
+const useGemini = () => process.env.USE_GEMINI === '1' && !!process.env.GEMINI_API_KEY;
 const { optionalAuth } = require('../middleware/auth');
 const db = require('../data/db');
 
 const router = express.Router();
 
-// Simple in-memory per-IP daily cap — Google's free Gemini tier is a single
-// shared quota (1,500 requests/day) for the whole site, so this protects it
-// from being exhausted by one abusive client. Resets naturally on redeploy;
-// no persistence needed for a soft anti-abuse limit like this.
-const RATE_LIMIT_PER_DAY = 60;
+// A soft per-IP daily cap. This used to exist because Google's free Gemini tier
+// was one shared 1,500/day quota for the whole site and a single abusive client
+// could exhaust it for everyone. The assistant now answers locally, so there is
+// no quota left to protect and the only cost is CPU — the cap stays purely as
+// anti-abuse, and is set far higher because a genuine shopper asking thirty
+// questions is no longer expensive.
+const RATE_LIMIT_PER_DAY = 300;
 const usage = new Map(); // ip -> { count, day }
 
 function todayKey() {
@@ -70,9 +84,36 @@ router.post('/', optionalAuth, async (req, res, next) => {
       res.flushHeaders?.();
 
       const send = (event, data) => res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
-      const result = await streamAssistant(message.trim(), priorTurns, user, (delta) =>
-        send('text', { delta })
-      );
+
+      let result = null;
+
+      if (useGemini()) {
+        // Gemini streams genuinely, token by token, and its own 20s timeout
+        // bounds the wait. If it fails we answer from the shop's data instead
+        // of leaving the customer with an apology — but ONLY if it has not
+        // already put words on screen. Falling back after a half-delivered
+        // answer would append a second one to the first, which is worse than
+        // the truncation it was trying to rescue.
+        let delivered = 0;
+        const streamed = await streamAssistant(message.trim(), priorTurns, user, (delta) => {
+          if (delta) delivered += delta.length;
+          send('text', { delta });
+        });
+        if (!streamed?.error || delivered > 0) result = streamed;
+      }
+
+      if (!result) {
+        // The local answer is ready immediately, so there is nothing to stream
+        // in the sense there was with a remote model. It is still delivered in
+        // pieces, because the widget's typing effect is driven by these events
+        // and one frame carrying the whole reply lands as a wall of text.
+        result = await shopBrain.answer(message.trim(), priorTurns, user);
+        const parts = String(result.reply).split(/(\s+)/);
+        for (let i = 0; i < parts.length; i += 4) {
+          send('text', { delta: parts.slice(i, i + 4).join('') });
+        }
+      }
+
       send('done', {
         productIds: result.productIds || [],
         suggestions: result.suggestions || [],
@@ -80,7 +121,13 @@ router.post('/', optionalAuth, async (req, res, next) => {
       return res.end();
     }
 
-    const result = await askAssistant(message.trim(), priorTurns, user);
+    let result = null;
+    if (useGemini()) {
+      const asked = await askAssistant(message.trim(), priorTurns, user);
+      if (!asked?.error) result = asked;
+    }
+    if (!result) result = await shopBrain.answer(message.trim(), priorTurns, user);
+
     res.json({
       success: true,
       reply: result.reply,

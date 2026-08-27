@@ -345,6 +345,10 @@ export const api = {
     deleteFestival: (token, id) => request(`/admin/festivals/${id}`, { method: 'DELETE', token }),
 
     listPookalamEntries: (token) => request('/admin/pookalam/entries', { token }),
+
+    aiAssistantHealth: (token) => request('/admin/ai-assistant/health', { token }),
+    aiAssistantTry: (token, message) =>
+      request('/admin/ai-assistant/try', { method: 'POST', body: { message }, token }),
     setPookalamStatus: (token, id, status) =>
       request(`/admin/pookalam/entries/${id}/status`, { method: 'POST', body: { status }, token }),
     awardPookalamPrize: (token, id, prize) =>

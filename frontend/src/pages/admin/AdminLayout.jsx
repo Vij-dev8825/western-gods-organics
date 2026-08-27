@@ -47,6 +47,7 @@ const links = [
   { to: '/admin/notify', label: 'Notifications' },
   { to: '/admin/whatsapp', label: 'WhatsApp' },
   { to: '/admin/chat', label: 'Chat' },
+  { to: '/admin/ai-assistant', label: 'Chat Assistant' },
 ];
 
 export default function AdminLayout() {

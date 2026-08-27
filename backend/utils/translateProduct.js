@@ -1,5 +1,12 @@
-// Same free-tier Gemini setup as utils/aiAssistant.js — see that file's
-// comment for why an alias model name is used instead of a dated one.
+// Free-tier Gemini. An alias model name rather than a dated one, because a
+// dated name stops working for new API keys the moment Google deprecates it —
+// which has already happened here once, with gemini-2.5-flash.
+//
+// This is an ADMIN convenience feature: if the key is missing or the call
+// fails, the admin simply writes the text themselves. The customer-facing chat
+// assistant deliberately does not depend on Gemini any more — it answers from
+// the shop's own data in utils/shopBrain.js — so a Gemini outage never reaches
+// a shopper. Admin > Chat Assistant reports what Google is actually saying.
 const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-flash-latest';
 
 const LANG_FIELD = {
