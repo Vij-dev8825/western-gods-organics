@@ -62,6 +62,7 @@ const WhatsNew = lazy(() => import('./pages/WhatsNew'));
 const OilGuide = lazy(() => import('./pages/OilGuide'));
 const OurStory = lazy(() => import('./pages/OurStory'));
 const HowToUse = lazy(() => import('./pages/HowToUse'));
+const GettingStarted = lazy(() => import('./pages/GettingStarted'));
 const SustainabilityImpact = lazy(() => import('./pages/SustainabilityImpact'));
 const Sourcing = lazy(() => import('./pages/Sourcing'));
 const PressingCalendar = lazy(() => import('./pages/PressingCalendar'));
@@ -442,6 +443,7 @@ export default function App() {
         <Route path="/guide" element={<OilGuide />} />
         <Route path="/our-story" element={<OurStory />} />
         <Route path="/how-to-use" element={<HowToUse />} />
+        <Route path="/getting-started" element={<GettingStarted />} />
         <Route path="/impact" element={<SustainabilityImpact />} />
         <Route path="/sourcing" element={<Sourcing />} />
         <Route path="/pressings" element={<PressingCalendar />} />

@@ -1932,6 +1932,22 @@ input:focus-visible + .filter-radio { outline: 2px solid var(--gold-2); outline-
   .howto-callout-inner { flex-direction: column; text-align: center; gap: 14px; padding: 26px 22px; }
 }
 .howto-group { margin: 36px 0; }
+
+/* ---------- Getting started (step-by-step walkthrough) ---------- */
+.getting-started-rail { display: flex; gap: 8px; margin: 20px 0 32px; }
+.getting-started-dot {
+  flex: 1;
+  height: 6px;
+  border-radius: 3px;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  background: var(--cream-deep);
+  transition: background 0.2s ease, opacity 0.2s ease;
+}
+.getting-started-dot.is-done { background: var(--gold-1); opacity: 0.5; }
+.getting-started-dot.is-current { background: var(--gold-1); opacity: 1; }
+.getting-started-nav { margin-top: 32px; }
 .howto-group > .eyebrow { display: block; margin-bottom: 14px; }
 .howto-grid {
   display: grid;
@@ -7103,6 +7119,22 @@ input:focus-visible + .filter-radio { outline: 2px solid var(--gold-2); outline-
   .howto-callout-inner { flex-direction: column; text-align: center; gap: 14px; padding: 26px 22px; }
 }
 .howto-group { margin: 36px 0; }
+
+/* ---------- Getting started (step-by-step walkthrough) ---------- */
+.getting-started-rail { display: flex; gap: 8px; margin: 20px 0 32px; }
+.getting-started-dot {
+  flex: 1;
+  height: 6px;
+  border-radius: 3px;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  background: var(--cream-deep);
+  transition: background 0.2s ease, opacity 0.2s ease;
+}
+.getting-started-dot.is-done { background: var(--gold-1); opacity: 0.5; }
+.getting-started-dot.is-current { background: var(--gold-1); opacity: 1; }
+.getting-started-nav { margin-top: 32px; }
 .howto-group > .eyebrow { display: block; margin-bottom: 14px; }
 .howto-grid {
   display: grid;

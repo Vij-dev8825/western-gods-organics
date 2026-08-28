@@ -286,9 +286,12 @@ export default function Home() {
             <h2 style={{ margin: '4px 0 6px' }}>See everything this site can do for you</h2>
             <p className="muted" style={{ margin: '0 0 14px', maxWidth: 480 }}>
               The AI assistant, batch lookup, subscriptions, loyalty points and more —
-              one page walks through all of it.
+              walked through step by step, or look something up yourself.
             </p>
-            <Link to="/how-to-use" className="btn btn-gold">How to Use This Site</Link>
+            <div className="flex gap-1">
+              <Link to="/getting-started" className="btn btn-gold">Show me around</Link>
+              <Link to="/how-to-use" className="btn btn-outline">Browse the full list</Link>
+            </div>
           </div>
         </div>
       </Reveal>
