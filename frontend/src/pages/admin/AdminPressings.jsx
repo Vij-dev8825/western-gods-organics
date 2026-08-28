@@ -19,6 +19,9 @@ export default function AdminPressings() {
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(null);
+  const [editingId, setEditingId] = useState(null);
+  const [editForm, setEditForm] = useState(null);
+  const [savingEdit, setSavingEdit] = useState(false);
 
   async function load() {
     try {
@@ -96,6 +99,40 @@ export default function AdminPressings() {
       load();
     } catch (err) {
       showToast(err.message, 'error');
+    }
+  }
+
+  // Date/yield/note only — product and size aren't editable once scheduled,
+  // since customers may have already reserved against this exact listing.
+  function startEdit(pressing) {
+    setEditingId(pressing.id);
+    setEditForm({
+      pressDate: pressing.pressDate.slice(0, 10),
+      unitsOffered: pressing.unitsOffered,
+      note: pressing.note || '',
+    });
+  }
+
+  function cancelEdit() {
+    setEditingId(null);
+    setEditForm(null);
+  }
+
+  async function handleUpdate(pressing) {
+    setSavingEdit(true);
+    try {
+      await api.admin.updatePressing(token, pressing.id, {
+        pressDate: editForm.pressDate,
+        unitsOffered: Number(editForm.unitsOffered),
+        note: editForm.note,
+      });
+      showToast('Pressing updated.');
+      cancelEdit();
+      load();
+    } catch (err) {
+      showToast(err.message, 'error');
+    } finally {
+      setSavingEdit(false);
     }
   }
 
@@ -213,12 +250,41 @@ export default function AdminPressings() {
             <tbody>
               {pressings.map((p) => (
                 <tr key={p.id}>
-                  <td data-label="Product">{p.productName}<br /><span className="muted">{p.size}</span></td>
-                  <td data-label="Pressing date">{fmtDate(p.pressDate)}</td>
+                  <td data-label="Product">
+                    {p.productName}<br /><span className="muted">{p.size}</span>
+                    {editingId !== p.id && p.note && <><br /><span className="muted">"{p.note}"</span></>}
+                  </td>
+                  <td data-label="Pressing date">
+                    {editingId === p.id ? (
+                      <input
+                        type="date"
+                        value={editForm.pressDate}
+                        onChange={(e) => setEditForm({ ...editForm, pressDate: e.target.value })}
+                        style={{ minWidth: 132 }}
+                      />
+                    ) : (
+                      fmtDate(p.pressDate)
+                    )}
+                  </td>
                   <td data-label="Reserved">
-                    <b>{p.reserved}</b> / {p.unitsOffered}
-                    {p.status === 'open' && p.unitsRemaining === 0 && (
-                      <><br /><span className="muted">fully booked</span></>
+                    {editingId === p.id ? (
+                      <>
+                        <b>{p.reserved}</b> /{' '}
+                        <input
+                          type="number"
+                          min={p.reserved || 1}
+                          value={editForm.unitsOffered}
+                          onChange={(e) => setEditForm({ ...editForm, unitsOffered: e.target.value })}
+                          style={{ width: 64 }}
+                        />
+                      </>
+                    ) : (
+                      <>
+                        <b>{p.reserved}</b> / {p.unitsOffered}
+                        {p.status === 'open' && p.unitsRemaining === 0 && (
+                          <><br /><span className="muted">fully booked</span></>
+                        )}
+                      </>
                     )}
                   </td>
                   <td data-label="Status">{p.status}</td>
@@ -255,16 +321,36 @@ export default function AdminPressings() {
                     )}
                   </td>
                   <td style={{ whiteSpace: 'nowrap' }}>
-                    {p.status === 'open' && (
+                    {editingId === p.id ? (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 6, minWidth: 200 }}>
+                        <input
+                          placeholder="Note for customers (optional)"
+                          maxLength={300}
+                          value={editForm.note}
+                          onChange={(e) => setEditForm({ ...editForm, note: e.target.value })}
+                        />
+                        <div>
+                          <button className="btn btn-gold btn-sm" disabled={savingEdit} onClick={() => handleUpdate(p)}>
+                            {savingEdit ? 'Saving…' : 'Save'}
+                          </button>{' '}
+                          <button type="button" className="btn btn-outline btn-sm" onClick={cancelEdit}>
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    ) : p.status === 'open' ? (
                       <>
                         <button className="btn btn-gold btn-sm" onClick={() => handlePressed(p)}>
                           Mark pressed
+                        </button>{' '}
+                        <button className="btn btn-outline btn-sm" onClick={() => startEdit(p)}>
+                          Edit
                         </button>{' '}
                         <button className="btn btn-outline btn-sm" onClick={() => handleCancel(p)}>
                           Cancel
                         </button>
                       </>
-                    )}
+                    ) : null}
                   </td>
                 </tr>
               ))}
