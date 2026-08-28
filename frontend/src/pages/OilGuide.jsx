@@ -53,11 +53,44 @@ function validate(form) {
   return errors;
 }
 
+/** Every branch ends at one of the four oils above, using only the
+ * distinguishing facts already written in their own copy — this is a
+ * decision tree over existing content, not a new set of claims. */
+function resultFor(mainAnswer, subAnswer) {
+  if (mainAnswer === 'both') return 'coconut-oil-1l';
+  if (mainAnswer === 'cooking') {
+    if (subAnswer === 'everyday' || subAnswer === 'unsure') return 'groundnut-oil-1l';
+    if (subAnswer === 'south-indian') return 'sesame-oil-1l';
+  }
+  if (mainAnswer === 'hairskin') {
+    if (subAnswer === 'only') return 'castor-oil-1l';
+    if (subAnswer === 'double') return 'coconut-oil-1l';
+  }
+  return null;
+}
+
+const QUIZ_OPTION_STYLE = {
+  display: 'block',
+  width: '100%',
+  textAlign: 'left',
+  marginBottom: 8,
+};
+
 export default function OilGuide() {
   const [form, setForm] = useState({ name: '', phone: '', email: '' });
   const [errors, setErrors] = useState({});
   const [status, setStatus] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [mainAnswer, setMainAnswer] = useState(null);
+  const [subAnswer, setSubAnswer] = useState(null);
+
+  function resetQuiz() {
+    setMainAnswer(null);
+    setSubAnswer(null);
+  }
+
+  const resultId = resultFor(mainAnswer, subAnswer);
+  const resultOil = resultId ? OILS.find((o) => o.id === resultId) : null;
 
   function update(field, value) {
     setForm((f) => ({ ...f, [field]: value }));
@@ -99,7 +132,64 @@ export default function OilGuide() {
         no signup required to read it.
       </p>
 
-      <h2>Start with what you're actually doing with it</h2>
+      <div style={{ background: 'var(--cream-deep)', borderRadius: 'var(--radius-md)', padding: '22px 22px 20px', maxWidth: 480 }}>
+        <span className="eyebrow">Faster than reading</span>
+        {!resultOil ? (
+          !mainAnswer ? (
+            <>
+              <h3 style={{ marginTop: 0 }}>What do you mainly want it for?</h3>
+              <button type="button" className="btn btn-outline" style={QUIZ_OPTION_STYLE} onClick={() => setMainAnswer('cooking')}>
+                Cooking
+              </button>
+              <button type="button" className="btn btn-outline" style={QUIZ_OPTION_STYLE} onClick={() => setMainAnswer('hairskin')}>
+                Hair or skin care
+              </button>
+              <button type="button" className="btn btn-outline" style={{ ...QUIZ_OPTION_STYLE, marginBottom: 0 }} onClick={() => setMainAnswer('both')}>
+                A bit of both
+              </button>
+            </>
+          ) : mainAnswer === 'cooking' ? (
+            <>
+              <h3 style={{ marginTop: 0 }}>What kind of cooking?</h3>
+              <button type="button" className="btn btn-outline" style={QUIZ_OPTION_STYLE} onClick={() => setSubAnswer('everyday')}>
+                Everyday frying and tempering
+              </button>
+              <button type="button" className="btn btn-outline" style={QUIZ_OPTION_STYLE} onClick={() => setSubAnswer('south-indian')}>
+                South Indian tempering, oil-pulling, or Ayurvedic use
+              </button>
+              <button type="button" className="btn btn-outline" style={QUIZ_OPTION_STYLE} onClick={() => setSubAnswer('unsure')}>
+                Not sure — just something reliable
+              </button>
+              <button type="button" className="link-btn" onClick={resetQuiz}>&larr; Start over</button>
+            </>
+          ) : (
+            <>
+              <h3 style={{ marginTop: 0 }}>Only hair and skin, or should it double as a cooking oil too?</h3>
+              <button type="button" className="btn btn-outline" style={QUIZ_OPTION_STYLE} onClick={() => setSubAnswer('only')}>
+                Only hair and skin — never in the kitchen
+              </button>
+              <button type="button" className="btn btn-outline" style={QUIZ_OPTION_STYLE} onClick={() => setSubAnswer('double')}>
+                I'd like it to double as a cooking oil too
+              </button>
+              <button type="button" className="link-btn" onClick={resetQuiz}>&larr; Start over</button>
+            </>
+          )
+        ) : (
+          <>
+            <p className="muted" style={{ margin: '0 0 2px', fontSize: '0.82rem' }}>Based on your answers</p>
+            <h3 style={{ marginTop: 0, marginBottom: 4 }}>{resultOil.name}</h3>
+            <p style={{ margin: '0 0 8px', fontWeight: 600, color: 'var(--forest-deep)' }}>{resultOil.bestFor}</p>
+            <p className="muted" style={{ margin: '0 0 6px', fontSize: '0.9rem' }}><b>Reach for it when:</b> {resultOil.when}</p>
+            <p className="muted" style={{ margin: '0 0 14px', fontSize: '0.9rem' }}>{resultOil.why}</p>
+            <div className="flex gap-1" style={{ alignItems: 'center' }}>
+              <Link to={`/product/${resultOil.id}`} className="btn btn-gold btn-sm">See {resultOil.name}</Link>
+              <button type="button" className="link-btn" onClick={resetQuiz}>Start over</button>
+            </div>
+          </>
+        )}
+      </div>
+
+      <h2>Or compare all four yourself</h2>
       <p>
         Every one of these is pressed the same way — a wooden kolhu (kachi ghani), slow and
         at low temperature, with no chemical refining — so the difference between them isn't
