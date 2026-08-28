@@ -9,10 +9,10 @@ import { Link, useLocation } from 'react-router-dom';
 const SEEN_THIS_SESSION_KEY = 'yo_guide_tour_seen';
 // Lifetime cap on unprompted auto-opens specifically, persisted in
 // localStorage (unlike the session key above) so it holds across visits —
-// a returning visitor who's already seen this 3 times shouldn't keep
+// a returning visitor who's already seen this 2 times shouldn't keep
 // getting interrupted by it, though the button stays available regardless.
 const AUTO_SHOW_COUNT_KEY = 'yo_guide_tour_auto_shown_count';
-const MAX_AUTO_SHOWS = 3;
+const MAX_AUTO_SHOWS = 2;
 const SHOW_DELAY_MS = 4000;
 
 const STEPS = [
