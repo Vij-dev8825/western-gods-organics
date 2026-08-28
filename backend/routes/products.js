@@ -196,7 +196,9 @@ router.get('/batch/:batchNumber', async (req, res, next) => {
       batch: {
         productId: product.id,
         productName: product.name,
+        category: product.category,
         image: product.image,
+        batchPhoto: product.batchPhoto || null,
         sellerName: seller?.sellerBusinessName || null,
         batchNumber: product.batchNumber,
         productionDate: product.productionDate || null,

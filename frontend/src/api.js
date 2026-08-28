@@ -318,6 +318,8 @@ export const api = {
       request(`/admin/pressings/${id}/video`, { method: 'DELETE', token }),
     uploadProductVideo: (token, id, formData) =>
       request(`/admin/products/${id}/video`, { method: 'POST', formData, token }),
+    uploadBatchPhoto: (token, id, formData) =>
+      request(`/admin/products/${id}/batch-photo`, { method: 'POST', formData, token }),
 
     stats: (token) => request('/admin/stats', { token }),
     today: (token) => request('/admin/today', { token }),

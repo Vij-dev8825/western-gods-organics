@@ -10,6 +10,26 @@ function formatDate(d) {
   return d ? new Date(d).toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' }) : null;
 }
 
+/** One real sentence built only from fields this batch actually has —
+ * never a fixed template with blanks, so a batch missing grower info still
+ * reads naturally instead of leaving a gap. */
+function buildStory(batch, mill) {
+  const verb = batch.category === 'oils' ? 'pressed' : 'made';
+  const made = batch.sellerName ? `made by ${batch.sellerName}` : `made at ${mill.address}`;
+
+  if (!batch.productionDate && !batch.growerName && !batch.growerVillage) {
+    return `This is batch ${batch.batchNumber} of ${batch.productName}, ${made}.`;
+  }
+
+  const when = batch.productionDate ? ` on ${formatDate(batch.productionDate)}` : '';
+  // The village alone is worth saying when a grower asked not to be named —
+  // where it came from is still more than most labels say.
+  const grower = batch.growerName || (batch.growerVillage ? 'a grower' : '');
+  const village = batch.growerVillage ? ` in ${batch.growerVillage}` : '';
+  const from = grower ? `, from ${grower}'s harvest${village}` : '';
+  return `This ${batch.productName} was ${verb}${when}${from} — ${made}.`;
+}
+
 export default function BatchPassport() {
   const { batchNumber } = useParams();
   const [batch, setBatch] = useState(undefined); // undefined = loading, null = not found
@@ -38,60 +58,49 @@ export default function BatchPassport() {
   }
 
   const mill = STORE_LOCATIONS[0];
+  const hasDetails = batch.bestBeforeDate || batch.fssaiLicense || batch.inciIngredients || batch.labReportUrl;
 
   return (
     <div className="container section" style={{ maxWidth: 640 }}>
       <SeoMeta title={`Batch ${batch.batchNumber} — Western Gods Organics`} path={`/batch/${batch.batchNumber}`} />
       <div className="breadcrumb">Home / Batch {batch.batchNumber}</div>
-      <div className="form-card">
-        <div className="flex gap-2" style={{ alignItems: 'center', marginBottom: 16 }}>
-          <img src={getProductImage(batch.image)} alt={batch.productName} style={{ width: 64, height: 64, objectFit: 'cover', borderRadius: 'var(--radius-sm)' }} />
-          <div>
-            <span className="eyebrow">Batch passport</span>
-            <h2 style={{ margin: 0 }}>{batch.productName}</h2>
-            {batch.sellerName && <p className="muted" style={{ margin: 0, fontSize: '0.85rem' }}>by {batch.sellerName}</p>}
-          </div>
+      <div className="form-card batch-story">
+        <span className="eyebrow">The story of this batch</span>
+
+        <div className="batch-story-hero">
+          <img
+            src={batch.batchPhoto ? batch.batchPhoto : getProductImage(batch.image)}
+            alt={batch.batchPhoto ? `Batch ${batch.batchNumber} on the day it was made` : batch.productName}
+            className="batch-story-photo"
+          />
+          <p className="batch-story-lede">{buildStory(batch, mill)}</p>
         </div>
 
-        <table className="admin-table">
-          <tbody>
-            <tr><td><b>Batch number</b></td><td>{batch.batchNumber}</td></tr>
-            {batch.productionDate && <tr><td><b>Made on</b></td><td>{formatDate(batch.productionDate)}</td></tr>}
-            {batch.bestBeforeDate && <tr><td><b>Best before</b></td><td>{formatDate(batch.bestBeforeDate)}</td></tr>}
-            {/* The village alone is worth showing when a grower asked not to
-                be named — where it came from is still more than most labels
-                say. */}
-            {(batch.growerName || batch.growerVillage) && (
-              <tr>
-                <td><b>Grown by</b></td>
-                <td>
-                  {batch.growerName || 'A farmer we buy from'}
-                  {batch.growerVillage && <span className="muted">, {batch.growerVillage}</span>}
-                </td>
-              </tr>
-            )}
-            {batch.fssaiLicense && <tr><td><b>FSSAI license</b></td><td>{batch.fssaiLicense}</td></tr>}
-            {/* Our own mill only — saying a marketplace seller's product came
-                out of it would simply be untrue. */}
-            <tr><td><b>Made {batch.sellerName ? 'by' : 'at'}</b></td><td>{batch.sellerName || mill.address}</td></tr>
-            {batch.inciIngredients && <tr><td><b>Ingredients</b></td><td>{batch.inciIngredients}</td></tr>}
-          </tbody>
-        </table>
-
-        {batch.labReportUrl && (
-          <p style={{ marginTop: 16 }}>
-            <a href={batch.labReportUrl} target="_blank" rel="noreferrer" className="btn btn-outline btn-sm">
-              View lab report
-            </a>
-          </p>
-        )}
-
-        <p className="muted" style={{ marginTop: 20, fontSize: '0.85rem' }}>
-          Every batch is pressed/made in small quantities and traced back to this record — scan the
-          code on your bottle or pack anytime to check it's genuine.
+        <p className="muted" style={{ fontSize: '0.85rem' }}>
+          Batch {batch.batchNumber} — scan the code on your bottle or pack anytime to check it's genuine.
         </p>
 
-        <Link to={`/product/${batch.productId}`} className="btn btn-gold btn-sm" style={{ marginTop: 8 }}>
+        {hasDetails && (
+          <div className="batch-story-details">
+            <span className="eyebrow" style={{ fontSize: '0.68rem' }}>Batch details</span>
+            <table className="admin-table">
+              <tbody>
+                {batch.bestBeforeDate && <tr><td><b>Best before</b></td><td>{formatDate(batch.bestBeforeDate)}</td></tr>}
+                {batch.fssaiLicense && <tr><td><b>FSSAI license</b></td><td>{batch.fssaiLicense}</td></tr>}
+                {batch.inciIngredients && <tr><td><b>Ingredients</b></td><td>{batch.inciIngredients}</td></tr>}
+              </tbody>
+            </table>
+            {batch.labReportUrl && (
+              <p style={{ marginTop: 12 }}>
+                <a href={batch.labReportUrl} target="_blank" rel="noreferrer" className="btn btn-outline btn-sm">
+                  View lab report
+                </a>
+              </p>
+            )}
+          </div>
+        )}
+
+        <Link to={`/product/${batch.productId}`} className="btn btn-gold btn-sm" style={{ marginTop: 20 }}>
           View product
         </Link>
       </div>

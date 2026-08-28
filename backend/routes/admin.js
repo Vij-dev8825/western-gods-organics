@@ -522,6 +522,7 @@ router.post('/products', async (req, res, next) => {
       fssaiLicense: req.body.fssaiLicense || '',
       inciIngredients: req.body.inciIngredients || '',
       labReportUrl: req.body.labReportUrl || '',
+      batchPhoto: req.body.batchPhoto || '',
       marketPricePer100: req.body.marketPricePer100 ? Number(req.body.marketPricePer100) : null,
       // Null for every store-created product (this route) — set only by
       // POST /api/seller/products, which builds its own separate, leaner
@@ -3666,6 +3667,25 @@ router.post('/products/:id/video', acceptVideo, async (req, res, next) => {
     fs.unlink(req.file.path, () => {});
 
     await db.put('products', { ...product, video: url, updatedAt: new Date().toISOString() });
+    res.json({ success: true, url });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /api/admin/products/:id/batch-photo — multipart: file
+// A real photo from the day this batch was made, shown on its public batch
+// page (see routes/products.js GET /batch/:batchNumber and BatchPassport.jsx)
+// instead of the generic product shot. Optional — the page falls back to the
+// product photo when this is never set.
+router.post('/products/:id/batch-photo', imageUpload.single('file'), async (req, res, next) => {
+  try {
+    if (!req.file) return res.status(400).json({ success: false, message: 'Choose a photo.' });
+    const product = await db.get('products', req.params.id);
+    if (!product) return res.status(404).json({ success: false, message: 'Product not found.' });
+
+    const url = await storeUploadedFile(req.file);
+    await db.put('products', { ...product, batchPhoto: url, updatedAt: new Date().toISOString() });
     res.json({ success: true, url });
   } catch (err) {
     next(err);

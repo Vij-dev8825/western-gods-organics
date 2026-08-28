@@ -85,6 +85,7 @@ const EMPTY = {
   fssaiLicense: '',
   inciIngredients: '',
   labReportUrl: '',
+  batchPhoto: '',
   marketPricePer100: '',
 };
 
@@ -111,6 +112,7 @@ function toForm(p) {
     fssaiLicense: p.fssaiLicense || '',
     inciIngredients: p.inciIngredients || '',
     labReportUrl: p.labReportUrl || '',
+    batchPhoto: p.batchPhoto || '',
     marketPricePer100: p.marketPricePer100 ?? '',
   };
 }
@@ -163,6 +165,7 @@ export default function AdminProducts() {
   const [rates, setRates] = useState({});
   const [translating, setTranslating] = useState(false);
   const [uploadingVideo, setUploadingVideo] = useState(false);
+  const [uploadingBatchPhoto, setUploadingBatchPhoto] = useState(false);
   const [bulkTranslating, setBulkTranslating] = useState(false);
   const formRef = useRef(null);
 
@@ -250,6 +253,27 @@ export default function AdminProducts() {
       setMessage({ type: 'error', text: err.message });
     } finally {
       setUploadingVideo(false);
+    }
+  }
+
+  // Same "upload against the saved product right away" reasoning as the
+  // video above — only offered on an existing product, since the route
+  // needs an id to attach the photo to.
+  async function handleBatchPhoto(file) {
+    if (!file) return;
+    setUploadingBatchPhoto(true);
+    setMessage(null);
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      const res = await api.admin.uploadBatchPhoto(token, editing, fd);
+      setForm((f) => ({ ...f, batchPhoto: res.url }));
+      setMessage({ type: 'success', text: 'Batch photo saved on this product.' });
+      load();
+    } catch (err) {
+      setMessage({ type: 'error', text: err.message });
+    } finally {
+      setUploadingBatchPhoto(false);
     }
   }
 
@@ -790,6 +814,50 @@ export default function AdminProducts() {
                 value={form.labReportUrl}
                 onChange={(e) => setForm({ ...form, labReportUrl: e.target.value })}
               />
+            </div>
+            <div className="field">
+              <label>Batch photo (optional)</label>
+              {editing === 'new' ? (
+                <p className="muted" style={{ margin: 0, fontSize: '0.82rem' }}>
+                  Save this product first, then reopen it to add a batch photo.
+                </p>
+              ) : (
+                <div className="flex gap-1" style={{ alignItems: 'center', flexWrap: 'wrap' }}>
+                  {form.batchPhoto && (
+                    <img
+                      src={form.batchPhoto}
+                      alt="This batch"
+                      style={{ width: 64, height: 64, objectFit: 'cover', borderRadius: 6, display: 'block' }}
+                    />
+                  )}
+                  <label className={`btn btn-outline btn-sm ${uploadingBatchPhoto ? 'disabled' : ''}`}>
+                    {uploadingBatchPhoto ? 'Uploading…' : form.batchPhoto ? 'Replace photo' : 'Upload photo'}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => {
+                        const file = e.target.files[0];
+                        e.target.value = '';
+                        handleBatchPhoto(file);
+                      }}
+                      disabled={uploadingBatchPhoto}
+                      hidden
+                    />
+                  </label>
+                  {form.batchPhoto && (
+                    <button
+                      type="button"
+                      className="link-btn danger"
+                      onClick={() => setForm((f) => ({ ...f, batchPhoto: '' }))}
+                    >
+                      remove
+                    </button>
+                  )}
+                </div>
+              )}
+              <p className="muted" style={{ fontSize: '0.78rem', marginTop: 4 }}>
+                A real photo from this batch — shown on its public batch page instead of the usual product shot.
+              </p>
             </div>
             <div className="field">
               <label>Typical supermarket price, per 100ml/100g (₹)</label>
