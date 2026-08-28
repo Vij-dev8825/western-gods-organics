@@ -1991,10 +1991,74 @@ input:focus-visible + .filter-radio { outline: 2px solid var(--gold-2); outline-
   display: flex;
   gap: 14px;
   align-items: flex-start;
+  animation: howtoCardIn 0.4s ease both;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
-.howto-icon { font-size: 1.6rem; line-height: 1.2; flex-shrink: 0; }
+.howto-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-lift); }
+.howto-card:nth-child(1) { animation-delay: 0.02s; }
+.howto-card:nth-child(2) { animation-delay: 0.08s; }
+.howto-card:nth-child(3) { animation-delay: 0.14s; }
+.howto-card:nth-child(4) { animation-delay: 0.2s; }
+.howto-card:nth-child(n+5) { animation-delay: 0.24s; }
+.howto-icon { font-size: 1.6rem; line-height: 1.2; flex-shrink: 0; display: inline-block; }
+.howto-card:hover .howto-icon { animation: howtoIconPop 0.5s ease; }
 .howto-card h4 { margin: 0 0 6px; }
 .howto-card p { margin: 0 0 10px; font-size: 0.9rem; color: var(--forest-light); }
+@keyframes howtoCardIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes howtoIconPop {
+  0% { transform: scale(1) rotate(0deg); }
+  35% { transform: scale(1.25) rotate(-10deg); }
+  65% { transform: scale(1.1) rotate(8deg); }
+  100% { transform: scale(1) rotate(0deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .howto-card { animation: none; }
+  .howto-card:hover { transform: none; }
+  .howto-card:hover .howto-icon { animation: none; }
+}
+
+/* ---------- Shop Buddy mascot (How to Shop hero) ---------- */
+.howto-hero { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; flex-wrap: wrap; }
+.howto-hero-text { flex: 1; min-width: 240px; }
+.howto-buddy-dock { display: flex; flex-direction: column; align-items: center; gap: 8px; flex-shrink: 0; }
+.shop-buddy { width: 82px; height: auto; animation: buddyBounce 2.6s ease-in-out infinite; }
+.shop-buddy.shop-buddy-cheer { animation: buddyCheerBounce 0.7s ease-in-out infinite; }
+.shop-buddy-arm-right { transform-box: fill-box; transform-origin: 80px 82px; animation: buddyWaveArm 1.6s ease-in-out infinite; }
+.howto-buddy-bubble {
+  position: relative;
+  background: var(--cream-deep);
+  border: 1px solid rgba(111, 174, 79, 0.25);
+  border-radius: 14px;
+  padding: 8px 14px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--forest-light);
+  text-align: center;
+  max-width: 170px;
+  animation: buddyBubbleIn 0.3s ease both;
+}
+.howto-buddy-bubble::after {
+  content: '';
+  position: absolute;
+  top: -6px;
+  left: 50%;
+  transform: translateX(-50%);
+  border-width: 0 6px 6px;
+  border-style: solid;
+  border-color: transparent transparent var(--cream-deep);
+}
+@keyframes buddyBounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+@keyframes buddyCheerBounce { 0%, 100% { transform: translateY(0) rotate(-2deg); } 50% { transform: translateY(-10px) rotate(2deg); } }
+@keyframes buddyWaveArm { 0%, 100% { transform: rotate(0deg); } 50% { transform: rotate(-18deg); } }
+@keyframes buddyBubbleIn { from { opacity: 0; transform: translateY(6px) scale(0.96); } to { opacity: 1; transform: translateY(0) scale(1); } }
+@media (max-width: 620px) {
+  .howto-hero { justify-content: flex-start; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .shop-buddy, .shop-buddy.shop-buddy-cheer, .shop-buddy-arm-right { animation: none; }
+  .howto-buddy-bubble { animation: none; }
+}
+
 .review-mentions { margin: 4px 0 18px; font-size: 0.92rem; }
 
 .sr-only {
@@ -7213,10 +7277,74 @@ input:focus-visible + .filter-radio { outline: 2px solid var(--gold-2); outline-
   display: flex;
   gap: 14px;
   align-items: flex-start;
+  animation: howtoCardIn 0.4s ease both;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
-.howto-icon { font-size: 1.6rem; line-height: 1.2; flex-shrink: 0; }
+.howto-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-lift); }
+.howto-card:nth-child(1) { animation-delay: 0.02s; }
+.howto-card:nth-child(2) { animation-delay: 0.08s; }
+.howto-card:nth-child(3) { animation-delay: 0.14s; }
+.howto-card:nth-child(4) { animation-delay: 0.2s; }
+.howto-card:nth-child(n+5) { animation-delay: 0.24s; }
+.howto-icon { font-size: 1.6rem; line-height: 1.2; flex-shrink: 0; display: inline-block; }
+.howto-card:hover .howto-icon { animation: howtoIconPop 0.5s ease; }
 .howto-card h4 { margin: 0 0 6px; }
 .howto-card p { margin: 0 0 10px; font-size: 0.9rem; color: var(--forest-light); }
+@keyframes howtoCardIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes howtoIconPop {
+  0% { transform: scale(1) rotate(0deg); }
+  35% { transform: scale(1.25) rotate(-10deg); }
+  65% { transform: scale(1.1) rotate(8deg); }
+  100% { transform: scale(1) rotate(0deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .howto-card { animation: none; }
+  .howto-card:hover { transform: none; }
+  .howto-card:hover .howto-icon { animation: none; }
+}
+
+/* ---------- Shop Buddy mascot (How to Shop hero) ---------- */
+.howto-hero { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; flex-wrap: wrap; }
+.howto-hero-text { flex: 1; min-width: 240px; }
+.howto-buddy-dock { display: flex; flex-direction: column; align-items: center; gap: 8px; flex-shrink: 0; }
+.shop-buddy { width: 82px; height: auto; animation: buddyBounce 2.6s ease-in-out infinite; }
+.shop-buddy.shop-buddy-cheer { animation: buddyCheerBounce 0.7s ease-in-out infinite; }
+.shop-buddy-arm-right { transform-box: fill-box; transform-origin: 80px 82px; animation: buddyWaveArm 1.6s ease-in-out infinite; }
+.howto-buddy-bubble {
+  position: relative;
+  background: var(--cream-deep);
+  border: 1px solid rgba(111, 174, 79, 0.25);
+  border-radius: 14px;
+  padding: 8px 14px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--forest-light);
+  text-align: center;
+  max-width: 170px;
+  animation: buddyBubbleIn 0.3s ease both;
+}
+.howto-buddy-bubble::after {
+  content: '';
+  position: absolute;
+  top: -6px;
+  left: 50%;
+  transform: translateX(-50%);
+  border-width: 0 6px 6px;
+  border-style: solid;
+  border-color: transparent transparent var(--cream-deep);
+}
+@keyframes buddyBounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+@keyframes buddyCheerBounce { 0%, 100% { transform: translateY(0) rotate(-2deg); } 50% { transform: translateY(-10px) rotate(2deg); } }
+@keyframes buddyWaveArm { 0%, 100% { transform: rotate(0deg); } 50% { transform: rotate(-18deg); } }
+@keyframes buddyBubbleIn { from { opacity: 0; transform: translateY(6px) scale(0.96); } to { opacity: 1; transform: translateY(0) scale(1); } }
+@media (max-width: 620px) {
+  .howto-hero { justify-content: flex-start; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .shop-buddy, .shop-buddy.shop-buddy-cheer, .shop-buddy-arm-right { animation: none; }
+  .howto-buddy-bubble { animation: none; }
+}
+
 .review-mentions { margin: 4px 0 18px; font-size: 0.92rem; }
 
 .sr-only {

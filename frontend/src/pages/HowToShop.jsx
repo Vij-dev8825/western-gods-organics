@@ -13,10 +13,13 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import SeoMeta from '../components/SeoMeta';
 import ChakkiWheel from '../components/ChakkiWheel';
+import ShopBuddy from '../components/ShopBuddy';
+import Confetti from '../components/Confetti';
 
 const STEPS = [
   {
     title: 'Find what you want',
+    mascotLine: "Let's find your first product!",
     intro: 'Three ways in — pick whichever suits how much you already know.',
     items: [
       {
@@ -42,6 +45,7 @@ const STEPS = [
   },
   {
     title: 'Pick your size',
+    mascotLine: 'Which size fits you best?',
     intro: 'Every product page shows the same real numbers — no guessing.',
     items: [
       {
@@ -68,6 +72,7 @@ const STEPS = [
   },
   {
     title: 'Add it to your cart',
+    mascotLine: 'Add it up whenever you’re ready.',
     intro: "Two ways to move forward, depending on whether you're still browsing.",
     items: [
       {
@@ -89,6 +94,7 @@ const STEPS = [
   },
   {
     title: 'Check out — no account required',
+    mascotLine: 'Almost there — just a phone number needed.',
     intro: 'A one-time code, not a password, and only if you want one at all.',
     items: [
       {
@@ -110,6 +116,7 @@ const STEPS = [
   },
   {
     title: 'Pay however suits you',
+    mascotLine: 'Pick whatever payment feels easiest.',
     intro: 'Three ways to pay, all on the same checkout screen.',
     items: [
       {
@@ -131,6 +138,7 @@ const STEPS = [
   },
   {
     title: "You've ordered — here's what happens next",
+    mascotLine: "You did it! Here's what happens now.",
     intro: 'Everything after checkout, in one place.',
     items: [
       {
@@ -170,17 +178,27 @@ export default function HowToShop() {
         path="/how-to-shop"
       />
       <div className="breadcrumb">Home / How to Shop &amp; Buy</div>
-      <div className="flex gap-2" style={{ alignItems: 'center', marginBottom: 4 }}>
-        <ChakkiWheel size={40} />
-        <span className="eyebrow" style={{ margin: 0 }}>New here?</span>
+
+      <div className="howto-hero">
+        <div className="howto-hero-text">
+          <div className="flex gap-2" style={{ alignItems: 'center', marginBottom: 4 }}>
+            <ChakkiWheel size={40} />
+            <span className="eyebrow" style={{ margin: 0 }}>New here?</span>
+          </div>
+          <h1>How to shop and buy, step by step</h1>
+          <p className="muted" style={{ maxWidth: 640, marginBottom: 8 }}>
+            Six steps from finding a product to it arriving. Looking for something else this
+            site can do? Try{' '}
+            <Link to="/getting-started">Getting Started</Link> or{' '}
+            <Link to="/how-to-use">the full reference</Link> instead.
+          </p>
+        </div>
+        <div className="howto-buddy-dock">
+          <div key={step} className="howto-buddy-bubble">{current.mascotLine}</div>
+          <ShopBuddy mood={isLast ? 'cheer' : 'wave'} className={isLast ? 'shop-buddy-cheer' : ''} />
+        </div>
       </div>
-      <h1>How to shop and buy, step by step</h1>
-      <p className="muted" style={{ maxWidth: 640, marginBottom: 8 }}>
-        Six steps from finding a product to it arriving. Looking for something else this
-        site can do? Try{' '}
-        <Link to="/getting-started">Getting Started</Link> or{' '}
-        <Link to="/how-to-use">the full reference</Link> instead.
-      </p>
+      {isLast && <Confetti key="how-to-shop-complete" />}
 
       <div className="getting-started-rail" role="progressbar" aria-valuenow={step + 1} aria-valuemin={1} aria-valuemax={total}>
         {STEPS.map((s, i) => (
