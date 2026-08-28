@@ -59,6 +59,11 @@ const STEPS = [
         title: 'Verify a batch before you buy',
         text: "If you're re-ordering something you liked, the batch code on your last bottle opens its own page — pressing date, source farm, everything.",
       },
+      {
+        icon: '📦',
+        title: 'Check your real delivery date first',
+        text: 'Enter your pincode on the product page for actual calendar dates, not a generic "3-5 days" — worked out from today, skipping weekends.',
+      },
     ],
   },
   {
@@ -131,7 +136,7 @@ const STEPS = [
       {
         icon: '📦',
         title: 'Track it from My Orders',
-        text: 'Real status updates, not just "processing" — and WhatsApp updates if you\'d rather not check back.',
+        text: 'A visual step tracker — placed, confirmed, shipped, delivered — not just a word like "processing", plus WhatsApp updates if you\'d rather not check back.',
         to: '/orders',
         cta: 'View my orders',
       },
