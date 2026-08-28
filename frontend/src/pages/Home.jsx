@@ -230,7 +230,7 @@ export default function Home() {
           flowers={shopFlowers}
           variant="hero"
         />
-        <div className="hero-video-content container">
+        <Reveal as="div" className="hero-video-content container">
           <span className="eyebrow light">{t('heroEyebrow')}</span>
           <h1>{heroTitle}</h1>
           <p className="lede">{heroSub}</p>
@@ -258,7 +258,7 @@ export default function Home() {
               ))}
             </div>
           )}
-        </div>
+        </Reveal>
       </section>
 
       {/* ---------- USP strip ---------- */}
@@ -273,6 +273,22 @@ export default function Home() {
               </div>
             </div>
           ))}
+        </div>
+      </Reveal>
+
+      {/* ---------- How to use this site ---------- */}
+      <Reveal as="section" className="section container">
+        <div className="howto-callout-inner">
+          <ChakkiWheel size={48} />
+          <div>
+            <span className="eyebrow">New here?</span>
+            <h2 style={{ margin: '4px 0 6px' }}>See everything this site can do for you</h2>
+            <p className="muted" style={{ margin: '0 0 14px', maxWidth: 480 }}>
+              The AI assistant, batch lookup, subscriptions, loyalty points and more —
+              one page walks through all of it.
+            </p>
+            <Link to="/how-to-use" className="btn btn-gold">How to Use This Site</Link>
+          </div>
         </div>
       </Reveal>
 

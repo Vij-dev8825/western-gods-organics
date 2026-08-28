@@ -27,6 +27,7 @@ import { useToast } from '../../context/ToastContext';
 import { SHOW_WITHIN_DAYS, themeFor } from './registry';
 import FestivalDancers from './FestivalDancers';
 import { useFestivalContext } from './FestivalContext';
+import Reveal from '../Reveal';
 import '../../styles/festival.css';
 
 const DONE_KEY = 'wg_festival_done';
@@ -135,7 +136,8 @@ export default function FestivalCelebration() {
         : 'Today';
 
   return (
-    <section
+    <Reveal
+      as="section"
       className={`fest${complete ? ' is-complete' : ''}`}
       style={{
         '--f-ink': palette.ink,
@@ -212,6 +214,6 @@ export default function FestivalCelebration() {
           <FestivalDancers theme={theme} animation={animation} characters={characters} />
         </div>
       </div>
-    </section>
+    </Reveal>
   );
 }
