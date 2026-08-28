@@ -16,6 +16,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import ChatWidget from './components/ChatWidget';
 import WhatsAppButton from './components/WhatsAppButton';
 import AiAssistant from './components/AiAssistant';
+import GuideTour from './components/GuideTour';
 import PromoPopup from './components/PromoPopup';
 import CookieConsent from './components/CookieConsent';
 import PushOptIn from './components/PushOptIn';
@@ -188,6 +189,7 @@ function StoreLayout() {
       <Footer />
       <ChatWidget />
       <AiAssistant />
+      <GuideTour />
       <WhatsAppButton />
       <WelcomeSelector />
       <PromoPopup />

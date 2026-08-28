@@ -1948,6 +1948,36 @@ input:focus-visible + .filter-radio { outline: 2px solid var(--gold-2); outline-
 .getting-started-dot.is-done { background: var(--gold-1); opacity: 0.5; }
 .getting-started-dot.is-current { background: var(--gold-1); opacity: 1; }
 .getting-started-nav { margin-top: 32px; }
+
+/* ---------- Guide tour (floating on-page popup) ---------- */
+/* Stacked above ai-assistant-fab (90px + 56px + 10px gap), same convention
+   that fab's own comment documents relative to chat-fab. Needs !important on
+   every rule here, not just this base one — ai-assistant-fab's own base rule
+   has equal specificity to this base rule, so without matching !important on
+   the state overrides below, this base rule would keep winning over them. */
+.guide-tour-fab { bottom: 156px !important; }
+.guide-tour-panel { bottom: 224px !important; height: auto; max-height: 70vh; }
+.guide-tour-body { padding: 16px 18px; overflow-y: auto; }
+.guide-tour-dots { display: flex; gap: 6px; margin-bottom: 14px; }
+.guide-tour-dot {
+  flex: 1;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--cream-deep);
+  transition: background 0.2s ease, opacity 0.2s ease;
+}
+.guide-tour-dot.is-done { background: var(--gold-1); opacity: 0.5; }
+.guide-tour-dot.is-current { background: var(--gold-1); opacity: 1; }
+.guide-tour-step { text-align: left; }
+.guide-tour-icon { font-size: 1.8rem; display: block; margin-bottom: 8px; }
+.guide-tour-step h4 { margin: 0 0 6px; }
+.guide-tour-step p { margin: 0 0 12px; font-size: 0.9rem; color: var(--forest-light); }
+.guide-tour-nav { display: flex; justify-content: space-between; padding: 12px 18px; border-top: 1px solid rgba(111, 174, 79, 0.2); }
+
+@media (max-width: 720px) {
+  .guide-tour-fab { bottom: 136px !important; width: 50px; height: 50px; font-size: 1.2rem; }
+  .guide-tour-panel { bottom: 194px !important; }
+}
 .howto-group > .eyebrow { display: block; margin-bottom: 14px; }
 .howto-grid {
   display: grid;
@@ -4972,6 +5002,10 @@ body.has-cookie-bar .chat-fab { bottom: calc(var(--cookie-bar-height, 0px) + 16p
 body.has-cookie-bar .push-optin { bottom: calc(var(--cookie-bar-height, 0px) + 82px); }
 body.has-cookie-bar .whatsapp-fab { bottom: calc(var(--cookie-bar-height, 0px) + 16px); }
 body.has-cookie-bar .ai-assistant-fab { bottom: calc(var(--cookie-bar-height, 0px) + 82px); }
+/* Same +66px gap above ai-assistant-fab as the base rule, carried through
+   this state too — !important to beat guide-tour-fab's own base rule, which
+   needed !important in the first place to beat ai-assistant-fab's base rule. */
+body.has-cookie-bar .guide-tour-fab { bottom: calc(var(--cookie-bar-height, 0px) + 148px) !important; }
 body.has-cookie-bar .back-to-top { bottom: calc(var(--cookie-bar-height, 0px) + 148px); }
 body.has-cookie-bar .install-prompt { bottom: calc(var(--cookie-bar-height, 0px) + 270px); }
 
@@ -4987,6 +5021,7 @@ body.has-cookie-bar .install-prompt { bottom: calc(var(--cookie-bar-height, 0px)
   body.buy-bar-up .whatsapp-fab { bottom: calc(var(--cookie-bar-height, 0px) + 16px + var(--buy-bar-height)); }
   body.buy-bar-up .push-optin,
   body.buy-bar-up .ai-assistant-fab { bottom: calc(var(--cookie-bar-height, 0px) + 82px + var(--buy-bar-height)); }
+  body.buy-bar-up .guide-tour-fab { bottom: calc(var(--cookie-bar-height, 0px) + 82px + var(--buy-bar-height) + 66px) !important; }
   body.buy-bar-up .back-to-top { bottom: calc(var(--cookie-bar-height, 0px) + 148px + var(--buy-bar-height)); }
   body.buy-bar-up .ai-assistant-panel { bottom: calc(var(--cookie-bar-height, 0px) + 158px + var(--buy-bar-height)) !important; }
 }
@@ -7135,6 +7170,36 @@ input:focus-visible + .filter-radio { outline: 2px solid var(--gold-2); outline-
 .getting-started-dot.is-done { background: var(--gold-1); opacity: 0.5; }
 .getting-started-dot.is-current { background: var(--gold-1); opacity: 1; }
 .getting-started-nav { margin-top: 32px; }
+
+/* ---------- Guide tour (floating on-page popup) ---------- */
+/* Stacked above ai-assistant-fab (90px + 56px + 10px gap), same convention
+   that fab's own comment documents relative to chat-fab. Needs !important on
+   every rule here, not just this base one — ai-assistant-fab's own base rule
+   has equal specificity to this base rule, so without matching !important on
+   the state overrides below, this base rule would keep winning over them. */
+.guide-tour-fab { bottom: 156px !important; }
+.guide-tour-panel { bottom: 224px !important; height: auto; max-height: 70vh; }
+.guide-tour-body { padding: 16px 18px; overflow-y: auto; }
+.guide-tour-dots { display: flex; gap: 6px; margin-bottom: 14px; }
+.guide-tour-dot {
+  flex: 1;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--cream-deep);
+  transition: background 0.2s ease, opacity 0.2s ease;
+}
+.guide-tour-dot.is-done { background: var(--gold-1); opacity: 0.5; }
+.guide-tour-dot.is-current { background: var(--gold-1); opacity: 1; }
+.guide-tour-step { text-align: left; }
+.guide-tour-icon { font-size: 1.8rem; display: block; margin-bottom: 8px; }
+.guide-tour-step h4 { margin: 0 0 6px; }
+.guide-tour-step p { margin: 0 0 12px; font-size: 0.9rem; color: var(--forest-light); }
+.guide-tour-nav { display: flex; justify-content: space-between; padding: 12px 18px; border-top: 1px solid rgba(111, 174, 79, 0.2); }
+
+@media (max-width: 720px) {
+  .guide-tour-fab { bottom: 136px !important; width: 50px; height: 50px; font-size: 1.2rem; }
+  .guide-tour-panel { bottom: 194px !important; }
+}
 .howto-group > .eyebrow { display: block; margin-bottom: 14px; }
 .howto-grid {
   display: grid;
@@ -10159,6 +10224,10 @@ body.has-cookie-bar .chat-fab { bottom: calc(var(--cookie-bar-height, 0px) + 16p
 body.has-cookie-bar .push-optin { bottom: calc(var(--cookie-bar-height, 0px) + 82px); }
 body.has-cookie-bar .whatsapp-fab { bottom: calc(var(--cookie-bar-height, 0px) + 16px); }
 body.has-cookie-bar .ai-assistant-fab { bottom: calc(var(--cookie-bar-height, 0px) + 82px); }
+/* Same +66px gap above ai-assistant-fab as the base rule, carried through
+   this state too — !important to beat guide-tour-fab's own base rule, which
+   needed !important in the first place to beat ai-assistant-fab's base rule. */
+body.has-cookie-bar .guide-tour-fab { bottom: calc(var(--cookie-bar-height, 0px) + 148px) !important; }
 body.has-cookie-bar .back-to-top { bottom: calc(var(--cookie-bar-height, 0px) + 148px); }
 body.has-cookie-bar .install-prompt { bottom: calc(var(--cookie-bar-height, 0px) + 270px); }
 
@@ -10174,6 +10243,7 @@ body.has-cookie-bar .install-prompt { bottom: calc(var(--cookie-bar-height, 0px)
   body.buy-bar-up .whatsapp-fab { bottom: calc(var(--cookie-bar-height, 0px) + 16px + var(--buy-bar-height)); }
   body.buy-bar-up .push-optin,
   body.buy-bar-up .ai-assistant-fab { bottom: calc(var(--cookie-bar-height, 0px) + 82px + var(--buy-bar-height)); }
+  body.buy-bar-up .guide-tour-fab { bottom: calc(var(--cookie-bar-height, 0px) + 82px + var(--buy-bar-height) + 66px) !important; }
   body.buy-bar-up .back-to-top { bottom: calc(var(--cookie-bar-height, 0px) + 148px + var(--buy-bar-height)); }
   body.buy-bar-up .ai-assistant-panel { bottom: calc(var(--cookie-bar-height, 0px) + 158px + var(--buy-bar-height)) !important; }
 }
