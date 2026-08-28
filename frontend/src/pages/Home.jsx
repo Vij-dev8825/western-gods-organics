@@ -5,6 +5,7 @@ import ProductCard from '../components/ProductCard';
 import ProductGridSkeleton from '../components/ProductCardSkeleton';
 import SectionDivider from '../components/SectionDivider';
 import Reveal from '../components/Reveal';
+import LetterReveal from '../components/LetterReveal';
 import ChakkiWheel from '../components/ChakkiWheel';
 import GoogleReviewsWidget from '../components/GoogleReviewsWidget';
 import UgcGallery from '../components/UgcGallery';
@@ -232,7 +233,7 @@ export default function Home() {
         />
         <Reveal as="div" className="hero-video-content container">
           <span className="eyebrow light">{t('heroEyebrow')}</span>
-          <h1>{heroTitle}</h1>
+          <h1><LetterReveal text={heroTitle} staggerMs={18} /></h1>
           <p className="lede">{heroSub}</p>
           <div className="hero-cta">
             <Link to="/shop" className="btn btn-gold">{t('shopAllOils')}</Link>

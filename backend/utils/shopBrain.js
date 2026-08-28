@@ -151,15 +151,16 @@ async function loadShop() {
   const now = Date.now();
   if (cache.data && cache.expiresAt > now) return cache.data;
 
-  const [products, shipping, payments, coupons, festivals] = await Promise.all([
+  const [products, shipping, payments, coupons, festivals, reviews] = await Promise.all([
     db.list('products'),
     getShippingSettings(),
     getPaymentMethodsConfig(),
     db.list('coupons'),
     listUpcoming({ limit: 3 }).catch(() => []),
+    db.list('reviews').catch(() => []),
   ]);
 
-  const data = { products, shipping, payments, coupons, festivals };
+  const data = { products, shipping, payments, coupons, festivals, reviews };
   cache = { data, expiresAt: now + CACHE_TTL_MS };
   return data;
 }
@@ -463,6 +464,80 @@ function about(text) {
   );
 }
 
+const REVIEW_STOPWORDS = new Set([
+  'the', 'and', 'for', 'with', 'was', 'this', 'that', 'have', 'has', 'not', 'but', 'are',
+  'you', 'your', 'from', 'very', 'good', 'nice', 'great', 'product', 'use', 'used', 'after',
+  'all', 'just', 'also', 'get', 'got', 'its', 'my', 'our', 'out', 'been', 'were', 'when',
+  'than', 'then', 'they', 'them', 'will', 'would', 'could', 'about', 'really',
+]);
+
+/**
+ * Top few words mentioned by at least two different reviewers, excluding the
+ * product's own name so "castor" or "oil" doesn't win every time — this is
+ * meant to surface what people say beyond the fact that it's the product they
+ * bought. Counts each word once per review (not per occurrence), so one
+ * gushing review can't dominate the tally on its own. Returns null rather
+ * than guessing when there isn't enough real text to say anything honest.
+ */
+function summarizeProductReviews(product, reviews) {
+  const nameWords = new Set(tokenise(product.name));
+  const withText = reviews.filter(
+    (r) => r.productId === product.id && r.text && r.text.trim().length > 10
+  );
+  if (withText.length < 3) return null;
+
+  const freq = new Map();
+  for (const r of withText) {
+    const words = r.text.toLowerCase().replace(/[^a-z\s]/g, ' ').split(/\s+/).filter(Boolean);
+    const seenInThisReview = new Set();
+    for (const w of words) {
+      if (w.length < 4 || REVIEW_STOPWORDS.has(w) || nameWords.has(w) || seenInThisReview.has(w)) continue;
+      seenInThisReview.add(w);
+      freq.set(w, (freq.get(w) || 0) + 1);
+    }
+  }
+  const top = [...freq.entries()]
+    .filter(([, count]) => count >= 2)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 3)
+    .map(([w]) => w);
+  return top.length ? top : null;
+}
+
+function reviewsInsight(text, tokens, shop) {
+  if (
+    !hasAny(text, [
+      'review', 'reviews', 'what do people say', 'what do customers say', 'customers say',
+      'feedback', 'is it good', 'worth buying', 'worth it', 'people think',
+    ])
+  ) {
+    return UNSURE;
+  }
+
+  const [product] = findProducts(shop.products, tokens, 1);
+  if (!product) {
+    return reply(
+      'Tell me which product you mean and I can tell you what reviewers actually say about it.',
+      [],
+      ['Show me your bestsellers']
+    );
+  }
+
+  const mentions = summarizeProductReviews(product, shop.reviews || []);
+  const ratingLine =
+    product.rating && product.reviewsCount
+      ? `${product.name} is rated ${product.rating}/5 from ${product.reviewsCount} review${product.reviewsCount === 1 ? '' : 's'}.`
+      : `${product.name} doesn't have enough reviews yet to rate.`;
+
+  return reply(
+    mentions
+      ? `${ratingLine} Customers often mention: ${mentions.join(', ')}.`
+      : `${ratingLine} Not enough review text yet to say what people mention most.`,
+    [product],
+    ['Which size is best value?', 'Is it in stock?']
+  );
+}
+
 function contact(text) {
   if (!hasAny(text, ['contact', 'phone', 'call', 'whatsapp', 'email', 'reach you', 'talk to'])) {
     return UNSURE;
@@ -628,6 +703,7 @@ async function answer(message, history = [], user = null) {
     () => subscription(text),
     () => about(text),
     () => contact(text),
+    () => reviewsInsight(text, tokens, shop),
     () => stock(text, tokens, shop),
     () => priceQuery(text, tokens, shop),
     () => byConcern(text, tokens, shop),

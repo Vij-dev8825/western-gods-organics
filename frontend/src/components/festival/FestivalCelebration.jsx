@@ -28,6 +28,7 @@ import { SHOW_WITHIN_DAYS, themeFor } from './registry';
 import FestivalDancers from './FestivalDancers';
 import { useFestivalContext } from './FestivalContext';
 import Reveal from '../Reveal';
+import { renderFestivalCard, shareOrDownload } from './shareCard';
 import '../../styles/festival.css';
 
 const DONE_KEY = 'wg_festival_done';
@@ -60,6 +61,7 @@ export default function FestivalCelebration() {
   const { showToast } = useToast();
   const [festival, setFestival] = useState(null);
   const [filled, setFilled] = useState(0);
+  const [sharing, setSharing] = useState(false);
 
   useEffect(() => {
     let alive = true;
@@ -120,6 +122,30 @@ export default function FestivalCelebration() {
 
   const { Motif, palette } = theme;
   const pct = Math.round((filled / theme.steps) * 100);
+
+  async function handleShare() {
+    setSharing(true);
+    try {
+      const blob = await renderFestivalCard({
+        eyebrow: theme.eyebrow,
+        greeting: theme.greeting,
+        lede: theme.lede,
+        label: theme.label,
+        palette,
+      });
+      const result = await shareOrDownload(
+        blob,
+        `${theme.label || 'festival'}-western-gods-organics.png`.replace(/\s+/g, '-').toLowerCase(),
+        theme.greeting
+      );
+      if (result.ok && result.method === 'download') showToast('Saved — share it however you like.');
+      else if (!result.ok) showToast(result.error || 'Could not create the card.', 'error');
+    } catch (err) {
+      showToast(err.message || 'Could not create the card.', 'error');
+    } finally {
+      setSharing(false);
+    }
+  }
 
   /* Once a multi-day festival has begun, where you are in it is the useful
      thing to say — "day 3 of 10" beats a countdown to a day that may already
@@ -202,6 +228,9 @@ export default function FestivalCelebration() {
             <Link className="btn btn-outline btn-sm" to="/festivals">
               Festival calendar
             </Link>
+            <button type="button" className="btn btn-outline btn-sm" onClick={handleShare} disabled={sharing}>
+              {sharing ? 'Making card…' : 'Share this card'}
+            </button>
           </div>
         </div>
 

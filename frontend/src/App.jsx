@@ -149,8 +149,9 @@ function NotFound() {
 function StoreLayout() {
   const { t } = useLang();
   const { theme: festivalTheme, festival, animation, flowers } = useNearestFestival();
+  const location = useLocation();
   // Only needed so "home page only" can mean the whole home page.
-  const onHome = useLocation().pathname === '/';
+  const onHome = location.pathname === '/';
   // The floating buttons step aside while the page scrolls down; here rather
   // than in each button so all three move together and there's one listener.
   useFabAutoHide();
@@ -174,7 +175,12 @@ function StoreLayout() {
             here suspends only this <Outlet>, so the navbar/footer/announce
             bar stay on screen instead of the whole shell blanking out. */}
         <Suspense fallback={<RouteFallback />}>
-          <Outlet />
+          {/* Keyed by path so React remounts this div (and restarts the fade)
+              on every storefront navigation, without touching the Admin/
+              Seller layouts, which have their own separate Outlets. */}
+          <div key={location.pathname} className="page-fade">
+            <Outlet />
+          </div>
         </Suspense>
       </main>
       <Footer />

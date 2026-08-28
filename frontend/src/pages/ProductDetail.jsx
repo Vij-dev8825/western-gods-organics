@@ -32,6 +32,8 @@ import { flyToCart } from '../utils/flyToCart';
 import { useReveal } from '../hooks/useReveal';
 import FadeImage from '../components/FadeImage';
 import { HERO_CLASS, flipFrom } from '../utils/viewTransition';
+import { summarizeMentions } from '../utils/reviewMentions';
+import { getRecentlyViewedIds } from '../utils/recentlyViewed';
 
 const SUBSCRIPTION_DISCOUNT_PERCENT = 10;
 const MIN_FREQUENCY_DAYS = 7;
@@ -151,6 +153,7 @@ export default function ProductDetail() {
   const location = useLocation();
   const [product, setProduct] = useState(null);
   const [related, setRelated] = useState([]);
+  const [recentlyViewed, setRecentlyViewed] = useState([]);
   const [guides, setGuides] = useState([]);
   const [reviews, setReviews] = useState([]);
   const [size, setSize] = useState(null);
@@ -294,6 +297,19 @@ export default function ProductDetail() {
         .getProducts({ combo: true }, token)
         .then((r) => setKits(r.products.filter((p) => p.comboProductIds?.includes(d.product.id))))
         .catch(() => {});
+
+      // Recorded above via recordProductView — read back after, so this
+      // product itself (just added to the list) is excluded from its own tray.
+      const seenIds = getRecentlyViewedIds().filter((pid) => pid !== d.product.id);
+      if (seenIds.length) {
+        api
+          .getProducts({}, token)
+          .then((r) => {
+            const byId = new Map(r.products.map((p) => [p.id, p]));
+            setRecentlyViewed(seenIds.map((pid) => byId.get(pid)).filter(Boolean).slice(0, 4));
+          })
+          .catch(() => {});
+      }
     });
     api.getReviews(id).then((d) => setReviews(d.reviews)).catch(() => {});
     api.getProductQuestions(id).then((d) => setQuestions(d.questions)).catch(() => {});
@@ -1138,6 +1154,18 @@ export default function ProductDetail() {
           </div>
         )}
 
+        {/* Derived from the same reviews already loaded above — no extra
+            request. Only shown once there's enough real text to say
+            something honest; see utils/reviewMentions.js. */}
+        {(() => {
+          const mentions = product ? summarizeMentions(reviews, product.name) : null;
+          return mentions ? (
+            <p className="muted review-mentions">
+              Customers often mention: <b>{mentions.join(', ')}</b>
+            </p>
+          ) : null;
+        })()}
+
         {isLoggedIn ? (
           <form className="review-form" onSubmit={handleSubmitReview}>
             <label className="muted" style={{ fontSize: '0.85rem' }}>
@@ -1306,6 +1334,18 @@ export default function ProductDetail() {
           <h2>You might also like</h2>
           <div className="grid">
             {related.map((p) => (
+              <ProductCard key={p.id} product={p} />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ---------- Recently viewed ---------- */}
+      {recentlyViewed.length > 0 && (
+        <div className="related-section">
+          <h2>Recently viewed</h2>
+          <div className="grid">
+            {recentlyViewed.map((p) => (
               <ProductCard key={p.id} product={p} />
             ))}
           </div>
