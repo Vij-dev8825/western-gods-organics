@@ -166,8 +166,9 @@ export default function GiftCards() {
         </div>
         {amount === 'custom' && (
           <div className="field" style={{ maxWidth: 220 }}>
-            <label>Amount (₹{minAmount}–₹{maxAmount})</label>
+            <label htmlFor="giftcard-custom-amount">Amount (₹{minAmount}–₹{maxAmount})</label>
             <input
+              id="giftcard-custom-amount"
               type="number"
               min={minAmount}
               max={maxAmount}
@@ -187,21 +188,22 @@ export default function GiftCards() {
           <>
             <div className="form-grid">
               <div className="field">
-                <label>Recipient's name (optional)</label>
-                <input value={recipientName} onChange={(e) => setRecipientName(e.target.value)} placeholder="e.g. Priya" />
+                <label htmlFor="giftcard-recipient-name">Recipient's name (optional)</label>
+                <input id="giftcard-recipient-name" value={recipientName} onChange={(e) => setRecipientName(e.target.value)} placeholder="e.g. Priya" />
               </div>
               <div className="field">
-                <label>Recipient's email (optional)</label>
-                <input type="email" value={recipientEmail} onChange={(e) => setRecipientEmail(e.target.value)} placeholder="priya@example.com" />
+                <label htmlFor="giftcard-recipient-email">Recipient's email (optional)</label>
+                <input id="giftcard-recipient-email" type="email" value={recipientEmail} onChange={(e) => setRecipientEmail(e.target.value)} placeholder="priya@example.com" />
               </div>
               <div className="field">
-                <label>Recipient's WhatsApp number (optional)</label>
-                <input value={recipientPhone} onChange={(e) => setRecipientPhone(e.target.value)} placeholder="+91 98765 43210" />
+                <label htmlFor="giftcard-recipient-phone">Recipient's WhatsApp number (optional)</label>
+                <input id="giftcard-recipient-phone" value={recipientPhone} onChange={(e) => setRecipientPhone(e.target.value)} placeholder="+91 98765 43210" />
               </div>
             </div>
             <div className="field">
-              <label>Personal message (optional)</label>
+              <label htmlFor="giftcard-message">Personal message (optional)</label>
               <textarea
+                id="giftcard-message"
                 rows={3}
                 maxLength={500}
                 value={message}

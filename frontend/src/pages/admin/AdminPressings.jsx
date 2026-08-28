@@ -169,8 +169,9 @@ export default function AdminPressings() {
       <form className="card" style={{ padding: 18, margin: '18px 0', maxWidth: 640 }} onSubmit={handleCreate}>
         <h4 style={{ marginTop: 0 }}>Schedule a pressing</h4>
         <div className="field">
-          <label>Product</label>
+          <label htmlFor="pressing-product">Product</label>
           <select
+            id="pressing-product"
             required
             value={form.productId}
             onChange={(e) => setForm({ ...form, productId: e.target.value, size: '' })}
@@ -180,8 +181,9 @@ export default function AdminPressings() {
           </select>
         </div>
         <div className="field">
-          <label>Size</label>
+          <label htmlFor="pressing-size">Size</label>
           <select
+            id="pressing-size"
             required
             value={form.size}
             disabled={!selectedProduct}
@@ -194,8 +196,9 @@ export default function AdminPressings() {
           </select>
         </div>
         <div className="field">
-          <label>Pressing date</label>
+          <label htmlFor="pressing-date">Pressing date</label>
           <input
+            id="pressing-date"
             type="date"
             required
             value={form.pressDate}
@@ -203,8 +206,9 @@ export default function AdminPressings() {
           />
         </div>
         <div className="field">
-          <label>Bottles this run will yield</label>
+          <label htmlFor="pressing-units-offered">Bottles this run will yield</label>
           <input
+            id="pressing-units-offered"
             type="number"
             min={1}
             required
@@ -213,8 +217,9 @@ export default function AdminPressings() {
           />
         </div>
         <div className="field">
-          <label>Note for customers (optional)</label>
+          <label htmlFor="pressing-note">Note for customers (optional)</label>
           <input
+            id="pressing-note"
             maxLength={300}
             placeholder="e.g. First cold press of the season, from the Vedapatti groundnut harvest"
             value={form.note}
@@ -258,6 +263,7 @@ export default function AdminPressings() {
                     {editingId === p.id ? (
                       <input
                         type="date"
+                        aria-label="Pressing date"
                         value={editForm.pressDate}
                         onChange={(e) => setEditForm({ ...editForm, pressDate: e.target.value })}
                         style={{ minWidth: 132 }}
@@ -272,6 +278,7 @@ export default function AdminPressings() {
                         <b>{p.reserved}</b> /{' '}
                         <input
                           type="number"
+                          aria-label="Bottles this run will yield"
                           min={p.reserved || 1}
                           value={editForm.unitsOffered}
                           onChange={(e) => setEditForm({ ...editForm, unitsOffered: e.target.value })}
@@ -325,6 +332,7 @@ export default function AdminPressings() {
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 6, minWidth: 200 }}>
                         <input
                           placeholder="Note for customers (optional)"
+                          aria-label="Note for customers"
                           maxLength={300}
                           value={editForm.note}
                           onChange={(e) => setEditForm({ ...editForm, note: e.target.value })}

@@ -41,16 +41,16 @@ export default function WelcomeSelector() {
         <p className="muted">{t('welcomeSelectorSub')}</p>
 
         <div className="field">
-          <label>{t('welcomeSelectorLangLabel')}</label>
-          <select className="select" value={selectedLang} onChange={(e) => setSelectedLang(e.target.value)}>
+          <label htmlFor="welcome-selector-lang">{t('welcomeSelectorLangLabel')}</label>
+          <select id="welcome-selector-lang" className="select" value={selectedLang} onChange={(e) => setSelectedLang(e.target.value)}>
             {LANGS.map((l) => (
               <option key={l.code} value={l.code}>{l.label}</option>
             ))}
           </select>
         </div>
         <div className="field">
-          <label>{t('welcomeSelectorRegionLabel')}</label>
-          <select className="select" value={selectedCountry} onChange={(e) => setSelectedCountry(e.target.value)}>
+          <label htmlFor="welcome-selector-region">{t('welcomeSelectorRegionLabel')}</label>
+          <select id="welcome-selector-region" className="select" value={selectedCountry} onChange={(e) => setSelectedCountry(e.target.value)}>
             {countries.map((c) => (
               <option key={c.code} value={c.code}>{countryFlagEmoji(c.code)} {c.label}</option>
             ))}

@@ -100,8 +100,8 @@ export default function AdminInvoice() {
         <h4 style={{ marginTop: 0 }}>Business details</h4>
         {FIELDS.map((f) => (
           <div className="field" key={f.key}>
-            <label>{f.label}</label>
-            <input value={settings[f.key] || ''} onChange={(e) => set(f.key, e.target.value)} />
+            <label htmlFor={`invoice-field-${f.key}`}>{f.label}</label>
+            <input id={`invoice-field-${f.key}`} value={settings[f.key] || ''} onChange={(e) => set(f.key, e.target.value)} />
             {f.hint && <span className="muted" style={{ fontSize: '0.78rem' }}>{f.hint}</span>}
           </div>
         ))}
@@ -129,8 +129,9 @@ export default function AdminInvoice() {
           ))}
         </div>
         <div className="field" style={{ marginTop: 14 }}>
-          <label>Due date (days after the invoice date)</label>
+          <label htmlFor="invoice-due-days">Due date (days after the invoice date)</label>
           <input
+            id="invoice-due-days"
             type="number"
             min={0}
             max={180}
@@ -149,8 +150,8 @@ export default function AdminInvoice() {
         </p>
         {(settings.terms || []).map((t, i) => (
           <div className="field" key={i}>
-            <label>Term {i + 1}</label>
-            <textarea rows={2} value={t} onChange={(e) => setTerm(i, e.target.value)} />
+            <label htmlFor={`invoice-term-${i}`}>Term {i + 1}</label>
+            <textarea id={`invoice-term-${i}`} rows={2} value={t} onChange={(e) => setTerm(i, e.target.value)} />
           </div>
         ))}
         <button
@@ -187,6 +188,7 @@ export default function AdminInvoice() {
         <input
           type="file"
           accept="image/jpeg,image/png"
+          aria-label="Invoice logo image file"
           disabled={!!uploading}
           onChange={(e) => upload('logoImage', e.target.files?.[0])}
         />
@@ -216,6 +218,7 @@ export default function AdminInvoice() {
         <input
           type="file"
           accept="image/jpeg,image/png,image/webp"
+          aria-label="Signature image file"
           disabled={!!uploading}
           onChange={(e) => upload('signatureImage', e.target.files?.[0])}
         />

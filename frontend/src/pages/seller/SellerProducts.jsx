@@ -175,7 +175,7 @@ export default function SellerProducts() {
           <p className="muted" style={{ fontSize: '0.83rem', marginTop: 0 }}>{t('sellQuickHelp')}</p>
 
           <div className="field">
-            <label>{t('sellQuickPhoto')}</label>
+            <label htmlFor="quick-photo">{t('sellQuickPhoto')}</label>
             {form.image && (
               <img
                 src={getProductImage(form.image)}
@@ -183,18 +183,18 @@ export default function SellerProducts() {
                 style={{ width: 120, height: 120, objectFit: 'cover', borderRadius: 8, marginBottom: 8, display: 'block' }}
               />
             )}
-            <input type="file" accept="image/*" capture="environment" onChange={handleImageUpload} disabled={uploading} />
+            <input id="quick-photo" type="file" accept="image/*" capture="environment" onChange={handleImageUpload} disabled={uploading} />
             {uploading && <span className="muted" style={{ fontSize: '0.8rem' }}>Uploading…</span>}
           </div>
 
           <div className="form-grid">
             <div className="field">
-              <label>{t('sellQuickWhat')}</label>
-              <input value={form.name} onChange={set('name')} placeholder="e.g. Groundnut oil" required autoFocus />
+              <label htmlFor="quick-product-name">{t('sellQuickWhat')}</label>
+              <input id="quick-product-name" value={form.name} onChange={set('name')} placeholder="e.g. Groundnut oil" required autoFocus />
             </div>
             <div className="field">
-              <label>{t('sellQuickKind')}</label>
-              <select className="select" value={form.category} onChange={set('category')} required>
+              <label htmlFor="quick-product-category">{t('sellQuickKind')}</label>
+              <select id="quick-product-category" className="select" value={form.category} onChange={set('category')} required>
                 <option value="">{t('sellChoose')}</option>
                 {categories.map((c) => (
                   <option key={c.slug} value={c.slug}>{c.label}{c.pending ? ' (awaiting review)' : ''}</option>
@@ -204,7 +204,7 @@ export default function SellerProducts() {
           </div>
 
           <div className="field">
-            <label>{t('sellQuickSize')}</label>
+            <label htmlFor="quick-product-size">{t('sellQuickSize')}</label>
             <div className="flex gap-1" style={{ flexWrap: 'wrap', marginBottom: 6 }}>
               {['250 ml', '500 ml', '1 L', '5 L', '250 g', '500 g', '1 kg'].map((s) => (
                 <button
@@ -218,6 +218,7 @@ export default function SellerProducts() {
               ))}
             </div>
             <input
+              id="quick-product-size"
               value={form.sizes[0].label}
               onChange={(e) => setSize(0, 'label', e.target.value)}
               placeholder={t('sellQuickSizeOwn')}
@@ -227,8 +228,9 @@ export default function SellerProducts() {
 
           <div className="form-grid">
             <div className="field">
-              <label>{t('sellQuickPrice')}</label>
+              <label htmlFor="quick-product-price">{t('sellQuickPrice')}</label>
               <input
+                id="quick-product-price"
                 type="number" min="0" inputMode="numeric"
                 value={form.sizes[0].price}
                 onChange={(e) => setSize(0, 'price', e.target.value)}
@@ -236,8 +238,9 @@ export default function SellerProducts() {
               />
             </div>
             <div className="field">
-              <label>{t('sellQuickStock')}</label>
+              <label htmlFor="quick-product-stock">{t('sellQuickStock')}</label>
               <input
+                id="quick-product-stock"
                 type="number" min="0" inputMode="numeric"
                 value={form.sizes[0].stock}
                 onChange={(e) => setSize(0, 'stock', e.target.value)}
@@ -260,12 +263,13 @@ export default function SellerProducts() {
           <h3 style={{ marginTop: 0 }}>{editingId === 'new' ? 'Add a product' : 'Edit product'}</h3>
           <div className="form-grid">
             <div className="field">
-              <label>{t('sellQuickWhat')}</label>
-              <input value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} required />
+              <label htmlFor="product-name">{t('sellQuickWhat')}</label>
+              <input id="product-name" value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} required />
             </div>
             <div className="field">
-              <label>Category</label>
+              <label htmlFor="product-category">Category</label>
               <select
+                id="product-category"
                 className="select"
                 value={form.category}
                 onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}
@@ -284,8 +288,9 @@ export default function SellerProducts() {
 
           {form.category === NEW_CATEGORY && (
             <div className="field">
-              <label>New category name</label>
+              <label htmlFor="new-category-name">New category name</label>
               <input
+                id="new-category-name"
                 value={form.newCategory}
                 onChange={(e) => setForm((f) => ({ ...f, newCategory: e.target.value }))}
                 placeholder="e.g. Mustard Oil"
@@ -300,7 +305,7 @@ export default function SellerProducts() {
           )}
 
           <div className="field">
-            <label>Photo</label>
+            <label htmlFor="product-photo">Photo</label>
             {form.image && (
               <img
                 src={getProductImage(form.image)}
@@ -308,12 +313,12 @@ export default function SellerProducts() {
                 style={{ width: 90, height: 90, objectFit: 'cover', borderRadius: 8, marginBottom: 8, display: 'block' }}
               />
             )}
-            <input type="file" accept="image/*" onChange={handleImageUpload} disabled={uploading} />
+            <input id="product-photo" type="file" accept="image/*" onChange={handleImageUpload} disabled={uploading} />
             {uploading && <span className="muted" style={{ fontSize: '0.8rem' }}>Uploading…</span>}
           </div>
 
           <div className="field">
-            <label>Video (optional)</label>
+            <label htmlFor="product-video">Video (optional)</label>
             {form.video && (
               <video
                 src={getProductImage(form.video)}
@@ -323,7 +328,7 @@ export default function SellerProducts() {
               />
             )}
             <div className="flex gap-1" style={{ alignItems: 'center', flexWrap: 'wrap' }}>
-              <input type="file" accept="video/mp4,video/webm,video/ogg,video/quicktime" onChange={handleVideoUpload} disabled={uploadingVideo} />
+              <input id="product-video" type="file" accept="video/mp4,video/webm,video/ogg,video/quicktime" onChange={handleVideoUpload} disabled={uploadingVideo} />
               {form.video && !uploadingVideo && (
                 <button type="button" className="link-btn danger" onClick={() => setForm((f) => ({ ...f, video: '' }))}>
                   remove video
@@ -338,15 +343,17 @@ export default function SellerProducts() {
           </div>
 
           <div className="field">
-            <label>One line about it</label>
+            <label htmlFor="product-short-description">One line about it</label>
             <input
+              id="product-short-description"
               value={form.shortDescription}
               onChange={(e) => setForm((f) => ({ ...f, shortDescription: e.target.value }))}
             />
           </div>
           <div className="field">
-            <label>Tell people more (optional)</label>
+            <label htmlFor="product-description">Tell people more (optional)</label>
             <textarea
+              id="product-description"
               rows={3}
               value={form.description}
               onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
@@ -365,10 +372,10 @@ export default function SellerProducts() {
             <tbody>
               {form.sizes.map((s, i) => (
                 <tr key={i}>
-                  <td><input value={s.label} onChange={(e) => setSize(i, 'label', e.target.value)} placeholder="500 ml" required /></td>
-                  <td><input type="number" min="0" value={s.price} onChange={(e) => setSize(i, 'price', e.target.value)} required /></td>
-                  <td><input type="number" min="0" value={s.mrp} onChange={(e) => setSize(i, 'mrp', e.target.value)} /></td>
-                  <td><input type="number" min="0" value={s.stock} onChange={(e) => setSize(i, 'stock', e.target.value)} /></td>
+                  <td><input aria-label="Size" value={s.label} onChange={(e) => setSize(i, 'label', e.target.value)} placeholder="500 ml" required /></td>
+                  <td><input aria-label="Price" type="number" min="0" value={s.price} onChange={(e) => setSize(i, 'price', e.target.value)} required /></td>
+                  <td><input aria-label="Was price (MRP)" type="number" min="0" value={s.mrp} onChange={(e) => setSize(i, 'mrp', e.target.value)} /></td>
+                  <td><input aria-label="Stock quantity" type="number" min="0" value={s.stock} onChange={(e) => setSize(i, 'stock', e.target.value)} /></td>
                   <td>
                     {form.sizes.length > 1 && (
                       <button
@@ -403,32 +410,32 @@ export default function SellerProducts() {
             </p>
             <div className="form-grid">
               <div className="field">
-                <label>Batch number</label>
-                <input value={form.batchNumber} onChange={set('batchNumber')} placeholder="e.g. WG-2026-014" />
+                <label htmlFor="product-batch-number">Batch number</label>
+                <input id="product-batch-number" value={form.batchNumber} onChange={set('batchNumber')} placeholder="e.g. WG-2026-014" />
               </div>
               <div className="field">
-                <label>FSSAI licence on the pack</label>
-                <input value={form.fssaiLicense} onChange={set('fssaiLicense')} placeholder="12345678901234" />
+                <label htmlFor="product-fssai-license">FSSAI licence on the pack</label>
+                <input id="product-fssai-license" value={form.fssaiLicense} onChange={set('fssaiLicense')} placeholder="12345678901234" />
               </div>
             </div>
             <div className="form-grid">
               <div className="field">
-                <label>Made / pressed on</label>
-                <input type="date" value={form.productionDate} onChange={set('productionDate')} />
+                <label htmlFor="product-production-date">Made / pressed on</label>
+                <input id="product-production-date" type="date" value={form.productionDate} onChange={set('productionDate')} />
               </div>
               <div className="field">
-                <label>Best before</label>
-                <input type="date" value={form.bestBeforeDate} onChange={set('bestBeforeDate')} />
+                <label htmlFor="product-best-before-date">Best before</label>
+                <input id="product-best-before-date" type="date" value={form.bestBeforeDate} onChange={set('bestBeforeDate')} />
               </div>
             </div>
             <div className="field">
-              <label>Ingredients</label>
-              <textarea rows={2} value={form.inciIngredients} onChange={set('inciIngredients')}
+              <label htmlFor="product-ingredients">Ingredients</label>
+              <textarea id="product-ingredients" rows={2} value={form.inciIngredients} onChange={set('inciIngredients')}
                 placeholder="Everything in the pack, in descending order by weight." />
             </div>
             <div className="field">
-              <label>Lab report link</label>
-              <input value={form.labReportUrl} onChange={set('labReportUrl')} placeholder="https://…" />
+              <label htmlFor="product-lab-report-url">Lab report link</label>
+              <input id="product-lab-report-url" value={form.labReportUrl} onChange={set('labReportUrl')} placeholder="https://…" />
               <p className="muted" style={{ fontSize: '0.78rem', marginTop: 4 }}>
                 A public link to a purity or test report, if you have one. Must be an http or https address.
               </p>

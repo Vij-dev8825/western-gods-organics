@@ -127,8 +127,8 @@ export default function AdminTrade() {
           simply doesn't appear, so it can never quote a rate you wouldn't honour.
         </p>
         <div className="field">
-          <label>Terms printed on it</label>
-          <textarea rows={2} value={terms} onChange={(e) => setTerms(e.target.value)}
+          <label htmlFor="trade-terms">Terms printed on it</label>
+          <textarea id="trade-terms" rows={2} value={terms} onChange={(e) => setTerms(e.target.value)}
             placeholder="Minimum order, delivery area, payment terms" />
         </div>
         <div className="btn-row">
@@ -146,41 +146,41 @@ export default function AdminTrade() {
         <h4 style={{ marginTop: 0 }}>{editingId ? 'Edit' : 'Add a place'}</h4>
         <div className="form-grid">
           <div className="field">
-            <label>Name</label>
-            <input required maxLength={120} value={form.name} placeholder="e.g. Sri Krishna Tiffin Centre"
+            <label htmlFor="trade-name">Name</label>
+            <input id="trade-name" required maxLength={120} value={form.name} placeholder="e.g. Sri Krishna Tiffin Centre"
               onChange={(e) => setForm({ ...form, name: e.target.value })} />
           </div>
           <div className="field">
-            <label>Kind</label>
-            <select value={form.kind} onChange={(e) => setForm({ ...form, kind: e.target.value })}>
+            <label htmlFor="trade-kind">Kind</label>
+            <select id="trade-kind" value={form.kind} onChange={(e) => setForm({ ...form, kind: e.target.value })}>
               {KINDS.map((k) => <option key={k}>{k}</option>)}
             </select>
           </div>
           <div className="field">
-            <label>Area</label>
-            <input maxLength={80} value={form.area} placeholder="e.g. Udumalpet bus stand"
+            <label htmlFor="trade-area">Area</label>
+            <input id="trade-area" maxLength={80} value={form.area} placeholder="e.g. Udumalpet bus stand"
               onChange={(e) => setForm({ ...form, area: e.target.value })} />
           </div>
           <div className="field">
-            <label>Phone</label>
-            <input maxLength={15} value={form.phone} placeholder="9876543210"
+            <label htmlFor="trade-phone">Phone</label>
+            <input id="trade-phone" maxLength={15} value={form.phone} placeholder="9876543210"
               onChange={(e) => setForm({ ...form, phone: e.target.value })} />
           </div>
           <div className="field">
-            <label>Where it stands</label>
-            <select value={form.stage} onChange={(e) => setForm({ ...form, stage: e.target.value })}>
+            <label htmlFor="trade-stage">Where it stands</label>
+            <select id="trade-stage" value={form.stage} onChange={(e) => setForm({ ...form, stage: e.target.value })}>
               {Object.entries(STAGES).map(([v, label]) => <option key={v} value={v}>{label}</option>)}
             </select>
           </div>
           <div className="field">
-            <label>Call back on</label>
-            <input type="date" value={form.followUpAt}
+            <label htmlFor="trade-followup">Call back on</label>
+            <input id="trade-followup" type="date" value={form.followUpAt}
               onChange={(e) => setForm({ ...form, followUpAt: e.target.value })} />
           </div>
         </div>
         <div className="field">
-          <label>What was said</label>
-          <textarea rows={2} maxLength={2000} value={form.notes}
+          <label htmlFor="trade-notes">What was said</label>
+          <textarea id="trade-notes" rows={2} maxLength={2000} value={form.notes}
             placeholder="e.g. Uses 20L a month, currently buying refined from the market at ₹140/L. Left a 500ml sample."
             onChange={(e) => setForm({ ...form, notes: e.target.value })} />
         </div>

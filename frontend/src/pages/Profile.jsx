@@ -243,7 +243,7 @@ export default function Profile() {
             Share your link — when a friend signs up and places their first order, you both get ₹100 off.
           </p>
           <div className="field" style={{ display: 'flex', gap: 8 }}>
-            <input readOnly value={referralLink} onFocus={(e) => e.target.select()} style={{ flex: 1 }} />
+            <input readOnly value={referralLink} onFocus={(e) => e.target.select()} style={{ flex: 1 }} aria-label="Referral link" />
             <button type="button" className="btn btn-outline btn-sm" onClick={handleCopyReferralLink}>
               Copy
             </button>
@@ -309,17 +309,17 @@ export default function Profile() {
 
       <form className="form-card" style={{ margin: 0 }} onSubmit={handleSave} noValidate>
         <div className="field">
-          <label>Mobile number</label>
-          <input value={user.phone} disabled />
+          <label htmlFor="profile-mobile-number">Mobile number</label>
+          <input id="profile-mobile-number" value={user.phone} disabled />
         </div>
         <div className="field">
-          <label>Full name</label>
-          <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Your name" />
+          <label htmlFor="profile-full-name">Full name</label>
+          <input id="profile-full-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Your name" />
           {errors.name && <div className="field-error">{errors.name}</div>}
         </div>
         <div className="field">
-          <label>Email (optional)</label>
-          <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" />
+          <label htmlFor="profile-email">Email (optional)</label>
+          <input id="profile-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" />
           {errors.email && <div className="field-error">{errors.email}</div>}
         </div>
         <button className="btn btn-gold btn-block" disabled={saving}>

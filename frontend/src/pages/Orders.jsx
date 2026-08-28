@@ -390,16 +390,17 @@ export default function Orders() {
                 {returnFormId === o.id && (
                   <div className="return-request-form">
                     <div className="field">
-                      <label>Reason</label>
-                      <select className="select" value={returnReason} onChange={(e) => setReturnReason(e.target.value)}>
+                      <label htmlFor={`return-reason-${o.id}`}>Reason</label>
+                      <select id={`return-reason-${o.id}`} className="select" value={returnReason} onChange={(e) => setReturnReason(e.target.value)}>
                         {RETURN_REASONS.map((r) => (
                           <option key={r.value} value={r.value}>{r.label}</option>
                         ))}
                       </select>
                     </div>
                     <div className="field">
-                      <label>Describe the issue</label>
+                      <label htmlFor={`return-description-${o.id}`}>Describe the issue</label>
                       <textarea
+                        id={`return-description-${o.id}`}
                         rows={3}
                         value={returnDescription}
                         onChange={(e) => setReturnDescription(e.target.value)}
@@ -424,8 +425,9 @@ export default function Orders() {
                 {bottleFormId === o.id && (
                   <div className="return-request-form">
                     <div className="field">
-                      <label>How many bottles are you returning?</label>
+                      <label htmlFor={`bottle-quantity-${o.id}`}>How many bottles are you returning?</label>
                       <input
+                        id={`bottle-quantity-${o.id}`}
                         type="number"
                         className="input"
                         min={1}

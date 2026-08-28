@@ -120,14 +120,15 @@ export default function AdminCategories() {
       <form className="admin-card" onSubmit={add}>
         <div className="form-inline" style={{ marginBottom: 12 }}>
           <div className="field" style={{ flex: 1 }}>
-            <label>New category label</label>
-            <input value={label} onChange={(e) => setLabel(e.target.value)} placeholder="e.g. Mustard Oil" required />
+            <label htmlFor="new-category-label">New category label</label>
+            <input id="new-category-label" value={label} onChange={(e) => setLabel(e.target.value)} placeholder="e.g. Mustard Oil" required />
           </div>
           <ImageUploadField value={image} onChange={setImage} label="Tile image" />
         </div>
         <div className="field">
-          <label>Category page description (optional, but worth writing)</label>
+          <label htmlFor="new-category-description">Category page description (optional, but worth writing)</label>
           <textarea
+            id="new-category-description"
             rows={3}
             value={description}
             onChange={(e) => setDescription(e.target.value)}
@@ -192,8 +193,9 @@ export default function AdminCategories() {
                   <tr>
                     <td colSpan={4} style={{ background: 'rgba(31,61,43,0.03)' }}>
                       <div className="field" style={{ margin: '8px 0' }}>
-                        <label>Description shown on /shop?category={c.id}</label>
+                        <label htmlFor={`category-description-${c.id}`}>Description shown on /shop?category={c.id}</label>
                         <textarea
+                          id={`category-description-${c.id}`}
                           rows={3}
                           value={descDraft}
                           onChange={(e) => setDescDraft(e.target.value)}

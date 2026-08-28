@@ -202,6 +202,7 @@ export default function AiAssistant() {
               value={text}
               onChange={(e) => setText(e.target.value)}
               placeholder="Ask the AI assistant…"
+              aria-label="Ask the AI assistant"
               maxLength={500}
             />
             <button type="submit" className="btn btn-gold btn-sm" disabled={!text.trim() || sending}>

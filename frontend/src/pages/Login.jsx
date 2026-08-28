@@ -164,16 +164,17 @@ export default function Login() {
         {step === 'phone' ? (
           <div>
             <div className="field">
-              <label>Country</label>
-              <select value={phoneCountry} onChange={(e) => setPhoneCountry(e.target.value)}>
+              <label htmlFor="login-country">Country</label>
+              <select id="login-country" value={phoneCountry} onChange={(e) => setPhoneCountry(e.target.value)}>
                 {countries.map((c) => (
                   <option key={c.code} value={c.code}>{countryFlagEmoji(c.code)} {c.label}</option>
                 ))}
               </select>
             </div>
             <div className="field">
-              <label>Mobile number</label>
+              <label htmlFor="login-mobile-number">Mobile number</label>
               <input
+                id="login-mobile-number"
                 type="tel"
                 inputMode={isIndia ? 'numeric' : 'tel'}
                 autoComplete="off"
@@ -189,8 +190,9 @@ export default function Login() {
               />
             </div>
             <div className="field">
-              <label>Your name</label>
+              <label htmlFor="login-name">Your name</label>
               <input
+                id="login-name"
                 required
                 value={name}
                 onChange={(e) => setName(e.target.value)}
@@ -223,8 +225,9 @@ export default function Login() {
 
             {channel === 'email' && (
               <div className="field">
-                <label>Email address</label>
+                <label htmlFor="login-email-address">Email address</label>
                 <input
+                  id="login-email-address"
                   type="email"
                   autoComplete="off"
                   value={email}
@@ -251,6 +254,7 @@ export default function Login() {
                     maxLength={1}
                     inputMode="numeric"
                     autoComplete="off"
+                    aria-label={`OTP digit ${i + 1}`}
                     onChange={(e) => handleOtpChange(i, e.target.value)}
                     onKeyDown={onEnterKey(handleVerifyOtp)}
                     autoFocus={i === 0}

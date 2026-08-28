@@ -91,6 +91,7 @@ export default function CodPhoneVerify({ phone, country, verified, onVerified })
             maxLength={4}
             inputMode="numeric"
             placeholder="Code"
+            aria-label="Verification code"
           />
           <button type="button" className="btn btn-gold btn-sm" disabled={verifying} onClick={handleVerify}>
             {verifying ? 'Verifying…' : 'Verify'}

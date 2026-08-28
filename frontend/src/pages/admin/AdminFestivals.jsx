@@ -150,15 +150,15 @@ export default function AdminFestivals() {
         </p>
         <div className="form-grid">
           <div className="field">
-            <label>Where it shows</label>
-            <select value={anim.scope} onChange={(e) => setAnim({ ...anim, scope: e.target.value })}>
+            <label htmlFor="anim-scope">Where it shows</label>
+            <select id="anim-scope" value={anim.scope} onChange={(e) => setAnim({ ...anim, scope: e.target.value })}>
               <option value="all">Every page</option>
               <option value="home">Home page only</option>
             </select>
           </div>
           <div className="field">
-            <label>How much</label>
-            <select value={anim.intensity} onChange={(e) => setAnim({ ...anim, intensity: e.target.value })}>
+            <label htmlFor="anim-intensity">How much</label>
+            <select id="anim-intensity" value={anim.intensity} onChange={(e) => setAnim({ ...anim, intensity: e.target.value })}>
               <option value="subtle">Subtle</option>
               <option value="normal">Normal</option>
               <option value="lively">Lively</option>
@@ -166,8 +166,8 @@ export default function AdminFestivals() {
           </div>
         </div>
         <div className="field">
-          <label>Garland across the top of the site</label>
-          <select value={anim.toranStyle} onChange={(e) => setAnim({ ...anim, toranStyle: e.target.value })}>
+          <label htmlFor="anim-toran-style">Garland across the top of the site</label>
+          <select id="anim-toran-style" value={anim.toranStyle} onChange={(e) => setAnim({ ...anim, toranStyle: e.target.value })}>
             <option value="marigold">Marigold, mango leaf &amp; lotus</option>
             <option value="jasmine">Jasmine string &amp; rose</option>
             <option value="bells">Brass bells &amp; mango leaf</option>
@@ -213,22 +213,24 @@ export default function AdminFestivals() {
           </div>
         )}
         <div className="field">
-          <label>Name</label>
-          <input required maxLength={80} value={form.name} placeholder="e.g. Karthigai Deepam"
+          <label htmlFor="festival-name">Name</label>
+          <input id="festival-name" required maxLength={80} value={form.name} placeholder="e.g. Karthigai Deepam"
             onChange={(e) => setForm({ ...form, name: e.target.value })} />
         </div>
         <div className="field">
-          <label>Date this year</label>
-          <input type="date" required value={form.date}
+          <label htmlFor="festival-date">Date this year</label>
+          <input id="festival-date" type="date" required value={form.date}
             onChange={(e) => setForm({ ...form, date: e.target.value })} />
         </div>
         <div className="field">
           <label>How long it runs</label>
           <div className="flex gap-1" style={{ alignItems: 'center', flexWrap: 'wrap' }}>
             <input type="number" min={0} max={30} value={form.startsDaysBefore} style={{ width: 90 }}
+              aria-label="Days before the festival to start"
               onChange={(e) => setForm({ ...form, startsDaysBefore: e.target.value })} />
             <span className="muted" style={{ fontSize: '0.85rem' }}>days before,</span>
             <input type="number" min={0} max={30} value={form.endsDaysAfter} style={{ width: 90 }}
+              aria-label="Days after the festival to end"
               onChange={(e) => setForm({ ...form, endsDaysAfter: e.target.value })} />
             <span className="muted" style={{ fontSize: '0.85rem' }}>days after</span>
           </div>
@@ -240,16 +242,16 @@ export default function AdminFestivals() {
           </p>
         </div>
         <div className="field">
-          <label>Days needed to deliver</label>
-          <input type="number" min={0} max={60} value={form.leadDays}
+          <label htmlFor="festival-lead-days">Days needed to deliver</label>
+          <input id="festival-lead-days" type="number" min={0} max={60} value={form.leadDays}
             onChange={(e) => setForm({ ...form, leadDays: e.target.value })} />
           <p className="muted" style={{ fontSize: '0.8rem', marginTop: 4 }}>
             Counted back from the festival to work out the "order by" date shown to customers.
           </p>
         </div>
         <div className="field">
-          <label>Offer code for this festival (optional)</label>
-          <input type="text" maxLength={24} value={form.couponCode}
+          <label htmlFor="festival-coupon-code">Offer code for this festival (optional)</label>
+          <input id="festival-coupon-code" type="text" maxLength={24} value={form.couponCode}
             placeholder="e.g. ONAM10"
             onChange={(e) => setForm({ ...form, couponCode: e.target.value.toUpperCase() })} />
           <p className="muted" style={{ fontSize: '0.8rem', marginTop: 4 }}>
@@ -258,8 +260,8 @@ export default function AdminFestivals() {
           </p>
         </div>
         <div className="field">
-          <label>Home page design</label>
-          <select value={form.theme} onChange={(e) => setForm({ ...form, theme: e.target.value })}>
+          <label htmlFor="festival-theme">Home page design</label>
+          <select id="festival-theme" value={form.theme} onChange={(e) => setForm({ ...form, theme: e.target.value })}>
             <option value="">Match the name automatically</option>
             {DESIGN_CHOICES.map((d) => (
               <option key={d.id} value={d.id}>{d.label}</option>
@@ -271,8 +273,8 @@ export default function AdminFestivals() {
           </p>
         </div>
         <div className="field">
-          <label>Animation</label>
-          <select value={form.effect} onChange={(e) => setForm({ ...form, effect: e.target.value })}>
+          <label htmlFor="festival-effect">Animation</label>
+          <select id="festival-effect" value={form.effect} onChange={(e) => setForm({ ...form, effect: e.target.value })}>
             <option value="">Match the design automatically</option>
             <option value="petals">Falling flowers</option>
             <option value="crackers">Crackers</option>
@@ -287,8 +289,8 @@ export default function AdminFestivals() {
           </p>
         </div>
         <div className="field">
-          <label>What to say about it (optional)</label>
-          <textarea rows={2} maxLength={400} value={form.note}
+          <label htmlFor="festival-note">What to say about it (optional)</label>
+          <textarea id="festival-note" rows={2} maxLength={400} value={form.note}
             placeholder="e.g. Lamps are lit with sesame oil through the evening — a litre lasts most households the week."
             onChange={(e) => setForm({ ...form, note: e.target.value })} />
         </div>

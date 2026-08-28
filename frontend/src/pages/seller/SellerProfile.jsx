@@ -70,18 +70,19 @@ export default function SellerProfile() {
 
           <div className="form-grid">
             <div className="field">
-              <label>Your name, or your farm's name</label>
-              <input value={form.businessName} onChange={set('businessName')} required />
+              <label htmlFor="seller-business-name">Your name, or your farm's name</label>
+              <input id="seller-business-name" value={form.businessName} onChange={set('businessName')} required />
             </div>
             <div className="field">
-              <label>Which town or village?</label>
-              <input value={form.location} onChange={set('location')} placeholder="e.g. Coimbatore, Tamil Nadu" />
+              <label htmlFor="seller-location">Which town or village?</label>
+              <input id="seller-location" value={form.location} onChange={set('location')} placeholder="e.g. Coimbatore, Tamil Nadu" />
             </div>
           </div>
 
           <div className="field">
-            <label>Tell people about yourself</label>
+            <label htmlFor="seller-bio">Tell people about yourself</label>
             <textarea
+              id="seller-bio"
               rows={4}
               value={form.bio}
               onChange={set('bio')}
@@ -91,17 +92,17 @@ export default function SellerProfile() {
 
           <div className="form-grid">
             <div className="field">
-              <label>Website (optional)</label>
-              <input value={form.website} onChange={set('website')} placeholder="https://…" />
+              <label htmlFor="seller-website">Website (optional)</label>
+              <input id="seller-website" value={form.website} onChange={set('website')} placeholder="https://…" />
             </div>
             <div className="field">
-              <label>Instagram (optional)</label>
-              <input value={form.instagram} onChange={set('instagram')} placeholder="@yourhandle" />
+              <label htmlFor="seller-instagram">Instagram (optional)</label>
+              <input id="seller-instagram" value={form.instagram} onChange={set('instagram')} placeholder="@yourhandle" />
             </div>
           </div>
 
           <div className="field">
-            <label>Logo or photo</label>
+            <label htmlFor="seller-logo">Logo or photo</label>
             {form.logo && (
               <img
                 src={getProductImage(form.logo)}
@@ -109,7 +110,7 @@ export default function SellerProfile() {
                 style={{ width: 72, height: 72, objectFit: 'cover', borderRadius: '50%', marginBottom: 8, display: 'block' }}
               />
             )}
-            <input type="file" accept="image/*" onChange={handleLogoUpload} disabled={uploading} />
+            <input id="seller-logo" type="file" accept="image/*" onChange={handleLogoUpload} disabled={uploading} />
             {uploading && <span className="muted" style={{ fontSize: '0.8rem' }}>Uploading…</span>}
           </div>
         </div>
@@ -124,8 +125,8 @@ export default function SellerProfile() {
           </p>
 
           <div className="field">
-            <label>Your UPI ID</label>
-            <input value={form.upiId} onChange={set('upiId')} placeholder="yourname@upi" />
+            <label htmlFor="seller-upi-id">Your UPI ID</label>
+            <input id="seller-upi-id" value={form.upiId} onChange={set('upiId')} placeholder="yourname@upi" />
             <p className="muted" style={{ fontSize: '0.78rem', marginTop: 4 }}>
               The same one you use on GPay, PhonePe or Paytm.
             </p>
@@ -137,17 +138,17 @@ export default function SellerProfile() {
             </summary>
             <div className="form-grid" style={{ marginTop: 10 }}>
               <div className="field">
-                <label>Name on the account</label>
-                <input value={form.bankAccountName} onChange={set('bankAccountName')} />
+                <label htmlFor="bank-account-name">Name on the account</label>
+                <input id="bank-account-name" value={form.bankAccountName} onChange={set('bankAccountName')} />
               </div>
               <div className="field">
-                <label>Account number</label>
-                <input value={form.bankAccountNumber} onChange={set('bankAccountNumber')} />
+                <label htmlFor="bank-account-number">Account number</label>
+                <input id="bank-account-number" value={form.bankAccountNumber} onChange={set('bankAccountNumber')} />
               </div>
             </div>
             <div className="field" style={{ maxWidth: 260 }}>
-              <label>IFSC code</label>
-              <input value={form.bankIfsc} onChange={set('bankIfsc')} placeholder="HDFC0001234" />
+              <label htmlFor="bank-ifsc">IFSC code</label>
+              <input id="bank-ifsc" value={form.bankIfsc} onChange={set('bankIfsc')} placeholder="HDFC0001234" />
             </div>
           </details>
         </div>
@@ -160,18 +161,18 @@ export default function SellerProfile() {
 
           <div className="form-grid">
             <div className="field">
-              <label>Phone we should call</label>
-              <input value={form.contactPhone} onChange={set('contactPhone')} placeholder={user?.phone} />
+              <label htmlFor="contact-phone">Phone we should call</label>
+              <input id="contact-phone" value={form.contactPhone} onChange={set('contactPhone')} placeholder={user?.phone} />
             </div>
             <div className="field">
-              <label>Email (only if you have one)</label>
-              <input type="email" value={form.contactEmail} onChange={set('contactEmail')} placeholder="you@example.com" />
+              <label htmlFor="contact-email">Email (only if you have one)</label>
+              <input id="contact-email" type="email" value={form.contactEmail} onChange={set('contactEmail')} placeholder="you@example.com" />
             </div>
           </div>
 
           <div className="field">
-            <label>Where do we collect from?</label>
-            <textarea rows={3} value={form.address} onChange={set('address')} placeholder="The address where you make it or where we'd pick it up." />
+            <label htmlFor="seller-address">Where do we collect from?</label>
+            <textarea id="seller-address" rows={3} value={form.address} onChange={set('address')} placeholder="The address where you make it or where we'd pick it up." />
           </div>
         </div>
 
@@ -184,12 +185,12 @@ export default function SellerProfile() {
           </p>
           <div className="form-grid">
             <div className="field">
-              <label>FSSAI number {me.sellerMode === 'marketplace' ? '' : '(optional)'}</label>
-              <input value={form.fssai} onChange={set('fssai')} placeholder="12345678901234" />
+              <label htmlFor="fssai-number">FSSAI number {me.sellerMode === 'marketplace' ? '' : '(optional)'}</label>
+              <input id="fssai-number" value={form.fssai} onChange={set('fssai')} placeholder="12345678901234" />
             </div>
             <div className="field">
-              <label>GST number (optional)</label>
-              <input value={form.gstin} onChange={set('gstin')} placeholder="22AAAAA0000A1Z5" />
+              <label htmlFor="gst-number">GST number (optional)</label>
+              <input id="gst-number" value={form.gstin} onChange={set('gstin')} placeholder="22AAAAA0000A1Z5" />
             </div>
           </div>
         </div>

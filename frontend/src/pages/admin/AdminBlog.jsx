@@ -145,16 +145,18 @@ export default function AdminBlog() {
         />
         <div className="form-grid">
           <div className="field">
-            <label>Title override (optional)</label>
+            <label htmlFor="banner-title-override">Title override (optional)</label>
             <input
+              id="banner-title-override"
               value={banner.bannerTitle}
               onChange={(e) => setBanner((b) => ({ ...b, bannerTitle: e.target.value }))}
               placeholder='Default: "From the Ghani"'
             />
           </div>
           <div className="field">
-            <label>Subtitle override (optional)</label>
+            <label htmlFor="banner-subtitle-override">Subtitle override (optional)</label>
             <input
+              id="banner-subtitle-override"
               value={banner.bannerSubtitle}
               onChange={(e) => setBanner((b) => ({ ...b, bannerSubtitle: e.target.value }))}
               placeholder="Default: Notes on traditional pressing…"
@@ -171,24 +173,25 @@ export default function AdminBlog() {
           <h3>{editing === 'new' ? 'New post' : `Edit: ${form.title}`}</h3>
           <div className="form-grid">
             <div className="field">
-              <label>Title</label>
-              <input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} required />
+              <label htmlFor="post-title">Title</label>
+              <input id="post-title" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} required />
             </div>
             <div className="field">
-              <label>Category tag (optional, e.g. "Wellness", "Buying Guide")</label>
-              <input value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} />
+              <label htmlFor="post-category">Category tag (optional, e.g. "Wellness", "Buying Guide")</label>
+              <input id="post-category" value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} />
             </div>
           </div>
 
           <ImageUploadField value={form.image} onChange={(url) => setForm({ ...form, image: url })} label="Cover image" />
 
           <div className="field">
-            <label>Excerpt (short summary shown on the blog listing card)</label>
-            <input value={form.excerpt} onChange={(e) => setForm({ ...form, excerpt: e.target.value })} />
+            <label htmlFor="post-excerpt">Excerpt (short summary shown on the blog listing card)</label>
+            <input id="post-excerpt" value={form.excerpt} onChange={(e) => setForm({ ...form, excerpt: e.target.value })} />
           </div>
           <div className="field">
-            <label>Content (leave a blank line between paragraphs)</label>
+            <label htmlFor="post-content">Content (leave a blank line between paragraphs)</label>
             <textarea
+              id="post-content"
               rows={12}
               value={form.content}
               onChange={(e) => setForm({ ...form, content: e.target.value })}

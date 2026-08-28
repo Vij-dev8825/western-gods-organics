@@ -145,8 +145,9 @@ export default function AdminCoupons() {
         )}
         <div className="form-grid">
           <div className="field">
-            <label>Code</label>
+            <label htmlFor="coupon-code">Code</label>
             <input
+              id="coupon-code"
               required
               value={form.code}
               onChange={(e) => setForm({ ...form, code: e.target.value.toUpperCase() })}
@@ -154,15 +155,16 @@ export default function AdminCoupons() {
             />
           </div>
           <div className="field">
-            <label>Type</label>
-            <select value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })}>
+            <label htmlFor="coupon-type">Type</label>
+            <select id="coupon-type" value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })}>
               <option value="percent">Percentage off</option>
               <option value="flat">Flat amount off</option>
             </select>
           </div>
           <div className="field">
-            <label>{form.type === 'percent' ? 'Discount %' : 'Discount ₹'}</label>
+            <label htmlFor="coupon-discount-value">{form.type === 'percent' ? 'Discount %' : 'Discount ₹'}</label>
             <input
+              id="coupon-discount-value"
               required
               type="number"
               min="1"
@@ -171,8 +173,9 @@ export default function AdminCoupons() {
             />
           </div>
           <div className="field">
-            <label>Minimum order ₹ (optional)</label>
+            <label htmlFor="coupon-min-order">Minimum order ₹ (optional)</label>
             <input
+              id="coupon-min-order"
               type="number"
               min="0"
               value={form.minOrder}
@@ -180,8 +183,8 @@ export default function AdminCoupons() {
             />
           </div>
           <div className="field">
-            <label>Expires on (optional)</label>
-            <input type="date" value={form.expiresAt} onChange={(e) => setForm({ ...form, expiresAt: e.target.value })} />
+            <label htmlFor="coupon-expires-at">Expires on (optional)</label>
+            <input id="coupon-expires-at" type="date" value={form.expiresAt} onChange={(e) => setForm({ ...form, expiresAt: e.target.value })} />
           </div>
           <div className="field">
             <label>Advertise on site</label>
@@ -212,24 +215,27 @@ export default function AdminCoupons() {
               allowClear
             />
             <div className="field">
-              <label>Popup headline (optional)</label>
+              <label htmlFor="coupon-promo-headline">Popup headline (optional)</label>
               <input
+                id="coupon-promo-headline"
                 value={form.promoHeadline}
                 onChange={(e) => setForm({ ...form, promoHeadline: e.target.value })}
                 placeholder="e.g. Today Only!"
               />
             </div>
             <div className="field">
-              <label>Popup sub-text (optional)</label>
+              <label htmlFor="coupon-promo-subtext">Popup sub-text (optional)</label>
               <input
+                id="coupon-promo-subtext"
                 value={form.promoSubtext}
                 onChange={(e) => setForm({ ...form, promoSubtext: e.target.value })}
                 placeholder="e.g. Don't miss out — this deal ends soon!"
               />
             </div>
             <div className="field">
-              <label>Button goes to (optional)</label>
+              <label htmlFor="coupon-promo-link">Button goes to (optional)</label>
               <input
+                id="coupon-promo-link"
                 value={form.promoLink}
                 onChange={(e) => setForm({ ...form, promoLink: e.target.value })}
                 placeholder="e.g. /onam"
@@ -241,8 +247,9 @@ export default function AdminCoupons() {
               </p>
             </div>
             <div className="field">
-              <label>Button says (optional)</label>
+              <label htmlFor="coupon-promo-cta">Button says (optional)</label>
               <input
+                id="coupon-promo-cta"
                 value={form.promoCta}
                 onChange={(e) => setForm({ ...form, promoCta: e.target.value })}
                 placeholder="e.g. Lay a pookalam"

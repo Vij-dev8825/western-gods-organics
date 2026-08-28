@@ -85,17 +85,18 @@ export default function ImportInfo() {
           {status && status !== 'sent' && <div className="alert alert-error">{status}</div>}
 
           <div className="field">
-            <label>Full name *</label>
-            <input required value={form.name} onChange={(e) => update('name', e.target.value)} />
+            <label htmlFor="import-full-name">Full name *</label>
+            <input id="import-full-name" required value={form.name} onChange={(e) => update('name', e.target.value)} />
             {errors.name && <div className="field-error">{errors.name}</div>}
           </div>
           <div className="field">
-            <label>Company / Store name</label>
-            <input value={form.company} onChange={(e) => update('company', e.target.value)} />
+            <label htmlFor="import-company-name">Company / Store name</label>
+            <input id="import-company-name" value={form.company} onChange={(e) => update('company', e.target.value)} />
           </div>
           <div className="field">
-            <label>Mobile number *</label>
+            <label htmlFor="import-mobile-number">Mobile number *</label>
             <input
+              id="import-mobile-number"
               required
               type="tel"
               inputMode="numeric"
@@ -106,18 +107,18 @@ export default function ImportInfo() {
             {errors.phone && <div className="field-error">{errors.phone}</div>}
           </div>
           <div className="field">
-            <label>Email</label>
-            <input type="email" value={form.email} onChange={(e) => update('email', e.target.value)} />
+            <label htmlFor="import-email">Email</label>
+            <input id="import-email" type="email" value={form.email} onChange={(e) => update('email', e.target.value)} />
             {errors.email && <div className="field-error">{errors.email}</div>}
           </div>
           <div className="field">
-            <label>Country *</label>
-            <input required value={form.country} onChange={(e) => update('country', e.target.value)} placeholder="e.g. United Arab Emirates" />
+            <label htmlFor="import-country">Country *</label>
+            <input id="import-country" required value={form.country} onChange={(e) => update('country', e.target.value)} placeholder="e.g. United Arab Emirates" />
             {errors.country && <div className="field-error">{errors.country}</div>}
           </div>
           <div className="field">
-            <label>Product *</label>
-            <select value={form.productCategory} onChange={(e) => update('productCategory', e.target.value)}>
+            <label htmlFor="import-product">Product *</label>
+            <select id="import-product" value={form.productCategory} onChange={(e) => update('productCategory', e.target.value)}>
               <option value="castor-oil">Castor Oil</option>
               <option value="coconut-oil">Coconut Oil</option>
               <option value="sesame-oil">Sesame (Til) Oil</option>
@@ -127,13 +128,13 @@ export default function ImportInfo() {
           </div>
           <div className="flex gap-1">
             <div className="field" style={{ flex: 2 }}>
-              <label>Quantity *</label>
-              <input required type="number" min="1" value={form.quantity} onChange={(e) => update('quantity', e.target.value)} />
+              <label htmlFor="import-quantity">Quantity *</label>
+              <input id="import-quantity" required type="number" min="1" value={form.quantity} onChange={(e) => update('quantity', e.target.value)} />
               {errors.quantity && <div className="field-error">{errors.quantity}</div>}
             </div>
             <div className="field" style={{ flex: 1 }}>
-              <label>Unit</label>
-              <select value={form.unit} onChange={(e) => update('unit', e.target.value)}>
+              <label htmlFor="import-unit">Unit</label>
+              <select id="import-unit" value={form.unit} onChange={(e) => update('unit', e.target.value)}>
                 <option>Litres</option>
                 <option>Bottles</option>
                 <option>Drums</option>
@@ -141,8 +142,8 @@ export default function ImportInfo() {
             </div>
           </div>
           <div className="field">
-            <label>Message</label>
-            <textarea value={form.message} onChange={(e) => update('message', e.target.value)} placeholder="Import requirements, target market, timeline, etc." />
+            <label htmlFor="import-message">Message</label>
+            <textarea id="import-message" value={form.message} onChange={(e) => update('message', e.target.value)} placeholder="Import requirements, target market, timeline, etc." />
           </div>
           <button className="btn btn-gold btn-block" disabled={loading}>
             {loading ? 'Sending…' : 'Submit enquiry'}

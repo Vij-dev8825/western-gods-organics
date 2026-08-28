@@ -171,8 +171,8 @@ export default function AdminNewOrder() {
       <div className="form-card" style={{ maxWidth: 620, marginTop: 18 }}>
         <h4 style={{ marginTop: 0 }}>Who is it for</h4>
         <div className="field">
-          <label>Phone number</label>
-          <input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+91 90000 00000" inputMode="tel" />
+          <label htmlFor="customer-phone">Phone number</label>
+          <input id="customer-phone" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+91 90000 00000" inputMode="tel" />
           {phone.trim() && (
             <span className="muted" style={{ fontSize: '0.8rem' }}>
               {match
@@ -182,12 +182,12 @@ export default function AdminNewOrder() {
           )}
         </div>
         <div className="field">
-          <label>Name</label>
-          <input value={name} onChange={(e) => setName(e.target.value)} placeholder="As they gave it" />
+          <label htmlFor="customer-name">Name</label>
+          <input id="customer-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="As they gave it" />
         </div>
         <div className="field">
-          <label>Email <span className="muted">(optional — needed to email the invoice)</span></label>
-          <input value={email} onChange={(e) => setEmail(e.target.value)} inputMode="email" />
+          <label htmlFor="customer-email">Email <span className="muted">(optional — needed to email the invoice)</span></label>
+          <input id="customer-email" value={email} onChange={(e) => setEmail(e.target.value)} inputMode="email" />
         </div>
       </div>
 
@@ -195,8 +195,9 @@ export default function AdminNewOrder() {
         <h4 style={{ marginTop: 0 }}>What they want</h4>
 
         <div className="field">
-          <label>Product</label>
+          <label htmlFor="order-product">Product</label>
           <select
+            id="order-product"
             value={pick.productId}
             onChange={(e) => setPick({ productId: e.target.value, size: '', quantity: 1 })}
           >
@@ -207,8 +208,8 @@ export default function AdminNewOrder() {
 
         {chosenProduct && (
           <div className="field">
-            <label>Size</label>
-            <select value={pick.size} onChange={(e) => setPick((v) => ({ ...v, size: e.target.value }))}>
+            <label htmlFor="order-size">Size</label>
+            <select id="order-size" value={pick.size} onChange={(e) => setPick((v) => ({ ...v, size: e.target.value }))}>
               <option value="">Choose a size…</option>
               {(chosenProduct.sizes || []).map((s) => (
                 <option key={s.label} value={s.label}>
@@ -222,8 +223,9 @@ export default function AdminNewOrder() {
         {chosenSize && (
           <div className="flex gap-1" style={{ alignItems: 'flex-end', flexWrap: 'wrap' }}>
             <div className="field" style={{ maxWidth: 110, marginBottom: 0 }}>
-              <label>Quantity</label>
+              <label htmlFor="order-quantity">Quantity</label>
               <input
+                id="order-quantity"
                 type="number" min="1" value={pick.quantity}
                 onChange={(e) => setPick((v) => ({ ...v, quantity: e.target.value }))}
               />
@@ -290,24 +292,24 @@ export default function AdminNewOrder() {
         {needsAddress && (
           <div style={{ marginTop: 14 }}>
             <div className="field">
-              <label>Address</label>
-              <input value={address.line1} onChange={(e) => setAddress((a) => ({ ...a, line1: e.target.value }))} placeholder="House / street" />
+              <label htmlFor="address-line1">Address</label>
+              <input id="address-line1" value={address.line1} onChange={(e) => setAddress((a) => ({ ...a, line1: e.target.value }))} placeholder="House / street" />
             </div>
             <div className="field">
-              <input value={address.line2} onChange={(e) => setAddress((a) => ({ ...a, line2: e.target.value }))} placeholder="Area / landmark (optional)" />
+              <input value={address.line2} onChange={(e) => setAddress((a) => ({ ...a, line2: e.target.value }))} placeholder="Area / landmark (optional)" aria-label="Area or landmark" />
             </div>
             <div className="flex gap-1" style={{ flexWrap: 'wrap' }}>
               <div className="field" style={{ flex: '1 1 150px' }}>
-                <label>Town</label>
-                <input value={address.city} onChange={(e) => setAddress((a) => ({ ...a, city: e.target.value }))} />
+                <label htmlFor="address-city">Town</label>
+                <input id="address-city" value={address.city} onChange={(e) => setAddress((a) => ({ ...a, city: e.target.value }))} />
               </div>
               <div className="field" style={{ flex: '1 1 150px' }}>
-                <label>State</label>
-                <input value={address.state} onChange={(e) => setAddress((a) => ({ ...a, state: e.target.value }))} />
+                <label htmlFor="address-state">State</label>
+                <input id="address-state" value={address.state} onChange={(e) => setAddress((a) => ({ ...a, state: e.target.value }))} />
               </div>
               <div className="field" style={{ flex: '1 1 110px' }}>
-                <label>Pincode</label>
-                <input value={address.pincode} onChange={(e) => setAddress((a) => ({ ...a, pincode: e.target.value }))} inputMode="numeric" />
+                <label htmlFor="address-pincode">Pincode</label>
+                <input id="address-pincode" value={address.pincode} onChange={(e) => setAddress((a) => ({ ...a, pincode: e.target.value }))} inputMode="numeric" />
               </div>
             </div>
           </div>
@@ -317,12 +319,12 @@ export default function AdminNewOrder() {
       <div className="form-card" style={{ maxWidth: 620, marginTop: 18 }}>
         <h4 style={{ marginTop: 0 }}>Anything else</h4>
         <div className="field">
-          <label>Coupon code <span className="muted">(optional)</span></label>
-          <input value={couponCode} onChange={(e) => setCouponCode(e.target.value.toUpperCase())} placeholder="e.g. WESTERNGODS01" />
+          <label htmlFor="order-coupon-code">Coupon code <span className="muted">(optional)</span></label>
+          <input id="order-coupon-code" value={couponCode} onChange={(e) => setCouponCode(e.target.value.toUpperCase())} placeholder="e.g. WESTERNGODS01" />
         </div>
         <div className="field">
-          <label>Note <span className="muted">(optional — shown on the order)</span></label>
-          <textarea rows={2} value={note} onChange={(e) => setNote(e.target.value)} placeholder="Leave with the neighbour · wants it before Friday" />
+          <label htmlFor="order-note">Note <span className="muted">(optional — shown on the order)</span></label>
+          <textarea id="order-note" rows={2} value={note} onChange={(e) => setNote(e.target.value)} placeholder="Leave with the neighbour · wants it before Friday" />
         </div>
       </div>
 

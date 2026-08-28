@@ -59,16 +59,18 @@ function PageBannerCard({ page }) {
       />
       <div className="form-grid">
         <div className="field">
-          <label>Title override (optional)</label>
+          <label htmlFor={`banner-title-${page.key}`}>Title override (optional)</label>
           <input
+            id={`banner-title-${page.key}`}
             value={banner.bannerTitle}
             onChange={(e) => setBanner((b) => ({ ...b, bannerTitle: e.target.value }))}
             placeholder={`Default: "${page.defaultTitle}"`}
           />
         </div>
         <div className="field">
-          <label>Subtitle override (optional)</label>
+          <label htmlFor={`banner-subtitle-${page.key}`}>Subtitle override (optional)</label>
           <input
+            id={`banner-subtitle-${page.key}`}
             value={banner.bannerSubtitle}
             onChange={(e) => setBanner((b) => ({ ...b, bannerSubtitle: e.target.value }))}
             placeholder={`Default: ${page.defaultSubtitle.slice(0, 40)}…`}

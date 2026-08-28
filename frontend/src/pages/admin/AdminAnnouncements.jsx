@@ -78,9 +78,10 @@ export default function AdminAnnouncements() {
       <form className="card" style={{ padding: 18, margin: '18px 0', maxWidth: 680 }} onSubmit={save}>
         {messages.map((m, i) => (
           <div className="field" key={i}>
-            <label>Line {i + 1}</label>
+            <label htmlFor={`announcement-line-${i}`}>Line {i + 1}</label>
             <div className="flex gap-1" style={{ alignItems: 'center' }}>
               <input
+                id={`announcement-line-${i}`}
                 value={m}
                 maxLength={200}
                 placeholder={SUGGESTIONS[i] || 'e.g. Cash on delivery available'}
@@ -101,8 +102,9 @@ export default function AdminAnnouncements() {
         )}
 
         <div className="field" style={{ marginTop: 16 }}>
-          <label>Speed</label>
+          <label htmlFor="announcement-speed">Speed</label>
           <input
+            id="announcement-speed"
             type="number"
             min={10}
             max={200}

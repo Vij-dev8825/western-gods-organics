@@ -138,27 +138,28 @@ export default function AdminOrders() {
 
       <form className="admin-card order-filters" onSubmit={applyFilters}>
         <div className="field" style={{ flex: '2 1 220px' }}>
-          <label>Search</label>
+          <label htmlFor="order-search-filter">Search</label>
           <input
+            id="order-search-filter"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Order number, name, phone or product"
           />
         </div>
         <div className="field" style={{ flex: '1 1 130px' }}>
-          <label>Status</label>
-          <select className="select" value={status} onChange={(e) => changeFilter(setStatus)(e.target.value)}>
+          <label htmlFor="order-status-filter">Status</label>
+          <select id="order-status-filter" className="select" value={status} onChange={(e) => changeFilter(setStatus)(e.target.value)}>
             <option value="">Any</option>
             {STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
           </select>
         </div>
         <div className="field" style={{ flex: '1 1 130px' }}>
-          <label>From</label>
-          <input type="date" value={from} onChange={(e) => changeFilter(setFrom)(e.target.value)} />
+          <label htmlFor="order-date-from">From</label>
+          <input id="order-date-from" type="date" value={from} onChange={(e) => changeFilter(setFrom)(e.target.value)} />
         </div>
         <div className="field" style={{ flex: '1 1 130px' }}>
-          <label>To</label>
-          <input type="date" value={to} onChange={(e) => changeFilter(setTo)(e.target.value)} />
+          <label htmlFor="order-date-to">To</label>
+          <input id="order-date-to" type="date" value={to} onChange={(e) => changeFilter(setTo)(e.target.value)} />
         </div>
         <div className="flex gap-1">
           <button className="btn btn-gold btn-sm">Search</button>

@@ -104,6 +104,7 @@ export default function AdminPaymentMethods() {
               disabled={saving}
               onChange={(e) => setPrepaidDraft(e.target.value)}
               style={{ width: 100 }}
+              aria-label="Prepaid discount percentage"
             />
             <span className="muted">% off online payments</span>
             <button
@@ -137,6 +138,7 @@ export default function AdminPaymentMethods() {
               disabled={saving}
               onChange={(e) => setGatewayDraft(e.target.value)}
               style={{ width: 100 }}
+              aria-label="Payment gateway fee percentage"
             />
             <span className="muted">% of each online payment</span>
             <button

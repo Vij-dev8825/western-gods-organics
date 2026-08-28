@@ -114,6 +114,7 @@ export default function ChatWidget() {
                   value={text}
                   onChange={(e) => setText(e.target.value)}
                   placeholder={t('chatPlaceholder')}
+                  aria-label="Chat message"
                   maxLength={2000}
                 />
                 <button type="submit" className="btn btn-gold btn-sm" disabled={!text.trim() || sending}>

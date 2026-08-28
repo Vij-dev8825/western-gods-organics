@@ -239,18 +239,18 @@ export default function OilGuide() {
             </p>
             <form onSubmit={handleSubmit} className="form-grid">
               <div className="field">
-                <label>Name</label>
-                <input value={form.name} onChange={(e) => update('name', e.target.value)} />
+                <label htmlFor="oil-guide-name">Name</label>
+                <input id="oil-guide-name" value={form.name} onChange={(e) => update('name', e.target.value)} />
                 {errors.name && <div className="field-error">{errors.name}</div>}
               </div>
               <div className="field">
-                <label>Phone (WhatsApp)</label>
-                <input value={form.phone} onChange={(e) => update('phone', e.target.value)} placeholder="10-digit mobile number" />
+                <label htmlFor="oil-guide-phone">Phone (WhatsApp)</label>
+                <input id="oil-guide-phone" value={form.phone} onChange={(e) => update('phone', e.target.value)} placeholder="10-digit mobile number" />
                 {errors.phone && <div className="field-error">{errors.phone}</div>}
               </div>
               <div className="field">
-                <label>Email (optional)</label>
-                <input value={form.email} onChange={(e) => update('email', e.target.value)} />
+                <label htmlFor="oil-guide-email">Email (optional)</label>
+                <input id="oil-guide-email" value={form.email} onChange={(e) => update('email', e.target.value)} />
                 {errors.email && <div className="field-error">{errors.email}</div>}
               </div>
               <div className="field" style={{ alignSelf: 'end' }}>

@@ -312,6 +312,7 @@ export default function ProductCard({ product, index }) {
                     <input
                       type="email"
                       placeholder="Your email"
+                      aria-label="Email for back-in-stock notification"
                       value={notifyEmail}
                       onChange={(e) => setNotifyEmail(e.target.value)}
                       onClick={(e) => e.stopPropagation()}

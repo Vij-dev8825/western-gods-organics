@@ -9,8 +9,9 @@ import { api } from '../api';
 export function PhoneField({ address, onChange, errors }) {
   return (
     <div className="field">
-      <label>Phone</label>
+      <label htmlFor="delivery-phone">Phone</label>
       <input
+        id="delivery-phone"
         required
         type="tel"
         inputMode={address.country === 'IN' ? 'numeric' : 'tel'}
@@ -77,8 +78,9 @@ export default function AddressForm({ address, onChange, errors, showLabel = fal
     <>
       {showLabel && (
         <div className="field">
-          <label>Label (optional)</label>
+          <label htmlFor="address-label">Label (optional)</label>
           <input
+            id="address-label"
             value={address.label || ''}
             onChange={(e) => onChange('label', e.target.value)}
             placeholder="e.g. Home, Work"
@@ -86,21 +88,22 @@ export default function AddressForm({ address, onChange, errors, showLabel = fal
         </div>
       )}
       <div className="field">
-        <label>Country</label>
-        <select value={address.country} onChange={(e) => onChange('country', e.target.value)}>
+        <label htmlFor="address-country">Country</label>
+        <select id="address-country" value={address.country} onChange={(e) => onChange('country', e.target.value)}>
           {countries.map((c) => (
             <option key={c.code} value={c.code}>{countryFlagEmoji(c.code)} {c.label}</option>
           ))}
         </select>
       </div>
       <div className="field">
-        <label>Address line</label>
-        <input required value={address.line1} onChange={(e) => onChange('line1', e.target.value)} />
+        <label htmlFor="address-line1">Address line</label>
+        <input id="address-line1" required value={address.line1} onChange={(e) => onChange('line1', e.target.value)} />
         {errors.line1 && <div className="field-error">{errors.line1}</div>}
       </div>
       <div className="field">
-        <label>{address.country === 'IN' ? 'Pincode' : 'Postal / ZIP code'}</label>
+        <label htmlFor="address-pincode">{address.country === 'IN' ? 'Pincode' : 'Postal / ZIP code'}</label>
         <input
+          id="address-pincode"
           required
           inputMode={address.country === 'IN' ? 'numeric' : 'text'}
           maxLength={address.country === 'IN' ? 6 : 10}
@@ -116,15 +119,16 @@ export default function AddressForm({ address, onChange, errors, showLabel = fal
         {pincodeLookupError && <div className="field-error">{pincodeLookupError}</div>}
       </div>
       <div className="field">
-        <label>City</label>
+        <label htmlFor="address-city">City</label>
         {cityOptions.length > 0 ? (
-          <select value={address.city} onChange={(e) => onChange('city', e.target.value)}>
+          <select id="address-city" value={address.city} onChange={(e) => onChange('city', e.target.value)}>
             {cityOptions.map((c) => (
               <option key={c} value={c}>{c}</option>
             ))}
           </select>
         ) : (
           <input
+            id="address-city"
             required
             value={address.city}
             onChange={(e) => onChange('city', e.target.value)}
@@ -134,15 +138,16 @@ export default function AddressForm({ address, onChange, errors, showLabel = fal
         {errors.city && <div className="field-error">{errors.city}</div>}
       </div>
       <div className="field">
-        <label>State</label>
+        <label htmlFor="address-state">State</label>
         {stateOptions.length > 0 ? (
-          <select value={address.state} onChange={(e) => onChange('state', e.target.value)}>
+          <select id="address-state" value={address.state} onChange={(e) => onChange('state', e.target.value)}>
             {stateOptions.map((s) => (
               <option key={s} value={s}>{s}</option>
             ))}
           </select>
         ) : (
           <input
+            id="address-state"
             required
             value={address.state}
             onChange={(e) => onChange('state', e.target.value)}

@@ -133,19 +133,19 @@ export default function AdminFlowers() {
         <h4 style={{ marginTop: 0 }}>Add a flower</h4>
         <div className="form-grid">
           <div className="field">
-            <label>Name</label>
-            <input value={label} maxLength={40} required placeholder="e.g. Thumba"
+            <label htmlFor="flower-name">Name</label>
+            <input id="flower-name" value={label} maxLength={40} required placeholder="e.g. Thumba"
               onChange={(e) => setLabel(e.target.value)} />
           </div>
           <div className="field">
-            <label>Also called (optional)</label>
-            <input value={gloss} maxLength={40} placeholder="e.g. leucas"
+            <label htmlFor="flower-gloss">Also called (optional)</label>
+            <input id="flower-gloss" value={gloss} maxLength={40} placeholder="e.g. leucas"
               onChange={(e) => setGloss(e.target.value)} />
           </div>
         </div>
         <div className="field">
-          <label>Photograph</label>
-          <input type="file" accept="image/jpeg,image/png,image/webp" ref={fileRef} />
+          <label htmlFor="flower-photograph">Photograph</label>
+          <input id="flower-photograph" type="file" accept="image/jpeg,image/png,image/webp" ref={fileRef} />
         </div>
         <label className="check-row">
           <input type="checkbox" checked={petal} onChange={(e) => setPetal(e.target.checked)} />
@@ -194,6 +194,7 @@ export default function AdminFlowers() {
                         maxLength={40}
                         autoFocus
                         placeholder="Name"
+                        aria-label="Flower name"
                         onChange={(e) => setEditing({ ...editing, label: e.target.value })}
                         onKeyDown={(e) => {
                           if (e.key === 'Enter') { e.preventDefault(); saveEdit(); }
@@ -204,6 +205,7 @@ export default function AdminFlowers() {
                         value={editing.gloss}
                         maxLength={40}
                         placeholder="Also called"
+                        aria-label="Also called name"
                         onChange={(e) => setEditing({ ...editing, gloss: e.target.value })}
                         onKeyDown={(e) => {
                           if (e.key === 'Enter') { e.preventDefault(); saveEdit(); }

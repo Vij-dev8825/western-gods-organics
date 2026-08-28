@@ -137,17 +137,18 @@ export default function BulkEnquiry() {
           {status && typeof status === 'string' && <div className="alert alert-error">{status}</div>}
 
           <div className="field">
-            <label>Full name *</label>
-            <input required value={form.name} onChange={(e) => update('name', e.target.value)} />
+            <label htmlFor="bulk-enquiry-name">Full name *</label>
+            <input id="bulk-enquiry-name" required value={form.name} onChange={(e) => update('name', e.target.value)} />
             {errors.name && <div className="field-error">{errors.name}</div>}
           </div>
           <div className="field">
-            <label>Company / Store name</label>
-            <input value={form.company} onChange={(e) => update('company', e.target.value)} />
+            <label htmlFor="bulk-enquiry-company">Company / Store name</label>
+            <input id="bulk-enquiry-company" value={form.company} onChange={(e) => update('company', e.target.value)} />
           </div>
           <div className="field">
-            <label>Mobile number *</label>
+            <label htmlFor="bulk-enquiry-phone">Mobile number *</label>
             <input
+              id="bulk-enquiry-phone"
               required
               type="tel"
               inputMode="numeric"
@@ -158,18 +159,18 @@ export default function BulkEnquiry() {
             {errors.phone && <div className="field-error">{errors.phone}</div>}
           </div>
           <div className="field">
-            <label>Email</label>
-            <input type="email" value={form.email} onChange={(e) => update('email', e.target.value)} />
+            <label htmlFor="bulk-enquiry-email">Email</label>
+            <input id="bulk-enquiry-email" type="email" value={form.email} onChange={(e) => update('email', e.target.value)} />
             {errors.email && <div className="field-error">{errors.email}</div>}
           </div>
           <div className="flex gap-1">
             <div className="field" style={{ flex: 1 }}>
-              <label>City</label>
-              <input value={form.city} onChange={(e) => update('city', e.target.value)} />
+              <label htmlFor="bulk-enquiry-city">City</label>
+              <input id="bulk-enquiry-city" value={form.city} onChange={(e) => update('city', e.target.value)} />
             </div>
             <div className="field" style={{ flex: 1 }}>
-              <label>Country</label>
-              <select value={form.country} onChange={(e) => update('country', e.target.value)}>
+              <label htmlFor="bulk-enquiry-country">Country</label>
+              <select id="bulk-enquiry-country" value={form.country} onChange={(e) => update('country', e.target.value)}>
                 {countries.map((c) => (
                   <option key={c.code} value={c.code}>{c.label}</option>
                 ))}
@@ -177,28 +178,28 @@ export default function BulkEnquiry() {
             </div>
           </div>
           <div className="field">
-            <label>GST / Business Registration ID (optional)</label>
-            <input value={form.gstin} onChange={(e) => update('gstin', e.target.value.toUpperCase())} placeholder="e.g. 22AAAAA0000A1Z5" />
+            <label htmlFor="bulk-enquiry-gstin">GST / Business Registration ID (optional)</label>
+            <input id="bulk-enquiry-gstin" value={form.gstin} onChange={(e) => update('gstin', e.target.value.toUpperCase())} placeholder="e.g. 22AAAAA0000A1Z5" />
           </div>
 
           {form.items.map((item, i) => (
             <div className="flex gap-1" key={i} style={{ alignItems: 'flex-start' }}>
               <div className="field" style={{ flex: 2 }}>
-                <label>{i === 0 ? 'Product *' : `Product ${i + 1}`}</label>
-                <select value={item.productCategory} onChange={(e) => updateItem(i, 'productCategory', e.target.value)}>
+                <label htmlFor={`bulk-enquiry-product-${i}`}>{i === 0 ? 'Product *' : `Product ${i + 1}`}</label>
+                <select id={`bulk-enquiry-product-${i}`} value={item.productCategory} onChange={(e) => updateItem(i, 'productCategory', e.target.value)}>
                   {PRODUCT_OPTIONS.map(([value, label]) => (
                     <option key={value} value={value}>{label}</option>
                   ))}
                 </select>
               </div>
               <div className="field" style={{ flex: 1 }}>
-                <label>Quantity *</label>
-                <input required type="number" min="1" value={item.quantity} onChange={(e) => updateItem(i, 'quantity', e.target.value)} />
+                <label htmlFor={`bulk-enquiry-quantity-${i}`}>Quantity *</label>
+                <input id={`bulk-enquiry-quantity-${i}`} required type="number" min="1" value={item.quantity} onChange={(e) => updateItem(i, 'quantity', e.target.value)} />
                 {errors.items?.[i] && <div className="field-error">{errors.items[i]}</div>}
               </div>
               <div className="field" style={{ flex: 1 }}>
-                <label>Unit</label>
-                <select value={item.unit} onChange={(e) => updateItem(i, 'unit', e.target.value)}>
+                <label htmlFor={`bulk-enquiry-unit-${i}`}>Unit</label>
+                <select id={`bulk-enquiry-unit-${i}`} value={item.unit} onChange={(e) => updateItem(i, 'unit', e.target.value)}>
                   <option>Litres</option>
                   <option>Bottles</option>
                   <option>Drums</option>
@@ -233,8 +234,8 @@ export default function BulkEnquiry() {
           </label>
 
           <div className="field">
-            <label>Message</label>
-            <textarea value={form.message} onChange={(e) => update('message', e.target.value)} placeholder="Tell us about your requirement, delivery timeline, etc." />
+            <label htmlFor="bulk-enquiry-message">Message</label>
+            <textarea id="bulk-enquiry-message" value={form.message} onChange={(e) => update('message', e.target.value)} placeholder="Tell us about your requirement, delivery timeline, etc." />
           </div>
           <button className="btn btn-gold btn-block" disabled={loading}>
             {loading ? 'Sending…' : 'Submit enquiry'}

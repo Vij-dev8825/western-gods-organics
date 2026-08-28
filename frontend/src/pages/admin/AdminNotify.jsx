@@ -66,17 +66,17 @@ export default function AdminNotify() {
       <form className="admin-card" onSubmit={send}>
         <h3>Compose broadcast</h3>
         <div className="field">
-          <label>Title</label>
-          <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Festive offer: 15% off sesame oil" required />
+          <label htmlFor="notify-title">Title</label>
+          <input id="notify-title" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Festive offer: 15% off sesame oil" required />
         </div>
         <div className="field">
-          <label>Message</label>
-          <textarea value={body} onChange={(e) => setBody(e.target.value)} placeholder="Write the message customers will receive…" required />
+          <label htmlFor="notify-message">Message</label>
+          <textarea id="notify-message" value={body} onChange={(e) => setBody(e.target.value)} placeholder="Write the message customers will receive…" required />
         </div>
         <ImageUploadField value={image} onChange={setImage} label="Image (optional)" />
         <div className="field">
-          <label>Link to product (optional)</label>
-          <select value={productId} onChange={(e) => setProductId(e.target.value)}>
+          <label htmlFor="notify-product">Link to product (optional)</label>
+          <select id="notify-product" value={productId} onChange={(e) => setProductId(e.target.value)}>
             <option value="">No product — go to Notifications page</option>
             {products.map((p) => (
               <option key={p.id} value={p.id}>{p.name}</option>

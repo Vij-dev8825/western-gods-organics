@@ -63,16 +63,18 @@ export default function AdminSaleBanner() {
 
         <div className="form-grid" style={{ marginTop: 16 }}>
           <div className="field">
-            <label>Title</label>
+            <label htmlFor="sale-banner-title">Title</label>
             <input
+              id="sale-banner-title"
               value={settings.title}
               onChange={(e) => setSettings((s) => ({ ...s, title: e.target.value }))}
               placeholder="e.g. Monsoon Sale — Up to 30% Off"
             />
           </div>
           <div className="field">
-            <label>Subtitle (optional)</label>
+            <label htmlFor="sale-banner-subtitle">Subtitle (optional)</label>
             <input
+              id="sale-banner-subtitle"
               value={settings.subtitle}
               onChange={(e) => setSettings((s) => ({ ...s, subtitle: e.target.value }))}
               placeholder="e.g. On all cold-pressed oils"
@@ -80,8 +82,9 @@ export default function AdminSaleBanner() {
           </div>
         </div>
         <div className="field">
-          <label>Ends on</label>
+          <label htmlFor="sale-banner-end-date">Ends on</label>
           <input
+            id="sale-banner-end-date"
             type="datetime-local"
             value={toLocalInputValue(settings.endDate)}
             onChange={(e) => setSettings((s) => ({ ...s, endDate: e.target.value ? new Date(e.target.value).toISOString() : '' }))}

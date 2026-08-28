@@ -118,8 +118,9 @@ export default function SellerLogin() {
         {step === 'phone' ? (
           <div>
             <div className="field">
-              <label style={{ color: 'rgba(250,246,236,0.85)' }}>Mobile number</label>
+              <label htmlFor="seller-login-mobile" style={{ color: 'rgba(250,246,236,0.85)' }}>Mobile number</label>
               <input
+                id="seller-login-mobile"
                 type="tel"
                 inputMode="numeric"
                 autoComplete="off"
@@ -133,8 +134,9 @@ export default function SellerLogin() {
             </div>
 
             <div className="field">
-              <label style={{ color: 'rgba(250,246,236,0.85)' }}>Your name</label>
+              <label htmlFor="seller-login-name" style={{ color: 'rgba(250,246,236,0.85)' }}>Your name</label>
               <input
+                id="seller-login-name"
                 autoComplete="off"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
@@ -167,8 +169,9 @@ export default function SellerLogin() {
 
             {channel === 'email' && (
               <div className="field">
-                <label style={{ color: 'rgba(250,246,236,0.85)' }}>Email address</label>
+                <label htmlFor="seller-login-email" style={{ color: 'rgba(250,246,236,0.85)' }}>Email address</label>
                 <input
+                  id="seller-login-email"
                   type="email"
                   autoComplete="off"
                   value={email}
@@ -195,6 +198,7 @@ export default function SellerLogin() {
                     maxLength={1}
                     inputMode="numeric"
                     autoComplete="off"
+                    aria-label={`OTP digit ${i + 1}`}
                     onChange={(e) => handleOtpChange(i, e.target.value)}
                     onKeyDown={onEnterKey(handleVerifyOtp)}
                     autoFocus={i === 0}

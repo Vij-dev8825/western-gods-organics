@@ -176,8 +176,9 @@ export default function SellerRegister() {
             <Link to="/seller/login">Log in instead</Link>.
           </p>
           <div className="field">
-            <label>Mobile number</label>
+            <label htmlFor="seller-mobile-number">Mobile number</label>
             <input
+              id="seller-mobile-number"
               type="tel"
               inputMode="numeric"
               placeholder="98765 43210"
@@ -189,8 +190,8 @@ export default function SellerRegister() {
             />
           </div>
           <div className="field">
-            <label>Your name</label>
-            <input value={name} onChange={(e) => setName(e.target.value)} onKeyDown={onEnterKey(handleSendOtp)} />
+            <label htmlFor="seller-full-name">Your name</label>
+            <input id="seller-full-name" value={name} onChange={(e) => setName(e.target.value)} onKeyDown={onEnterKey(handleSendOtp)} />
           </div>
           <div className="field">
             <label>Send my code via</label>
@@ -205,8 +206,8 @@ export default function SellerRegister() {
           </div>
           {channel === 'email' && (
             <div className="field">
-              <label>Email address</label>
-              <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} onKeyDown={onEnterKey(handleSendOtp)} placeholder="you@example.com" />
+              <label htmlFor="seller-otp-email">Email address</label>
+              <input id="seller-otp-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} onKeyDown={onEnterKey(handleSendOtp)} placeholder="you@example.com" />
             </div>
           )}
           <button type="button" className="btn btn-gold" disabled={loading} onClick={handleSendOtp}>
@@ -229,6 +230,7 @@ export default function SellerRegister() {
                   value={digit}
                   maxLength={1}
                   inputMode="numeric"
+                  aria-label={`OTP digit ${i + 1}`}
                   onChange={(e) => handleOtpChange(i, e.target.value)}
                   onKeyDown={onEnterKey(handleVerifyOtp)}
                   autoFocus={i === 0}
@@ -259,8 +261,9 @@ export default function SellerRegister() {
             Last step — tell us who you are and what you make. No company, GST or licence needed to start.
           </p>
           <div className="field">
-            <label>Your name, or your farm's name</label>
+            <label htmlFor="seller-business-name">Your name, or your farm's name</label>
             <input
+              id="seller-business-name"
               value={business.businessName}
               onChange={(e) => setBusiness((b) => ({ ...b, businessName: e.target.value }))}
               placeholder="e.g. Muthu, or Muthu Family Oil Press"
@@ -273,16 +276,18 @@ export default function SellerRegister() {
             </p>
           </div>
           <div className="field">
-            <label>Contact phone</label>
+            <label htmlFor="seller-contact-phone">Contact phone</label>
             <input
+              id="seller-contact-phone"
               value={business.phone}
               onChange={(e) => setBusiness((b) => ({ ...b, phone: e.target.value }))}
               placeholder={user?.phone}
             />
           </div>
           <div className="field">
-            <label>What will you sell?</label>
+            <label htmlFor="seller-what-you-sell">What will you sell?</label>
             <textarea
+              id="seller-what-you-sell"
               rows={4}
               value={business.whatTheySell}
               onChange={(e) => setBusiness((b) => ({ ...b, whatTheySell: e.target.value }))}

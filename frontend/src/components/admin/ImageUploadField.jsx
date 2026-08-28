@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import { api } from '../../api';
 import { useAuth } from '../../context/AuthContext';
 import { getProductImage } from '../../utils/productImages';
@@ -17,6 +17,7 @@ export default function ImageUploadField({ value, onChange, label = 'Image', all
   const { token } = useAuth();
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState('');
+  const inputId = useId();
 
   async function handleFile(e) {
     const file = e.target.files[0];
@@ -46,12 +47,13 @@ export default function ImageUploadField({ value, onChange, label = 'Image', all
 
   return (
     <div className="field">
-      <label>{label}</label>
+      <label htmlFor={inputId}>{label}</label>
       <div className="image-upload-field">
         {value && <img src={getProductImage(value)} alt="" className="image-upload-preview" />}
         <label className={`btn btn-outline btn-sm image-upload-btn ${uploading ? 'disabled' : ''}`}>
           {uploading ? 'Uploading…' : value ? 'Change image' : 'Upload image'}
           <input
+            id={inputId}
             type="file"
             accept="image/jpeg,image/png,image/webp"
             onChange={handleFile}

@@ -82,18 +82,19 @@ export default function ContactUs() {
           {status && status !== 'sent' && <div className="alert alert-error">{status}</div>}
 
           <div className="field">
-            <label>Name *</label>
-            <input required value={form.name} onChange={(e) => update('name', e.target.value)} />
+            <label htmlFor="contact-name">Name *</label>
+            <input id="contact-name" required value={form.name} onChange={(e) => update('name', e.target.value)} />
             {errors.name && <div className="field-error">{errors.name}</div>}
           </div>
           <div className="field">
-            <label>Email *</label>
-            <input required type="email" value={form.email} onChange={(e) => update('email', e.target.value)} />
+            <label htmlFor="contact-email">Email *</label>
+            <input id="contact-email" required type="email" value={form.email} onChange={(e) => update('email', e.target.value)} />
             {errors.email && <div className="field-error">{errors.email}</div>}
           </div>
           <div className="field">
-            <label>Phone</label>
+            <label htmlFor="contact-phone">Phone</label>
             <input
+              id="contact-phone"
               type="tel"
               inputMode="numeric"
               maxLength={10}
@@ -103,12 +104,12 @@ export default function ContactUs() {
             {errors.phone && <div className="field-error">{errors.phone}</div>}
           </div>
           <div className="field">
-            <label>Subject</label>
-            <input value={form.subject} onChange={(e) => update('subject', e.target.value)} placeholder="Order enquiry, feedback, etc." />
+            <label htmlFor="contact-subject">Subject</label>
+            <input id="contact-subject" value={form.subject} onChange={(e) => update('subject', e.target.value)} placeholder="Order enquiry, feedback, etc." />
           </div>
           <div className="field">
-            <label>Message *</label>
-            <textarea required value={form.message} onChange={(e) => update('message', e.target.value)} />
+            <label htmlFor="contact-message">Message *</label>
+            <textarea id="contact-message" required value={form.message} onChange={(e) => update('message', e.target.value)} />
             {errors.message && <div className="field-error">{errors.message}</div>}
           </div>
           <button className="btn btn-gold btn-block" disabled={loading}>

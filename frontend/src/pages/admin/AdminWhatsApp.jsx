@@ -202,8 +202,9 @@ export default function AdminWhatsApp() {
             </div>
 
             <div className="field">
-              <label>Message</label>
+              <label htmlFor="broadcast-message">Message</label>
               <textarea
+                id="broadcast-message"
                 rows={4}
                 maxLength={1000}
                 value={message}

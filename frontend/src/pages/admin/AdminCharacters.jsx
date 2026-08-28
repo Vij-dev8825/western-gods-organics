@@ -148,13 +148,13 @@ export default function AdminCharacters() {
         <h4 style={{ marginTop: 0 }}>Add a character</h4>
         <div className="form-grid">
           <div className="field">
-            <label>Name</label>
-            <input value={label} maxLength={40} required placeholder="e.g. Maveli"
+            <label htmlFor="character-name">Name</label>
+            <input id="character-name" value={label} maxLength={40} required placeholder="e.g. Maveli"
               onChange={(e) => setLabel(e.target.value)} />
           </div>
           <div className="field">
-            <label>Festival</label>
-            <select value={festival} onChange={(e) => setFestival(e.target.value)}>
+            <label htmlFor="character-festival">Festival</label>
+            <select id="character-festival" value={festival} onChange={(e) => setFestival(e.target.value)}>
               {DESIGN_CHOICES.filter((d) => d.id !== 'generic').map((d) => (
                 <option key={d.id} value={d.id}>{d.label}</option>
               ))}
@@ -162,12 +162,12 @@ export default function AdminCharacters() {
           </div>
         </div>
         <div className="field">
-          <label>Image</label>
-          <input type="file" accept="image/jpeg,image/png,image/webp" ref={fileRef} />
+          <label htmlFor="character-image">Image</label>
+          <input id="character-image" type="file" accept="image/jpeg,image/png,image/webp" ref={fileRef} />
         </div>
         <div className="field">
-          <label>How it moves</label>
-          <select value={motion} onChange={(e) => setMotion(e.target.value)} style={{ maxWidth: 280 }}>
+          <label htmlFor="character-motion">How it moves</label>
+          <select id="character-motion" value={motion} onChange={(e) => setMotion(e.target.value)} style={{ maxWidth: 280 }}>
             {MOTIONS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
           </select>
           <p className="muted" style={{ fontSize: '0.8rem', marginTop: 4 }}>
@@ -219,6 +219,7 @@ export default function AdminCharacters() {
                       value={editing.label}
                       maxLength={40}
                       placeholder="Name"
+                      aria-label="Character name"
                       onChange={(e) => setEditing({ ...editing, label: e.target.value })}
                       onKeyDown={(e) => {
                         if (e.key === 'Enter') { e.preventDefault(); saveEdit(); }

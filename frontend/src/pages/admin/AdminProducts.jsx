@@ -416,12 +416,12 @@ export default function AdminProducts() {
           <h3>{editing === 'new' ? 'New product' : `Edit: ${form.name}`}</h3>
           <div className="form-grid">
             <div className="field">
-              <label>Name</label>
-              <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
+              <label htmlFor="product-name">Name</label>
+              <input id="product-name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
             </div>
             <div className="field">
-              <label>Category</label>
-              <select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} required>
+              <label htmlFor="product-category">Category</label>
+              <select id="product-category" value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} required>
                 <option value="">Select…</option>
                 {categories.map((c) => (
                   <option key={c.id} value={c.id}>{c.label}</option>
@@ -429,8 +429,8 @@ export default function AdminProducts() {
               </select>
             </div>
             <div className="field">
-              <label>Tags (comma-separated)</label>
-              <input value={form.tags} onChange={(e) => setForm({ ...form, tags: e.target.value })} />
+              <label htmlFor="product-tags">Tags (comma-separated)</label>
+              <input id="product-tags" value={form.tags} onChange={(e) => setForm({ ...form, tags: e.target.value })} />
             </div>
           </div>
 
@@ -523,8 +523,9 @@ export default function AdminProducts() {
           </div>
 
           <div className="field" style={{ marginTop: 16 }}>
-            <label>Combo includes (comma-separated, optional)</label>
+            <label htmlFor="combo-items">Combo includes (comma-separated, optional)</label>
             <input
+              id="combo-items"
               value={form.comboItems}
               onChange={(e) => setForm({ ...form, comboItems: e.target.value })}
               placeholder="e.g. Coconut Oil 500ml, Castor Oil 500ml, Neem Soap"
@@ -562,12 +563,12 @@ export default function AdminProducts() {
           </div>
 
           <div className="field">
-            <label>Short description (English)</label>
-            <input value={form.shortDescription} onChange={(e) => setForm({ ...form, shortDescription: e.target.value })} />
+            <label htmlFor="short-description-en">Short description (English)</label>
+            <input id="short-description-en" value={form.shortDescription} onChange={(e) => setForm({ ...form, shortDescription: e.target.value })} />
           </div>
           <div className="field">
-            <label>Full description (English)</label>
-            <textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
+            <label htmlFor="full-description-en">Full description (English)</label>
+            <textarea id="full-description-en" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
           </div>
 
           <div className="flex gap-2" style={{ alignItems: 'baseline', marginTop: 16, flexWrap: 'wrap' }}>
@@ -595,8 +596,9 @@ export default function AdminProducts() {
             <div className="form-grid">
               {TRANSLATABLE_LANGS.map((l) => (
                 <div className="field" key={`name-${l.code}`}>
-                  <label>Name ({l.label})</label>
+                  <label htmlFor={`product-name-${l.code}`}>Name ({l.label})</label>
                   <input
+                    id={`product-name-${l.code}`}
                     value={form.names[l.code] || ''}
                     onChange={(e) => setForm({ ...form, names: { ...form.names, [l.code]: e.target.value } })}
                   />
@@ -608,8 +610,9 @@ export default function AdminProducts() {
           {TRANSLATABLE_LANGS.map((l) => (
             <div key={l.code} className="form-grid" style={{ marginBottom: 8 }}>
               <div className="field">
-                <label>Short description ({l.label})</label>
+                <label htmlFor={`short-description-${l.code}`}>Short description ({l.label})</label>
                 <input
+                  id={`short-description-${l.code}`}
                   value={form.shortDescriptions[l.code] || ''}
                   onChange={(e) =>
                     setForm((f) => ({
@@ -620,8 +623,9 @@ export default function AdminProducts() {
                 />
               </div>
               <div className="field">
-                <label>Full description ({l.label})</label>
+                <label htmlFor={`full-description-${l.code}`}>Full description ({l.label})</label>
                 <textarea
+                  id={`full-description-${l.code}`}
                   value={form.descriptions[l.code] || ''}
                   onChange={(e) =>
                     setForm((f) => ({
@@ -649,13 +653,13 @@ export default function AdminProducts() {
                   <td data-label="Price ₹"><input type="number" min="0" value={s.price} onChange={(e) => setSize(i, 'price', e.target.value)} required /></td>
                   <td data-label="MRP ₹"><input type="number" min="0" value={s.mrp} onChange={(e) => setSize(i, 'mrp', e.target.value)} /></td>
                   <td data-label="Stock"><input type="number" min="0" value={s.stock} onChange={(e) => setSize(i, 'stock', e.target.value)} /></td>
-                  <td data-label="Cost ₹"><input type="number" min="0" value={s.costPrice ?? ''} onChange={(e) => setSize(i, 'costPrice', e.target.value)} placeholder="Not set" /></td>
+                  <td data-label="Cost ₹"><input type="number" min="0" value={s.costPrice ?? ''} onChange={(e) => setSize(i, 'costPrice', e.target.value)} placeholder="Not set" aria-label="Cost price" /></td>
                   {/* Live as you type. Entering a cost and immediately seeing
                       what it leaves is the whole point — a margin discovered
                       after the first sale is discovered too late to act on. */}
                   <td data-label="You keep">{keepLabel(s)}</td>
-                  <td data-label="Material per unit"><input type="number" min="0" step="0.01" value={s.materialPerUnit ?? ''} onChange={(e) => setSize(i, 'materialPerUnit', e.target.value)} placeholder="e.g. 2.8" /></td>
-                  <td data-label="Wholesale ₹ (optional)"><input type="number" min="0" value={s.wholesalePrice || ''} onChange={(e) => setSize(i, 'wholesalePrice', e.target.value)} placeholder="Same as price" /></td>
+                  <td data-label="Material per unit"><input type="number" min="0" step="0.01" value={s.materialPerUnit ?? ''} onChange={(e) => setSize(i, 'materialPerUnit', e.target.value)} placeholder="e.g. 2.8" aria-label="Material per unit" /></td>
+                  <td data-label="Wholesale ₹ (optional)"><input type="number" min="0" value={s.wholesalePrice || ''} onChange={(e) => setSize(i, 'wholesalePrice', e.target.value)} placeholder="Same as price" aria-label="Wholesale price" /></td>
                   <td className="cell-action">
                     {form.sizes.length > 1 && (
                       <button type="button" className="link-btn danger" onClick={() => setForm((f) => ({ ...f, sizes: f.sizes.filter((_, idx) => idx !== i) }))}>
@@ -723,6 +727,7 @@ export default function AdminProducts() {
                             step="0.01"
                             value={value}
                             placeholder={auto}
+                            aria-label={`${c.label} price for ${label}`}
                             onChange={(e) => setCountryPrice(c.code, label, e.target.value)}
                           />
                         </td>
@@ -739,48 +744,54 @@ export default function AdminProducts() {
           </label>
           <div className="form-grid">
             <div className="field">
-              <label>Batch number</label>
+              <label htmlFor="batch-number">Batch number</label>
               <input
+                id="batch-number"
                 placeholder="e.g. WG-0347"
                 value={form.batchNumber}
                 onChange={(e) => setForm({ ...form, batchNumber: e.target.value })}
               />
             </div>
             <div className="field">
-              <label>Production date</label>
+              <label htmlFor="production-date">Production date</label>
               <input
+                id="production-date"
                 type="date"
                 value={form.productionDate}
                 onChange={(e) => setForm({ ...form, productionDate: e.target.value })}
               />
             </div>
             <div className="field">
-              <label>Best before</label>
+              <label htmlFor="best-before-date">Best before</label>
               <input
+                id="best-before-date"
                 type="date"
                 value={form.bestBeforeDate}
                 onChange={(e) => setForm({ ...form, bestBeforeDate: e.target.value })}
               />
             </div>
             <div className="field">
-              <label>Grown by</label>
+              <label htmlFor="grower-name">Grown by</label>
               <input
+                id="grower-name"
                 placeholder="e.g. Murugesan"
                 value={form.growerName}
                 onChange={(e) => setForm({ ...form, growerName: e.target.value })}
               />
             </div>
             <div className="field">
-              <label>Grower's village</label>
+              <label htmlFor="grower-village">Grower's village</label>
               <input
+                id="grower-village"
                 placeholder="e.g. Kaniyur"
                 value={form.growerVillage}
                 onChange={(e) => setForm({ ...form, growerVillage: e.target.value })}
               />
             </div>
             <div className="field">
-              <label>Made from</label>
+              <label htmlFor="raw-material">Made from</label>
               <input
+                id="raw-material"
                 placeholder="e.g. Groundnut"
                 value={form.rawMaterial}
                 onChange={(e) => setForm({ ...form, rawMaterial: e.target.value })}
@@ -791,8 +802,8 @@ export default function AdminProducts() {
               </p>
             </div>
             <div className="field">
-              <label>Measured in</label>
-              <select value={form.materialUnit} onChange={(e) => setForm({ ...form, materialUnit: e.target.value })}>
+              <label htmlFor="material-unit">Measured in</label>
+              <select id="material-unit" value={form.materialUnit} onChange={(e) => setForm({ ...form, materialUnit: e.target.value })}>
                 <option value="kg">kg</option>
                 <option value="litres">litres</option>
                 <option value="bundles">bundles</option>
@@ -800,16 +811,18 @@ export default function AdminProducts() {
               </select>
             </div>
             <div className="field">
-              <label>FSSAI license number</label>
+              <label htmlFor="fssai-license">FSSAI license number</label>
               <input
+                id="fssai-license"
                 placeholder="e.g. 12345678901234"
                 value={form.fssaiLicense}
                 onChange={(e) => setForm({ ...form, fssaiLicense: e.target.value })}
               />
             </div>
             <div className="field">
-              <label>Lab report link (optional)</label>
+              <label htmlFor="lab-report-url">Lab report link (optional)</label>
               <input
+                id="lab-report-url"
                 placeholder="https://…"
                 value={form.labReportUrl}
                 onChange={(e) => setForm({ ...form, labReportUrl: e.target.value })}
@@ -860,8 +873,9 @@ export default function AdminProducts() {
               </p>
             </div>
             <div className="field">
-              <label>Typical supermarket price, per 100ml/100g (₹)</label>
+              <label htmlFor="market-price-per-100">Typical supermarket price, per 100ml/100g (₹)</label>
               <input
+                id="market-price-per-100"
                 type="number"
                 min="0"
                 step="0.01"
@@ -872,8 +886,9 @@ export default function AdminProducts() {
             </div>
           </div>
           <div className="field">
-            <label>Ingredients (INCI) — mainly for soaps</label>
+            <label htmlFor="inci-ingredients">Ingredients (INCI) — mainly for soaps</label>
             <textarea
+              id="inci-ingredients"
               rows={2}
               placeholder="e.g. Saponified Coconut Oil, Saponified Palm Oil, Neem Oil, Tulsi Extract"
               value={form.inciIngredients}
@@ -887,8 +902,9 @@ export default function AdminProducts() {
           </label>
 
           <div className="field" style={{ marginTop: 16, maxWidth: 260 }}>
-            <label>Public launch date (optional)</label>
+            <label htmlFor="public-launch-date">Public launch date (optional)</label>
             <input
+              id="public-launch-date"
               type="date"
               value={form.earlyAccessUntil}
               onChange={(e) => setForm({ ...form, earlyAccessUntil: e.target.value })}

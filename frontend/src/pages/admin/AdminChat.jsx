@@ -98,7 +98,7 @@ export default function AdminChat() {
                 <div ref={bottomRef} />
               </div>
               <form className="chat-input" onSubmit={send}>
-                <input value={text} onChange={(e) => setText(e.target.value)} placeholder="Reply to the customer…" />
+                <input value={text} onChange={(e) => setText(e.target.value)} placeholder="Reply to the customer…" aria-label="Reply to the customer" />
                 <button className="btn btn-gold btn-sm" disabled={!text.trim()}>Send</button>
               </form>
             </>

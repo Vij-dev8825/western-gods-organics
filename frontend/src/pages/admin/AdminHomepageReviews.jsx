@@ -52,8 +52,9 @@ export default function AdminHomepageReviews() {
       <div className="admin-card">
         <div className="form-grid">
           <div className="field">
-            <label>Aggregate rating (e.g. 4.8)</label>
+            <label htmlFor="homepage-review-rating">Aggregate rating (e.g. 4.8)</label>
             <input
+              id="homepage-review-rating"
               type="number"
               min="0"
               max="5"
@@ -63,8 +64,9 @@ export default function AdminHomepageReviews() {
             />
           </div>
           <div className="field">
-            <label>Total review count</label>
+            <label htmlFor="homepage-review-count">Total review count</label>
             <input
+              id="homepage-review-count"
               type="number"
               min="0"
               value={settings.reviewCount || ''}
@@ -72,8 +74,9 @@ export default function AdminHomepageReviews() {
             />
           </div>
           <div className="field">
-            <label>Google Maps listing URL (optional)</label>
+            <label htmlFor="homepage-review-maps-url">Google Maps listing URL (optional)</label>
             <input
+              id="homepage-review-maps-url"
               value={settings.mapsUrl || ''}
               onChange={(e) => setSettings((s) => ({ ...s, mapsUrl: e.target.value }))}
               placeholder="https://maps.app.goo.gl/…"
@@ -95,17 +98,18 @@ export default function AdminHomepageReviews() {
           <tbody>
             {settings.reviews.map((r, i) => (
               <tr key={i}>
-                <td><input value={r.author} onChange={(e) => setReview(i, 'author', e.target.value)} /></td>
+                <td><input aria-label="Author name" value={r.author} onChange={(e) => setReview(i, 'author', e.target.value)} /></td>
                 <td>
-                  <select value={r.rating} onChange={(e) => setReview(i, 'rating', Number(e.target.value))}>
+                  <select aria-label="Rating" value={r.rating} onChange={(e) => setReview(i, 'rating', Number(e.target.value))}>
                     {[5, 4, 3, 2, 1].map((n) => (
                       <option key={n} value={n}>{n} ★</option>
                     ))}
                   </select>
                 </td>
-                <td><textarea value={r.text} onChange={(e) => setReview(i, 'text', e.target.value)} rows={2} /></td>
+                <td><textarea aria-label="Review text" value={r.text} onChange={(e) => setReview(i, 'text', e.target.value)} rows={2} /></td>
                 <td>
                   <input
+                    aria-label="Relative time (e.g. 2 weeks ago)"
                     value={r.relativeTime}
                     onChange={(e) => setReview(i, 'relativeTime', e.target.value)}
                     placeholder="2 weeks ago"

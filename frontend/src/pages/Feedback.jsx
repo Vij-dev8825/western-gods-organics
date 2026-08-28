@@ -155,8 +155,9 @@ export default function Feedback() {
 
       <div className="form-card" style={{ marginTop: 16 }}>
         <div className="field" style={{ marginBottom: 0 }}>
-          <label>Tell us more <span className="muted">(optional)</span></label>
+          <label htmlFor="feedback-comment">Tell us more <span className="muted">(optional)</span></label>
           <textarea
+            id="feedback-comment"
             rows={4}
             value={comment}
             onChange={(e) => setComment(e.target.value)}

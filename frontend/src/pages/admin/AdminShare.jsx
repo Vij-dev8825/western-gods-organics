@@ -133,8 +133,8 @@ export default function AdminShare() {
 
       <div className="card" style={{ padding: 18, margin: '18px 0', maxWidth: 660 }}>
         <div className="field">
-          <label>Product</label>
-          <select value={productId} onChange={(e) => {
+          <label htmlFor="share-product">Product</label>
+          <select id="share-product" value={productId} onChange={(e) => {
             setProductId(e.target.value);
             const p = products.find((x) => x.id === e.target.value);
             setSizeLabel(p?.sizes?.[0]?.label || '');
@@ -144,8 +144,8 @@ export default function AdminShare() {
         </div>
 
         <div className="field">
-          <label>Size to mention</label>
-          <select value={sizeLabel} onChange={(e) => setSizeLabel(e.target.value)}>
+          <label htmlFor="share-size">Size to mention</label>
+          <select id="share-size" value={sizeLabel} onChange={(e) => setSizeLabel(e.target.value)}>
             {(product?.sizes || []).map((s) => (
               <option key={s.label} value={s.label}>{s.label} — ₹{s.price}</option>
             ))}
@@ -153,15 +153,16 @@ export default function AdminShare() {
         </div>
 
         <div className="field">
-          <label>Wording</label>
-          <select value={templateId} onChange={(e) => setTemplateId(e.target.value)}>
+          <label htmlFor="share-wording">Wording</label>
+          <select id="share-wording" value={templateId} onChange={(e) => setTemplateId(e.target.value)}>
             {templates.map((t) => <option key={t.id} value={t.id}>{t.label}</option>)}
           </select>
         </div>
 
         <div className="field">
-          <label>Edit this wording <span className="muted">— placeholders: {PLACEHOLDER_HELP}</span></label>
+          <label htmlFor="share-wording-body">Edit this wording <span className="muted">— placeholders: {PLACEHOLDER_HELP}</span></label>
           <textarea
+            id="share-wording-body"
             rows={7}
             value={template?.body || ''}
             onChange={(e) => updateTemplateBody(e.target.value)}

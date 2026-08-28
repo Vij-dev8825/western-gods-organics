@@ -128,8 +128,9 @@ export default function AdminLogin() {
         {step === 'phone' ? (
           <div>
             <div className="field">
-              <label style={{ color: 'rgba(250,246,236,0.85)' }}>Admin mobile number</label>
+              <label htmlFor="login-mobile-number" style={{ color: 'rgba(250,246,236,0.85)' }}>Admin mobile number</label>
               <input
+                id="login-mobile-number"
                 type="tel"
                 inputMode="numeric"
                 autoComplete="off"
@@ -166,8 +167,9 @@ export default function AdminLogin() {
 
             {channel === 'email' && (
               <div className="field">
-                <label style={{ color: 'rgba(250,246,236,0.85)' }}>Email address</label>
+                <label htmlFor="login-email-address" style={{ color: 'rgba(250,246,236,0.85)' }}>Email address</label>
                 <input
+                  id="login-email-address"
                   type="email"
                   autoComplete="off"
                   value={email}
@@ -194,6 +196,7 @@ export default function AdminLogin() {
                     maxLength={1}
                     inputMode="numeric"
                     autoComplete="off"
+                    aria-label={`OTP digit ${i + 1}`}
                     onChange={(e) => handleOtpChange(i, e.target.value)}
                     onKeyDown={onEnterKey(handleVerifyOtp)}
                     autoFocus={i === 0}

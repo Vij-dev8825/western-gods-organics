@@ -954,6 +954,7 @@ export default function ProductDetail() {
                     <input
                       type="email"
                       placeholder="Your email"
+                      aria-label="Email address"
                       value={notifyEmail}
                       onChange={(e) => setNotifyEmail(e.target.value)}
                       required
@@ -1075,6 +1076,7 @@ export default function ProductDetail() {
                       onChange={(e) => setSubCustomDays(e.target.value)}
                       style={{ width: 70 }}
                       placeholder="e.g. 10"
+                      aria-label="Custom delivery frequency in days"
                     />
                     <span className="muted" style={{ fontSize: '0.85rem' }}>days</span>
                   </div>
@@ -1168,11 +1170,12 @@ export default function ProductDetail() {
 
         {isLoggedIn ? (
           <form className="review-form" onSubmit={handleSubmitReview}>
-            <label className="muted" style={{ fontSize: '0.85rem' }}>
+            <label className="muted" style={{ fontSize: '0.85rem' }} htmlFor="review-text">
               {reviews.some((r) => r.userId === user?.id) ? 'Update your review' : 'Write a review'}
             </label>
             <StarPicker value={myRating} onChange={setMyRating} />
             <textarea
+              id="review-text"
               placeholder="What did you think of this product? (optional)"
               value={myText}
               onChange={(e) => setMyText(e.target.value)}
@@ -1261,8 +1264,9 @@ export default function ProductDetail() {
 
         {isLoggedIn ? (
           <form className="review-form" onSubmit={handleSubmitQuestion}>
-            <label className="muted" style={{ fontSize: '0.85rem' }}>Ask a question about this product</label>
+            <label className="muted" style={{ fontSize: '0.85rem' }} htmlFor="product-question-text">Ask a question about this product</label>
             <textarea
+              id="product-question-text"
               placeholder="e.g. Is this suitable for oily skin?"
               value={myQuestion}
               onChange={(e) => setMyQuestion(e.target.value)}

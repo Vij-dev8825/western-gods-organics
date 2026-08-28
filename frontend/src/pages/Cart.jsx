@@ -823,6 +823,7 @@ export default function Cart() {
                   <div className="flex gap-1">
                     <input
                       placeholder="Coupon code"
+                      aria-label="Coupon code"
                       value={couponInput}
                       onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
                       style={{ flex: 1 }}
@@ -856,6 +857,7 @@ export default function Cart() {
                 <div className="flex gap-1">
                   <input
                     placeholder="Gift card code"
+                    aria-label="Gift card code"
                     value={giftCardInput}
                     onChange={(e) => setGiftCardInput(e.target.value.toUpperCase())}
                     style={{ flex: 1 }}
@@ -907,13 +909,13 @@ export default function Cart() {
                 <h4>Your Details</h4>
               </div>
               <div className="field">
-                <label>Full name *</label>
-                <input required value={contactName} onChange={(e) => setContactName(e.target.value)} />
+                <label htmlFor="contact-name">Full name *</label>
+                <input id="contact-name" required value={contactName} onChange={(e) => setContactName(e.target.value)} />
                 {contactErrors.name && <div className="field-error">{contactErrors.name}</div>}
               </div>
               <div className="field">
-                <label>Email (optional, for order updates)</label>
-                <input type="email" value={contactEmail} onChange={(e) => setContactEmail(e.target.value)} />
+                <label htmlFor="contact-email">Email (optional, for order updates)</label>
+                <input id="contact-email" type="email" value={contactEmail} onChange={(e) => setContactEmail(e.target.value)} />
                 {contactErrors.email && <div className="field-error">{contactErrors.email}</div>}
               </div>
               {/* Bound to `address.phone` like it always was — the field just
@@ -972,13 +974,14 @@ export default function Cart() {
                     value={giftMessage}
                     onChange={(e) => setGiftMessage(e.target.value)}
                     placeholder="e.g. Happy birthday! Enjoy some cold-pressed goodness."
+                    aria-label="Gift message"
                     style={{ marginTop: 8 }}
                   />
                 )}
               </div>
 
               <div className="field">
-                <label>Affiliate code (optional)</label>
+                <label htmlFor="affiliate-code">Affiliate code (optional)</label>
                 {appliedAffiliateCode ? (
                   <div className="coupon-applied">
                     <span>✓ Code <b>{appliedAffiliateCode}</b> applied</span>
@@ -988,6 +991,7 @@ export default function Cart() {
                   <>
                     <div className="flex gap-1">
                       <input
+                        id="affiliate-code"
                         placeholder="e.g. SARAH10"
                         value={affiliateInput}
                         onChange={(e) => setAffiliateInput(e.target.value.toUpperCase())}

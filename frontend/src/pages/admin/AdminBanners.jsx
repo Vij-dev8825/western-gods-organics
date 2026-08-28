@@ -129,8 +129,9 @@ export default function AdminBanners() {
         <h3>Upload new banner</h3>
         <div className="form-grid">
           <div className="field">
-            <label>Video or image file</label>
+            <label htmlFor="banner-file">Video or image file</label>
             <input
+              id="banner-file"
               type="file"
               accept="video/mp4,video/webm,video/ogg,image/jpeg,image/png,image/webp"
               onChange={handleFileSelect}
@@ -138,12 +139,12 @@ export default function AdminBanners() {
             />
           </div>
           <div className="field">
-            <label>Headline (shown over the video)</label>
-            <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. From our fields to your bottle" />
+            <label htmlFor="banner-headline">Headline (shown over the video)</label>
+            <input id="banner-headline" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. From our fields to your bottle" />
           </div>
           <div className="field">
-            <label>Sub-text</label>
-            <input value={subtitle} onChange={(e) => setSubtitle(e.target.value)} placeholder="optional supporting line" />
+            <label htmlFor="banner-subtext">Sub-text</label>
+            <input id="banner-subtext" value={subtitle} onChange={(e) => setSubtitle(e.target.value)} placeholder="optional supporting line" />
           </div>
         </div>
         <button className="btn btn-gold btn-sm" disabled={!file || uploading}>
@@ -167,12 +168,14 @@ export default function AdminBanners() {
                     value={editTitle}
                     onChange={(e) => setEditTitle(e.target.value)}
                     placeholder="Headline"
+                    aria-label="Headline"
                   />
                   <input
                     className="banner-edit-input"
                     value={editSubtitle}
                     onChange={(e) => setEditSubtitle(e.target.value)}
                     placeholder="Sub-text"
+                    aria-label="Sub-text"
                   />
                   <div className="banner-actions">
                     <button className="link-btn" disabled={saving} onClick={() => saveEdit(b)}>

@@ -98,8 +98,9 @@ export default function AdminShipping() {
 
         <div className="form-grid">
           <div className="field">
-            <label>Shipping fee (₹)</label>
+            <label htmlFor="domestic-shipping-fee">Shipping fee (₹)</label>
             <input
+              id="domestic-shipping-fee"
               type="number"
               min="0"
               step="1"
@@ -109,8 +110,9 @@ export default function AdminShipping() {
             />
           </div>
           <div className="field">
-            <label>Free shipping above (₹)</label>
+            <label htmlFor="domestic-free-shipping-threshold">Free shipping above (₹)</label>
             <input
+              id="domestic-free-shipping-threshold"
               type="number"
               min="0"
               step="1"
@@ -131,8 +133,9 @@ export default function AdminShipping() {
         </p>
 
         <div className="field">
-          <label>Pincodes you deliver to yourself</label>
+          <label htmlFor="local-pincodes">Pincodes you deliver to yourself</label>
           <textarea
+            id="local-pincodes"
             rows={3}
             value={settings.localPincodes}
             onChange={(e) => setSettings((s) => ({ ...s, localPincodes: e.target.value }))}
@@ -147,8 +150,9 @@ export default function AdminShipping() {
 
         <div className="form-grid">
           <div className="field">
-            <label>Nearby delivery fee (₹)</label>
+            <label htmlFor="local-delivery-fee">Nearby delivery fee (₹)</label>
             <input
+              id="local-delivery-fee"
               type="number"
               min="0"
               step="1"
@@ -158,8 +162,9 @@ export default function AdminShipping() {
             />
           </div>
           <div className="field">
-            <label>Free nearby delivery above (₹)</label>
+            <label htmlFor="local-free-delivery-threshold">Free nearby delivery above (₹)</label>
             <input
+              id="local-free-delivery-threshold"
               type="number"
               min="0"
               step="1"
@@ -189,8 +194,9 @@ export default function AdminShipping() {
         </p>
 
         <div className="field">
-          <label>When they can collect</label>
+          <label htmlFor="pickup-hours">When they can collect</label>
           <input
+            id="pickup-hours"
             maxLength={200}
             value={settings.pickupHours}
             onChange={(e) => setSettings((s) => ({ ...s, pickupHours: e.target.value }))}
@@ -199,8 +205,9 @@ export default function AdminShipping() {
         </div>
 
         <div className="field" style={{ maxWidth: 260 }}>
-          <label>Off each bottle they bring (₹)</label>
+          <label htmlFor="refill-discount">Off each bottle they bring (₹)</label>
           <input
+            id="refill-discount"
             type="number"
             min="0"
             step="1"
