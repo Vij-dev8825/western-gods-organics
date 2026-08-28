@@ -1,7 +1,18 @@
 import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 
-const SEEN_KEY = 'yo_guide_tour_seen';
+// Per-session gate — stops it popping again on every navigation within the
+// same visit. Separate from the lifetime cap below: a manual click sets
+// this too (no point auto-popping right after someone opened it themselves)
+// but never counts against the cap, since that's meant to throttle
+// unprompted interruptions, not deliberate engagement.
+const SEEN_THIS_SESSION_KEY = 'yo_guide_tour_seen';
+// Lifetime cap on unprompted auto-opens specifically, persisted in
+// localStorage (unlike the session key above) so it holds across visits —
+// a returning visitor who's already seen this 3 times shouldn't keep
+// getting interrupted by it, though the button stays available regardless.
+const AUTO_SHOW_COUNT_KEY = 'yo_guide_tour_auto_shown_count';
+const MAX_AUTO_SHOWS = 3;
 const SHOW_DELAY_MS = 4000;
 
 const STEPS = [
@@ -40,37 +51,40 @@ const STEPS = [
 
 /** A small, dismissible on-page tour — distinct from the full /getting-started
  * and /how-to-shop pages, which this links out to for anyone who wants more.
- * Opens once per browser session (sessionStorage, same pattern as
- * PromoPopup's yo_promo_popup_seen) after a short delay, then stays reachable
- * from its own floating button for the rest of the visit — closing it hides
- * the panel, it doesn't remove the button, same as the chat/AI widgets. */
+ * Auto-opens on the Home page only, up to 3 times ever, after a short delay;
+ * beyond that (or on any other page) it's still reachable from its own
+ * floating button — closing it hides the panel, it doesn't remove the
+ * button, same as the chat/AI widgets. */
 export default function GuideTour() {
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState(0);
   const location = useLocation();
   const hidden = location.pathname.startsWith('/admin') || location.pathname === '/login';
+  const isHome = location.pathname === '/';
 
   useEffect(() => {
-    if (hidden) return undefined;
-    let seen = false;
+    if (hidden || !isHome) return undefined;
+    let seenThisSession = false;
+    let autoShowCount = 0;
     try {
-      seen = sessionStorage.getItem(SEEN_KEY) === '1';
+      seenThisSession = sessionStorage.getItem(SEEN_THIS_SESSION_KEY) === '1';
+      autoShowCount = Number(localStorage.getItem(AUTO_SHOW_COUNT_KEY)) || 0;
     } catch {
-      /* private mode — just skip auto-open, the button is still there */
+      /* private mode — skip auto-open, the button still works */
     }
-    if (seen) return undefined;
+    if (seenThisSession || autoShowCount >= MAX_AUTO_SHOWS) return undefined;
+
     const timer = setTimeout(() => {
       setOpen(true);
       try {
-        sessionStorage.setItem(SEEN_KEY, '1');
+        sessionStorage.setItem(SEEN_THIS_SESSION_KEY, '1');
+        localStorage.setItem(AUTO_SHOW_COUNT_KEY, String(autoShowCount + 1));
       } catch {
         /* nothing to persist to; harmless */
       }
     }, SHOW_DELAY_MS);
     return () => clearTimeout(timer);
-    // Only ever auto-opens once per session regardless of navigation — see hidden check above.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [hidden, isHome]);
 
   if (hidden) return null;
 
@@ -78,12 +92,15 @@ export default function GuideTour() {
   const current = STEPS[step];
   const isLast = step === total - 1;
 
-  function markSeen() {
+  function handleFabClick() {
+    // Deliberate engagement — stop the session's auto-open from also firing
+    // later, but don't touch the lifetime auto-show count above.
     try {
-      sessionStorage.setItem(SEEN_KEY, '1');
+      sessionStorage.setItem(SEEN_THIS_SESSION_KEY, '1');
     } catch {
       /* nothing to persist to; harmless */
     }
+    setOpen((o) => !o);
   }
 
   return (
@@ -139,10 +156,7 @@ export default function GuideTour() {
       <button
         className="ai-assistant-fab guide-tour-fab"
         aria-label={open ? 'Close guide' : 'Open site guide'}
-        onClick={() => {
-          markSeen();
-          setOpen((o) => !o);
-        }}
+        onClick={handleFabClick}
       >
         {!open && <span className="fab-label">Quick guide</span>}
         {open ? '✕' : '🧭'}
