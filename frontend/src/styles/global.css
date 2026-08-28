@@ -3994,12 +3994,12 @@ input:focus-visible + .filter-radio { outline: 2px solid var(--gold-2); outline-
 .seller-topbar-nav a:not(.btn) { color: rgba(250,246,236,0.8); font-size: 0.85rem; text-decoration: none; }
 .seller-topbar-nav a:not(.btn):hover, .seller-topbar-nav a.active { color: var(--gold-2); }
 
-.btn-outline-light {
+.seller-site .btn-outline-light {
   border: 1px solid rgba(250,246,236,0.5);
   color: var(--cream);
   background: transparent;
 }
-.btn-outline-light:hover { border-color: var(--cream); background: rgba(250,246,236,0.08); }
+.seller-site .btn-outline-light:hover { border-color: var(--cream); background: rgba(250,246,236,0.08); }
 
 .seller-hero {
   background: linear-gradient(160deg, var(--forest-deep) 0%, var(--forest) 100%);
@@ -5066,6 +5066,11 @@ body.has-cookie-bar .chat-fab { bottom: calc(var(--cookie-bar-height, 0px) + 16p
 body.has-cookie-bar .push-optin { bottom: calc(var(--cookie-bar-height, 0px) + 82px); }
 body.has-cookie-bar .whatsapp-fab { bottom: calc(var(--cookie-bar-height, 0px) + 16px); }
 body.has-cookie-bar .ai-assistant-fab { bottom: calc(var(--cookie-bar-height, 0px) + 82px); }
+/* The panel needs the same shift as its own fab above. !important because
+   the base .ai-assistant-panel rule is itself !important — a plain
+   override here would silently lose to it, the same trap the comment
+   below describes for guide-tour-fab. */
+body.has-cookie-bar .ai-assistant-panel { bottom: calc(var(--cookie-bar-height, 0px) + 158px) !important; }
 /* Same +66px gap above ai-assistant-fab as the base rule, carried through
    this state too — !important to beat guide-tour-fab's own base rule, which
    needed !important in the first place to beat ai-assistant-fab's base rule. */
@@ -9280,12 +9285,12 @@ input:focus-visible + .filter-radio { outline: 2px solid var(--gold-2); outline-
 .seller-topbar-nav a:not(.btn) { color: rgba(250,246,236,0.8); font-size: 0.85rem; text-decoration: none; }
 .seller-topbar-nav a:not(.btn):hover, .seller-topbar-nav a.active { color: var(--gold-2); }
 
-.btn-outline-light {
+.seller-site .btn-outline-light {
   border: 1px solid rgba(250,246,236,0.5);
   color: var(--cream);
   background: transparent;
 }
-.btn-outline-light:hover { border-color: var(--cream); background: rgba(250,246,236,0.08); }
+.seller-site .btn-outline-light:hover { border-color: var(--cream); background: rgba(250,246,236,0.08); }
 
 .seller-hero {
   background: linear-gradient(160deg, var(--forest-deep) 0%, var(--forest) 100%);
@@ -10352,6 +10357,11 @@ body.has-cookie-bar .chat-fab { bottom: calc(var(--cookie-bar-height, 0px) + 16p
 body.has-cookie-bar .push-optin { bottom: calc(var(--cookie-bar-height, 0px) + 82px); }
 body.has-cookie-bar .whatsapp-fab { bottom: calc(var(--cookie-bar-height, 0px) + 16px); }
 body.has-cookie-bar .ai-assistant-fab { bottom: calc(var(--cookie-bar-height, 0px) + 82px); }
+/* The panel needs the same shift as its own fab above. !important because
+   the base .ai-assistant-panel rule is itself !important — a plain
+   override here would silently lose to it, the same trap the comment
+   below describes for guide-tour-fab. */
+body.has-cookie-bar .ai-assistant-panel { bottom: calc(var(--cookie-bar-height, 0px) + 158px) !important; }
 /* Same +66px gap above ai-assistant-fab as the base rule, carried through
    this state too — !important to beat guide-tour-fab's own base rule, which
    needed !important in the first place to beat ai-assistant-fab's base rule. */

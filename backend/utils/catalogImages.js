@@ -74,7 +74,9 @@ async function resolveImageBuffer(image, uploadsDir) {
     return media ? Buffer.from(media.data, 'base64') : null;
   }
   if (target.startsWith('/uploads/') && uploadsDir) {
-    const filePath = path.join(uploadsDir, target.replace('/uploads/', ''));
+    // basename() on purpose: `image` is seller/admin-settable, and a path
+    // with ../ in it must not be able to read outside the uploads dir.
+    const filePath = path.join(uploadsDir, path.basename(target.split('?')[0]));
     return fs.existsSync(filePath) ? fs.readFileSync(filePath) : null;
   }
   if (/^https?:\/\//i.test(target)) {
