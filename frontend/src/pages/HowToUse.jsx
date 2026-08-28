@@ -155,7 +155,9 @@ export default function HowToUse() {
       <p className="muted" style={{ maxWidth: 640 }}>
         Not a list of features — a plain "here's how" for each one, grouped by what you're
         actually trying to do. Prefer to be walked through it one step at a time instead?
-        Try the <Link to="/getting-started">guided version</Link>.
+        Try the <Link to="/getting-started">guided version</Link>, or{' '}
+        <Link to="/how-to-shop">the shopping &amp; checkout guide</Link> if you're here to buy
+        something specifically.
       </p>
 
       {GROUPS.map((group) => (

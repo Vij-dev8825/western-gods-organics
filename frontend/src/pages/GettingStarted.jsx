@@ -161,7 +161,8 @@ export default function GettingStarted() {
       <p className="muted" style={{ maxWidth: 640, marginBottom: 8 }}>
         Six short steps, or skip straight to{' '}
         <Link to="/how-to-use">the full reference</Link> if you'd rather look something up
-        yourself.
+        yourself. Here to actually buy something?{' '}
+        <Link to="/how-to-shop">The shopping &amp; checkout guide</Link> covers that specifically.
       </p>
 
       <div className="getting-started-rail" role="progressbar" aria-valuenow={step + 1} aria-valuemin={1} aria-valuemax={total}>
