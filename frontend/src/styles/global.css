@@ -164,7 +164,16 @@ p { margin: 0 0 1em; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .gold-text, .gold-surface, .wheel-spin, .btn-gold::after, .out-of-stock-notice { animation: none !important; }
+  /* .btn-gold::after was stale — the shine animation actually lives on
+     .btn-gold itself (see its rule below), not a pseudo-element that's
+     never defined. The rest here are shineSweep/popIn/toastIn call sites
+     that had no guard at all until now. */
+  .gold-text, .gold-surface, .wheel-spin, .btn-gold, .out-of-stock-notice,
+  .navbar-search button, .account-btn.has-initial, .account-btn.has-initial:hover,
+  .frequency-chip.active, .order-success-check, .sale-countdown, .chat-fab,
+  .admin-sidebar::before, .stat-tile::before, .admin-card::before, .toast {
+    animation: none !important;
+  }
 }
 
 /* ---------- Buttons ---------- */
@@ -738,6 +747,15 @@ p { margin: 0 0 1em; }
   0% { transform: scale(0.7); }
   50% { transform: scale(1.25); }
   100% { transform: scale(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .product-card, .product-media img, .product-media-segments, .product-media-quickadd, .wishlist-toggle {
+    transition: none;
+  }
+  .product-card:hover { transform: none; }
+  .product-card:hover .product-media img { transform: none; }
+  .wishlist-toggle:hover { transform: none; }
+  .wishlist-toggle.active svg { animation: none; }
 }
 
 .wishlist-btn-detail { display: inline-flex; align-items: center; gap: 7px; }
@@ -5455,7 +5473,16 @@ p { margin: 0 0 1em; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .gold-text, .gold-surface, .wheel-spin, .btn-gold::after, .out-of-stock-notice { animation: none !important; }
+  /* .btn-gold::after was stale — the shine animation actually lives on
+     .btn-gold itself (see its rule below), not a pseudo-element that's
+     never defined. The rest here are shineSweep/popIn/toastIn call sites
+     that had no guard at all until now. */
+  .gold-text, .gold-surface, .wheel-spin, .btn-gold, .out-of-stock-notice,
+  .navbar-search button, .account-btn.has-initial, .account-btn.has-initial:hover,
+  .frequency-chip.active, .order-success-check, .sale-countdown, .chat-fab,
+  .admin-sidebar::before, .stat-tile::before, .admin-card::before, .toast {
+    animation: none !important;
+  }
 }
 
 /* ---------- Buttons ---------- */
@@ -6029,6 +6056,15 @@ p { margin: 0 0 1em; }
   0% { transform: scale(0.7); }
   50% { transform: scale(1.25); }
   100% { transform: scale(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .product-card, .product-media img, .product-media-segments, .product-media-quickadd, .wishlist-toggle {
+    transition: none;
+  }
+  .product-card:hover { transform: none; }
+  .product-card:hover .product-media img { transform: none; }
+  .wishlist-toggle:hover { transform: none; }
+  .wishlist-toggle.active svg { animation: none; }
 }
 
 .wishlist-btn-detail { display: inline-flex; align-items: center; gap: 7px; }
