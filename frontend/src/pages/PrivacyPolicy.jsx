@@ -1,6 +1,13 @@
+import SeoMeta from '../components/SeoMeta';
+
 export default function PrivacyPolicy() {
   return (
     <div className="policy-page">
+      <SeoMeta
+        title="Privacy Policy | Western Gods Organics"
+        description="How Western Gods Organics collects, uses and protects your personal data, and your choices around cookies and account deletion."
+        path="/policy"
+      />
       <div className="breadcrumb">Home / Privacy Policy</div>
       <span className="eyebrow">Legal</span>
       <h1>Privacy Policy</h1>

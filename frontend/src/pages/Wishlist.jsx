@@ -5,6 +5,7 @@ import { useWishlist } from '../context/WishlistContext';
 import { useAuth } from '../context/AuthContext';
 import ProductCard from '../components/ProductCard';
 import ChakkiWheel from '../components/ChakkiWheel';
+import SeoMeta from '../components/SeoMeta';
 
 export default function Wishlist() {
   const { productIds } = useWishlist();
@@ -24,6 +25,11 @@ export default function Wishlist() {
   if (loading) {
     return (
       <div className="center" style={{ padding: '120px 0' }}>
+        <SeoMeta
+          title="Your Wishlist — Western Gods Organics"
+          description="View and shop the cold-pressed oils, herbal soaps and powders you've saved to your wishlist."
+          path="/wishlist"
+        />
         <ChakkiWheel size={56} />
       </div>
     );
@@ -32,6 +38,11 @@ export default function Wishlist() {
   if (!wishedProducts.length) {
     return (
       <div className="container">
+        <SeoMeta
+          title="Your Wishlist — Western Gods Organics"
+          description="View and shop the cold-pressed oils, herbal soaps and powders you've saved to your wishlist."
+          path="/wishlist"
+        />
         <div className="empty-state">
           <ChakkiWheel size={70} spin={false} />
           <h2>Your wishlist is empty</h2>
@@ -44,6 +55,11 @@ export default function Wishlist() {
 
   return (
     <div className="container section">
+      <SeoMeta
+        title="Your Wishlist — Western Gods Organics"
+        description="View and shop the cold-pressed oils, herbal soaps and powders you've saved to your wishlist."
+        path="/wishlist"
+      />
       <div className="breadcrumb">Home / Wishlist</div>
       <h2>Your Wishlist</h2>
       <div className="grid">

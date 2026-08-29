@@ -13,6 +13,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api';
 import { isValidEmail, isValidPhone } from '../utils/validators';
+import SeoMeta from '../components/SeoMeta';
 
 const OILS = [
   {
@@ -124,6 +125,11 @@ export default function OilGuide() {
 
   return (
     <div className="policy-page">
+      <SeoMeta
+        title="How to Choose Your First Cold-Pressed Oil — Western Gods Organics"
+        description="A free guide to picking between groundnut, sesame, coconut and castor oil — with a quick quiz to match the right one to your kitchen or hair and skin routine."
+        path="/guide"
+      />
       <div className="breadcrumb">Home / Free Guide</div>
       <span className="eyebrow">Free guide</span>
       <h1>How to Choose Your First Cold-Pressed Oil</h1>

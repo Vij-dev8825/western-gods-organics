@@ -1,6 +1,13 @@
+import SeoMeta from '../components/SeoMeta';
+
 export default function TermsAndConditions() {
   return (
     <div className="policy-page">
+      <SeoMeta
+        title="Terms and Conditions | Western Gods Organics"
+        description="The terms governing orders, pricing, shipping, and site use for Western Gods Organics' cold-pressed oils, soaps and powders."
+        path="/terms"
+      />
       <div className="breadcrumb">Home / Terms and Conditions</div>
       <span className="eyebrow">Legal</span>
       <h1>Terms and Conditions</h1>

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { api } from '../api';
 import { useAuth } from '../context/AuthContext';
 import ChakkiWheel from '../components/ChakkiWheel';
+import SeoMeta from '../components/SeoMeta';
 
 const TIER_STYLE = {
   bronze: { background: '#f0e2d3', color: '#7a4a21', border: '1px solid #d9bd9c' },
@@ -48,6 +49,12 @@ export default function Rewards() {
 
   return (
     <div className="container section">
+      <SeoMeta
+        title="My Rewards — Western Gods Organics"
+        description="Check your reward points balance, tier and earning history — earn 1 point per ₹10 spent, redeemable for ₹1 off per point."
+        path="/rewards"
+        robots="noindex"
+      />
       <div className="breadcrumb">Home / My Rewards</div>
       <h2>My Rewards</h2>
       <p className="muted" style={{ marginBottom: 24 }}>

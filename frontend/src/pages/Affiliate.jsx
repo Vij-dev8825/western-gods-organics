@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { CANONICAL_ORIGIN } from '../utils/site';
 import ChakkiWheel from '../components/ChakkiWheel';
+import SeoMeta from '../components/SeoMeta';
 
 export default function Affiliate() {
   const { token } = useAuth();
@@ -36,6 +37,12 @@ export default function Affiliate() {
   if (!data) {
     return (
       <div className="container section">
+        <SeoMeta
+          title="Affiliate Program | Western Gods Organics"
+          description="Earn commission for every sale you refer — bloggers, reviewers and creators welcome to join our affiliate program."
+          path="/affiliate"
+          robots="noindex"
+        />
         <div className="breadcrumb">Home / Affiliate Program</div>
         <h2>Affiliate Program</h2>
         <div className="empty-state">
@@ -53,6 +60,12 @@ export default function Affiliate() {
 
   return (
     <div className="container section">
+      <SeoMeta
+        title="Affiliate Program | Western Gods Organics"
+        description="Earn commission for every sale you refer — bloggers, reviewers and creators welcome to join our affiliate program."
+        path="/affiliate"
+        robots="noindex"
+      />
       <div className="breadcrumb">Home / Affiliate Program</div>
       <h2>Affiliate Program</h2>
       <p className="muted" style={{ marginBottom: 24 }}>

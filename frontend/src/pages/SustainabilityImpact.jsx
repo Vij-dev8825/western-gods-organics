@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api';
+import SeoMeta from '../components/SeoMeta';
 
 function formatGlassWeight(grams) {
   return grams >= 1000 ? `${(grams / 1000).toFixed(1)} kg` : `${grams} g`;
@@ -15,6 +16,11 @@ export default function SustainabilityImpact() {
 
   return (
     <div className="policy-page">
+      <SeoMeta
+        title="Sustainability Impact — Western Gods Organics"
+        description="Real, running totals of bottles reused and glass diverted from landfill, plus how to send back empties for refill credit."
+        path="/impact"
+      />
       <div className="breadcrumb">Home / Our Impact</div>
       <span className="eyebrow">Sustainability</span>
       <h1>Bottles Reused, Not Wasted</h1>

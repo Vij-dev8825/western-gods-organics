@@ -8,6 +8,7 @@ import { getProductImage } from '../utils/productImages';
 import { loadRazorpay } from '../utils/loadRazorpay';
 import ChakkiWheel from '../components/ChakkiWheel';
 import OrderTracker from '../components/OrderTracker';
+import SeoMeta from '../components/SeoMeta';
 
 const STATUS_LABELS = {
   placed: 'Order Placed',
@@ -241,6 +242,12 @@ export default function Orders() {
 
   return (
     <div className="container section">
+      <SeoMeta
+        title="My Orders — Western Gods Organics"
+        description="Track order status, pay outstanding balances, request returns or bottle refill credit, and reorder your past purchases."
+        path="/orders"
+        robots="noindex"
+      />
       <div className="breadcrumb">Home / My Orders</div>
       <div className="section-head">
         <div>

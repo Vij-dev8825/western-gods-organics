@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { loadRazorpay } from '../utils/loadRazorpay';
 import ChakkiWheel from '../components/ChakkiWheel';
+import SeoMeta from '../components/SeoMeta';
 
 const FREQUENCY_LABELS = { 14: 'Every 2 weeks', 28: 'Every 4 weeks', 42: 'Every 6 weeks' };
 function formatFrequency(days) {
@@ -79,6 +80,12 @@ export default function Subscriptions() {
 
   return (
     <div className="container section">
+      <SeoMeta
+        title="My Subscriptions — Western Gods Organics"
+        description="Manage your auto-delivery subscriptions — pause, resume or cancel, and enable UPI Autopay for hands-free renewals."
+        path="/subscriptions"
+        robots="noindex"
+      />
       <div className="breadcrumb">Home / My Subscriptions</div>
       <h2>My Subscriptions</h2>
       <p className="muted" style={{ marginBottom: 24 }}>

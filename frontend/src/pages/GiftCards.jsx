@@ -6,6 +6,7 @@ import { useToast } from '../context/ToastContext';
 import { loadRazorpay } from '../utils/loadRazorpay';
 import { isValidEmail } from '../utils/validators';
 import ChakkiWheel from '../components/ChakkiWheel';
+import SeoMeta from '../components/SeoMeta';
 
 export default function GiftCards() {
   const { token, user } = useAuth();
@@ -136,6 +137,12 @@ export default function GiftCards() {
 
   return (
     <div className="container section">
+      <SeoMeta
+        title="Gift Cards — Western Gods Organics"
+        description="Buy a Western Gods Organics gift card for yourself or someone else, redeemable on any order for a year."
+        path="/gift-cards"
+        robots="noindex"
+      />
       <div className="breadcrumb">Home / Gift Cards</div>
       <h2>Gift Cards</h2>
       <p className="muted" style={{ marginBottom: 24, maxWidth: 640 }}>

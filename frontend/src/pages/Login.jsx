@@ -6,6 +6,7 @@ import { useToast } from '../context/ToastContext';
 import { useCurrency } from '../context/CurrencyContext';
 import { countryFlagEmoji } from '../utils/countryFlag';
 import { useResendCooldown } from '../hooks/useResendCooldown';
+import SeoMeta from '../components/SeoMeta';
 import logo from '../assets/logo.svg';
 
 function isValidPhoneInput(phone, country) {
@@ -138,6 +139,11 @@ export default function Login() {
 
   return (
     <div className="container section">
+      <SeoMeta
+        title="Log In / Sign Up — Western Gods Organics"
+        description="Log in or create your account with a one-time password sent to your mobile number or email — no password required."
+        path="/login"
+      />
       <div className="form-card">
         <div className="center" style={{ marginBottom: 20 }}>
           <img src={logo} alt="Western Gods Organics" height={48} />

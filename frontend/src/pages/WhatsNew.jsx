@@ -6,6 +6,7 @@
  * page on purpose.
  */
 import { Link } from 'react-router-dom';
+import SeoMeta from '../components/SeoMeta';
 
 const SECTIONS = [
   {
@@ -105,6 +106,11 @@ const SECTIONS = [
 export default function WhatsNew() {
   return (
     <div>
+      <SeoMeta
+        title="What's New — Western Gods Organics"
+        description="See everything new added to the shop lately — flexible checkout, batch traceability, rewards, festive site features and more."
+        path="/whats-new"
+      />
       <div className="whats-new-hero">
         <span className="eyebrow">Always growing</span>
         <h1>What's New</h1>

@@ -6,6 +6,7 @@ import { useToast } from '../context/ToastContext';
 import { isPushSupported, getPushPermission, enablePushNotifications, disablePushNotifications } from '../utils/pushNotifications';
 import { getProductImage } from '../utils/productImages';
 import ChakkiWheel from '../components/ChakkiWheel';
+import SeoMeta from '../components/SeoMeta';
 
 function notificationLink(n) {
   if (n.meta?.productId) return `/product/${n.meta.productId}`;
@@ -74,6 +75,12 @@ export default function Notifications() {
 
   return (
     <div className="container" style={{ maxWidth: 720, padding: '48px 24px 80px' }}>
+      <SeoMeta
+        title="Notifications — Western Gods Organics"
+        description="View your order updates, price drops and offer alerts, and manage push notifications for this device."
+        path="/notifications"
+        robots="noindex"
+      />
       <span className="eyebrow">Updates</span>
       <h1 style={{ fontSize: '2rem' }}>Notifications</h1>
 

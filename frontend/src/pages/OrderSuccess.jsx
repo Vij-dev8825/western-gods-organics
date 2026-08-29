@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { IconCheck } from '../components/Icons';
 import ChakkiWheel from '../components/ChakkiWheel';
 import Confetti from '../components/Confetti';
+import SeoMeta from '../components/SeoMeta';
 
 const PAYMENT_LABELS = { cod: 'Cash on Delivery', razorpay: 'Paid Online (Razorpay)' };
 
@@ -40,6 +41,12 @@ export default function OrderSuccess() {
 
   return (
     <div className="container section order-success-page">
+      <SeoMeta
+        title="Order Confirmed — Western Gods Organics"
+        description="Your order has been placed successfully — view your order number, payment status, estimated delivery date and delivery address."
+        path={`/order-success/${order.id}`}
+        robots="noindex"
+      />
       <Confetti key={order.id} />
       <div className="order-success-card">
         <div className="order-success-check">

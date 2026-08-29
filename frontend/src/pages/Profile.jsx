@@ -9,6 +9,7 @@ import { isValidEmail, validateAddress } from '../utils/validators';
 import { normalizeAddresses } from '../utils/addresses';
 import ChakkiWheel from '../components/ChakkiWheel';
 import AddressForm from '../components/AddressForm';
+import SeoMeta from '../components/SeoMeta';
 import { CANONICAL_ORIGIN } from '../utils/site';
 
 function formatGlassWeight(grams) {
@@ -179,6 +180,12 @@ export default function Profile() {
 
   return (
     <div className="container section">
+      <SeoMeta
+        title="My Account — Western Gods Organics"
+        description="Manage your profile, saved addresses, orders, subscriptions, rewards and referral link with Western Gods Organics."
+        path="/profile"
+        robots="noindex"
+      />
       <div className="breadcrumb">Home / My Account</div>
       <div className="section-head">
         <div>

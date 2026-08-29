@@ -6,6 +6,7 @@ import logo from '../assets/logo.svg';
 import ChakkiWheel from '../components/ChakkiWheel';
 import { amountInWords } from '../utils/numberToWords';
 import { getProductImage } from '../utils/productImages';
+import SeoMeta from '../components/SeoMeta';
 
 const PAYMENT_LABELS = { cod: 'Cash on Delivery', razorpay: 'Paid Online (Razorpay)', counter: 'Paid at the mill (cash / UPI)', cod_advance: 'Part-paid online, rest on delivery' };
 
@@ -76,6 +77,12 @@ export default function Invoice() {
 
   return (
     <div className="invoice-page">
+      <SeoMeta
+        title="Invoice — Western Gods Organics"
+        description="View and print the invoice for your order — itemized costs, taxes, payment status and business details."
+        path={`/invoice/${orderId}`}
+        robots="noindex"
+      />
       <div className="invoice-toolbar no-print">
         <Link to="/orders" className="link-btn">← Back to my orders</Link>
         <button className="btn btn-gold btn-sm" onClick={() => window.print()}>Print / Save as PDF</button>

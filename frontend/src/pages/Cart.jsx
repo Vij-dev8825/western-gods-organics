@@ -18,6 +18,7 @@ import { useFestivalContext } from '../components/festival/FestivalContext';
 import AddressForm, { PhoneField } from '../components/AddressForm';
 import CodPhoneVerify from '../components/CodPhoneVerify';
 import CheckoutLoginPrompt from '../components/CheckoutLoginPrompt';
+import SeoMeta from '../components/SeoMeta';
 
 // One heading per basis the also-bought route can return, so the cart never
 // claims data it doesn't have. "Often bought" is a statement about other
@@ -596,6 +597,15 @@ export default function Cart() {
 
   return (
     <div className="container section">
+      <SeoMeta
+        title={isBuyNow ? 'Buy Now | Western Gods Organics' : 'Your Cart | Western Gods Organics'}
+        description={
+          isBuyNow
+            ? 'Complete your purchase of cold-pressed oils, herbal soaps and stone-ground powders from Western Gods Organics.'
+            : 'Review your cart and check out securely — cold-pressed oils, herbal soaps and stone-ground powders, shipped across India and worldwide.'
+        }
+        path="/cart"
+      />
       <div className="breadcrumb">Home / {isBuyNow ? 'Buy Now' : 'Cart'}</div>
       <h2>{isBuyNow ? 'Buy Now' : 'Your Cart'}</h2>
       {isForeign && (

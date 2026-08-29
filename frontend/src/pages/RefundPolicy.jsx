@@ -1,6 +1,13 @@
+import SeoMeta from '../components/SeoMeta';
+
 export default function RefundPolicy() {
   return (
     <div className="policy-page">
+      <SeoMeta
+        title="Refund & Returns Policy | Western Gods Organics"
+        description="How Western Gods Organics handles damaged, incorrect, or quality-concern returns on cold-pressed oils, plus refund timelines and how to request one."
+        path="/refund-policy"
+      />
       <div className="breadcrumb">Home / Refund Policy</div>
       <span className="eyebrow">Legal</span>
       <h1>Refund &amp; Returns Policy</h1>
