@@ -194,4 +194,27 @@ async function sendWhatsAppDocument(phone, { buffer, fileName, mimetype = 'appli
   }
 }
 
-module.exports = { init, getStatus, resetSession, sendWhatsAppMessage, sendWhatsAppDocument };
+/**
+ * Sends a photo with a caption — used for a richer order update (e.g. a
+ * photo of what was ordered alongside the confirmation text) instead of a
+ * plain text message. Takes a URL rather than a buffer since callers already
+ * have a public image URL (product photos, banners) and Baileys fetches it
+ * itself — no need to read the file into memory here too.
+ */
+async function sendWhatsAppImage(phone, { url, caption }) {
+  if (!phone) return { sent: false, reason: 'no-phone' };
+  if (!url) return { sent: false, reason: 'no-image' };
+  if (!sock || state !== 'open') {
+    console.log(`[whatsapp:not-connected] to=${phone} | image ${url}`);
+    return { sent: false, reason: 'not-connected' };
+  }
+  try {
+    await sock.sendMessage(toJid(phone), { image: { url }, caption });
+    return { sent: true, provider: 'baileys' };
+  } catch (err) {
+    console.error('[whatsapp:baileys:image:error]', err.message);
+    return { sent: false, error: err.message };
+  }
+}
+
+module.exports = { init, getStatus, resetSession, sendWhatsAppMessage, sendWhatsAppDocument, sendWhatsAppImage };

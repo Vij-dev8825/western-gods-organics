@@ -3,7 +3,7 @@
  * the actual connection is managed. This wrapper just keeps the exported
  * shape callers (auth.js, notify.js) already expect.
  */
-const { sendWhatsAppMessage, sendWhatsAppDocument } = require('./whatsappBaileys');
+const { sendWhatsAppMessage, sendWhatsAppDocument, sendWhatsAppImage } = require('./whatsappBaileys');
 
 async function sendWhatsApp(phone, message) {
   if (!phone) return { sent: false, reason: 'no-phone' };
@@ -16,4 +16,10 @@ async function sendWhatsAppFile(phone, file) {
   return sendWhatsAppDocument(phone, file);
 }
 
-module.exports = { sendWhatsApp, sendWhatsAppFile };
+/** photo: { url, caption? } — a public URL, not a buffer; see sendWhatsAppImage. */
+async function sendWhatsAppPhoto(phone, photo) {
+  if (!phone) return { sent: false, reason: 'no-phone' };
+  return sendWhatsAppImage(phone, photo);
+}
+
+module.exports = { sendWhatsApp, sendWhatsAppFile, sendWhatsAppPhoto };

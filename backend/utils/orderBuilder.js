@@ -14,6 +14,9 @@ const { getPaymentMethodsConfig } = require('./paymentMethods');
 const { validateReservation } = require('./pressings');
 const { isNumber } = require('./num');
 const { applyStockForOrder } = require('./stock');
+const { resolveImageLink } = require('./catalogImages');
+
+const SITE_URL = process.env.SITE_URL || 'https://westerngodsorganic.com';
 
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || process.env.CONTACT_NOTIFY_EMAIL;
 const REFERRAL_REWARD_INR = 100;
@@ -539,6 +542,13 @@ async function createOrderRecord({ userId, orderItems, address, total, discount,
   }
 
   if (user) {
+    // A photo of the first line item, the way a real order-confirmation
+    // message would show what you bought — best-effort only: an unknown
+    // image filename resolves to null and the notification still sends,
+    // just as plain text.
+    const firstProduct = orderItems[0] ? await db.get('products', orderItems[0].productId) : null;
+    const image = firstProduct ? resolveImageLink(firstProduct.image, SITE_URL) : null;
+
     await notifyUser(user, {
       title: `Order ${order.orderNumber} placed`,
       message: subscriptionId
@@ -547,7 +557,8 @@ async function createOrderRecord({ userId, orderItems, address, total, discount,
         // mill in the customer's own hand. It is a receipt, not a dispatch note.
         : source === 'counter'
           ? `We've recorded your order of ${orderItems.length} item(s) totalling ₹${total}. Thank you.`
-          : `We've received your order of ${orderItems.length} item(s) totalling ₹${total}. We'll notify you when it ships.`,
+          : `Great choice! We're preparing your order of ${orderItems.length} item(s) totalling ₹${total} with care, the traditional way. We'll notify you when it ships.`,
+      image,
       meta: { orderId: order.id },
       channels: { inapp: true, email: true, whatsapp: true },
     });

@@ -2,7 +2,7 @@ const { v4: uuid } = require('uuid');
 const db = require('../data/db');
 const { sendMail } = require('./mailer');
 const { sendSms } = require('./sms');
-const { sendWhatsApp } = require('./whatsapp');
+const { sendWhatsApp, sendWhatsAppPhoto } = require('./whatsapp');
 const { sendPush, sendPushToAnonymous } = require('./push');
 
 const SITE_URL = process.env.SITE_URL || 'https://westerngodsorganic.com';
@@ -63,7 +63,17 @@ async function notifyUser(user, { title, message, image, meta = {}, channels = {
     results.sms = !!r.sent;
   }
   if (channels.whatsapp && user.phone) {
-    const r = await sendWhatsApp(user.phone, `*${title}*\n${message}`);
+    // Warmer than the plain text sent to SMS/other channels: a first-name
+    // greeting and an invitation to reply, since WhatsApp is the one channel
+    // a customer can actually message back on. Wrapped here rather than at
+    // every notifyUser() call site, so every kind of WhatsApp update — order
+    // placed, shipped, returns, referral rewards — gets it for free.
+    const firstName = (user.name || '').trim().split(/\s+/)[0];
+    const greeting = firstName ? `Hi ${firstName},\n\n` : '';
+    const text = `${greeting}*${title}*\n${message}\n\nNeed anything? Just message us here on WhatsApp.`;
+    const r = imageUrl
+      ? await sendWhatsAppPhoto(user.phone, { url: imageUrl, caption: text })
+      : await sendWhatsApp(user.phone, text);
     results.whatsapp = !!r.sent;
   }
   if (channels.push !== false) {
