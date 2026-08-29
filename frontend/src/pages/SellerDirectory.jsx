@@ -47,7 +47,7 @@ export default function SellerDirectory() {
           {sellers.map((s) => (
             <Link key={s.id} to={`/sellers/${s.id}`} className="maker-card">
               {s.logo ? (
-                <img src={getProductImage(s.logo)} alt="" className="maker-logo" />
+                <img src={getProductImage(s.logo)} alt="" className="maker-logo" loading="lazy" />
               ) : (
                 <span className="maker-logo maker-logo-blank" aria-hidden="true">
                   {s.businessName.slice(0, 1).toUpperCase()}

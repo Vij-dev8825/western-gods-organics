@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api';
 import ProductCard from '../components/ProductCard';
@@ -144,27 +144,31 @@ export default function Home() {
     });
   }, [current, banners, openedSlides]);
 
-  const recentIds = getRecentlyViewedIds();
-  const recentProducts = recentIds
-    .map((id) => products.find((p) => p.id === id))
-    .filter(Boolean);
-  const comboProducts = products.filter((p) => p.comboItems?.length > 0);
+  const { recentProducts, comboProducts, purchasedProductIds, categoryCounts, topCategory, recommendedProducts } = useMemo(() => {
+    const recentIds = getRecentlyViewedIds();
+    const recentProducts = recentIds
+      .map((id) => products.find((p) => p.id === id))
+      .filter(Boolean);
+    const comboProducts = products.filter((p) => p.comboItems?.length > 0);
 
-  // "Recommended for you" — the logged-in customer's most-bought category,
-  // excluding what they've already bought, so it reads as "more like this"
-  // rather than re-suggesting what's already in their cupboard.
-  const purchasedProductIds = new Set(pastOrders.flatMap((o) => o.items.map((it) => it.productId)));
-  const categoryCounts = {};
-  for (const o of pastOrders) {
-    for (const it of o.items) {
-      const product = products.find((p) => p.id === it.productId);
-      if (product?.category) categoryCounts[product.category] = (categoryCounts[product.category] || 0) + 1;
+    // "Recommended for you" — the logged-in customer's most-bought category,
+    // excluding what they've already bought, so it reads as "more like this"
+    // rather than re-suggesting what's already in their cupboard.
+    const purchasedProductIds = new Set(pastOrders.flatMap((o) => o.items.map((it) => it.productId)));
+    const categoryCounts = {};
+    for (const o of pastOrders) {
+      for (const it of o.items) {
+        const product = products.find((p) => p.id === it.productId);
+        if (product?.category) categoryCounts[product.category] = (categoryCounts[product.category] || 0) + 1;
+      }
     }
-  }
-  const topCategory = Object.entries(categoryCounts).sort((a, b) => b[1] - a[1])[0]?.[0];
-  const recommendedProducts = topCategory
-    ? products.filter((p) => p.category === topCategory && !purchasedProductIds.has(p.id)).slice(0, 4)
-    : [];
+    const topCategory = Object.entries(categoryCounts).sort((a, b) => b[1] - a[1])[0]?.[0];
+    const recommendedProducts = topCategory
+      ? products.filter((p) => p.category === topCategory && !purchasedProductIds.has(p.id)).slice(0, 4)
+      : [];
+
+    return { recentProducts, comboProducts, purchasedProductIds, categoryCounts, topCategory, recommendedProducts };
+  }, [products, pastOrders]);
 
   const activeBanner = banners[current];
   // Admin-entered banner text is shown as-is in English; translated brand copy otherwise.

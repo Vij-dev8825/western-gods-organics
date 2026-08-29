@@ -1922,7 +1922,7 @@ export default function Pookalam() {
                 {designs.map((d) => (
                   <div className="onam-design" key={d.id}>
                     {d.thumbnail ? (
-                      <img src={d.thumbnail} alt={d.title || 'Saved pookalam'} />
+                      <img src={d.thumbnail} alt={d.title || 'Saved pookalam'} loading="lazy" />
                     ) : null}
                     <span className="dn">{d.title || 'Untitled'}</span>
                     <span className="dm">

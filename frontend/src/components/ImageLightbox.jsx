@@ -54,7 +54,7 @@ export default function ImageLightbox({ images, index, onIndexChange, onClose })
               aria-label={`Show photo ${i + 1}`}
               onClick={() => onIndexChange(i)}
             >
-              <img src={getProductImage(img)} alt="" />
+              <img src={getProductImage(img)} alt="" loading="lazy" />
             </button>
           ))}
         </div>

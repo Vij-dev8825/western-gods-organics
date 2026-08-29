@@ -162,7 +162,7 @@ export default function NavSearch({ onNavigate }) {
                 // close the list before a click could register on it.
                 onPointerDown={(e) => { e.preventDefault(); go(`/product/${p.id}`); }}
               >
-                <img src={getProductImage(p.image)} alt="" />
+                <img src={getProductImage(p.image)} alt="" loading="lazy" />
                 <span className="search-suggest-name">
                   {localizeProductText(p, 'name', lang) || p.name}
                 </span>

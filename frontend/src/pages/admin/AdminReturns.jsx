@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { api } from '../../api';
 import { useAuth } from '../../context/AuthContext';
 
@@ -30,7 +30,14 @@ export default function AdminReturns() {
     }
   }
 
-  const returns = orders.filter((o) => o.returnRequest);
+  const sortedReturns = useMemo(
+    () =>
+      orders
+        .filter((o) => o.returnRequest)
+        .slice()
+        .sort((a, b) => new Date(b.returnRequest.createdAt) - new Date(a.returnRequest.createdAt)),
+    [orders]
+  );
 
   return (
     <>
@@ -42,7 +49,7 @@ export default function AdminReturns() {
       {message && <div className={`alert alert-${message.type}`}>{message.text}</div>}
 
       <div className="admin-card">
-        {returns.length === 0 ? (
+        {sortedReturns.length === 0 ? (
           <p className="muted">No return requests yet.</p>
         ) : (
           <table className="admin-table">
@@ -50,37 +57,34 @@ export default function AdminReturns() {
               <tr><th>Order</th><th>Customer</th><th>Reason</th><th>Description</th><th>Requested</th><th>Status → change (notifies customer)</th></tr>
             </thead>
             <tbody>
-              {returns
-                .slice()
-                .sort((a, b) => new Date(b.returnRequest.createdAt) - new Date(a.returnRequest.createdAt))
-                .map((o) => (
-                  <tr key={o.id}>
-                    <td>
-                      <b>{o.orderNumber}</b>
-                      <div className="muted" style={{ fontSize: '0.75rem' }}>₹{o.total}</div>
-                    </td>
-                    <td>
-                      {o.customer?.name || '—'}
-                      <div className="muted" style={{ fontSize: '0.75rem' }}>{o.customer?.phone}</div>
-                    </td>
-                    <td>{REASON_LABELS[o.returnRequest.reason] || o.returnRequest.reason}</td>
-                    <td style={{ maxWidth: 280 }} className="truncate-cell">{o.returnRequest.description}</td>
-                    <td className="muted" style={{ fontSize: '0.82rem' }}>
-                      {new Date(o.returnRequest.createdAt).toLocaleDateString('en-IN')}
-                    </td>
-                    <td>
-                      <select
-                        className="select"
-                        value={o.returnRequest.status}
-                        onChange={(e) => setStatus(o, e.target.value)}
-                      >
-                        {STATUSES.map((s) => (
-                          <option key={s} value={s}>{s}</option>
-                        ))}
-                      </select>
-                    </td>
-                  </tr>
-                ))}
+              {sortedReturns.map((o) => (
+                <tr key={o.id}>
+                  <td>
+                    <b>{o.orderNumber}</b>
+                    <div className="muted" style={{ fontSize: '0.75rem' }}>₹{o.total}</div>
+                  </td>
+                  <td>
+                    {o.customer?.name || '—'}
+                    <div className="muted" style={{ fontSize: '0.75rem' }}>{o.customer?.phone}</div>
+                  </td>
+                  <td>{REASON_LABELS[o.returnRequest.reason] || o.returnRequest.reason}</td>
+                  <td style={{ maxWidth: 280 }} className="truncate-cell">{o.returnRequest.description}</td>
+                  <td className="muted" style={{ fontSize: '0.82rem' }}>
+                    {new Date(o.returnRequest.createdAt).toLocaleDateString('en-IN')}
+                  </td>
+                  <td>
+                    <select
+                      className="select"
+                      value={o.returnRequest.status}
+                      onChange={(e) => setStatus(o, e.target.value)}
+                    >
+                      {STATUSES.map((s) => (
+                        <option key={s} value={s}>{s}</option>
+                      ))}
+                    </select>
+                  </td>
+                </tr>
+              ))}
             </tbody>
           </table>
         )}

@@ -697,7 +697,7 @@ export default function ProductDetail() {
                   onClick={() => setActiveImage(i)}
                   aria-label={`Show photo ${i + 1}`}
                 >
-                  <img src={getProductImage(img)} alt="" />
+                  <img src={getProductImage(img)} alt="" loading="lazy" />
                 </button>
               ))}
             </div>
@@ -1184,7 +1184,7 @@ export default function ProductDetail() {
             <div className="review-photo-attach">
               {myImages.map((src, i) => (
                 <div key={src + i} className="review-photo-thumb">
-                  <img src={src} alt="" />
+                  <img src={src} alt="" loading="lazy" />
                   <button
                     type="button"
                     className="review-photo-remove"
@@ -1241,7 +1241,7 @@ export default function ProductDetail() {
                         className="review-item-photo-btn"
                         onClick={() => setReviewLightbox({ images: r.images, index: i })}
                       >
-                        <img src={src} alt="" />
+                        <img src={src} alt="" loading="lazy" />
                       </button>
                     ))}
                   </div>

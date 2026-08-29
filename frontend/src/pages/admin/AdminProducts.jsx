@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { api } from '../../api';
 import { useAuth } from '../../context/AuthContext';
 import { getProductImage } from '../../utils/productImages';
@@ -168,6 +168,7 @@ export default function AdminProducts() {
   const [uploadingBatchPhoto, setUploadingBatchPhoto] = useState(false);
   const [bulkTranslating, setBulkTranslating] = useState(false);
   const formRef = useRef(null);
+  const comboCandidates = useMemo(() => products.filter((p) => p.id !== editing), [products, editing]);
 
   function load() {
     api.getProducts({}, token).then((d) => setProducts(d.products)).catch(() => {});
@@ -543,7 +544,7 @@ export default function AdminProducts() {
               page will then show a "part of this kit" link back to this combo.
             </p>
             <div style={{ maxHeight: 220, overflowY: 'auto', border: '1px solid rgba(31,61,43,0.15)', borderRadius: 8, padding: 10 }}>
-              {products.filter((p) => p.id !== editing).map((p) => (
+              {comboCandidates.map((p) => (
                 <label key={p.id} className="flex gap-1" style={{ alignItems: 'center', fontWeight: 400, padding: '3px 0' }}>
                   <input
                     type="checkbox"
@@ -938,7 +939,7 @@ export default function AdminProducts() {
           <tbody>
             {products.map((p) => (
               <tr key={p.id}>
-                <td className="cell-thumb"><img className="thumb" src={getProductImage(p.image)} alt="" /></td>
+                <td className="cell-thumb"><img className="thumb" src={getProductImage(p.image)} alt="" loading="lazy" /></td>
                 <td data-label="Product">
                   <b>{p.name}</b>
                   {p.sellerId && <span className="pill" style={{ marginLeft: 6, fontSize: '0.7rem' }}>Seller listing</span>}

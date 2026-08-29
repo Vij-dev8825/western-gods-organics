@@ -620,7 +620,7 @@ export default function Cart() {
             const lineOutOfStock = l.sizeInfo.stock <= 0;
             return (
               <div className="cart-line" key={`${l.productId}-${l.size}`}>
-                <img src={getProductImage(l.product.image)} alt={l.product.name} />
+                <img src={getProductImage(l.product.image)} alt={l.product.name} loading="lazy" />
                 <div className="cart-line-details">
                   <h3 style={{ marginBottom: 4 }}>{l.product.name}</h3>
                   <span className="muted" style={{ fontSize: '0.85rem' }}>Size: {l.size}</span>
@@ -678,7 +678,7 @@ export default function Cart() {
                   return (
                     <div className="cart-suggestion" key={p.id}>
                       <Link to={`/product/${p.id}`}>
-                        <img src={getProductImage(p.image)} alt="" />
+                        <img src={getProductImage(p.image)} alt="" loading="lazy" />
                       </Link>
                       <div className="cart-suggestion-body">
                         <Link to={`/product/${p.id}`}>{p.name}</Link>

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { api } from '../../api';
 import { useAuth } from '../../context/AuthContext';
@@ -42,7 +42,14 @@ export default function AdminBottleReturns() {
     }
   }
 
-  const returns = orders.filter((o) => o.bottleReturn);
+  const sortedReturns = useMemo(
+    () =>
+      orders
+        .filter((o) => o.bottleReturn)
+        .slice()
+        .sort((a, b) => new Date(b.bottleReturn.createdAt) - new Date(a.bottleReturn.createdAt)),
+    [orders]
+  );
 
   return (
     <>
@@ -56,7 +63,7 @@ export default function AdminBottleReturns() {
       {message && <div className={`alert alert-${message.type}`}>{message.text}</div>}
 
       <div className="admin-card">
-        {returns.length === 0 ? (
+        {sortedReturns.length === 0 ? (
           <p className="muted">No bottle return requests yet.</p>
         ) : (
           <table className="admin-table">
@@ -64,10 +71,7 @@ export default function AdminBottleReturns() {
               <tr><th>Order</th><th>Customer</th><th>Bottles</th><th>Requested</th><th>Status → change (notifies customer)</th></tr>
             </thead>
             <tbody>
-              {returns
-                .slice()
-                .sort((a, b) => new Date(b.bottleReturn.createdAt) - new Date(a.bottleReturn.createdAt))
-                .map((o) => (
+              {sortedReturns.map((o) => (
                   <tr key={o.id} ref={o.id === highlightId ? highlightRef : null} style={o.id === highlightId ? { outline: '2px solid #d4a017', outlineOffset: -2 } : undefined}>
                     <td>
                       <b>{o.orderNumber}</b>

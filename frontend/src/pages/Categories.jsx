@@ -27,7 +27,7 @@ function CategoryTile({ cat, t }) {
       to={`/shop?category=${cat.slug}`}
       className={`category-tile card-reveal ${visible ? 'card-reveal-visible' : ''}`}
     >
-      <img src={getProductImage(cat.image)} alt={cat.label} />
+      <img src={getProductImage(cat.image)} alt={cat.label} loading="lazy" />
       <div className="overlay" />
       <div className="label">
         <span>{t('catTag')}</span>

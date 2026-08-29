@@ -460,7 +460,7 @@ export default function SellerProducts() {
             <tbody>
               {products.map((p) => (
                 <tr key={p.id}>
-                  <td>{p.image && <img className="thumb" src={getProductImage(p.image)} alt="" />}</td>
+                  <td>{p.image && <img className="thumb" src={getProductImage(p.image)} alt="" loading="lazy" />}</td>
                   <td><b>{p.name}</b></td>
                   <td>{categories.find((c) => c.slug === p.category)?.label || p.category}</td>
                   <td>

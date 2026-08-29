@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { api } from '../api';
 import { useAuth } from '../context/AuthContext';
@@ -95,6 +95,11 @@ export default function Orders() {
     api.getOrders(token).then((d) => setOrders(d.orders)).catch(() => setOrders([]));
     api.getProducts({}, token).then((d) => setProducts(d.products)).catch(() => {});
   }, [token]);
+
+  const sortedOrders = useMemo(
+    () => (orders ?? []).slice().sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)),
+    [orders]
+  );
 
   function imageFor(productId) {
     const p = products.find((pr) => pr.id === productId);
@@ -265,10 +270,7 @@ export default function Orders() {
         </div>
       ) : (
         <div className="orders-list">
-          {orders
-            .slice()
-            .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-            .map((o) => (
+          {sortedOrders.map((o) => (
               <div key={o.id} className="order-card">
                 <div className="order-card-head">
                   <div>
@@ -300,7 +302,7 @@ export default function Orders() {
                   <div className="order-item-thumbs">
                     {o.items.slice(0, 4).map((it, i) => (
                       <div className="order-item-thumb" key={i} title={`${it.name} (${it.size}) × ${it.quantity}`}>
-                        <img src={imageFor(it.productId)} alt={it.name} />
+                        <img src={imageFor(it.productId)} alt={it.name} loading="lazy" />
                       </div>
                     ))}
                     {o.items.length > 4 && <span className="order-item-more">+{o.items.length - 4}</span>}

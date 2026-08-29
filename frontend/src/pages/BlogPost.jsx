@@ -91,7 +91,7 @@ export default function BlogPost() {
 
       {post.image && (
         <div className="blog-post-media">
-          <img src={getProductImage(post.image)} alt={post.title} />
+          <img src={getProductImage(post.image)} alt={post.title} loading="eager" />
         </div>
       )}
 

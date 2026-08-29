@@ -27,7 +27,7 @@ const posterFor = (url) => (url.startsWith('/api/media/') ? `${url}/poster` : un
 function Run({ p, past, highlighted }) {
   return (
     <li className={`pressing-run ${past ? 'is-past' : ''} ${highlighted ? 'is-highlighted' : ''}`} id={p.id}>
-      <img src={getProductImage(p.productImage)} alt="" className="pressing-run-img" />
+      <img src={getProductImage(p.productImage)} alt="" className="pressing-run-img" loading="lazy" />
       <div className="pressing-run-body">
         <div className="pressing-run-when">
           <b>{formatDate(p.pressDate)}</b>

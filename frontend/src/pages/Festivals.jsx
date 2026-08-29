@@ -100,7 +100,7 @@ export default function Festivals() {
                 <div className="festival-products">
                   {f.products.map((p) => (
                     <Link to={`/product/${p.id}`} className="festival-product" key={p.id}>
-                      <img src={getProductImage(p.image)} alt="" />
+                      <img src={getProductImage(p.image)} alt="" loading="lazy" />
                       <span>
                         {p.name}
                         {p.price != null && <em>from ₹{p.price}</em>}
