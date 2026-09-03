@@ -23,6 +23,7 @@ const { sendMail } = require('../utils/mailer');
 const { sendWhatsApp } = require('../utils/whatsapp');
 const { getCountries, getFullLiveRates } = require('./currency');
 const { translateProductText } = require('../utils/translateProduct');
+const { getVisitStats } = require('../utils/siteVisits');
 const { suggestProductAnswer } = require('../utils/aiAnswerSuggestion');
 const { listAll: listAllPressings, countReserved } = require('../utils/pressings');
 const { imageUpload, storeUploadedFile } = require('../utils/imageUploadHandler');
@@ -105,7 +106,7 @@ const upload = multer({
 // GET /api/admin/stats
 router.get('/stats', async (req, res, next) => {
   try {
-    const [users, products, orders, enquiries, contacts, chats, comments, posts] = await Promise.all([
+    const [users, products, orders, enquiries, contacts, chats, comments, posts, visitStats] = await Promise.all([
       db.list('users'),
       db.list('products'),
       db.list('orders'),
@@ -114,6 +115,7 @@ router.get('/stats', async (req, res, next) => {
       db.list('chat-messages'),
       db.list('blog-comments'),
       db.list('blog-posts'),
+      getVisitStats(),
     ]);
 
     const revenue = orders.reduce((sum, o) => sum + (o.total || 0), 0);
@@ -194,9 +196,12 @@ router.get('/stats', async (req, res, next) => {
         newEnquiries: enquiries.filter((e) => e.status === 'new').length,
         contacts: contacts.length,
         unreadChats: chats.filter((m) => m.from === 'user' && !m.readByAdmin).length,
+        visitorsToday: visitStats.visitorsToday,
+        pageViewsToday: visitStats.pageViewsToday,
       },
       lowStock,
       salesTrend,
+      visitTrend: visitStats.visitTrend,
       bestSellers,
       recentOrders: orders.slice(-8).reverse(),
       recentEnquiries: enquiries.slice(-5).reverse(),

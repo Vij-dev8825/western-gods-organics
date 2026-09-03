@@ -5,6 +5,7 @@ import { api } from './api';
 import { CANONICAL_ORIGIN } from './utils/site';
 import { captureAffiliateCode } from './utils/affiliateAttribution';
 import { configureAnalytics, initAnalytics, trackPageView } from './utils/analytics';
+import { trackVisit } from './utils/trackVisit';
 import AnnounceTicker from './components/AnnounceTicker';
 import FestivalAtmosphere from './components/festival/FestivalAtmosphere';
 import FestivalToran from './components/festival/FestivalToran';
@@ -231,6 +232,12 @@ function PageViewTracker() {
   useEffect(() => {
     initAnalytics();
     trackPageView(pathname);
+    // First-party, unconditional — unlike the two calls above, this never
+    // depends on the cookie-consent analytics category. It sends no cookie
+    // and no third party ever sees it; see utils/trackVisit.js. Skipped on
+    // /admin so the dashboard's own visitor count never includes the
+    // admin's own clicking around the admin panel.
+    if (!pathname.startsWith('/admin')) trackVisit();
   }, [pathname]);
   return null;
 }

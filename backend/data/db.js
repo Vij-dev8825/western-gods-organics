@@ -68,6 +68,7 @@ const COLLECTIONS = [
   'client-errors',
   'shop-health',
   'pookalam-entries',
+  'site-visits',
 ];
 
 let mode = 'json';

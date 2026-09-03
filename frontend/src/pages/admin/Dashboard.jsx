@@ -15,9 +15,11 @@ export default function Dashboard() {
   if (error) return <div className="alert alert-error">{error}</div>;
   if (!data) return <p className="muted">Loading…</p>;
 
-  const { stats, lowStock, salesTrend, bestSellers, recentOrders, recentEnquiries, recentContacts, recentComments } = data;
+  const { stats, lowStock, salesTrend, visitTrend, bestSellers, recentOrders, recentEnquiries, recentContacts, recentComments } = data;
   const maxTrendRevenue = Math.max(...salesTrend.map((d) => d.revenue), 1);
+  const maxTrendVisitors = Math.max(...visitTrend.map((d) => d.visitors), 1);
   const tiles = [
+    ['Visitors today', stats.visitorsToday, '#visitor-trend', false],
     ['Customers', stats.customers, '/admin/leads', false],
     ['Products', stats.products, '/admin/products', false],
     ['Orders', stats.orders, '/admin/orders', false],
@@ -75,6 +77,28 @@ export default function Dashboard() {
           </table>
         </div>
       )}
+
+      <div className="admin-card" id="visitor-trend">
+        <h3>Visitor trend (last 14 days)</h3>
+        <p className="muted" style={{ marginTop: -6, marginBottom: 14 }}>
+          First-party count — no Google Analytics account needed. Counts a distinct browser once per day;
+          {' '}{stats.pageViewsToday} page view{stats.pageViewsToday === 1 ? '' : 's'} recorded today in total.
+        </p>
+        <div className="trend-chart">
+          {visitTrend.map((d) => (
+            <div className="trend-row" key={d.date}>
+              <span className="trend-date muted">
+                {new Date(d.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}
+              </span>
+              <div className="trend-bar-track">
+                <div className="trend-bar" style={{ width: `${(d.visitors / maxTrendVisitors) * 100}%` }} />
+              </div>
+              <span className="trend-value">{d.visitors} visitor{d.visitors === 1 ? '' : 's'}</span>
+              <span className="muted trend-orders">{d.pageViews} view{d.pageViews === 1 ? '' : 's'}</span>
+            </div>
+          ))}
+        </div>
+      </div>
 
       <div className="admin-two-col">
         <div className="admin-card">
