@@ -438,6 +438,15 @@ function normalizeCountryPrices(raw) {
   return out;
 }
 
+// Country codes this product is withheld from (see routes/products.js's
+// visibility check and orderBuilder.js's checkout-time enforcement) —
+// uppercased/deduped since the admin UI sends real codes but nothing stops a
+// stray lowercase or duplicate from a hand-crafted request.
+function normalizeRestrictedCountries(raw) {
+  if (!Array.isArray(raw)) return [];
+  return [...new Set(raw.filter((c) => typeof c === 'string' && c.trim()).map((c) => c.trim().toUpperCase()))];
+}
+
 // Per-language description overrides, e.g. { hi: '...', ta: '...' }. English
 // isn't a key here — it stays in the base name/description/shortDescription
 // fields and is the fallback whenever a language has no translation yet.
@@ -511,6 +520,7 @@ router.post('/products', async (req, res, next) => {
       // see utils/loyalty.js hasEarlyAccessPerk and routes/products.js.
       earlyAccessUntil: req.body.earlyAccessUntil || null,
       countryPrices: normalizeCountryPrices(req.body.countryPrices),
+      restrictedCountries: normalizeRestrictedCountries(req.body.restrictedCountries),
       batchNumber: req.body.batchNumber || '',
       productionDate: req.body.productionDate || '',
       bestBeforeDate: req.body.bestBeforeDate || '',
@@ -572,6 +582,7 @@ router.put('/products/:id', async (req, res, next) => {
         materialPerUnit: s.materialPerUnit !== '' && s.materialPerUnit != null ? Number(s.materialPerUnit) : null,
       })),
       countryPrices: normalizeCountryPrices(req.body.countryPrices ?? existing.countryPrices),
+      restrictedCountries: normalizeRestrictedCountries(req.body.restrictedCountries ?? existing.restrictedCountries),
       names: sanitizeLangMap(req.body.names ?? existing.names),
       video: req.body.video ?? existing.video ?? '',
       shortDescriptions: sanitizeLangMap(req.body.shortDescriptions ?? existing.shortDescriptions),

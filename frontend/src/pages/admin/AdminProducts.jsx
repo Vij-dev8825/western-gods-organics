@@ -75,6 +75,7 @@ const EMPTY = {
   isNew: false,
   earlyAccessUntil: '',
   countryPrices: {},
+  restrictedCountries: [],
   batchNumber: '',
   productionDate: '',
   bestBeforeDate: '',
@@ -99,6 +100,7 @@ function toForm(p) {
     comboProductIds: p.comboProductIds || [],
     earlyAccessUntil: p.earlyAccessUntil ? p.earlyAccessUntil.slice(0, 10) : '',
     countryPrices: p.countryPrices || {},
+    restrictedCountries: p.restrictedCountries || [],
     names: p.names || {},
     shortDescriptions: p.shortDescriptions || {},
     descriptions: p.descriptions || {},
@@ -219,6 +221,15 @@ export default function AdminProducts() {
         ...f.countryPrices,
         [code]: { ...(f.countryPrices[code] || {}), [label]: value },
       },
+    }));
+  }
+
+  function toggleRestrictedCountry(code) {
+    setForm((f) => ({
+      ...f,
+      restrictedCountries: f.restrictedCountries.includes(code)
+        ? f.restrictedCountries.filter((c) => c !== code)
+        : [...f.restrictedCountries, code],
     }));
   }
 
@@ -738,6 +749,32 @@ export default function AdminProducts() {
                 ))}
               </tbody>
             </table>
+          </div>
+
+          <label style={{ fontWeight: 600, fontSize: '0.85rem', display: 'block', marginTop: 20 }}>
+            Restrict to certain countries (optional)
+          </label>
+          <p className="muted" style={{ fontSize: '0.78rem', margin: '2px 0 10px' }}>
+            Checked countries won't see this product in the shop, and an order can't be placed to an
+            address in that country — use this while a product's export compliance (labeling,
+            allergens, restricted ingredients) for a market isn't sorted yet. Leave all unchecked to
+            sell everywhere.
+          </p>
+          <div className="flex gap-2" style={{ flexWrap: 'wrap' }}>
+            {foreignCountries.map((c) => (
+              <label
+                key={c.code}
+                className="flex gap-1"
+                style={{ alignItems: 'center', fontSize: '0.85rem', fontWeight: 400 }}
+              >
+                <input
+                  type="checkbox"
+                  checked={form.restrictedCountries.includes(c.code)}
+                  onChange={() => toggleRestrictedCountry(c.code)}
+                />
+                {c.label}
+              </label>
+            ))}
           </div>
 
           <label style={{ fontWeight: 600, fontSize: '0.85rem', display: 'block', marginTop: 20 }}>

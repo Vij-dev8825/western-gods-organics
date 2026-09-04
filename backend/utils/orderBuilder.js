@@ -271,6 +271,11 @@ async function buildOrderItems(items, couponCode, destCountry, userId, pointsToR
     if (!stockError) {
       if (!sizeInfo) stockError = `"${item.size}" is no longer available for this product.`;
       else if (product?.sellerId && pausedSellerIds.has(product.sellerId)) stockError = `"${product.name}" is unavailable right now — the maker has paused their shop.`;
+      // Checked here, not just hidden from the shop listing, so a product
+      // already in someone's cart before a restriction was added (or before
+      // they switched their delivery address to a withheld country) can't
+      // still be bought — the shop-page hide is a courtesy, this is the rule.
+      else if (destCountry && product?.restrictedCountries?.includes(destCountry)) stockError = `"${product.name}" can't currently be shipped to this country while we finish compliance for that market.`;
       else if (earlyAccessLocked) stockError = `"${product.name}" launches on ${new Date(product.earlyAccessUntil).toLocaleDateString('en-IN')} — Silver & Gold reward members get early access.`;
       // Stock is deliberately not consulted for a reservation: the bottles
       // are still seed. Capacity was checked against the pressing above.

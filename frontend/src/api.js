@@ -4,6 +4,16 @@ async function request(path, { method = 'GET', body, token, formData } = {}) {
   const headers = {};
   if (!formData) headers['Content-Type'] = 'application/json';
   if (token) headers.Authorization = `Bearer ${token}`;
+  // The shopper's chosen storefront country (CurrencyContext, same
+  // localStorage key) — sent on every request so product visibility can
+  // respect a product's restrictedCountries without every single call site
+  // needing to know or pass it through explicitly.
+  try {
+    const country = localStorage.getItem('yo_country');
+    if (country) headers['X-Country'] = country;
+  } catch {
+    /* private mode / storage disabled — just means no country header */
+  }
 
   const res = await fetch(`${BASE_URL}${path}`, {
     method,

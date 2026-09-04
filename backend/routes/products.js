@@ -67,7 +67,7 @@ async function loadSellers(products) {
 
 function isHiddenFromViewer(product, req, sellerById = {}) {
   if (product.active === false) return true;
-  const isOwner = req.user?.id === product.sellerId;
+  const isOwner = !!req.user && req.user.id === product.sellerId;
   const isAdmin = req.user?.role === 'admin';
   if (isOwner || isAdmin) return false;
   if (product.sellerModerationStatus === 'pending') return true;
@@ -75,6 +75,12 @@ function isHiddenFromViewer(product, req, sellerById = {}) {
   // of theirs drops out at once without touching each product's own `active`
   // flag (which they'll want back exactly as it was when they return).
   if (product.sellerId && sellerById[product.sellerId]?.sellerOnVacation) return true;
+  // Compliance-withheld market — see AdminProducts' "Restrict to certain
+  // countries" control. The shopper's chosen storefront country rides along
+  // on every request as a header (see api.js's request()), not a query
+  // param, so this needs no change at any of this function's call sites.
+  const viewerCountry = req.get?.('X-Country');
+  if (viewerCountry && product.restrictedCountries?.includes(viewerCountry)) return true;
   return false;
 }
 
