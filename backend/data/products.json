@@ -36,7 +36,7 @@
     "name": "Cold-Pressed Sesame (Til) Oil",
     "category": "oils",
     "shortDescription": "Wood-pressed sesame oil with roasted sesame seeds for deep flavour.",
-    "description": "Extracted from black and white til seeds on a traditional wooden ghani, our sesame oil carries a rich, nutty aroma prized in South Indian and Ayurvedic kitchens. Also traditionally used for oil-pulling and body massage (abhyanga).",
+    "description": "Extracted from black and white til seeds on a traditional wooden ghani, our sesame oil carries a rich, nutty aroma prized in South Indian and Ayurvedic kitchens. Also traditionally used for oil-pulling and body massage (abhyanga). Contains sesame.",
     "image": "sesame-oil.jpeg",
     "sizes": [
       { "label": "500 ml", "price": 240, "mrp": 280, "stock": 35 },
@@ -68,7 +68,7 @@
     "name": "Neem & Tulsi Handmade Soap",
     "category": "soaps",
     "shortDescription": "Cold-process soap with neem oil, tulsi extract and our own coconut oil base.",
-    "description": "Handmade in small batches using the cold-process method, this soap blends neem oil and tulsi extract into a base of our own wood-pressed coconut oil. Naturally antibacterial and gentle enough for daily use on face and body. No parabens, sulphates, artificial fragrance or colour.",
+    "description": "Handmade in small batches using the cold-process method, this soap blends neem oil and tulsi extract into a base of our own wood-pressed coconut oil. Gentle enough for daily use on face and body. No parabens, sulphates, artificial fragrance or colour.",
     "image": "neem-soap.svg",
     "sizes": [
       { "label": "100 g bar", "price": 85, "mrp": 110, "stock": 80 },
@@ -83,7 +83,7 @@
     "name": "Turmeric & Sandalwood Soap",
     "category": "soaps",
     "shortDescription": "Brightening bath bar with wild turmeric, sandalwood and sesame oil.",
-    "description": "A traditional ubtan-inspired bar made with wild turmeric (kasturi manjal), sandalwood powder and our cold-pressed sesame oil. Gently brightens and evens skin tone while keeping it moisturised. Handmade, cured for 4 weeks, and completely free of synthetic additives.",
+    "description": "A traditional ubtan-inspired bar made with wild turmeric (kasturi manjal), sandalwood powder and our cold-pressed sesame oil. Handmade, cured for 4 weeks, and completely free of synthetic additives. Contains sesame.",
     "image": "turmeric-soap.svg",
     "sizes": [
       { "label": "100 g bar", "price": 95, "mrp": 125, "stock": 70 },
@@ -98,7 +98,7 @@
     "name": "Moringa Leaf Powder",
     "category": "powders",
     "shortDescription": "Shade-dried moringa (drumstick) leaves, stone-ground to a fine green powder.",
-    "description": "Tender moringa leaves are plucked at dawn, shade-dried to protect nutrients, and stone-ground in small batches. A spoonful into smoothies, dal or chapati dough adds plant protein, iron and antioxidants. Single-origin, nothing added.",
+    "description": "Tender moringa (Moringa oleifera) leaves are plucked at dawn, shade-dried to protect nutrients, and stone-ground in small batches. A spoonful into smoothies, dal or chapati dough adds plant protein, iron and antioxidants. Single-origin, nothing added.",
     "image": "moringa-powder.svg",
     "sizes": [
       { "label": "100 g", "price": 149, "mrp": 180, "stock": 60 },
@@ -113,7 +113,7 @@
     "name": "Amla Fruit Powder",
     "category": "powders",
     "shortDescription": "Sun-dried wild amla, ground whole — for hair, skin and immunity.",
-    "description": "Wild-harvested amla (Indian gooseberry) is de-seeded, sun-dried and ground whole with no additives. Rich in natural vitamin C — mix with warm water for immunity, into hair masks for stronger roots, or with honey as a daily tonic.",
+    "description": "Wild-harvested amla (Indian gooseberry, Phyllanthus emblica) is de-seeded, sun-dried and ground whole with no additives. Rich in natural vitamin C — mix with warm water for immunity, into hair masks for stronger roots, or with honey as a daily tonic.",
     "image": "amla-powder.svg",
     "sizes": [
       { "label": "100 g", "price": 129, "mrp": 160, "stock": 65 },
