@@ -13,6 +13,16 @@ import { useAuth } from '../context/AuthContext';
 import { buildBreadcrumbSchema } from '../utils/breadcrumbSchema';
 import { CANONICAL_ORIGIN } from '../utils/site';
 
+// Cuts across the oils/soaps/powders categories: a shopper thinks "something
+// for my hair", not "a powder". Each entry is a tag already carried by real
+// products — a need with nothing behind it would open an empty shop.
+const NEEDS = [
+  { tag: 'cooking', key: 'needCooking' },
+  { tag: 'skin-care', key: 'needSkinCare' },
+  { tag: 'hair-care', key: 'needHairCare' },
+  { tag: 'wellness', key: 'needWellness' },
+];
+
 export default function Shop() {
   const { t } = useLang();
   const { token } = useAuth();
@@ -32,8 +42,9 @@ export default function Shop() {
   const search = searchParams.get('search') || '';
   const price = searchParams.get('price') || '';
   const isNewOnly = searchParams.get('isNew') === 'true';
+  const tag = searchParams.get('tag') || '';
   const activeFilterCount =
-    (category !== 'all' ? 1 : 0) + (sort ? 1 : 0) + (price ? 1 : 0) + (isNewOnly ? 1 : 0);
+    (category !== 'all' ? 1 : 0) + (sort ? 1 : 0) + (price ? 1 : 0) + (isNewOnly ? 1 : 0) + (tag ? 1 : 0);
 
   useEffect(() => {
     api.getCategories().then((d) => {
@@ -45,10 +56,10 @@ export default function Shop() {
   useEffect(() => {
     setLoading(true);
     api
-      .getProducts({ category, sort, search, price, isNew: isNewOnly ? 'true' : '' }, token)
+      .getProducts({ category, sort, search, price, isNew: isNewOnly ? 'true' : '', tag }, token)
       .then((d) => setProducts(d.products))
       .finally(() => setLoading(false));
-  }, [category, sort, search, price, isNewOnly]);
+  }, [category, sort, search, price, isNewOnly, tag]);
 
   // Reuses the existing Gemini-backed shopping assistant instead of leaving
   // a dead "no results" state — Mamaearth's own search (researched worldwide
@@ -249,6 +260,21 @@ export default function Shop() {
         </aside>
 
         <div>
+          <div className="need-rail" role="group" aria-label={t('shopByNeed')}>
+            <span className="need-rail-label">{t('shopByNeed')}</span>
+            {NEEDS.map((n) => (
+              <button
+                key={n.tag}
+                type="button"
+                className={`need-chip ${tag === n.tag ? 'active' : ''}`}
+                aria-pressed={tag === n.tag}
+                onClick={() => updateParam('tag', tag === n.tag ? '' : n.tag)}
+              >
+                {t(n.key)}
+              </button>
+            ))}
+          </div>
+
           <div className="sort-bar">
             <span className="muted">{products.length} {t('productsCount')}</span>
             <div className="sort-bar-controls">

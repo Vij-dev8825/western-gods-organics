@@ -102,10 +102,19 @@ function attachSellerNames(products, sellerById) {
 router.get('/', optionalAuth, async (req, res, next) => {
   try {
     let products = await db.list('products');
-    const { category, search, sort, combo, price, isNew } = req.query;
+    const { category, search, sort, combo, price, isNew, tag } = req.query;
 
     if (category && category !== 'all') {
       products = products.filter((p) => p.category === category);
+    }
+
+    // Backs the shop's "by need" rail — a shopper thinks "something for my
+    // hair", which cuts across the oils/soaps/powders categories rather than
+    // sitting inside one. Exact tag match, not the fuzzy contains() that
+    // `search` above does, so "cooking" can't also pull in a description that
+    // merely mentions cooking.
+    if (tag) {
+      products = products.filter((p) => (p.tags || []).includes(tag));
     }
 
     if (combo === 'true') {
