@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useParams, useNavigate, useLocation, Link } from 'react-router-dom';
 import { api } from '../api';
 import { getProductImage, getProductImageSrcSet } from '../utils/productImages';
@@ -197,6 +197,7 @@ export default function ProductDetail() {
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [submittingReview, setSubmittingReview] = useState(false);
   const [reviewLightbox, setReviewLightbox] = useState(null); // { images, index } | null
+  const [reviewSort, setReviewSort] = useState('recent'); // recent | photos | highest | lowest
   const [questions, setQuestions] = useState([]);
   const [kits, setKits] = useState([]);
   const [earlyAccessTeaser, setEarlyAccessTeaser] = useState(null);
@@ -222,6 +223,20 @@ export default function ProductDetail() {
   const reviewsReveal = useReveal();
   const questionsReveal = useReveal();
   const guidesReveal = useReveal();
+  // A shopper looking for photographs is looking for proof, and scrolling a
+  // dozen text reviews to find one is how they give up looking. Sorted from
+  // the reviews already loaded — no extra request, and never destructively
+  // (the source array stays in the order the server sent it).
+  const sortedReviews = useMemo(() => {
+    const list = [...reviews];
+    if (reviewSort === 'photos') {
+      return list.sort((a, b) => (b.images?.length ? 1 : 0) - (a.images?.length ? 1 : 0));
+    }
+    if (reviewSort === 'highest') return list.sort((a, b) => b.rating - a.rating);
+    if (reviewSort === 'lowest') return list.sort((a, b) => a.rating - b.rating);
+    return list;
+  }, [reviews, reviewSort]);
+  const reviewsWithPhotos = useMemo(() => reviews.filter((r) => r.images?.length).length, [reviews]);
   const { addItem } = useCart();
   const { productIds, toggleWishlist } = useWishlist();
   const { isLoggedIn, token, user } = useAuth();
@@ -1221,8 +1236,29 @@ export default function ProductDetail() {
         {reviews.length === 0 ? (
           <p className="muted" style={{ marginTop: 18 }}>No reviews yet — be the first to share your thoughts.</p>
         ) : (
-          <ul className="review-list">
-            {reviews.map((r) => (
+          <>
+            {reviews.length > 1 && (
+              <div className="review-sort-row">
+                <label className="muted" htmlFor="review-sort">Sort by</label>
+                <select
+                  id="review-sort"
+                  className="select"
+                  value={reviewSort}
+                  onChange={(e) => setReviewSort(e.target.value)}
+                >
+                  <option value="recent">Most recent</option>
+                  {/* Offered only when there is actually something to bring
+                      forward — an empty "with photos" view reads as broken. */}
+                  {reviewsWithPhotos > 0 && (
+                    <option value="photos">With photos first ({reviewsWithPhotos})</option>
+                  )}
+                  <option value="highest">Highest rated</option>
+                  <option value="lowest">Lowest rated</option>
+                </select>
+              </div>
+            )}
+            <ul className="review-list">
+            {sortedReviews.map((r) => (
               <li key={r.id} className="review-item">
                 <div className="review-item-head">
                   <b>{r.userName}</b>
@@ -1251,7 +1287,8 @@ export default function ProductDetail() {
                 </span>
               </li>
             ))}
-          </ul>
+            </ul>
+          </>
         )}
       </div>
 

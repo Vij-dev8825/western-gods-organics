@@ -1456,6 +1456,9 @@ input:focus-visible + .filter-radio { outline: 2px solid var(--gold-2); outline-
   padding: 0;
 }
 .star-picker-star.filled { color: var(--gold-2); }
+.review-sort-row { display: flex; align-items: center; gap: 10px; margin: 4px 0 16px; }
+.review-sort-row label { font-size: 0.85rem; }
+.review-sort-row .select { padding: 7px 12px; font-size: 0.85rem; }
 .review-list { display: flex; flex-direction: column; gap: 18px; }
 .review-item { padding-bottom: 18px; border-bottom: 1px solid rgba(31,61,43,0.08); }
 .review-item-head { display: flex; align-items: center; gap: 12px; margin-bottom: 6px; }
@@ -6766,6 +6769,9 @@ input:focus-visible + .filter-radio { outline: 2px solid var(--gold-2); outline-
   padding: 0;
 }
 .star-picker-star.filled { color: var(--gold-2); }
+.review-sort-row { display: flex; align-items: center; gap: 10px; margin: 4px 0 16px; }
+.review-sort-row label { font-size: 0.85rem; }
+.review-sort-row .select { padding: 7px 12px; font-size: 0.85rem; }
 .review-list { display: flex; flex-direction: column; gap: 18px; }
 .review-item { padding-bottom: 18px; border-bottom: 1px solid rgba(31,61,43,0.08); }
 .review-item-head { display: flex; align-items: center; gap: 12px; margin-bottom: 6px; }
