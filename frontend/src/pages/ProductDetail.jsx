@@ -836,6 +836,24 @@ export default function ProductDetail() {
               Reference price — you'll be charged in ₹ (INR) at checkout.
             </p>
           )}
+          {/* What the points are actually worth, at the moment the price is
+              being weighed — a balance buried in the account page persuades
+              nobody. Base earn rate only (1pt per ₹10, see
+              backend/utils/loyalty.js): Silver and Gold earn more, so this
+              under-states for them rather than promising what a tier the
+              shopper may not hold would give. Points credit on delivery and
+              attach to an account, so a signed-out shopper is told what
+              logging in would earn rather than that they will earn it. */}
+          {!isForeign && (() => {
+            const points = Math.floor((getEffectivePrice(activeSize, isWholesale) * qty) / 10);
+            if (points < 1) return null;
+            return (
+              <p className="points-earn-line">
+                {isLoggedIn ? 'Earn' : 'Log in to earn'} <b>{points} reward points</b> on this order
+                <span className="muted"> — worth {formatPrice(points)} off a future one.</span>
+              </p>
+            );
+          })()}
           {!isForeign && ourPer100 != null && marketPer100 && (() => {
             // Round each displayed figure first, then diff those — otherwise the
             // savings line can be off by a rupee from what "supermarket minus

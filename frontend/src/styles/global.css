@@ -1471,6 +1471,8 @@ input:focus-visible + .filter-radio { outline: 2px solid var(--gold-2); outline-
   padding: 0;
 }
 .star-picker-star.filled { color: var(--gold-2); }
+.points-earn-line { margin: -8px 0 18px; font-size: 0.88rem; color: var(--forest); }
+.points-earn-line b { color: var(--gold-2); }
 .review-sort-row { display: flex; align-items: center; gap: 10px; margin: 4px 0 16px; }
 .review-sort-row label { font-size: 0.85rem; }
 .review-sort-row .select { padding: 7px 12px; font-size: 0.85rem; }
@@ -6799,6 +6801,8 @@ input:focus-visible + .filter-radio { outline: 2px solid var(--gold-2); outline-
   padding: 0;
 }
 .star-picker-star.filled { color: var(--gold-2); }
+.points-earn-line { margin: -8px 0 18px; font-size: 0.88rem; color: var(--forest); }
+.points-earn-line b { color: var(--gold-2); }
 .review-sort-row { display: flex; align-items: center; gap: 10px; margin: 4px 0 16px; }
 .review-sort-row label { font-size: 0.85rem; }
 .review-sort-row .select { padding: 7px 12px; font-size: 0.85rem; }
