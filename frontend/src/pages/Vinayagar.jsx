@@ -270,33 +270,30 @@ export default function Vinayagar() {
             <ellipse cx="300" cy="290" rx="270" ry="128" fill="url(#vinFloor)" />
             <ellipse cx="300" cy="286" rx="258" ry="116" fill="#2a1a12" opacity="0.07" />
 
-            {/* Banana leaf: one long curve out and back, with the midrib drawn
-                on so it reads as a leaf rather than a green dish. */}
+            {/* Banana leaf. The blade, then the ribs laid over it through a
+                clip so they stop at the edge, then the midrib on top — which
+                is the order you'd actually see them. */}
+            <clipPath id="vinLeafClip">
+              <path d="M 46 272 q 254 -78 508 0 q -254 78 -508 0 z" />
+            </clipPath>
             <path
               d="M 46 272 q 254 -78 508 0 q -254 78 -508 0 z"
               fill="url(#vinServingLeaf)"
-              stroke="#2f5f21"
-              strokeWidth="2"
+              stroke="#3f7a25"
+              strokeWidth="1.6"
             />
-            <path d="M 52 272 q 248 -20 496 0" stroke="#8cc766" strokeWidth="2.4" fill="none" opacity="0.9" />
-            {[-1, 1].map((d) =>
-              [0.22, 0.36, 0.5, 0.64, 0.78].map((f) => (
-                <path
-                  key={`${d}-${f}`}
-                  d={`M ${300 + d * 496 * (f - 0.5)} 272 q ${d * 14} ${-18} ${d * 30} ${-26}`}
-                  stroke="#8cc766"
-                  strokeWidth="1.2"
-                  fill="none"
-                  opacity="0.5"
-                />
-              ))
-            )}
-            {/* A sheen across the near half, so the leaf looks waxy. */}
-            <path
-              d="M 120 258 q 180 -34 360 0 q -180 16 -360 0 z"
-              fill="#c6e8a8"
-              opacity="0.16"
-            />
+            <g clipPath="url(#vinLeafClip)">
+              <rect x="40" y="190" width="524" height="164" fill="url(#vinRibs)" />
+              {/* Darker towards the two tips, the way a leaf shades away from
+                  the light running down its spine. */}
+              <ellipse cx="300" cy="272" rx="260" ry="44" fill="#2f5f21" opacity="0.18" />
+              <ellipse cx="300" cy="272" rx="170" ry="40" fill="#b7e07a" opacity="0.2" />
+              {/* Waxy sheen along the upper blade. */}
+              <path d="M 120 256 q 180 -30 360 0 q -180 14 -360 0 z" fill="#e8f7c8" opacity="0.22" />
+            </g>
+            {/* Midrib: pale yellow-green, the brightest line on the leaf. */}
+            <path d="M 52 272 q 248 -14 496 0" stroke="#5f9130" strokeWidth="3.4" fill="none" opacity="0.55" />
+            <path d="M 52 272 q 248 -14 496 0" stroke="#e4f0a8" strokeWidth="1.8" fill="none" />
 
             <g transform="translate(300 168)">
               <Pillaiyar lit={done} />

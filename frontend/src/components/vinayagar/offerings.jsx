@@ -67,12 +67,25 @@ export function OfferingDefs() {
         <stop offset="100%" stopColor="#7a4d16" />
       </linearGradient>
 
-      {/* The banana leaf the whole board is served on, and the floor under it. */}
-      <linearGradient id="vinServingLeaf" x1="0.1" y1="0" x2="0.6" y2="1">
-        <stop offset="0%" stopColor="#6fb04c" />
-        <stop offset="46%" stopColor="#4f8a3a" />
-        <stop offset="100%" stopColor="#356a28" />
+      {/* The banana leaf the whole board is served on, and the floor under it.
+          Colours taken off a photograph of a real one: much yellower and
+          lighter than the forest green this used to be, and brightest along
+          the midrib where the blade catches the light. */}
+      <linearGradient id="vinServingLeaf" x1="0.08" y1="0" x2="0.55" y2="1">
+        <stop offset="0%" stopColor="#7fb93f" />
+        <stop offset="30%" stopColor="#9ccb52" />
+        <stop offset="52%" stopColor="#86bd45" />
+        <stop offset="100%" stopColor="#4e8a2e" />
       </linearGradient>
+      {/* The ribs. A banana leaf is covered in fine parallel veins running out
+          from the midrib, and without them a green lens just reads as a dish.
+          Done as a pattern rather than a few hundred drawn lines: one tile,
+          repeated, and it costs nothing in the serialised copy the share
+          export rasterises. */}
+      <pattern id="vinRibs" width="5" height="12" patternUnits="userSpaceOnUse">
+        <line x1="1" y1="0" x2="1" y2="12" stroke="#3f7a25" strokeWidth="0.9" opacity="0.34" />
+        <line x1="3.4" y1="0" x2="3.4" y2="12" stroke="#cfe9a0" strokeWidth="0.6" opacity="0.3" />
+      </pattern>
       <radialGradient id="vinFloor" cx="0.5" cy="0.42" r="0.68">
         <stop offset="0%" stopColor="#fbeedd" />
         <stop offset="100%" stopColor="#f0dcc4" />
