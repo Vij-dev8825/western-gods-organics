@@ -62,6 +62,19 @@ const ORGANIZATION_SCHEMA = {
   '@context': 'https://schema.org',
   '@type': 'Organization',
   name: 'Western Gods Organics',
+  // The spellings people actually type. Search engines treat a brand as an
+  // entity rather than a string, and right now the strongest signal for this
+  // one points at the Amazon listings rather than here — someone searching
+  // "westerngods" is shown a marketplace page because nothing has told Google
+  // that "westerngods", "Western Gods" and "Western Gods Organics" are this
+  // business, at this domain. These are the same name, not keyword padding.
+  alternateName: [
+    'Western Gods',
+    'Westerngods',
+    'Westerngods Organics',
+    'Western Gods Organic',
+    'Westerngods Organic',
+  ],
   description:
     'Traditional wood-pressed cold-pressed oils, handmade herbal soaps and stone-ground herbal powders — 100% natural and chemical-free, from a family mill in Tamil Nadu, India, shipped across India and worldwide.',
   url: CANONICAL_ORIGIN,
