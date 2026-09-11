@@ -11265,3 +11265,54 @@ body.has-cookie-bar .install-prompt { bottom: calc(var(--cookie-bar-height, 0px)
 @media (prefers-reduced-motion: reduce) {
   .fest-pick { animation: none; }
 }
+
+/* ---------- Explore grid (homepage) ----------
+   Appended at the very end on purpose. This stylesheet currently contains its
+   own contents twice over — the whole of it is mirrored at a +5330 line offset
+   — so a rule written anywhere earlier can be silently overridden by its own
+   duplicate further down. Last definition wins, so this one holds regardless. */
+.explore-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 18px;
+}
+.explore-card {
+  display: block;
+  padding: 22px 20px;
+  border: 1px solid var(--cream-deep);
+  border-radius: var(--radius-md);
+  background: var(--paper);
+  box-shadow: var(--shadow-card);
+  text-decoration: none;
+  color: inherit;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+}
+.explore-card:hover,
+.explore-card:focus-visible {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-lift);
+  border-color: var(--gold-2);
+}
+.explore-icon {
+  display: block;
+  font-size: 1.6rem;
+  line-height: 1;
+  margin-bottom: 10px;
+}
+.explore-card h3 {
+  font-family: var(--font-body);
+  font-size: 0.98rem;
+  margin: 0 0 6px;
+  color: var(--forest);
+}
+.explore-card p {
+  font-size: 0.84rem;
+  color: var(--forest-light);
+  line-height: 1.5;
+  margin: 0;
+}
+@media (prefers-reduced-motion: reduce) {
+  .explore-card { transition: none; }
+  .explore-card:hover,
+  .explore-card:focus-visible { transform: none; }
+}

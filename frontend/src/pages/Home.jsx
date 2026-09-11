@@ -28,6 +28,29 @@ import skincareCertificate from '../assets/skincare-workshop-certificate.jpg';
 
 const USP_ICONS = ['🌾', '🪵', '🧪', '🚚'];
 
+// Pages that already existed and were linked only from the footer. Each one
+// answers something a visitor wants to know *before* they are ready to buy —
+// which oil suits them, whether it is genuinely fresh, who pressed it — rather
+// than a policy they look up afterwards, which is what the rest of the footer
+// is for.
+const EXPLORE_PUBLIC = [
+  { to: '/finder', icon: '🧭', title: 'Find my oil', blurb: 'Answer a few questions and get the one that suits how you actually cook.' },
+  { to: '/pressings', icon: '🗓️', title: 'Pressing calendar', blurb: 'When each batch was pressed, and what goes through the mill next.' },
+  { to: '/guide', icon: '📖', title: 'Oil guide', blurb: 'Which oil to fry in, which to finish with, which to put on your hair.' },
+  { to: '/gifting', icon: '🎁', title: 'Gifting', blurb: 'Boxes and gift cards for festivals, weddings and corporate orders.' },
+  { to: '/our-story', icon: '🌾', title: 'Our story', blurb: 'The family mill in Udumalpet, and why the oil is pressed the slow way.' },
+  { to: '/impact', icon: '♻️', title: 'What we give back', blurb: 'Where the seed is grown, and what the mill returns to the people who grow it.' },
+];
+
+// Shown only once someone is signed in, because both sit behind ProtectedRoute
+// — offering them to a logged-out visitor would be a card that opens the login
+// form. Worth revisiting: "earn points" and "refer a friend" are arguments for
+// creating an account, and neither can make that argument from behind one.
+const EXPLORE_MEMBER = [
+  { to: '/rewards', icon: '🏅', title: 'Reward points', blurb: 'Earn on every order and take them straight off the next one.' },
+  { to: '/affiliate', icon: '🤝', title: 'Refer a friend', blurb: 'Share your link and earn on what the people you send us buy.' },
+];
+
 // The mill — the address and phone a Google Business Profile is registered
 // against, and the one every other page on the site quotes.
 const MILL = STORE_LOCATIONS[0];
@@ -406,6 +429,30 @@ export default function Home() {
           </div>
         </Reveal>
       )}
+
+      {/* ---------- Explore ----------
+           Sits after the product rails on purpose: someone who has scrolled
+           this far has seen what is for sale and not bought yet, which is the
+           moment the quiz, the pressing log and the points are worth offering.
+           Placed above the fold of the footer, where these six links used to
+           be the only way in. */}
+      <Reveal as="section" className="section container">
+        <div className="section-head">
+          <div>
+            <span className="eyebrow">More ways in</span>
+            <h2>Explore</h2>
+          </div>
+        </div>
+        <div className="explore-grid">
+          {[...EXPLORE_PUBLIC, ...(isLoggedIn ? EXPLORE_MEMBER : [])].map(({ to, icon, title, blurb }) => (
+            <Link to={to} key={to} className="explore-card">
+              <span className="explore-icon" aria-hidden="true">{icon}</span>
+              <h3>{title}</h3>
+              <p>{blurb}</p>
+            </Link>
+          ))}
+        </div>
+      </Reveal>
 
       <SectionDivider />
 

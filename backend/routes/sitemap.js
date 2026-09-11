@@ -22,6 +22,25 @@ const STATIC_PATHS = [
   // more often than the other standing pages.
   { path: '/pressings', priority: '0.6', changefreq: 'daily' },
   { path: '/sourcing', priority: '0.5', changefreq: 'monthly' },
+  // Pages that answer a question someone is already searching for — the quiz
+  // that picks an oil for them, the oil guide, the mill's own story — which
+  // until now were reachable only from the footer, where links go to be
+  // ignored.
+  //
+  // Everything listed here renders its content to a signed-out visitor, which
+  // is the whole test for belonging in a sitemap. That rules out more than the
+  // obvious account screens: /rewards, /affiliate and /gift-cards all look like
+  // marketing pages but sit behind ProtectedRoute, so a crawler following them
+  // lands on the login form and learns that this file points at pages that
+  // aren't there. /sell-with-us is out too — it is a redirect to /seller.
+  { path: '/finder', priority: '0.7', changefreq: 'weekly' },
+  { path: '/guide', priority: '0.7', changefreq: 'monthly' },
+  { path: '/our-story', priority: '0.6', changefreq: 'monthly' },
+  { path: '/how-to-use', priority: '0.6', changefreq: 'monthly' },
+  { path: '/whats-new', priority: '0.6', changefreq: 'weekly' },
+  { path: '/festivals', priority: '0.5', changefreq: 'weekly' },
+  { path: '/getting-started', priority: '0.5', changefreq: 'monthly' },
+  { path: '/how-to-shop', priority: '0.4', changefreq: 'monthly' },
   { path: '/policy', priority: '0.2', changefreq: 'yearly' },
   { path: '/refund-policy', priority: '0.2', changefreq: 'yearly' },
   { path: '/terms', priority: '0.2', changefreq: 'yearly' },
@@ -75,6 +94,18 @@ router.get('/', async (req, res, next) => {
           priority: '0.8',
           changefreq: 'weekly',
           lastmod: (p.updatedAt || p.createdAt)?.slice(0, 10),
+        })
+      ),
+      // One per pressing run the catalogue actually cites. These are the only
+      // pages here whose content is unique to a date — this oil, pressed on
+      // this day, from this farm — which is the one thing a shop reselling the
+      // same commodity cannot publish. Derived from the catalogue rather than
+      // a hand-kept list, so it is empty while no product carries a batch
+      // number and fills in by itself the moment they do.
+      ...[...new Set(products.map((p) => p.batchNumber).filter(Boolean))].map((b) =>
+        urlEntry(`${SITE_URL}/batch/${encodeURIComponent(b)}`, {
+          priority: '0.6',
+          changefreq: 'monthly',
         })
       ),
       ...posts
