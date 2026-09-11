@@ -106,7 +106,7 @@ export const FESTIVALS = [
     doneLine: 'Your pookalam is complete.',
     steps: 5,
     Motif: PookalamRings,
-    /* Onam is the only one with a full game behind it. */
+    /* One of two with a full game behind it; Vinayagar Chaturthi is the other. */
     route: '/onam',
     routeLabel: 'Play the full pookalam',
     palette: {
@@ -237,6 +237,8 @@ export const FESTIVALS = [
     doneLine: 'The offering is made.',
     steps: 5,
     Motif: Modakam,
+    route: '/vinayagar',
+    routeLabel: 'Lay the whole offering',
     palette: VERMILION,
   },
 

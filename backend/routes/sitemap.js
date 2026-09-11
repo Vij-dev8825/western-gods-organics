@@ -35,6 +35,12 @@ const STATIC_PATHS = [
   // aren't there. /sell-with-us is out too — it is a redirect to /seller.
   { path: '/finder', priority: '0.7', changefreq: 'weekly' },
   { path: '/guide', priority: '0.7', changefreq: 'monthly' },
+  // The two festival games. They stand up on their own all year — someone
+  // searching for a pookalam to make, or what goes on the leaf for Vinayagar
+  // Chaturthi, is a real search, and neither page needs the festival to be
+  // near to be worth landing on.
+  { path: '/onam', priority: '0.6', changefreq: 'monthly' },
+  { path: '/vinayagar', priority: '0.6', changefreq: 'monthly' },
   { path: '/our-story', priority: '0.6', changefreq: 'monthly' },
   { path: '/how-to-use', priority: '0.6', changefreq: 'monthly' },
   { path: '/whats-new', priority: '0.6', changefreq: 'weekly' },

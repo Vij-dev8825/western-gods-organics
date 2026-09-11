@@ -71,6 +71,7 @@ const Sourcing = lazy(() => import('./pages/Sourcing'));
 const PressingCalendar = lazy(() => import('./pages/PressingCalendar'));
 const Festivals = lazy(() => import('./pages/Festivals'));
 const Pookalam = lazy(() => import('./pages/Pookalam'));
+const Vinayagar = lazy(() => import('./pages/Vinayagar'));
 const ImportInfo = lazy(() => import('./pages/ImportInfo'));
 const StoreLocator = lazy(() => import('./pages/StoreLocator'));
 const GiftCards = lazy(() => import('./pages/GiftCards'));
@@ -460,6 +461,7 @@ export default function App() {
         <Route path="/pressings" element={<PressingCalendar />} />
         <Route path="/festivals" element={<Festivals />} />
         <Route path="/onam" element={<Pookalam />} />
+        <Route path="/vinayagar" element={<Vinayagar />} />
         <Route path="/import" element={<ImportInfo />} />
         <Route path="/store-locator" element={<StoreLocator />} />
         <Route path="*" element={<NotFound />} />
