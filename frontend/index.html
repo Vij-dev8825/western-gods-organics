@@ -5,6 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Western Gods Organics — Cold-Pressed Oils, Herbal Soaps & Powders</title>
     <meta name="description" content="Western Gods Organics — traditional wood-pressed cold-pressed oils, handmade herbal soaps and herbal powders. 100% natural, shipped across India & worldwide." />
+    <!--
+      Static canonical for the home page. App.jsx's CanonicalTag rewrites this
+      per route once React is up, which is what matters for Google; this is the
+      pre-JS value, so a crawler that reads the HTML without executing it still
+      sees the www origin rather than guessing between www and apex.
+    -->
+    <link rel="canonical" href="https://www.westerngodsorganic.com/" />
     <meta property="og:site_name" content="Western Gods Organics" />
     <meta property="og:type" content="website" />
     <meta property="og:title" content="Western Gods Organics — Cold-Pressed Oils, Herbal Soaps & Powders" />
@@ -44,7 +51,45 @@
     </noscript>
   </head>
   <body>
-    <div id="root"></div>
+    <!--
+      The shop is client-rendered, so before React mounts this document has a
+      body of exactly one empty div. Google executes JavaScript and will see
+      the real thing, but it renders in a second, deferred pass — and plenty of
+      other crawlers (Bing, link-preview fetchers, the AI crawlers that now
+      answer product questions) either don't run scripts at all or give up
+      before they finish.
+
+      So the shell carries a plain-HTML statement of what this is and links to
+      the pages worth finding. React replaces all of it the moment it mounts,
+      and it says the same thing the rendered page does — it is a fallback, not
+      a second version of the site written for robots.
+    -->
+    <div id="root">
+      <main>
+        <h1>Western Gods Organics</h1>
+        <p>
+          Traditional wood-pressed cold-pressed oils, handmade herbal soaps and
+          stone-ground herbal powders — pressed at a family mill in Udumalpet,
+          Tamil Nadu, and shipped across India and worldwide.
+        </p>
+        <nav>
+          <a href="/shop">Shop all products</a>
+          <a href="/shop?category=oils">Cold-pressed oils</a>
+          <a href="/shop?category=soaps">Herbal soaps</a>
+          <a href="/shop?category=powders">Herbal powders</a>
+          <a href="/shop?category=honey">Honey</a>
+          <a href="/our-story">Our story</a>
+          <a href="/pressings">Pressing calendar</a>
+          <a href="/blog">Guides and journal</a>
+          <a href="/store-locator">Where to find us</a>
+          <a href="/contact">Contact</a>
+        </nav>
+        <p>
+          Shri Gopal Flour &amp; Oil Mills, Udumalpet, Tiruppur District, Tamil
+          Nadu, India.
+        </p>
+      </main>
+    </div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
