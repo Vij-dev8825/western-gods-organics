@@ -25,12 +25,20 @@ import '../styles/vinayagar.css';
 /* The leaf's drawing space. Everything below is in these units. */
 const VB = { w: 600, h: 430 };
 
-/* Where an offering is allowed to land. Tracks the drawn leaf rather than the
- * board: the leaf path's curves are quadratics with a control offset of 78, so
- * they peak at half that — the leaf really only spans y 233..311, and an
- * earlier ry of 112 let offerings be dropped on the bare floor either side of
- * it. Inset a little from the true edge so nothing hangs over the rim. */
-const FIELD = { cx: 300, cy: 274, rx: 234, ry: 29 };
+/* The leaf's outline, shared by the fill, the clip and the rim. Shaped like a
+ * real cut banana leaf rather than the pointed lens this used to be: tapering
+ * to a rounded tip at the left, broad through the middle, and squared off at
+ * the right where it was cut from the plant. */
+const LEAF_PATH =
+  'M 52 300 C 72 250 140 214 250 205 C 340 198 442 193 508 192 ' +
+  'C 532 191 546 201 546 224 L 546 368 C 546 390 532 399 508 398 ' +
+  'C 430 396 318 388 228 372 C 138 356 74 331 52 300 Z';
+
+/* Where an offering is allowed to land: an ellipse inset inside that outline.
+ * Pushed right of centre because the left end tapers away to a tip, and there
+ * is no room to stand anything on it. An earlier version tracked a much
+ * flatter leaf and let offerings be dropped on the bare floor beside it. */
+const FIELD = { cx: 312, cy: 298, rx: 202, ry: 72 };
 
 /* Twenty-one is the count in the ritual, so it is the count here. */
 const MODAKAM_TARGET = 21;
@@ -267,33 +275,38 @@ export default function Vinayagar() {
             <rect x="0" y="0" width={VB.w} height={VB.h} fill="#fdf3e7" />
 
             {/* The floor the leaf is set down on. */}
-            <ellipse cx="300" cy="290" rx="270" ry="128" fill="url(#vinFloor)" />
-            <ellipse cx="300" cy="286" rx="258" ry="116" fill="#2a1a12" opacity="0.07" />
+            <ellipse cx="300" cy="300" rx="288" ry="124" fill="url(#vinFloor)" />
+            <ellipse cx="302" cy="304" rx="272" ry="112" fill="#2a1a12" opacity="0.07" />
 
             {/* Banana leaf. The blade, then the ribs laid over it through a
                 clip so they stop at the edge, then the midrib on top — which
-                is the order you'd actually see them. */}
+                is the order you'd actually see them. Everything shares
+                LEAF_PATH, so reshaping the leaf moves the clip and the rim
+                with it. */}
             <clipPath id="vinLeafClip">
-              <path d="M 46 272 q 254 -78 508 0 q -254 78 -508 0 z" />
+              <path d={LEAF_PATH} />
             </clipPath>
-            <path
-              d="M 46 272 q 254 -78 508 0 q -254 78 -508 0 z"
-              fill="url(#vinServingLeaf)"
-              stroke="#3f7a25"
-              strokeWidth="1.6"
-            />
+            <path d={LEAF_PATH} fill="url(#vinServingLeaf)" stroke="#3f7a25" strokeWidth="1.6" />
             <g clipPath="url(#vinLeafClip)">
-              <rect x="40" y="190" width="524" height="164" fill="url(#vinRibs)" />
-              {/* Darker towards the two tips, the way a leaf shades away from
-                  the light running down its spine. */}
-              <ellipse cx="300" cy="272" rx="260" ry="44" fill="#2f5f21" opacity="0.18" />
-              <ellipse cx="300" cy="272" rx="170" ry="40" fill="#b7e07a" opacity="0.2" />
-              {/* Waxy sheen along the upper blade. */}
-              <path d="M 120 256 q 180 -30 360 0 q -180 14 -360 0 z" fill="#e8f7c8" opacity="0.22" />
+              {/* Ribs run out from the midrib, so they are drawn as two banks
+                  leaning away from it rather than one upright field — on a
+                  leaf this deep, a single vertical pattern reads as corduroy. */}
+              <g transform="rotate(-4 300 296)">
+                <rect x="30" y="150" width="560" height="148" fill="url(#vinRibs)" />
+              </g>
+              <g transform="rotate(4 300 296)">
+                <rect x="30" y="296" width="560" height="150" fill="url(#vinRibs)" />
+              </g>
+              {/* Shading: darker into the corners, brighter along the spine. */}
+              <ellipse cx="300" cy="296" rx="280" ry="112" fill="#2f5f21" opacity="0.2" />
+              <ellipse cx="318" cy="292" rx="190" ry="66" fill="#b7e07a" opacity="0.22" />
+              {/* Waxy sheen across the upper blade. */}
+              <path d="M 150 250 C 260 226 420 222 520 228 C 420 250 260 262 150 250 Z" fill="#e8f7c8" opacity="0.2" />
             </g>
-            {/* Midrib: pale yellow-green, the brightest line on the leaf. */}
-            <path d="M 52 272 q 248 -14 496 0" stroke="#5f9130" strokeWidth="3.4" fill="none" opacity="0.55" />
-            <path d="M 52 272 q 248 -14 496 0" stroke="#e4f0a8" strokeWidth="1.8" fill="none" />
+            {/* Midrib: pale yellow-green, the brightest line on the leaf, and
+                the one place a banana leaf is almost yellow. */}
+            <path d="M 56 300 C 200 292 400 288 544 290" stroke="#4e8a2e" strokeWidth="4.6" fill="none" opacity="0.45" />
+            <path d="M 56 300 C 200 292 400 288 544 290" stroke="#e9f3ac" strokeWidth="2.2" fill="none" />
 
             <g transform="translate(300 168)">
               <Pillaiyar lit={done} />
@@ -315,10 +328,10 @@ export default function Vinayagar() {
 
             {placed.length === 0 && (
               <text
-                x="300"
-                y="278"
+                x="312"
+                y="336"
                 textAnchor="middle"
-                fill="rgba(42,26,18,0.45)"
+                fill="rgba(255,255,255,0.72)"
                 style={{ font: '600 13px var(--font-body, sans-serif)', letterSpacing: '0.18em' }}
               >
                 TAP THE LEAF TO LAY IT
