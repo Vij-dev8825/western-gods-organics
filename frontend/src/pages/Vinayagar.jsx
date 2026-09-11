@@ -140,14 +140,51 @@ export default function Vinayagar() {
 
   /** Serialises the board and paints it into a PNG. Every colour in the SVG is
    * an attribute rather than a class, precisely so the detached copy still
-   * looks like the board the player made. */
+   * looks like the board the player made.
+   *
+   * The offering photographs need more than that. A serialised SVG is
+   * rasterised from a blob URL, and a blob-URL document will not fetch
+   * anything external — an <image href="/assets/modakam-abc.png"> inside it
+   * renders as nothing at all, silently. Measured: the exported PNG came back
+   * with zero non-background pixels where the image should have been. So every
+   * picture is read back and inlined as a data URI before the clone is
+   * serialised. They live in <defs> as symbols, so each one is inlined once
+   * however many times it was laid on the leaf. */
+  async function inlineImages(clone) {
+    const nodes = [...clone.querySelectorAll('image')];
+    const cache = new Map();
+    await Promise.all(
+      nodes.map(async (node) => {
+        const href = node.getAttribute('href') || node.getAttribute('xlink:href');
+        if (!href || href.startsWith('data:')) return;
+        if (!cache.has(href)) {
+          cache.set(href, (async () => {
+            const res = await fetch(href);
+            const blob = await res.blob();
+            return new Promise((resolve, reject) => {
+              const fr = new FileReader();
+              fr.onload = () => resolve(fr.result);
+              fr.onerror = () => reject(new Error('read failed'));
+              fr.readAsDataURL(blob);
+            });
+          })());
+        }
+        const uri = await cache.get(href);
+        node.setAttribute('href', uri);
+        node.removeAttribute('xlink:href');
+      })
+    );
+  }
+
   async function share() {
     const svg = svgRef.current;
     if (!svg || busy) return;
     setBusy(true);
     try {
       const clone = svg.cloneNode(true);
+      await inlineImages(clone);
       clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+      clone.setAttribute('xmlns:xlink', 'http://www.w3.org/1999/xlink');
       clone.setAttribute('width', String(VB.w * 2));
       clone.setAttribute('height', String(VB.h * 2));
       const markup = new XMLSerializer().serializeToString(clone);
@@ -305,7 +342,11 @@ export default function Vinayagar() {
                   onClick={() => setPicked(o.id)}
                   title={o.note}
                 >
-                  <svg viewBox="-22 -24 44 34" aria-hidden="true">
+                  {/* The art is drawn upward from its own baseline, so the box
+                      reaches further above the origin than below it. The <use>
+                      inside resolves against the board's <defs>, which is why
+                      the board must be on the page for the tray to draw. */}
+                  <svg viewBox="-20 -38 40 42" aria-hidden="true">
                     <Art />
                   </svg>
                   <span className="vin-chip-label">{o.label}</span>
