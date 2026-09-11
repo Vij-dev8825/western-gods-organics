@@ -6,92 +6,204 @@
  * here knows where it will end up, which is what lets the same drawing serve
  * the tray thumbnail and the placed item on the leaf.
  *
+ * Shading is done with gradients rather than flat fills, but every one of them
+ * is defined once in <OfferingDefs/> and referenced by id. Twenty-one modakam
+ * on the leaf would otherwise mean twenty-one copies of the same gradient, all
+ * sharing an id — invalid, and it bloats the serialised copy that the share
+ * export rasterises. Defs live in the board's own <defs> so that clone stays
+ * self-contained; the tray's little SVGs resolve against the same ids, which
+ * works because url(#id) resolves across the whole document.
+ *
+ * No filters. A blur filter on twenty-one instances is the one thing that
+ * would make a full leaf stutter on a phone, so contact shadows are drawn as
+ * plain ellipses instead — cheaper, and they rasterise identically.
+ *
  * Drawn rather than photographed, and drawn plainly. These are ritual objects:
  * a modakam that reads as a modakam is worth more here than a glossy one.
  */
 
-/* Ghee-lamp flame, shared by the deepam and used on its own nowhere else. */
-function Flame({ y = -14 }) {
+/** Every gradient the offerings use. Rendered once, inside the board. */
+export function OfferingDefs() {
   return (
-    <g>
-      <path
-        d={`M 0 ${y} c 5 4 6 9 3 12 c -2 2 -4 2 -6 0 c -3 -3 -2 -8 3 -12 z`}
-        fill="#f7c85a"
-      />
-      <path
-        d={`M 0 ${y + 4} c 2.5 2.5 3 5.5 1.4 7.2 c -1 1 -1.8 1 -2.8 0 c -1.6 -1.7 -1.1 -4.7 1.4 -7.2 z`}
-        fill="#fff3cd"
-      />
-    </g>
+    <defs>
+      {/* Modakam — light falling from the upper left onto a steamed shell. */}
+      <linearGradient id="vinModakam" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stopColor="#fffaf0" />
+        <stop offset="52%" stopColor="#f3e5c8" />
+        <stop offset="100%" stopColor="#dcc79c" />
+      </linearGradient>
+      {/* Terracotta, for the lamp. */}
+      <linearGradient id="vinClay" x1="0" y1="0" x2="0.4" y2="1">
+        <stop offset="0%" stopColor="#d07f45" />
+        <stop offset="55%" stopColor="#b8632f" />
+        <stop offset="100%" stopColor="#8a4520" />
+      </linearGradient>
+      {/* Flame: hot centre, cooler edge. */}
+      <radialGradient id="vinFlame" cx="0.5" cy="0.68" r="0.62">
+        <stop offset="0%" stopColor="#fff8dc" />
+        <stop offset="45%" stopColor="#ffd76a" />
+        <stop offset="100%" stopColor="#f0932b" />
+      </radialGradient>
+      {/* Hibiscus petal — deep at the throat, bright at the rim. */}
+      <radialGradient id="vinPetal" cx="0.5" cy="0.92" r="0.95">
+        <stop offset="0%" stopColor="#8c1d12" />
+        <stop offset="38%" stopColor="#cf3a22" />
+        <stop offset="100%" stopColor="#ef6a41" />
+      </radialGradient>
+      {/* Coconut flesh and shell. */}
+      <linearGradient id="vinFlesh" x1="0" y1="0" x2="0.3" y2="1">
+        <stop offset="0%" stopColor="#fffdf8" />
+        <stop offset="70%" stopColor="#efe4d2" />
+        <stop offset="100%" stopColor="#d9c9b0" />
+      </linearGradient>
+      <linearGradient id="vinShell" x1="0" y1="0" x2="0.4" y2="1">
+        <stop offset="0%" stopColor="#8a5a33" />
+        <stop offset="100%" stopColor="#4f2f19" />
+      </linearGradient>
+      {/* Banana skin. */}
+      <linearGradient id="vinBanana" x1="0.1" y1="0" x2="0.7" y2="1">
+        <stop offset="0%" stopColor="#ffe27a" />
+        <stop offset="48%" stopColor="#f2c744" />
+        <stop offset="100%" stopColor="#c99a22" />
+      </linearGradient>
+      {/* Betel leaf, and the grass. */}
+      <linearGradient id="vinLeaf" x1="0.2" y1="0" x2="0.8" y2="1">
+        <stop offset="0%" stopColor="#6fb04c" />
+        <stop offset="55%" stopColor="#4f8a3a" />
+        <stop offset="100%" stopColor="#33652a" />
+      </linearGradient>
+      <linearGradient id="vinGrass" x1="0" y1="1" x2="0" y2="0">
+        <stop offset="0%" stopColor="#3f7a2c" />
+        <stop offset="100%" stopColor="#8cc766" />
+      </linearGradient>
+      {/* Kumkum: a dry powder, so the light is diffuse rather than specular. */}
+      <linearGradient id="vinKumkum" x1="0.2" y1="0" x2="0.8" y2="1">
+        <stop offset="0%" stopColor="#e2483a" />
+        <stop offset="50%" stopColor="#c62828" />
+        <stop offset="100%" stopColor="#7d1717" />
+      </linearGradient>
+      {/* The supari on the betel leaf. */}
+      <radialGradient id="vinNut" cx="0.35" cy="0.3" r="0.8">
+        <stop offset="0%" stopColor="#c98a52" />
+        <stop offset="100%" stopColor="#7d4423" />
+      </radialGradient>
+      {/* The banana leaf the whole board is served on. Lit from the top left,
+          like everything standing on it. */}
+      <linearGradient id="vinServingLeaf" x1="0.1" y1="0" x2="0.6" y2="1">
+        <stop offset="0%" stopColor="#6fb04c" />
+        <stop offset="46%" stopColor="#4f8a3a" />
+        <stop offset="100%" stopColor="#356a28" />
+      </linearGradient>
+      <radialGradient id="vinFloor" cx="0.5" cy="0.42" r="0.68">
+        <stop offset="0%" stopColor="#fbeedd" />
+        <stop offset="100%" stopColor="#f0dcc4" />
+      </radialGradient>
+    </defs>
   );
+}
+
+/** Contact shadow. Drawn, not filtered — see the note at the top of the file. */
+function Ground({ rx = 12, ry = 3.2, y = 1, o = 0.17 }) {
+  return <ellipse cx="0" cy={y} rx={rx} ry={ry} fill="#2a1a12" opacity={o} />;
 }
 
 export function Modakam() {
   const w = 11;
-  const h = 14;
+  const h = 15;
   return (
     <g>
+      <Ground rx={w * 0.95} ry={2.8} />
       <path
         d={`M 0 ${-h}
-            c ${w * 0.5} ${h * 0.35} ${w} ${h * 0.6} ${w} ${h}
+            c ${w * 0.46} ${h * 0.3} ${w} ${h * 0.58} ${w} ${h}
             l ${-w * 2} 0
-            c 0 ${-h * 0.4} ${w * 0.5} ${-h * 0.65} ${w} ${-h} z`}
-        fill="#f6ead1"
-        stroke="#d9c49a"
-        strokeWidth="0.9"
+            c 0 ${-h * 0.42} ${w * 0.54} ${-h * 0.7} ${w} ${-h} z`}
+        fill="url(#vinModakam)"
+        stroke="#c9b085"
+        strokeWidth="0.7"
       />
-      {/* Pleats converging at the tip — what makes it a modakam and not a cone. */}
-      {[-0.55, -0.18, 0.18, 0.55].map((f) => (
+      {/* Pleats. Curved, because a hand-formed pleat bows outward — the
+          straight lines this replaced read as a paper cone. */}
+      {[-0.62, -0.24, 0.24, 0.62].map((f) => (
         <path
           key={f}
-          d={`M 0 ${-h} L ${w * f} 0`}
-          stroke="#ddc9a3"
-          strokeWidth="0.7"
+          d={`M 0 ${-h + 0.6} q ${w * f * 0.45} ${h * 0.52} ${w * f} ${h - 0.6}`}
+          stroke="#d3bb90"
+          strokeWidth="0.62"
           fill="none"
+          opacity="0.9"
         />
       ))}
-      <circle cx="0" cy={-h + 1.6} r="1.8" fill="#e0562d" />
+      {/* Left-hand highlight, following the same bow as the pleats. */}
+      <path
+        d={`M -1.4 ${-h + 1.4} q ${-w * 0.34} ${h * 0.5} ${-w * 0.62} ${h - 2.4}`}
+        stroke="#fffdf5"
+        strokeWidth="1.5"
+        fill="none"
+        opacity="0.55"
+        strokeLinecap="round"
+      />
+      {/* The tip is pinched closed, and catches the light. */}
+      <circle cx="0" cy={-h + 1.2} r="1.5" fill="#e8d5ae" />
+      <circle cx="-0.4" cy={-h + 0.8} r="0.7" fill="#fffaf0" />
     </g>
   );
 }
 
 export function Arukampul() {
-  /* Durva grass, offered in threes. Blades splay from a single point. */
+  /* Durva grass. Blades are tapered wedges rather than strokes, so they come
+     to a point the way grass does. */
+  const blade = (lean, len, wide) =>
+    `M 0 0 q ${lean * 0.35} ${-len * 0.55} ${lean} ${-len}
+     q ${-wide * 0.5} ${len * 0.12} ${-lean * 0.62} ${len * 0.94} z`;
   return (
     <g>
-      {[-1, -0.4, 0.3, 1].map((dir, i) => (
+      <Ground rx={9} ry={2.2} o={0.13} />
+      {[
+        [-11, 20, 2.6],
+        [-5, 25, 2.8],
+        [2, 27, 3],
+        [8, 23, 2.7],
+        [13, 17, 2.4],
+      ].map(([lean, len, wide], i) => (
         <path
           key={i}
-          d={`M 0 0 q ${dir * 7} -9 ${dir * 10} -19`}
-          stroke={i % 2 ? '#5f9a3f' : '#4f8a3a'}
-          strokeWidth="1.9"
-          fill="none"
-          strokeLinecap="round"
+          d={blade(lean, len, wide)}
+          fill="url(#vinGrass)"
+          opacity={i % 2 ? 0.92 : 1}
         />
       ))}
+      {/* Midribs, on the two front blades only. */}
+      <path d="M 0 -1 q 1 -12 2 -25" stroke="#2f5f21" strokeWidth="0.5" fill="none" opacity="0.5" />
+      <path d="M 0 -1 q -3 -11 -5 -23" stroke="#2f5f21" strokeWidth="0.5" fill="none" opacity="0.4" />
     </g>
   );
 }
 
 export function Hibiscus() {
-  /* Sembaruthi — the red flower that belongs to Ganesha. Five petals. */
+  /* Sembaruthi. Five petals with a notched outer edge — the notch is what
+     separates a hibiscus from a daisy at this size. */
+  const petal =
+    'M 0 0 C -7 -6 -8.6 -13 -5.6 -17.4 C -4 -19.8 -3 -18.2 -1.8 -19.6 C -0.8 -20.8 0.8 -20.8 1.8 -19.6 C 3 -18.2 4 -19.8 5.6 -17.4 C 8.6 -13 7 -6 0 0 Z';
   return (
     <g>
-      {[0, 1, 2, 3, 4].map((i) => (
-        <ellipse
-          key={i}
-          cx="0"
-          cy="-8"
-          rx="6"
-          ry="9"
-          fill={i % 2 ? '#d8402c' : '#e0562d'}
-          transform={`rotate(${i * 72})`}
-        />
+      <Ground rx={11} ry={2.8} o={0.13} />
+      {[0, 72, 144, 216, 288].map((deg) => (
+        <g key={deg} transform={`rotate(${deg})`}>
+          <path d={petal} fill="url(#vinPetal)" />
+          {/* Veins radiating from the throat. */}
+          <path d="M 0 -1.5 q 0.6 -8 0.4 -15" stroke="#7d1710" strokeWidth="0.55" fill="none" opacity="0.55" />
+          <path d="M 0 -1.5 q -2.6 -7 -3.4 -12.5" stroke="#7d1710" strokeWidth="0.42" fill="none" opacity="0.4" />
+          <path d="M 0 -1.5 q 2.6 -7 3.4 -12.5" stroke="#7d1710" strokeWidth="0.42" fill="none" opacity="0.4" />
+        </g>
       ))}
-      <circle cx="0" cy="0" r="3.2" fill="#f7c85a" />
-      {/* The stamen, which is the part of a hibiscus everyone actually pictures. */}
-      <path d="M 0 0 q 2 -9 1 -14" stroke="#b8362a" strokeWidth="1.2" fill="none" />
-      <circle cx="1" cy="-14" r="1.6" fill="#ffe9a8" />
+      <circle cx="0" cy="0" r="3.4" fill="#8c1d12" />
+      <circle cx="-0.8" cy="-0.8" r="1.5" fill="#c0392b" opacity="0.8" />
+      {/* The staminal column, which is the part everyone actually pictures. */}
+      <path d="M 0 0 q 2.6 -10 2 -16.5" stroke="#a82718" strokeWidth="1.3" fill="none" strokeLinecap="round" />
+      {[[1.4, -16.6], [3.1, -14.8], [0.2, -14.6], [2.4, -12.6]].map(([x, y], i) => (
+        <circle key={i} cx={x} cy={y} r="1.25" fill="#ffe08a" />
+      ))}
     </g>
   );
 }
@@ -99,32 +211,50 @@ export function Hibiscus() {
 export function Deepam() {
   return (
     <g>
-      <Flame y={-13} />
-      {/* Clay dish, wider than it is deep, with the lip drawn out for the wick. */}
+      <Ground rx={14} ry={3.2} y={6} />
+      {/* Pooled glow on the lamp, from its own flame. */}
+      <ellipse cx="0" cy="-2" rx="17" ry="9" fill="#f7c85a" opacity="0.2" />
       <path
-        d="M -13 0 q 13 9 26 0 q -4 6 -13 6 q -9 0 -13 -6 z"
-        fill="#b8632f"
-        stroke="#8f4a22"
-        strokeWidth="0.9"
+        d={`M 0 -22 c 5.6 5 6.8 10.6 3.4 14.2 c -2.2 2.3 -4.6 2.3 -6.8 0
+            c -3.4 -3.6 -2.2 -9.2 3.4 -14.2 z`}
+        fill="url(#vinFlame)"
       />
-      <path d="M -13 0 q 13 5 26 0" stroke="#e0562d" strokeWidth="1.1" fill="none" />
+      <path
+        d={`M 0 -17 c 2.6 2.6 3.1 5.6 1.5 7.4 c -1 1.1 -2 1.1 -3 0
+            c -1.6 -1.8 -1.1 -4.8 1.5 -7.4 z`}
+        fill="#fffdf0"
+        opacity="0.92"
+      />
+      {/* Wick, so the flame is attached to something. */}
+      <path d="M 0 -8 l 0 4.4" stroke="#5a3a1c" strokeWidth="1.5" strokeLinecap="round" />
+      {/* Clay dish: pinched lip at the front where the wick rests. */}
+      <path
+        d="M -14 -3.4 q 14 10.6 28 0 q -4.4 7.6 -14 7.6 q -9.6 0 -14 -7.6 z"
+        fill="url(#vinClay)"
+        stroke="#7d3d1b"
+        strokeWidth="0.8"
+      />
+      <path d="M -14 -3.4 q 14 5.6 28 0" stroke="#e89a5c" strokeWidth="1.2" fill="none" opacity="0.75" />
+      <path d="M -9.5 -1.4 q 3 2.6 6 3.2" stroke="#f4b97e" strokeWidth="1" fill="none" opacity="0.5" />
     </g>
   );
 }
 
 export function Coconut() {
-  /* Broken in half and set cut-side up, which is how it is offered. */
+  /* One half, cut side up. */
   return (
     <g>
-      <path
-        d="M -12 0 a 12 12 0 0 1 24 0 z"
-        fill="#8f5a33"
-        stroke="#6f4324"
-        strokeWidth="1"
-        transform="rotate(180)"
-      />
-      <ellipse cx="0" cy="0" rx="12" ry="3.4" fill="#f4ece0" />
-      <ellipse cx="0" cy="0" rx="8.5" ry="2.2" fill="#e6d8c4" />
+      <Ground rx={13} ry={3} y={3} />
+      <path d="M -12.5 0 a 12.5 12.5 0 0 0 25 0 z" fill="url(#vinShell)" />
+      <ellipse cx="0" cy="0" rx="12.5" ry="3.8" fill="url(#vinFlesh)" stroke="#6b4326" strokeWidth="0.9" />
+      {/* The brown testa between flesh and shell. */}
+      <ellipse cx="0" cy="0" rx="10.6" ry="2.9" fill="#fffdf8" opacity="0.55" />
+      <ellipse cx="0" cy="0.3" rx="6.6" ry="1.7" fill="#e3d4bd" opacity="0.75" />
+      <path d="M -8 -1.2 q 3.4 -1.6 7.4 -1.4" stroke="#fffefb" strokeWidth="1.1" fill="none" opacity="0.8" />
+      {/* Fibre on the shell. */}
+      {[-7, -2, 3, 8].map((x) => (
+        <path key={x} d={`M ${x} 2.4 q ${x * 0.1} 4 ${x * 0.16} 7`} stroke="#3b2213" strokeWidth="0.6" fill="none" opacity="0.45" />
+      ))}
     </g>
   );
 }
@@ -132,43 +262,71 @@ export function Coconut() {
 export function Banana() {
   return (
     <g>
+      <Ground rx={12} ry={2.6} y={4} />
       <path
-        d="M -11 2 q 3 -13 15 -15 q -5 5 -4 10 q -1 7 -11 5 z"
-        fill="#f2c744"
-        stroke="#cfa326"
-        strokeWidth="0.9"
+        d="M -12 5 q 1.6 -14 14.5 -17.6 q 3 -0.8 4.2 0.6 q 1 1.2 -0.6 2.4
+           q -8.4 4.6 -10.6 14 q -0.8 3 -4 3 q -3.4 0 -3.5 -2.4 z"
+        fill="url(#vinBanana)"
+        stroke="#b8901f"
+        strokeWidth="0.8"
       />
-      <path d="M -8 1 q 3 -9 11 -12" stroke="#e0b63a" strokeWidth="1" fill="none" />
+      {/* Ridge down the length. */}
+      <path d="M -8.6 3.4 q 2.2 -10.6 12 -14.6" stroke="#fff0b0" strokeWidth="1.2" fill="none" opacity="0.65" />
+      <path d="M -10.4 1 q 2.6 -9.4 11 -13.6" stroke="#cfa326" strokeWidth="0.6" fill="none" opacity="0.5" />
+      {/* Stem, and the dried tip. */}
+      <path d="M 5.6 -12.4 q 2.4 -1.8 3.6 -1" stroke="#7d6018" strokeWidth="2" fill="none" strokeLinecap="round" />
+      <circle cx="-11.6" cy="4.4" r="1.5" fill="#8a6a1c" opacity="0.8" />
     </g>
   );
 }
 
 export function BetelLeaf() {
-  /* Vettrilai with a supari on top — always offered as a pair. */
+  /* Vettrilai with a supari on it — always offered as a pair. */
   return (
     <g>
+      <Ground rx={12} ry={3} y={9} />
       <path
-        d="M 0 -16 q 12 8 10 17 q -2 8 -10 8 q -8 0 -10 -8 q -2 -9 10 -17 z"
-        fill="#4f8a3a"
-        stroke="#3b6b29"
-        strokeWidth="1"
+        d="M 0 -18 C 9 -11.6 13 -4 11 4 C 9.6 9.6 5 12.6 0 12.6
+           C -5 12.6 -9.6 9.6 -11 4 C -13 -4 -9 -11.6 0 -18 Z"
+        fill="url(#vinLeaf)"
+        stroke="#2f5f21"
+        strokeWidth="0.9"
       />
-      <path d="M 0 -13 L 0 8" stroke="#7cb057" strokeWidth="1.1" />
-      {[-1, 1].map((d) => (
-        <path key={d} d={`M 0 -4 q ${d * 6} 2 ${d * 7} 7`} stroke="#7cb057" strokeWidth="0.8" fill="none" />
-      ))}
-      <circle cx="0" cy="1" r="3.4" fill="#a4552a" />
+      <path d="M 0 -15.4 L 0 11.4" stroke="#8cc766" strokeWidth="1.1" opacity="0.85" />
+      {[-1, 1].map((d) =>
+        [-8, -3.4, 1.4, 6].map((y) => (
+          <path
+            key={`${d}-${y}`}
+            d={`M 0 ${y} q ${d * 5} ${1.6} ${d * 8.4} ${5.4}`}
+            stroke="#8cc766"
+            strokeWidth="0.62"
+            fill="none"
+            opacity="0.6"
+          />
+        ))
+      )}
+      {/* A sheen, because a betel leaf is glossy. */}
+      <path d="M -6 -9 q 4 -3.4 8.6 -3.6" stroke="#c6e8a8" strokeWidth="1.5" fill="none" opacity="0.4" strokeLinecap="round" />
+      <ellipse cx="0" cy="4.4" rx="4.2" ry="3.6" fill="url(#vinNut)" stroke="#5e3218" strokeWidth="0.6" />
+      <ellipse cx="-1.2" cy="3.2" rx="1.4" ry="1.1" fill="#d9a771" opacity="0.7" />
     </g>
   );
 }
 
 export function Kumkum() {
-  /* A mound of it, with the thumb-press that is always in the middle. */
+  /* A dry powder: diffuse light, a soft rim, and the thumb-press that is
+     always in the middle of the mound. */
   return (
     <g>
-      <path d="M -10 2 q 10 -12 20 0 z" fill="#c62828" />
-      <ellipse cx="0" cy="2" rx="10" ry="2.6" fill="#8e1f1f" />
-      <ellipse cx="0" cy="-1.5" rx="2.6" ry="1.5" fill="#8e1f1f" opacity="0.65" />
+      <Ground rx={11.5} ry={2.6} y={2.4} />
+      <path d="M -10.5 2 q 10.5 -13.5 21 0 z" fill="url(#vinKumkum)" />
+      {/* Loose powder skirting the base. */}
+      <ellipse cx="0" cy="2" rx="10.5" ry="2.5" fill="#8e1f1f" />
+      <ellipse cx="0" cy="1.6" rx="12.6" ry="1.9" fill="#c62828" opacity="0.32" />
+      {/* The press, and the ridge it pushes up. */}
+      <ellipse cx="0" cy="-2.2" rx="3.1" ry="1.6" fill="#6d1414" opacity="0.72" />
+      <path d="M -3.4 -3.2 q 3.4 -1.6 6.8 0" stroke="#e8604f" strokeWidth="0.8" fill="none" opacity="0.55" />
+      <path d="M -5.6 -1.4 q 2.4 -5.4 5 -7.2" stroke="#ef7059" strokeWidth="1.2" fill="none" opacity="0.42" strokeLinecap="round" />
     </g>
   );
 }
@@ -182,11 +340,17 @@ export function Kumkum() {
 export function Pillaiyar({ lit = false }) {
   return (
     <g>
-      {lit && <ellipse cx="0" cy="-16" rx="46" ry="40" fill="#f7c85a" opacity="0.16" />}
-      <ellipse cx="0" cy="-28" rx="19" ry="16" fill="#b8632f" />
+      {lit && (
+        <>
+          <ellipse cx="0" cy="-16" rx="54" ry="46" fill="#f7c85a" opacity="0.14" />
+          <ellipse cx="0" cy="-16" rx="36" ry="32" fill="#f7c85a" opacity="0.12" />
+        </>
+      )}
+      <ellipse cx="0" cy="6" rx="30" ry="5" fill="#2a1a12" opacity="0.14" />
+      <path d="M -20 -11 q 12 15 40 0 q 5 15 -20 18 q -25 -3 -20 -18 z" fill="url(#vinClay)" />
       <ellipse cx="-22" cy="-27" rx="9" ry="13" fill="#a4552a" />
       <ellipse cx="22" cy="-27" rx="9" ry="13" fill="#a4552a" />
-      {/* Trunk, curling to his left. */}
+      <ellipse cx="0" cy="-28" rx="19" ry="16" fill="url(#vinClay)" />
       <path
         d="M 0 -21 q 3 15 -9 19 q -9 3 -9 -6"
         stroke="#a4552a"
@@ -194,11 +358,12 @@ export function Pillaiyar({ lit = false }) {
         fill="none"
         strokeLinecap="round"
       />
-      <path d="M -20 -11 q 12 15 40 0 q 5 15 -20 18 q -25 -3 -20 -18 z" fill="#b8632f" />
       {/* Crown and tilak. */}
       <path d="M -10 -42 l 10 -14 l 10 14 z" fill="#f7c85a" />
+      <path d="M -10 -42 l 10 -14 l 3 14 z" fill="#ffe6a8" opacity="0.6" />
       <circle cx="0" cy="-57" r="2.6" fill="#e0562d" />
       <path d="M 0 -36 l 0 7" stroke="#8f4a22" strokeWidth="2" strokeLinecap="round" />
+      <ellipse cx="-8" cy="-31" rx="4" ry="3" fill="#d08a5c" opacity="0.32" />
     </g>
   );
 }

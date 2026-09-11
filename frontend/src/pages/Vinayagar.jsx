@@ -19,7 +19,7 @@ import { Link } from 'react-router-dom';
 import SeoMeta from '../components/SeoMeta';
 import { useToast } from '../context/ToastContext';
 import { shareOrDownload } from '../components/festival/shareCard';
-import { OFFERINGS, OFFERING_BY_ID, Pillaiyar } from '../components/vinayagar/offerings';
+import { OFFERINGS, OFFERING_BY_ID, OfferingDefs, Pillaiyar } from '../components/vinayagar/offerings';
 import '../styles/vinayagar.css';
 
 /* The leaf's drawing space. Everything below is in these units. */
@@ -216,32 +216,44 @@ export default function Vinayagar() {
             onPointerDown={handleBoardPointer}
             onKeyDown={handleBoardKey}
           >
+            {/* Every gradient the offerings reference, defined once. Inside the
+                board rather than the page so the clone the share export
+                rasterises carries its own paint with it. */}
+            <OfferingDefs />
+
             <rect x="0" y="0" width={VB.w} height={VB.h} fill="#fdf3e7" />
 
             {/* The floor the leaf is set down on. */}
-            <ellipse cx="300" cy="290" rx="270" ry="128" fill="#f6e5d2" />
+            <ellipse cx="300" cy="290" rx="270" ry="128" fill="url(#vinFloor)" />
+            <ellipse cx="300" cy="286" rx="258" ry="116" fill="#2a1a12" opacity="0.07" />
 
             {/* Banana leaf: one long curve out and back, with the midrib drawn
                 on so it reads as a leaf rather than a green dish. */}
             <path
               d="M 46 272 q 254 -78 508 0 q -254 78 -508 0 z"
-              fill="#4f8a3a"
-              stroke="#3b6b29"
+              fill="url(#vinServingLeaf)"
+              stroke="#2f5f21"
               strokeWidth="2"
             />
-            <path d="M 52 272 q 248 -20 496 0" stroke="#7cb057" strokeWidth="2.4" fill="none" />
+            <path d="M 52 272 q 248 -20 496 0" stroke="#8cc766" strokeWidth="2.4" fill="none" opacity="0.9" />
             {[-1, 1].map((d) =>
-              [0.3, 0.5, 0.7].map((f) => (
+              [0.22, 0.36, 0.5, 0.64, 0.78].map((f) => (
                 <path
                   key={`${d}-${f}`}
                   d={`M ${300 + d * 496 * (f - 0.5)} 272 q ${d * 14} ${-18} ${d * 30} ${-26}`}
-                  stroke="#66a04a"
+                  stroke="#8cc766"
                   strokeWidth="1.2"
                   fill="none"
-                  opacity="0.7"
+                  opacity="0.5"
                 />
               ))
             )}
+            {/* A sheen across the near half, so the leaf looks waxy. */}
+            <path
+              d="M 120 258 q 180 -34 360 0 q -180 16 -360 0 z"
+              fill="#c6e8a8"
+              opacity="0.16"
+            />
 
             <g transform="translate(300 168)">
               <Pillaiyar lit={done} />
