@@ -26,6 +26,7 @@ import { CANONICAL_ORIGIN } from '../utils/site';
 import { useLang } from '../i18n';
 import { localizeProductText } from '../utils/productLocale';
 import { buildBreadcrumbSchema } from '../utils/breadcrumbSchema';
+import { tamilTermsFor } from '../data/tamilSearchTerms';
 import { GUIDE_CATEGORY } from './Blog';
 import { STORE_LOCATIONS } from '../data/storeLocations';
 import { flyToCart } from '../utils/flyToCart';
@@ -101,6 +102,15 @@ function buildProductSchema(product) {
     sku: product.id,
     url,
     brand: { '@type': 'Brand', name: 'Western Gods Organics' },
+    // schema.org's field for "this thing is also known as" — the Tamil name
+    // and the transliterations people type, which is what the English title
+    // alone can never match. Looked up here rather than passed in: this
+    // function is called with nothing but the product, and a crawler reads
+    // whatever it returns.
+    ...(() => {
+      const t = tamilTermsFor(product.id);
+      return t ? { alternateName: [t.tamil, ...t.also] } : {};
+    })(),
     offers: {
       '@type': 'AggregateOffer',
       priceCurrency: 'INR',
@@ -246,6 +256,7 @@ export default function ProductDetail() {
   // one — so it is entered by hand per product and falls back to English until
   // it is. See utils/productLocale.js for the lookup.
   const displayName = localizeProductText(product, 'name', lang) || product?.name || '';
+  const tamilTerms = tamilTermsFor(product?.id);
   const isWholesale = !!user?.isWholesale;
 
   useEffect(() => {
@@ -745,6 +756,17 @@ export default function ProductDetail() {
             </p>
           )}
           <h1>{displayName}</h1>
+          {/* The names this is actually asked for by. A shopper who knows it as
+              நல்லெண்ணெய் and not as "cold-pressed sesame oil" can now recognise
+              the page, and so can a search for the same word — until this line
+              existed, neither could. */}
+          {tamilTerms && (
+            <p className="product-also-called">
+              <span lang="ta">{tamilTerms.tamil}</span>
+              <span className="product-also-called-sep"> · </span>
+              also called {tamilTerms.also.slice(0, 4).join(', ')}
+            </p>
+          )}
           {product.batchNumber && (
             <Link to={`/batch/${encodeURIComponent(product.batchNumber)}`} className="harvest-ribbon">
               🌿 Batch {product.batchNumber}

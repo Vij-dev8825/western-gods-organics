@@ -11316,3 +11316,21 @@ body.has-cookie-bar .install-prompt { bottom: calc(var(--cookie-bar-height, 0px)
   .explore-card:hover,
   .explore-card:focus-visible { transform: none; }
 }
+
+/* The "also called" line under a product title — the Tamil name and the
+   transliterations people search for. Quiet enough not to compete with the
+   heading, but real page text rather than a hidden keyword dump: a shopper who
+   knows the product as நல்லெண்ணெய் should be able to read it. */
+.product-also-called {
+  margin: 0.35rem 0 0;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: var(--muted, #6b6156);
+}
+.product-also-called [lang='ta'] {
+  font-weight: 600;
+  color: var(--ink, #2a1a12);
+}
+.product-also-called-sep {
+  opacity: 0.5;
+}
