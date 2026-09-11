@@ -25,9 +25,12 @@ import '../styles/vinayagar.css';
 /* The leaf's drawing space. Everything below is in these units. */
 const VB = { w: 600, h: 430 };
 
-/* Where an offering is allowed to land: an ellipse tracking the leaf, with the
- * top pushed down so nothing is dropped on top of Vinayagar. */
-const FIELD = { cx: 300, cy: 268, rx: 244, ry: 112 };
+/* Where an offering is allowed to land. Tracks the drawn leaf rather than the
+ * board: the leaf path's curves are quadratics with a control offset of 78, so
+ * they peak at half that — the leaf really only spans y 233..311, and an
+ * earlier ry of 112 let offerings be dropped on the bare floor either side of
+ * it. Inset a little from the true edge so nothing hangs over the rim. */
+const FIELD = { cx: 300, cy: 274, rx: 234, ry: 29 };
 
 /* Twenty-one is the count in the ritual, so it is the count here. */
 const MODAKAM_TARGET = 21;
@@ -49,7 +52,10 @@ function autoSpot(n) {
   const turn = n * 2.399963; // golden angle, so successive points don't line up
   const r = 26 + Math.sqrt(n) * 21;
   const x = FIELD.cx + Math.cos(turn) * Math.min(r, FIELD.rx - 26);
-  const y = FIELD.cy + Math.sin(turn) * Math.min(r * 0.46, FIELD.ry - 22);
+  // The leaf is far wider than it is deep, so the vertical spread is scaled to
+  // the field rather than the radius — otherwise every auto-placed offering
+  // lands on one line down the middle.
+  const y = FIELD.cy + Math.sin(turn) * (FIELD.ry - 6);
   return { x, y };
 }
 
