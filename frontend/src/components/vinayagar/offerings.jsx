@@ -16,8 +16,9 @@
  *
  * The cut-outs were made by flood-filling inward from the border rather than
  * thresholding on white, because the modakam is itself cream-white and a
- * global threshold would have eaten straight through it. See backend/_cutout.js
- * in the commit that added these.
+ * global threshold would have eaten straight through it. The script that did
+ * it is backend/scripts/cutout-offerings.js; re-run it if better sources turn
+ * up, and these imports pick up whatever it writes.
  */
 
 import deepamImg from '../../assets/vinayagar/deepam.png';
@@ -28,6 +29,7 @@ import kumkumImg from '../../assets/vinayagar/kumkum.png';
 import hibiscusImg from '../../assets/vinayagar/hibiscus.png';
 import arukampulImg from '../../assets/vinayagar/arukampul.png';
 import modakamImg from '../../assets/vinayagar/modakam.png';
+import { PillaiyarDefs, PillaiyarLine } from './pillaiyar';
 
 /* Intrinsic pixel size of each cut-out, so the symbol's viewBox matches its
  * image and nothing is stretched. `h` is how tall the thing is drawn on the
@@ -54,18 +56,7 @@ export function OfferingDefs() {
         </symbol>
       ))}
 
-      {/* Brass, for the murti. Warmer and lighter than terracotta, so the
-          figure reads as metal rather than clay. */}
-      <linearGradient id="vinBrass" x1="0.15" y1="0" x2="0.75" y2="1">
-        <stop offset="0%" stopColor="#f3c977" />
-        <stop offset="38%" stopColor="#d9a248" />
-        <stop offset="72%" stopColor="#b47c2c" />
-        <stop offset="100%" stopColor="#8a5a1c" />
-      </linearGradient>
-      <linearGradient id="vinBrassDeep" x1="0.2" y1="0" x2="0.8" y2="1">
-        <stop offset="0%" stopColor="#c9922f" />
-        <stop offset="100%" stopColor="#7a4d16" />
-      </linearGradient>
+      <PillaiyarDefs />
 
       {/* The banana leaf the whole board is served on, and the floor under it.
           Colours taken off a photograph of a real one: much yellower and
@@ -121,77 +112,12 @@ export const Modakam = () => <Art id="modakam" />;
 
 /**
  * Vinayagar himself — fixed at the head of the leaf, never placed by the
- * player. Drawn rather than photographed, and deliberately so: you do not drag
- * a deity around a screen, and a cut-out of someone else's murti is not ours
- * to put here. Modelled on a cast brass figure — seated with the knees pushed
- * out either side of the belly, four arms, wide fan ears, a tapering mukuta
- * with a medallion and finial, one tusk broken as it always is, eyes downcast.
+ * player. You do not drag a deity around a screen. The drawing lives in
+ * ./pillaiyar so the homepage festival motif can share it without pulling the
+ * eight offering photographs in with it.
  */
 export function Pillaiyar({ lit = false }) {
-  return (
-    <g>
-      {lit && (
-        <>
-          <ellipse cx="0" cy="-22" rx="58" ry="52" fill="#f7c85a" opacity="0.14" />
-          <ellipse cx="0" cy="-22" rx="38" ry="36" fill="#f7c85a" opacity="0.12" />
-        </>
-      )}
-      <ellipse cx="0" cy="9" rx="32" ry="5.4" fill="#2a1a12" opacity="0.16" />
-
-      {/* Seat: crossed legs, the knees pushed out either side of the belly. */}
-      <path
-        d="M -27 8 q -3 -11 7 -14 q 9 -2.6 14 2 h 12 q 5 -4.6 14 -2 q 10 3 7 14 z"
-        fill="url(#vinBrassDeep)"
-      />
-      <path d="M -18 3.5 q 18 -5 36 0" stroke="#6b4312" strokeWidth="1" fill="none" opacity="0.5" />
-      <ellipse cx="-9" cy="1.5" rx="5" ry="3" fill="#e0b160" opacity="0.75" />
-      <ellipse cx="9" cy="1.5" rx="5" ry="3" fill="#e0b160" opacity="0.75" />
-
-      {/* Four arms: the back pair raised, the front pair resting forward. */}
-      <path d="M -17 -18 q -13 2 -16 -9" stroke="url(#vinBrassDeep)" strokeWidth="5.4" fill="none" strokeLinecap="round" />
-      <path d="M 17 -18 q 13 2 16 -9" stroke="url(#vinBrassDeep)" strokeWidth="5.4" fill="none" strokeLinecap="round" />
-      <circle cx="-33" cy="-28" r="3.4" fill="#e8bd6a" />
-      <circle cx="33" cy="-28" r="3.4" fill="#e8bd6a" />
-      <path d="M -16 -10 q -12 5 -12 13" stroke="url(#vinBrass)" strokeWidth="5" fill="none" strokeLinecap="round" />
-      <path d="M 16 -10 q 12 5 12 13" stroke="url(#vinBrass)" strokeWidth="5" fill="none" strokeLinecap="round" />
-
-      {/* Belly — the part of him everyone pictures first. */}
-      <path d="M -19 -22 q 19 -7 38 0 q 6 18 -19 22 q -25 -4 -19 -22 z" fill="url(#vinBrass)" />
-      <ellipse cx="0" cy="-6" rx="6.5" ry="4.5" fill="#8a5a1c" opacity="0.3" />
-      <path d="M -13 -18 q 6 -4 13 -4" stroke="#f7dca2" strokeWidth="2.2" fill="none" opacity="0.5" strokeLinecap="round" />
-
-      {/* Ears: wide fans, the single biggest thing that makes him legible. */}
-      <path d="M -18 -38 q -22 -6 -24 8 q -2 13 11 14 q 10 0 14 -8 z" fill="url(#vinBrassDeep)" />
-      <path d="M 18 -38 q 22 -6 24 8 q 2 13 -11 14 q -10 0 -14 -8 z" fill="url(#vinBrassDeep)" />
-      <path d="M -20 -35 q -15 -3 -17 7" stroke="#f0c684" strokeWidth="1.4" fill="none" opacity="0.55" />
-      <path d="M 20 -35 q 15 -3 17 7" stroke="#f0c684" strokeWidth="1.4" fill="none" opacity="0.55" />
-
-      {/* Head and trunk. A trunk drawn straight reads as a snout, so it ends
-          curled. */}
-      <ellipse cx="0" cy="-40" rx="18" ry="15.5" fill="url(#vinBrass)" />
-      <path
-        d="M 0 -33 q 1.5 11 -6 16 q -8 5 -11 -1.5 q -2 -4.5 3.5 -5.5"
-        stroke="url(#vinBrass)"
-        strokeWidth="6.2"
-        fill="none"
-        strokeLinecap="round"
-      />
-      <path d="M -7.5 -32 q -2 4 -0.5 6.5" stroke="#fdf6e4" strokeWidth="2.2" fill="none" strokeLinecap="round" />
-      <path d="M 7.5 -32 q 2 3 1 4.5" stroke="#fdf6e4" strokeWidth="2.2" fill="none" strokeLinecap="round" opacity="0.9" />
-      <path d="M -10 -42 q 3 2 5.5 0.6" stroke="#6b4312" strokeWidth="1.3" fill="none" strokeLinecap="round" />
-      <path d="M 10 -42 q -3 2 -5.5 0.6" stroke="#6b4312" strokeWidth="1.3" fill="none" strokeLinecap="round" />
-
-      {/* Crown: a tapering mukuta with a medallion at the front and a finial. */}
-      <path d="M -14 -52 q 14 -5 28 0 l -3 6 q -11 -3.5 -22 0 z" fill="#e8bd6a" />
-      <path d="M -11 -52 q 11 -17 22 0 z" fill="url(#vinBrass)" />
-      <path d="M -5.5 -62 q 5.5 -9 11 0 z" fill="#e8bd6a" />
-      <path d="M 0 -70 l 3.5 8 h -7 z" fill="#f3c977" />
-      <circle cx="0" cy="-71.5" r="2.2" fill="#e0562d" />
-      <circle cx="0" cy="-55" r="4" fill="#f3c977" />
-      <circle cx="0" cy="-55" r="1.8" fill="#b47c2c" />
-      <path d="M 0 -47.5 l 0 5" stroke="#e0562d" strokeWidth="2" strokeLinecap="round" />
-    </g>
-  );
+  return <PillaiyarLine lit={lit} />;
 }
 
 /**

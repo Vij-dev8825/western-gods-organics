@@ -25,6 +25,7 @@
  * all of it off in one place.
  */
 import { useCallback, useRef, useState } from 'react';
+import { PillaiyarDefs, PillaiyarLine } from '../vinayagar/pillaiyar';
 
 /* Deterministic jitter, so a motif looks hand-made but never re-rolls on a
    re-render and never disagrees between two renders of the same step. */
@@ -652,26 +653,15 @@ export function Modakam({ steps = 5, filled = 0, onStep, theme }) {
       />
       <path d="M 46 104 q 126 -8 248 0" stroke="#7cb057" strokeWidth="1.6" fill="none" />
 
-      {/* Vinayagar, suggested rather than drawn — a silhouette reads as
-          reverent where a cartoon face would not. */}
-      <g opacity="0.96">
-        <ellipse cx="170" cy="30" rx="15" ry="13" fill="#b8632f" />
-        {/* ears */}
-        <ellipse cx="152" cy="31" rx="7" ry="10" fill="#a4552a" />
-        <ellipse cx="188" cy="31" rx="7" ry="10" fill="#a4552a" />
-        {/* trunk, curling to its left */}
-        <path
-          d="M 170 36 q 2 12 -7 15 q -7 2 -7 -5"
-          stroke="#a4552a"
-          strokeWidth="5"
-          fill="none"
-          strokeLinecap="round"
-        />
-        {/* body */}
-        <path d="M 154 44 q 16 12 32 0 q 4 12 -16 14 q -20 -2 -16 -14 z" fill="#b8632f" />
-        {/* crown and a tilak */}
-        <path d="M 162 19 l 8 -11 l 8 11 z" fill={glow} />
-        <path d="M 170 24 l 0 6" stroke={accentDeep} strokeWidth="1.6" strokeLinecap="round" />
+      {/* Vinayagar. The same line-art figure the /vinayagar board uses, scaled
+          down to sit at the head of this little leaf — the two used to
+          disagree, this one being three ellipses and a stroke while the board
+          had a fully drawn figure. */}
+      <defs>
+        <PillaiyarDefs />
+      </defs>
+      <g transform="translate(170 48) scale(0.5)" opacity="0.96">
+        <PillaiyarLine />
       </g>
 
       {/* Arukampul — the grass offered alongside. */}
