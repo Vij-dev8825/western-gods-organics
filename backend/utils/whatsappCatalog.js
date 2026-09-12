@@ -85,12 +85,34 @@ function csvEscape(value) {
  * @param {{siteUrl: string}} opts
  * @returns {Promise<{rows: object[], warnings: string[]}>}
  */
+/**
+ * Products held back from the advertising feeds — not from the shop.
+ *
+ * Google and Meta both review every item they syndicate, and an animal-derived
+ * traditional remedy sits close enough to their healthcare and animal-product
+ * rules to be worth not finding out the hard way. A disapproval on its own is
+ * harmless; a pattern of them is what puts a new Merchant Center account at
+ * risk, and this one product is not worth the other twenty-two.
+ *
+ * This is a judgement about what to syndicate, not about the product. It still
+ * sells on the site, still appears in the PDF catalogue (which reads the
+ * database directly and never passes through here), and can be reinstated by
+ * deleting the id below once the account has a track record.
+ */
+const FEED_EXCLUDED = new Set(['rabbit-blood-oil']);
+
 async function buildCatalogRows({ siteUrl }) {
   const products = await db.list('products');
   const rows = [];
   const warnings = [];
 
   for (const product of products) {
+    if (FEED_EXCLUDED.has(product.id)) {
+      warnings.push(
+        `Withheld "${product.name}" (${product.id}) from the Google and Meta feeds — see FEED_EXCLUDED in utils/whatsappCatalog.js. It is unaffected on the site and in the PDF catalogue.`
+      );
+      continue;
+    }
     const imageLink = resolveImageLink(product.image, siteUrl);
     if (!imageLink) {
       warnings.push(`Skipped "${product.name}" (${product.id}): no known image mapping for "${product.image}".`);
