@@ -11,6 +11,13 @@ export default function StructuredData({ id, data }) {
   useEffect(() => {
     if (!data) return undefined;
     let script = document.getElementById(id);
+    // Some blocks are also written into index.html, so that a crawler reading
+    // the raw HTML sees them without executing anything. Those we update in
+    // place and must leave behind on unmount: removing one would strip the
+    // page's own markup the first time a visitor navigated away from the
+    // route that happened to match it, and it would not come back without a
+    // reload. Only tags this component created are ours to clean up.
+    const ours = !script;
     if (!script) {
       script = document.createElement('script');
       script.type = 'application/ld+json';
@@ -18,7 +25,7 @@ export default function StructuredData({ id, data }) {
       document.head.appendChild(script);
     }
     script.textContent = JSON.stringify(data);
-    return () => script?.remove();
+    return ours ? () => script?.remove() : undefined;
   }, [id, data]);
 
   return null;
