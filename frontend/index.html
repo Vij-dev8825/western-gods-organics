@@ -12,6 +12,71 @@
       sees the www origin rather than guessing between www and apex.
     -->
     <link rel="canonical" href="https://www.westerngodsorganic.com/" />
+    <!--
+      Who this business is, stated in the HTML itself.
+
+      Home.jsx builds the same two blocks and injects them from JS under these
+      exact ids, so once React mounts it finds these tags and updates them in
+      place rather than adding a second copy (see StructuredData.jsx, which is
+      keyed by id). The point of duplicating them here is everything that never
+      gets that far: Bing, the AI crawlers that now answer product questions,
+      every link-preview fetcher — and Google's own first pass, which reads the
+      HTML immediately and only comes back to run the JavaScript later, if it
+      decides the page is worth a second visit.
+
+      That matters most for `alternateName`. A search engine matches a brand as
+      an entity, not as a string, so "westerngods" only leads here if something
+      has said that "westerngods", "Western Gods" and "Western Gods Organics"
+      are one business at this domain. Saying it only in JavaScript says it to
+      almost nobody.
+    -->
+    <script type="application/ld+json" id="ld-organization">
+      {
+        "@context": "https://schema.org",
+        "@type": "Organization",
+        "name": "Western Gods Organics",
+        "alternateName": [
+          "Western Gods",
+          "Westerngods",
+          "Westerngods Organics",
+          "Western Gods Organic",
+          "Westerngods Organic"
+        ],
+        "description": "Traditional wood-pressed cold-pressed oils, handmade herbal soaps and stone-ground herbal powders — 100% natural and chemical-free, from a family mill in Tamil Nadu, India, shipped across India and worldwide.",
+        "url": "https://www.westerngodsorganic.com",
+        "logo": "https://www.westerngodsorganic.com/favicon-96x96.png",
+        "image": "https://www.westerngodsorganic.com/favicon-96x96.png",
+        "telephone": "+918825875607",
+        "email": "westerngodsorganic@gmail.com",
+        "address": {
+          "@type": "PostalAddress",
+          "streetAddress": "SH 97",
+          "addressLocality": "Udumalpet",
+          "addressRegion": "Tamil Nadu",
+          "postalCode": "642126",
+          "addressCountry": "IN"
+        },
+        "sameAs": [
+          "https://www.facebook.com/share/1T6wVtX3dC/",
+          "https://www.instagram.com/westerngodsorganic",
+          "https://www.youtube.com/@westerngodsorganics"
+        ]
+      }
+    </script>
+    <script type="application/ld+json" id="ld-website">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        "name": "Western Gods Organics",
+        "alternateName": ["Westerngods", "Westerngods Organic"],
+        "url": "https://www.westerngodsorganic.com",
+        "potentialAction": {
+          "@type": "SearchAction",
+          "target": "https://www.westerngodsorganic.com/shop?search={search_term_string}",
+          "query-input": "required name=search_term_string"
+        }
+      }
+    </script>
     <meta property="og:site_name" content="Western Gods Organics" />
     <meta property="og:type" content="website" />
     <meta property="og:title" content="Western Gods Organics — Cold-Pressed Oils, Herbal Soaps & Powders" />

@@ -38,6 +38,7 @@ const clientErrorRoutes = require('./routes/clientErrors');
 const siteVisitRoutes = require('./routes/siteVisits');
 const catalogRoutes = require('./routes/catalog');
 const botMeta = require('./utils/botMeta');
+const { isKnownRoute } = require('./utils/knownRoutes');
 const blogRoutes = require('./routes/blog');
 const pageBannerRoutes = require('./routes/pageBanners');
 const sitemapRoutes = require('./routes/sitemap');
@@ -174,11 +175,18 @@ if (fs.existsSync(distDir)) {
   const indexPath = path.join(distDir, 'index.html');
 
   app.get(/^\/(?!api|uploads).*/, async (req, res) => {
+    // A path React has no route for is not a page. Serving it as "200 OK"
+    // told every crawler this site has an unlimited supply of identical
+    // pages — see utils/knownRoutes.js. The body is unchanged, so the
+    // visitor still lands on the app's own not-found screen; only the status
+    // line differs, and only for URLs that were never real.
+    const status = isKnownRoute(req.path) ? 200 : 404;
+
     // Everyday browser traffic: byte-identical to before this change, same
     // sendFile call, same fast path. The meta-injection code below only ever
     // runs for a request whose User-Agent matches a known non-JS crawler.
     if (!botMeta.isBot(req.get('user-agent'))) {
-      return res.sendFile(indexPath);
+      return res.status(status).sendFile(indexPath);
     }
     try {
       // Read fresh on every bot request rather than caching at boot — a
@@ -191,12 +199,12 @@ if (fs.existsSync(distDir)) {
       const indexTemplate = fs.readFileSync(indexPath, 'utf8');
       const meta = await botMeta.getMetaForRoute(req.path, req.query);
       res.set('Content-Type', 'text/html');
-      res.send(meta ? botMeta.injectMeta(indexTemplate, meta) : indexTemplate);
+      res.status(status).send(meta ? botMeta.injectMeta(indexTemplate, meta) : indexTemplate);
     } catch (err) {
       // A lookup failure here must never be worse than doing nothing —
       // fall back to the exact same page every crawler already gets today.
       console.error('[botMeta] falling back to default template:', err.message);
-      res.sendFile(indexPath);
+      res.status(status).sendFile(indexPath);
     }
   });
 }
