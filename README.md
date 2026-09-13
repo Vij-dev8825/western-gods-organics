@@ -9,7 +9,8 @@ Full-stack e-commerce site: React (Vite) frontend + Node/Express backend, ready 
 - **Language switcher (English / हिंदी / தமிழ்)** in the navbar — dictionaries in
   `frontend/src/i18n.jsx`, easy to add more languages
 - Three category ranges: **Cold-Pressed Oils, Organic Soaps, Herbal Powders** (8 products seeded)
-- New "Yamuna Organic" brand: gold oil-drop + leaf logo (`frontend/src/assets/logo.svg`, favicon)
+- **Western Gods Organics** brand: green serif "W" monogram, wordmark, and the
+  tagline "Directly from Farmers · Traditional Ways" (`frontend/src/assets/logo.svg`, favicon)
 - Home page with **full-screen video hero** (rotating banners managed from the admin panel),
   USP strip, categories, bestsellers, "watch how it's made" video section, testimonials
 - Shop, Categories, Product detail, Cart, Wishlist, OTP Login, Profile,
