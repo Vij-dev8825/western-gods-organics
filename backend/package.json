@@ -1,7 +1,7 @@
 {
   "name": "yamuna-organics-backend",
   "version": "2.0.0",
-  "description": "Backend API for Yamuna Organics - cold-pressed oils e-commerce (Neon Postgres + Render ready)",
+  "description": "Backend API for Western Gods Organics - cold-pressed oils e-commerce (Neon Postgres + Render ready)",
   "main": "server.js",
   "type": "commonjs",
   "engines": {
