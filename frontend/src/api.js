@@ -509,7 +509,13 @@ export const api = {
     sendWhatsAppBroadcast: (token, payload) => request('/admin/whatsapp/broadcast', { method: 'POST', body: payload, token }),
     getWhatsAppBroadcastLog: (token) => request('/admin/whatsapp/broadcast-log', { token }),
 
+    // Returns each customer with their computed stats and the segment counts.
+    // AdminLeads and AdminNewOrder read only the identity fields off this and
+    // are unaffected by the extra ones.
     getCustomers: (token) => request('/admin/customers', { token }),
+    getCustomer: (token, id) => request(`/admin/customers/${id}`, { token }),
+    setCustomerNote: (token, id, note) =>
+      request(`/admin/customers/${id}/note`, { method: 'PATCH', body: { note }, token }),
     createCounterOrder: (token, payload) => request('/admin/orders', { method: 'POST', body: payload, token }),
     getFeedback: (token) => request('/admin/feedback', { token }),
     markFeedbackHandled: (token, id) => request(`/admin/feedback/${id}/handled`, { method: 'PATCH', token }),

@@ -6,6 +6,7 @@ const { v4: uuid } = require('uuid');
 const db = require('../data/db');
 const { requireAdmin } = require('../middleware/auth');
 const { notifyUser, broadcast } = require('../utils/notify');
+const { buildCustomerStats, segmentCounts, isSegment, SEGMENTS } = require('../utils/customerStats');
 const { UPLOADS_DIR } = require('../data/seed');
 const cloudinary = require('../utils/cloudinary');
 const {
@@ -2691,18 +2692,66 @@ router.put('/country-catalog', async (req, res, next) => {
 /* ------------------------- Customers / leads lists ------------------------- */
 
 // GET /api/admin/customers
+// GET /api/admin/customers — every customer with what they are worth.
+// Derived from the orders on each request rather than stored on the user: a
+// denormalised lifetime-value column goes quietly wrong the first time an
+// order is cancelled or edited, and this catalogue is small enough that
+// recomputing costs nothing.
 router.get('/customers', async (req, res, next) => {
   try {
-    const users = (await db.list('users'))
-      .filter((u) => u.role !== 'admin')
-      .map(({ id, name, phone, email, createdAt, isWholesale, isAffiliate, affiliateCode, commissionRate }) => ({
-        id, name, phone, email, createdAt,
-        isWholesale: !!isWholesale,
-        isAffiliate: !!isAffiliate,
-        affiliateCode: affiliateCode || null,
-        commissionRate: commissionRate || 0,
+    const [users, orders] = await Promise.all([db.list('users'), db.list('orders')]);
+    const customers = buildCustomerStats(
+      users.filter((u) => u.role !== 'admin'),
+      orders
+    );
+    res.json({ success: true, customers, segments: segmentCounts(customers) });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET /api/admin/customers/:id — one customer, with every order they placed.
+// The orders come back whole so the detail view can show what someone actually
+// buys, which is the question you have when you pick up the phone to them.
+router.get('/customers/:id', async (req, res, next) => {
+  try {
+    const [users, orders] = await Promise.all([db.list('users'), db.list('orders')]);
+    const user = users.find((u) => u.id === req.params.id && u.role !== 'admin');
+    if (!user) return res.status(404).json({ success: false, message: 'Customer not found.' });
+
+    const [customer] = buildCustomerStats([user], orders);
+    const own = orders
+      .filter((o) => o.userId === user.id)
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+      .map(({ id, orderNumber, total, status, paymentStatus, createdAt, items }) => ({
+        id,
+        orderNumber,
+        total,
+        status,
+        paymentStatus,
+        createdAt,
+        items: (items || []).map((i) => ({ name: i.name, size: i.size, quantity: i.quantity })),
       }));
-    res.json({ success: true, customers: users });
+
+    res.json({ success: true, customer, orders: own });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// PATCH /api/admin/customers/:id/note  { note }
+// A private line about a customer — "prefers delivery after 6", "runs the
+// canteen on SH 97". Never shown to them; it exists so the thing someone
+// learned on a phone call outlives that phone call.
+router.patch('/customers/:id/note', async (req, res, next) => {
+  try {
+    const user = await db.get('users', req.params.id);
+    if (!user || user.role === 'admin') {
+      return res.status(404).json({ success: false, message: 'Customer not found.' });
+    }
+    const note = String(req.body?.note ?? '').slice(0, 2000);
+    await db.put('users', { ...user, crmNote: note });
+    res.json({ success: true, note });
   } catch (err) {
     next(err);
   }
@@ -3214,12 +3263,23 @@ router.patch('/product-questions/:id', async (req, res, next) => {
 
 /* ------------------------------ Notifications ------------------------------ */
 
-// POST /api/admin/notify  { title, message, image?, channels: { inapp, email, sms, push } }
+// POST /api/admin/notify
+// { title, message, image?, segment?, channels: { inapp, email, sms, push } }
 router.post('/notify', async (req, res, next) => {
   try {
     const { title, message, image, productId } = req.body;
     if (!title || !message) {
       return res.status(400).json({ success: false, message: 'Title and message are required.' });
+    }
+    // An unrecognised segment is rejected rather than quietly widened to
+    // everyone: silently sending a note meant for lapsed customers to the
+    // whole list is not a mistake anyone can take back.
+    const segment = req.body.segment || 'all';
+    if (!isSegment(segment)) {
+      return res.status(400).json({
+        success: false,
+        message: `Unknown segment "${segment}". Expected one of: ${Object.keys(SEGMENTS).join(', ')}.`,
+      });
     }
     const channels = {
       inapp: req.body.channels?.inapp !== false,
@@ -3228,8 +3288,8 @@ router.post('/notify', async (req, res, next) => {
       push: !!req.body.channels?.push,
     };
     const meta = productId ? { productId } : {};
-    const counts = await broadcast({ title, message, image, channels, meta });
-    res.json({ success: true, counts });
+    const counts = await broadcast({ title, message, image, channels, meta, segment });
+    res.json({ success: true, counts, segment });
   } catch (err) {
     next(err);
   }

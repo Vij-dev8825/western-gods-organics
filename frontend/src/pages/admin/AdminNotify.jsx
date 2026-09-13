@@ -12,6 +12,8 @@ export default function AdminNotify() {
   const [productId, setProductId] = useState('');
   const [products, setProducts] = useState([]);
   const [channels, setChannels] = useState({ inapp: true, email: true, sms: false, push: true });
+  const [segment, setSegment] = useState('all');
+  const [segments, setSegments] = useState([]);
   const [logs, setLogs] = useState([]);
   const [message, setMessage] = useState(null);
   const [sending, setSending] = useState(false);
@@ -23,6 +25,13 @@ export default function AdminNotify() {
   useEffect(() => {
     api.getProducts().then((d) => setProducts(d.products)).catch(() => {});
   }, []);
+  // Segment counts come from the same endpoint the Customers page reads, so
+  // the number on the button is the number that will actually be sent to.
+  useEffect(() => {
+    api.admin.getCustomers(token).then((d) => setSegments(d.segments || [])).catch(() => {});
+  }, [token]);
+
+  const audience = segments.find((s2) => s2.key === segment);
 
   function productName(id) {
     return products.find((p) => p.id === id)?.name || null;
@@ -30,11 +39,14 @@ export default function AdminNotify() {
 
   async function send(e) {
     e.preventDefault();
-    if (!window.confirm('Send this notification to ALL customers on the selected channels?')) return;
+    const who = audience
+      ? `${audience.count} customer${audience.count === 1 ? '' : 's'} (${audience.label})`
+      : 'ALL customers';
+    if (!window.confirm(`Send this notification to ${who} on the selected channels?`)) return;
     setSending(true);
     setMessage(null);
     try {
-      const res = await api.admin.notify(token, { title, message: body, image, productId: productId || undefined, channels });
+      const res = await api.admin.notify(token, { title, message: body, image, productId: productId || undefined, channels, segment });
       setMessage({
         type: 'success',
         text: `Sent to ${res.counts.audience} customers — ${res.counts.inapp} in-app, ${res.counts.email} emails, ${res.counts.sms} SMS, ${res.counts.push || 0} push.`,
@@ -101,8 +113,40 @@ export default function AdminNotify() {
             </label>
           ))}
         </div>
-        <button className="btn btn-gold btn-sm" disabled={sending}>
-          {sending ? 'Sending…' : 'Send to all customers'}
+        {/* Who this goes to. Sending everything to everybody is how a list
+            learns to ignore you, so the audience is a choice made before the
+            send button — and the count next to each option is the number of
+            people that choice currently means. */}
+        <div className="field">
+          <label htmlFor="notify-segment">Send to</label>
+          <select
+            id="notify-segment"
+            value={segment}
+            onChange={(e) => setSegment(e.target.value)}
+          >
+            {(segments.length ? segments : [{ key: 'all', label: 'Everyone', count: null }]).map((s2) => (
+              <option key={s2.key} value={s2.key}>
+                {s2.label}
+                {s2.count != null ? ` — ${s2.count}` : ''}
+              </option>
+            ))}
+          </select>
+          {audience && audience.count === 0 && (
+            <p className="muted small">Nobody is in this segment right now, so nothing would be sent.</p>
+          )}
+          {segment !== 'all' && (
+            <p className="muted small">
+              Anonymous push subscribers are excluded — they have no order history, so they
+              can't be in a segment.
+            </p>
+          )}
+        </div>
+        <button className="btn btn-gold btn-sm" disabled={sending || audience?.count === 0}>
+          {sending
+            ? 'Sending…'
+            : audience
+              ? `Send to ${audience.count} customer${audience.count === 1 ? '' : 's'}`
+              : 'Send to all customers'}
         </button>
       </form>
 

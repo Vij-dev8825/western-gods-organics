@@ -4,6 +4,7 @@ const { sendMail } = require('./mailer');
 const { sendSms } = require('./sms');
 const { sendWhatsApp, sendWhatsAppPhoto } = require('./whatsapp');
 const { sendPush, sendPushToAnonymous } = require('./push');
+const { buildCustomerStats, filterBySegment } = require('./customerStats');
 
 const SITE_URL = process.env.SITE_URL || 'https://westerngodsorganic.com';
 
@@ -92,8 +93,21 @@ async function notifyUser(user, { title, message, image, meta = {}, channels = {
  * Broadcast to every customer (admin excluded), log the campaign, and return
  * per-channel delivery counts.
  */
-async function broadcast({ title, message, image, channels, meta = {} }) {
-  const users = (await db.list('users')).filter((u) => u.role !== 'admin');
+async function broadcast({ title, message, image, channels, meta = {}, segment = 'all' }) {
+  let users = (await db.list('users')).filter((u) => u.role !== 'admin');
+
+  // Targeting. "Everyone, every time" is how a customer list gets trained to
+  // ignore you, so a broadcast can be aimed at the people a given message is
+  // actually for — the ones who have gone quiet, the ones who buy most. The
+  // stats are recomputed here rather than passed in, so the audience is
+  // whoever qualifies at the moment of sending and not whenever an admin
+  // screen last loaded.
+  if (segment && segment !== 'all') {
+    const stats = buildCustomerStats(users, await db.list('orders'));
+    const wanted = new Set(filterBySegment(stats, segment).map((c) => c.id));
+    users = users.filter((u) => wanted.has(u.id));
+  }
+
   const counts = { audience: users.length, inapp: 0, email: 0, sms: 0, whatsapp: 0, push: 0 };
 
   for (const user of users) {
@@ -106,8 +120,11 @@ async function broadcast({ title, message, image, channels, meta = {} }) {
   }
 
   // Anonymous browser-notification subscribers (opted in without an
-  // account) aren't customer records, so they only get the push channel.
-  if (channels?.push !== false) {
+  // account) aren't customer records, so they only get the push channel — and
+  // only when the message is going to everybody. They have no order history,
+  // so they cannot be in any segment; including them in a note aimed at
+  // lapsed customers would send it to people the segment deliberately excluded.
+  if (channels?.push !== false && (!segment || segment === 'all')) {
     const imageUrl = absoluteImageUrl(image);
     const { sent } = await sendPushToAnonymous({ title, message, image: imageUrl, url: '/' });
     counts.push += sent;
@@ -121,6 +138,7 @@ async function broadcast({ title, message, image, channels, meta = {} }) {
     image: image || null,
     meta,
     channels,
+    segment: segment || 'all',
     counts,
     createdAt: new Date().toISOString(),
   });

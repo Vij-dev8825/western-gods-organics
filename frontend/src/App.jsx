@@ -104,6 +104,7 @@ const AdminOrders = lazy(() => import('./pages/admin/AdminOrders'));
 const AdminReturns = lazy(() => import('./pages/admin/AdminReturns'));
 const AdminBottleReturns = lazy(() => import('./pages/admin/AdminBottleReturns'));
 const AdminLeads = lazy(() => import('./pages/admin/AdminLeads'));
+const AdminCustomers = lazy(() => import('./pages/admin/AdminCustomers'));
 const AdminNotify = lazy(() => import('./pages/admin/AdminNotify'));
 const AdminChat = lazy(() => import('./pages/admin/AdminChat'));
 const AdminBlog = lazy(() => import('./pages/admin/AdminBlog'));
@@ -320,6 +321,7 @@ export default function App() {
         <Route path="returns" element={<AdminReturns />} />
         <Route path="bottle-returns" element={<AdminBottleReturns />} />
         <Route path="leads" element={<AdminLeads />} />
+        <Route path="customers" element={<AdminCustomers />} />
         <Route path="notify" element={<AdminNotify />} />
         <Route path="chat" element={<AdminChat />} />
         <Route path="blog" element={<AdminBlog />} />

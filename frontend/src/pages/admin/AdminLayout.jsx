@@ -18,6 +18,7 @@ const links = [
   { to: '/admin/categories', label: 'Categories' },
   { to: '/admin/coupons', label: 'Coupons' },
   { to: '/admin/gift-cards', label: 'Gift Cards' },
+  { to: '/admin/customers', label: 'Customers' },
   { to: '/admin/affiliates', label: 'Affiliates' },
   { to: '/admin/sellers', label: 'Sellers' },
   { to: '/admin/subscriptions', label: 'Subscriptions' },

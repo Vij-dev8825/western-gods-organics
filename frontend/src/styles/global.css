@@ -11334,3 +11334,79 @@ body.has-cookie-bar .install-prompt { bottom: calc(var(--cookie-bar-height, 0px)
 .product-also-called-sep {
   opacity: 0.5;
 }
+
+/* ---- CRM: customers, segments, the detail drawer ---------------------- */
+/* Segment chips carry their own count, so the size of an audience is visible
+   before anyone picks it — "lapsed (0)" should not be a click to discover. */
+.crm-segments { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 14px; }
+.crm-seg {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 6px 12px; border: 1px solid rgba(31,61,43,0.18); border-radius: 999px;
+  background: transparent; color: inherit; font: inherit; font-size: 0.84rem;
+  cursor: pointer; transition: background 0.12s, border-color 0.12s;
+}
+.crm-seg:hover { border-color: rgba(31,61,43,0.4); }
+.crm-seg.on { background: #1f3d2b; border-color: #1f3d2b; color: #fff; }
+.crm-seg-n {
+  font-variant-numeric: tabular-nums; font-size: 0.76rem;
+  padding: 1px 6px; border-radius: 999px; background: rgba(31,61,43,0.1);
+}
+.crm-seg.on .crm-seg-n { background: rgba(255,255,255,0.22); }
+
+.crm-controls { display: flex; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
+.crm-controls input[type="search"] { flex: 1 1 240px; min-width: 0; }
+
+.crm-row { cursor: pointer; }
+.crm-row:hover { background: rgba(31,61,43,0.04); }
+.admin-table td.num, .admin-table th.num { text-align: right; font-variant-numeric: tabular-nums; }
+
+.crm-tag {
+  display: inline-block; margin-left: 6px; padding: 1px 6px; border-radius: 4px;
+  font-size: 0.68rem; letter-spacing: 0.04em; text-transform: uppercase;
+  background: rgba(31,61,43,0.1); color: #1f3d2b; vertical-align: middle;
+}
+.crm-tag.vip { background: #f3e2c0; color: #7a5510; }
+.crm-tag.note { background: rgba(31,61,43,0.06); }
+
+/* Status is the one column read at a glance, so it carries colour as well as
+   a word — scanning for red is faster than reading every row. */
+.crm-status { font-size: 0.8rem; font-weight: 600; }
+.crm-status.active { color: #2f7a3f; }
+.crm-status.lapsing { color: #b07818; }
+.crm-status.lapsed { color: #b3401f; }
+.crm-status.never { color: #6b6f66; }
+
+.crm-drawer-backdrop {
+  position: fixed; inset: 0; background: rgba(20,16,12,0.42);
+  display: flex; justify-content: flex-end; z-index: 60;
+}
+.crm-drawer {
+  width: min(30rem, 100%); height: 100%; overflow-y: auto;
+  background: #fff; padding: 26px 24px 40px;
+  box-shadow: -8px 0 32px rgba(20,16,12,0.18);
+}
+.crm-drawer h2 { margin: 0 0 2px; }
+.crm-drawer h3 { margin: 26px 0 10px; font-size: 1rem; }
+.crm-close {
+  float: right; border: none; background: none; font-size: 1.6rem; line-height: 1;
+  cursor: pointer; color: #6b6f66; padding: 0 0 0 12px;
+}
+.crm-close:hover { color: #1f3d2b; }
+
+.crm-stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin: 18px 0 22px; }
+.crm-stats > div { background: rgba(31,61,43,0.05); padding: 10px 12px; border-radius: 8px; }
+.crm-stats span { display: block; font-size: 1.1rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+.crm-stats small { color: #6b6f66; font-size: 0.76rem; }
+
+.crm-note-label { display: block; font-size: 0.82rem; color: #6b6f66; margin-bottom: 6px; }
+.crm-drawer textarea { width: 100%; margin-bottom: 10px; }
+
+.crm-orders { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 12px; }
+.crm-orders li { border-bottom: 1px solid rgba(31,61,43,0.08); padding-bottom: 12px; }
+.crm-orders li:last-child { border-bottom: none; }
+.crm-order-top { display: flex; justify-content: space-between; gap: 10px; font-variant-numeric: tabular-nums; }
+
+@media (max-width: 40rem) {
+  .crm-drawer { width: 100%; padding: 20px 16px 32px; }
+  .crm-stats { grid-template-columns: 1fr 1fr; }
+}
