@@ -90,6 +90,39 @@ const EMPTY = {
   marketPricePer100: '',
 };
 
+/* One textarea, two jobs. INCI is the cosmetics naming standard and is right
+ * for a soap; a bottle of cooking oil needs a food ingredients declaration,
+ * which is a different thing under different rules. Labelling the field "mainly
+ * for soaps" and showing a saponified-oil recipe as its example is how a
+ * coconut oil ended up declaring sodium hydroxide on a page carrying an FSSAI
+ * licence — someone met a soap field and filled it in with soap. So the prompt
+ * follows the category instead of asking every product to be a soap. */
+const EDIBLE = /^(oils|honey|spices-masalas|natural-sweeteners|soup-dip|powders)$/;
+
+/* Each example is drawn from something the shop actually sells, because a
+ * placeholder is read as an instruction. One generic example across every
+ * edible shelf would put a groundnut oil in front of whoever is filling in the
+ * sambar masala — the same failure as before, only quieter. */
+const EXAMPLES = {
+  oils: 'e.g. Cold-pressed groundnut oil (100%). Single ingredient, nothing added.',
+  honey: 'e.g. Raw wild forest honey (100%). Nothing added, nothing heated.',
+  'natural-sweeteners': 'e.g. 100% pure sugarcane jaggery.',
+  'spices-masalas': 'e.g. Coriander, red chilli, toor dal, black pepper, curry leaf, asafoetida.',
+  'soup-dip': 'e.g. Moringa leaf powder, black pepper, cumin, coriander, garlic.',
+  powders: 'e.g. Sun-dried amla, ground whole (100%).',
+  soaps: 'e.g. Saponified Coconut Oil, Saponified Palm Oil, Neem Oil, Tulsi Extract',
+};
+
+function ingredientsLabel(category) {
+  if (category === 'soaps') return 'Ingredients (INCI) — cosmetic naming';
+  if (EDIBLE.test(category)) return 'Ingredients — exactly as printed on the label';
+  return 'Ingredients';
+}
+
+function ingredientsPlaceholder(category) {
+  return EXAMPLES[category] || 'e.g. the ingredients as printed on the pack';
+}
+
 function toForm(p) {
   return {
     ...p,
@@ -924,11 +957,11 @@ export default function AdminProducts() {
             </div>
           </div>
           <div className="field">
-            <label htmlFor="inci-ingredients">Ingredients (INCI) — mainly for soaps</label>
+            <label htmlFor="inci-ingredients">{ingredientsLabel(form.category)}</label>
             <textarea
               id="inci-ingredients"
               rows={2}
-              placeholder="e.g. Saponified Coconut Oil, Saponified Palm Oil, Neem Oil, Tulsi Extract"
+              placeholder={ingredientsPlaceholder(form.category)}
               value={form.inciIngredients}
               onChange={(e) => setForm({ ...form, inciIngredients: e.target.value })}
             />
